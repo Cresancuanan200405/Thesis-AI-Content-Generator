@@ -12,9 +12,7 @@ use RuntimeException;
 
 class DesignController extends Controller
 {
-    public function __construct(protected DesignRegenerationService $designRegenerationService)
-    {
-    }
+    public function __construct(protected DesignRegenerationService $designRegenerationService) {}
 
     public function index(Request $request): Response
     {
@@ -138,7 +136,10 @@ class DesignController extends Controller
             abort(404, 'The requested design image is no longer available.');
         }
 
-        return Storage::disk('public')->download($design->generated_image_path, $design->product_name.'.png');
+        return response()->download(
+            Storage::disk('public')->path($design->generated_image_path),
+            $design->product_name.'.png'
+        );
     }
 
     public function regenerate(Design $design)
@@ -173,6 +174,6 @@ class DesignController extends Controller
             return null;
         }
 
-        return Storage::disk('public')->url($design->generated_image_path);
+        return asset('storage/'.$design->generated_image_path);
     }
 }

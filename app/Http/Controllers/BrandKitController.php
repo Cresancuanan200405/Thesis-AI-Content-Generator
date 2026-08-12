@@ -35,7 +35,7 @@ class BrandKitController extends Controller
             ],
             'brand' => [
                 'logo_path' => $brandKit?->logo_path,
-                'logo_url' => $brandKit?->logo_path ? Storage::disk('public')->url($brandKit->logo_path) : null,
+                'logo_url' => $brandKit?->logo_path ? asset('storage/'.$brandKit->logo_path) : null,
                 'primary_color' => $brandKit?->primary_color ?? '#111827',
                 'secondary_color' => $brandKit?->secondary_color ?? '#F59E0B',
                 'accent_color' => $brandKit?->accent_color ?? '#E5E7EB',

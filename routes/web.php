@@ -4,7 +4,10 @@ use App\Http\Controllers\BrandKitController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\DesignController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\GeneratorController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\ProductController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
@@ -32,7 +35,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function () {
-    Route::get('dashboard', function (\Illuminate\Http\Request $request) {
+    Route::get('dashboard', function (Request $request) {
         $user = $request->user();
 
         $campaigns = $user->campaigns()
@@ -60,7 +63,7 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
                 'event_name' => $design->event?->name,
                 'status' => $design->status,
                 'created_at' => $design->created_at?->format('M j, Y'),
-                'image_url' => $design->generated_image_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($design->generated_image_path) : null,
+                'image_url' => $design->generated_image_path ? asset('storage/'.$design->generated_image_path) : null,
                 'url' => route('designs.show', $design),
             ])->values()->all();
 
@@ -76,8 +79,8 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
             'recent_designs' => $recentDesigns,
         ]);
     })->name('dashboard');
-    Route::get('generator', [\App\Http\Controllers\GeneratorController::class, 'index'])->name('generator.index');
-    Route::post('generator', [\App\Http\Controllers\GeneratorController::class, 'store'])->name('generator.store');
+    Route::get('generator', [GeneratorController::class, 'index'])->name('generator.index');
+    Route::post('generator', [GeneratorController::class, 'store'])->name('generator.store');
     Route::get('designs', [DesignController::class, 'index'])->name('designs.index');
     Route::get('designs/{design}', [DesignController::class, 'show'])->name('designs.show');
     Route::get('designs/{design}/download', [DesignController::class, 'download'])->name('designs.download');
@@ -95,13 +98,13 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
     Route::put('campaigns/{campaign}', [CampaignController::class, 'update'])->name('campaigns.update');
     Route::delete('campaigns/{campaign}', [CampaignController::class, 'destroy'])->name('campaigns.destroy');
 
-    Route::get('products', [\App\Http\Controllers\ProductController::class, 'index'])->name('products.index');
-    Route::get('products/create', [\App\Http\Controllers\ProductController::class, 'create'])->name('products.create');
-    Route::post('products', [\App\Http\Controllers\ProductController::class, 'store'])->name('products.store');
-    Route::get('products/{product}', [\App\Http\Controllers\ProductController::class, 'show'])->name('products.show');
-    Route::get('products/{product}/edit', [\App\Http\Controllers\ProductController::class, 'edit'])->name('products.edit');
-    Route::put('products/{product}', [\App\Http\Controllers\ProductController::class, 'update'])->name('products.update');
-    Route::delete('products/{product}', [\App\Http\Controllers\ProductController::class, 'destroy'])->name('products.destroy');
+    Route::get('products', [ProductController::class, 'index'])->name('products.index');
+    Route::get('products/create', [ProductController::class, 'create'])->name('products.create');
+    Route::post('products', [ProductController::class, 'store'])->name('products.store');
+    Route::get('products/{product}', [ProductController::class, 'show'])->name('products.show');
+    Route::get('products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
+    Route::put('products/{product}', [ProductController::class, 'update'])->name('products.update');
+    Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
 
     Route::get('brand-kit', [BrandKitController::class, 'edit'])->name('brand-kit.edit');
     Route::put('brand-kit', [BrandKitController::class, 'update'])->name('brand-kit.update');

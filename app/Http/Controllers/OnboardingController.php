@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Onboarding\SaveBrandOnboardingRequest;
 use App\Http\Requests\Onboarding\SaveBusinessOnboardingRequest;
 use App\Http\Requests\Onboarding\SaveMarketingPreferencesRequest;
-use App\Models\Business;
-use App\Models\BrandKit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -109,7 +107,8 @@ class OnboardingController extends Controller
         }
 
         if (isset($brandData['visual_preferences']) && is_string($brandData['visual_preferences'])) {
-            $brandData['visual_preferences'] = $brandData['visual_preferences'];
+            $visualPreferences = $brandData['visual_preferences'];
+            $brandData['visual_preferences'] = trim($visualPreferences);
         }
 
         if ($request->hasFile('logo')) {

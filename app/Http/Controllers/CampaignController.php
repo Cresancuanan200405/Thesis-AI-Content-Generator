@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreCampaignRequest;
 use App\Http\Requests\UpdateCampaignRequest;
 use App\Models\Campaign;
+use Carbon\CarbonInterface;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -32,20 +33,25 @@ class CampaignController extends Controller
         $campaigns = $query->paginate(12)->withQueryString();
 
         return Inertia::render('campaigns/index', [
-            'campaigns' => $campaigns->through(fn (Campaign $campaign) => [
-                'id' => $campaign->id,
-                'name' => $campaign->name,
-                'description' => $campaign->description,
-                'status' => $campaign->status,
-                'objective' => $campaign->objective,
-                'target_audience' => $campaign->target_audience,
-                'product_name' => $campaign->product?->name,
-                'event_name' => $campaign->event?->name,
-                'start_date' => $campaign->start_date?->format('Y-m-d'),
-                'end_date' => $campaign->end_date?->format('Y-m-d'),
-                'design_count' => $campaign->designs()->count(),
-                'show_url' => route('campaigns.show', $campaign),
-            ])->values()->all(),
+            'campaigns' => $campaigns->through(function (Campaign $campaign) {
+                $startDate = $campaign->getAttributeValue('start_date');
+                $endDate = $campaign->getAttributeValue('end_date');
+
+                return [
+                    'id' => $campaign->id,
+                    'name' => $campaign->name,
+                    'description' => $campaign->description,
+                    'status' => $campaign->status,
+                    'objective' => $campaign->objective,
+                    'target_audience' => $campaign->target_audience,
+                    'product_name' => $campaign->product?->name,
+                    'event_name' => $campaign->event?->name,
+                    'start_date' => $startDate instanceof CarbonInterface ? $startDate->format('Y-m-d') : null,
+                    'end_date' => $endDate instanceof CarbonInterface ? $endDate->format('Y-m-d') : null,
+                    'design_count' => $campaign->designs()->count(),
+                    'show_url' => route('campaigns.show', $campaign),
+                ];
+            })->values()->all(),
             'filters' => [
                 'search' => $search ?? '',
                 'status' => $status ?? '',
@@ -65,6 +71,9 @@ class CampaignController extends Controller
 
         $campaign->load(['product', 'event', 'business', 'designs']);
 
+        $startDate = $campaign->getAttributeValue('start_date');
+        $endDate = $campaign->getAttributeValue('end_date');
+
         return Inertia::render('campaigns/show', [
             'campaign' => [
                 'id' => $campaign->id,
@@ -77,8 +86,8 @@ class CampaignController extends Controller
                 'event_id' => $campaign->event_id,
                 'product_name' => $campaign->product?->name,
                 'event_name' => $campaign->event?->name,
-                'start_date' => $campaign->start_date?->format('Y-m-d'),
-                'end_date' => $campaign->end_date?->format('Y-m-d'),
+                'start_date' => $startDate instanceof CarbonInterface ? $startDate->format('Y-m-d') : null,
+                'end_date' => $endDate instanceof CarbonInterface ? $endDate->format('Y-m-d') : null,
                 'designs' => $campaign->designs->map(fn ($design) => [
                     'id' => $design->id,
                     'product_name' => $design->product_name,
@@ -115,6 +124,9 @@ class CampaignController extends Controller
     {
         $this->authorize('update', $campaign);
 
+        $existingStartDate = $campaign->getAttributeValue('start_date');
+        $existingEndDate = $campaign->getAttributeValue('end_date');
+
         $campaign->update([
             'product_id' => $request->input('product_id', $campaign->product_id),
             'event_id' => $request->input('event_id', $campaign->event_id),
@@ -122,8 +134,8 @@ class CampaignController extends Controller
             'description' => $request->input('description', $campaign->description),
             'objective' => $request->input('objective', $campaign->objective),
             'target_audience' => $request->input('target_audience', $campaign->target_audience),
-            'start_date' => $request->input('start_date', $campaign->start_date?->format('Y-m-d')),
-            'end_date' => $request->input('end_date', $campaign->end_date?->format('Y-m-d')),
+            'start_date' => $request->input('start_date', $existingStartDate instanceof CarbonInterface ? $existingStartDate->format('Y-m-d') : null),
+            'end_date' => $request->input('end_date', $existingEndDate instanceof CarbonInterface ? $existingEndDate->format('Y-m-d') : null),
             'status' => $request->input('status', $campaign->status),
         ]);
 
