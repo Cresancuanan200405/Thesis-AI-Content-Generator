@@ -7,7 +7,10 @@ use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -27,6 +30,10 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property Business|null $business
+ * @property Collection<int,Campaign> $campaigns
+ * @property Collection<int,Event> $events
+ * @property Collection<int,Design> $designs
  */
 #[Fillable(['name', 'email', 'password', 'onboarding_completed', 'onboarding_completed_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
@@ -56,22 +63,34 @@ class User extends Authenticatable implements MustVerifyEmail
         $this->notify(new VerifyEmail);
     }
 
-    public function business()
+    /**
+     * @return HasOne<Business, $this>
+     */
+    public function business(): HasOne
     {
         return $this->hasOne(Business::class);
     }
 
-    public function events()
+    /**
+     * @return HasMany<Event, $this>
+     */
+    public function events(): HasMany
     {
         return $this->hasMany(Event::class);
     }
 
-    public function campaigns()
+    /**
+     * @return HasMany<Campaign, $this>
+     */
+    public function campaigns(): HasMany
     {
         return $this->hasMany(Campaign::class);
     }
 
-    public function designs()
+    /**
+     * @return HasMany<Design, $this>
+     */
+    public function designs(): HasMany
     {
         return $this->hasMany(Design::class);
     }

@@ -11,7 +11,10 @@ export default function EventShowPage({ event }: any) {
             <div className="space-y-6 p-4 md:p-6">
                 <div className="flex items-center justify-between gap-4">
                     <Button variant="outline" asChild>
-                        <Link href={event?.calendar_url ?? '/calendar'} className="inline-flex items-center gap-2">
+                        <Link
+                            href={event?.calendar_url ?? '/calendar'}
+                            className="inline-flex items-center gap-2"
+                        >
                             <ArrowLeft className="h-4 w-4" />
                             Back to calendar
                         </Link>
@@ -25,8 +28,12 @@ export default function EventShowPage({ event }: any) {
                     <CardHeader>
                         <div className="flex items-start justify-between gap-4">
                             <div>
-                                <p className="text-sm font-medium text-muted-foreground">Marketing Event</p>
-                                <CardTitle className="mt-2 text-3xl">{event?.name}</CardTitle>
+                                <p className="text-sm font-medium text-muted-foreground">
+                                    Marketing Event
+                                </p>
+                                <CardTitle className="mt-2 text-3xl">
+                                    {event?.name}
+                                </CardTitle>
                             </div>
                             <Badge>{event?.type}</Badge>
                         </div>
@@ -44,9 +51,12 @@ export default function EventShowPage({ event }: any) {
                         </div>
 
                         <div className="rounded-xl border bg-muted/20 p-4">
-                            <p className="text-sm font-medium text-muted-foreground">Overview</p>
+                            <p className="text-sm font-medium text-muted-foreground">
+                                Overview
+                            </p>
                             <p className="mt-2 text-sm leading-6 text-foreground">
-                                {event?.description || 'No description provided for this marketing event.'}
+                                {event?.description ||
+                                    'No description provided for this marketing event.'}
                             </p>
                         </div>
                     </CardContent>

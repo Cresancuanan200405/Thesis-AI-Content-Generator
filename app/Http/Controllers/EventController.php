@@ -5,14 +5,18 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use App\Models\Event;
+use App\Models\User;
 use Carbon\CarbonInterface;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class EventController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): Response
     {
+        /** @var User $user */
         $user = $request->user();
         $filter = $request->input('filter', 'all');
 
@@ -31,7 +35,7 @@ class EventController extends Controller
         $events = $query->get();
 
         return Inertia::render('calendar/index', [
-            'events' => $events->map(function (Event $event) {
+            'events' => $events->map(function (Event $event): array {
                 $eventDate = $event->getAttributeValue('date');
 
                 return [
@@ -45,9 +49,9 @@ class EventController extends Controller
                     'show_url' => route('events.show', $event),
                 ];
             })->values()->all(),
-            'upcoming_events' => $events->filter(fn (Event $event) => $event->getAttributeValue('date') >= now()->toDateString())
+            'upcoming_events' => $events->filter(fn (Event $event): bool => $event->getAttributeValue('date') >= now()->toDateString())
                 ->take(5)
-                ->map(function (Event $event) {
+                ->map(function (Event $event): array {
                     $eventDate = $event->getAttributeValue('date');
 
                     return [
@@ -63,7 +67,7 @@ class EventController extends Controller
         ]);
     }
 
-    public function store(StoreEventRequest $request)
+    public function store(StoreEventRequest $request): RedirectResponse
     {
         $request->user()->events()->create([
             'name' => $request->input('name'),
@@ -76,7 +80,7 @@ class EventController extends Controller
         return redirect()->route('calendar.index')->with('success', 'Event created successfully.');
     }
 
-    public function show(Event $event)
+    public function show(Event $event): Response
     {
         $this->authorize('view', $event);
 
@@ -98,7 +102,7 @@ class EventController extends Controller
         ]);
     }
 
-    public function update(UpdateEventRequest $request, Event $event)
+    public function update(UpdateEventRequest $request, Event $event): RedirectResponse
     {
         $this->authorize('update', $event);
 
@@ -114,7 +118,7 @@ class EventController extends Controller
         return redirect()->route('calendar.index')->with('success', 'Event updated successfully.');
     }
 
-    public function destroy(Event $event)
+    public function destroy(Event $event): RedirectResponse
     {
         $this->authorize('delete', $event);
 

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateBrandKitRequest;
 use App\Models\BrandKit;
+use App\Models\Business;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -14,9 +16,10 @@ class BrandKitController extends Controller
 {
     public function edit(Request $request): Response
     {
+        /** @var User|null $user */
         $user = $request->user();
+        /** @var Business|null $business */
         $business = $user?->business()->first();
-        $brandKit = $business?->brandKit()->first();
 
         if (! $business) {
             return Inertia::render('brand-kit/index', [
@@ -26,6 +29,7 @@ class BrandKitController extends Controller
             ]);
         }
 
+        $brandKit = $business->brandKit()->first();
         $this->authorize('view', $brandKit ?? new BrandKit(['business_id' => $business->id]));
 
         return Inertia::render('brand-kit/index', [
@@ -36,13 +40,13 @@ class BrandKitController extends Controller
             'brand' => [
                 'logo_path' => $brandKit?->logo_path,
                 'logo_url' => $brandKit?->logo_path ? asset('storage/'.$brandKit->logo_path) : null,
-                'primary_color' => $brandKit?->primary_color ?? '#111827',
-                'secondary_color' => $brandKit?->secondary_color ?? '#F59E0B',
-                'accent_color' => $brandKit?->accent_color ?? '#E5E7EB',
-                'brand_tone' => $this->decodeJsonList($brandKit?->brand_tone),
-                'typography' => $brandKit?->typography ?? 'Modern Sans',
-                'brand_guidelines' => $brandKit?->brand_guidelines ?? '',
-                'visual_preferences' => $brandKit?->visual_preferences ?? '',
+                'primary_color' => $brandKit ? ($brandKit->primary_color ?? '#111827') : '#111827',
+                'secondary_color' => $brandKit ? ($brandKit->secondary_color ?? '#F59E0B') : '#F59E0B',
+                'accent_color' => $brandKit ? ($brandKit->accent_color ?? '#E5E7EB') : '#E5E7EB',
+                'brand_tone' => $brandKit ? $this->decodeJsonList($brandKit->brand_tone) : [],
+                'typography' => $brandKit ? ($brandKit->typography ?? 'Modern Sans') : 'Modern Sans',
+                'brand_guidelines' => $brandKit ? ($brandKit->brand_guidelines ?? '') : '',
+                'visual_preferences' => $brandKit ? ($brandKit->visual_preferences ?? '') : '',
             ],
             'brand_kit' => $brandKit ? [
                 'id' => $brandKit->id,
@@ -53,6 +57,7 @@ class BrandKitController extends Controller
     public function update(UpdateBrandKitRequest $request): RedirectResponse
     {
         $user = $request->user();
+        /** @var Business $business */
         $business = $user?->business()->firstOrFail();
         $brandKit = $business->brandKit()->first();
 
@@ -96,6 +101,9 @@ class BrandKitController extends Controller
         return redirect()->route('brand-kit.edit')->with('success', 'Brand Kit saved successfully.');
     }
 
+    /**
+     * @return string[]
+     */
     protected function decodeJsonList(mixed $value): array
     {
         if (is_array($value)) {
@@ -115,6 +123,9 @@ class BrandKitController extends Controller
         return [];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     protected function emptyBrandData(): array
     {
         return [

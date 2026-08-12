@@ -185,7 +185,7 @@ it('user can regenerate their own design and keep the original', function () {
 
     Http::fake([
         'https://api.openai.com/v1/images/generations' => Http::response([
-            'data' => [[ 'b64_json' => base64_encode('fake-image-data') ]],
+            'data' => [['b64_json' => base64_encode('fake-image-data')]],
         ], 200),
     ]);
 

@@ -30,7 +30,7 @@ class DesignFactory extends Factory
             'price' => fake()->randomFloat(2, 10, 200),
             'brand_tone' => fake()->randomElement(['Professional', 'Friendly', 'Luxury', 'Bold', 'Minimal']),
             'visual_theme' => fake()->randomElement(['Modern', 'Festive', 'Premium', 'Clean', 'Vibrant']),
-            'tagline' => fake()->catchPhrase(),
+            'tagline' => fake()->sentence(),
             'tagline_mode' => fake()->randomElement(['write', 'generate', 'none']),
             'reference_image_path' => null,
             'generated_image_path' => null,

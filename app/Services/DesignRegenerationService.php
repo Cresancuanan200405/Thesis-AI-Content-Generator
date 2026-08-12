@@ -12,13 +12,13 @@ class DesignRegenerationService
     public function __construct(
         protected MarketingPromptBuilder $marketingPromptBuilder,
         protected OpenAIImageService $openAIImageService,
-    ) {
-    }
+    ) {}
 
     public function regenerate(Design $design): Design
     {
         $user = $design->user;
         $business = $design->business ?? $user->business()->firstOrFail();
+        $campaign = $design->campaign;
 
         $brandTone = $this->normalizeList($design->brand_tone);
         $contentStyle = $this->normalizeList($design->visual_theme);
@@ -28,12 +28,12 @@ class DesignRegenerationService
             'event_id' => $design->event_id,
             'product_id' => $design->product_id,
             'product_name' => $design->product_name,
-            'marketing_goal' => $design->campaign?->objective ?? 'Refresh the existing marketing asset for this product',
+            'marketing_goal' => $campaign && $campaign->objective ? $campaign->objective : 'Refresh the existing marketing asset for this product',
             'content_style' => $contentStyle,
             'brand_tone' => $brandTone,
             'tagline' => $design->tagline,
             'tagline_mode' => $design->tagline_mode ?? 'auto',
-            'target_audience' => $design->campaign?->target_audience ?? $business->target_audience,
+            'target_audience' => $campaign && $campaign->target_audience ? $campaign->target_audience : $business->target_audience,
             'unique_selling_point' => $business->unique_selling_point,
             'notes' => 'Regenerated from design #'.$design->id.'. Preserve the original concept while creating a refreshed version.',
         ];
@@ -104,6 +104,9 @@ class DesignRegenerationService
         ]);
     }
 
+    /**
+     * @return array<int, string>
+     */
     protected function normalizeList(mixed $value): array
     {
         if (is_array($value)) {

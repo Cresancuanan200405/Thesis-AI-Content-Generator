@@ -14,7 +14,7 @@ class BrandKitPolicy
 
     public function view(User $user, BrandKit $brandKit): bool
     {
-        return $user->business()->exists() && $brandKit->business && $brandKit->business->user_id === $user->id;
+        return $user->business()->exists() && $brandKit->business->user_id === $user->id;
     }
 
     public function create(User $user): bool

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreEventRequest extends FormRequest
@@ -11,6 +12,9 @@ class StoreEventRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    /**
+     * @return array<string, array<int, string>>
+     */
     public function rules(): array
     {
         return [
@@ -22,9 +26,9 @@ class StoreEventRequest extends FormRequest
         ];
     }
 
-    public function withValidator($validator): void
+    public function withValidator(Validator $validator): void
     {
-        $validator->after(function ($validator) {
+        $validator->after(function (Validator $validator) {
             $startDate = $this->input('start_date');
             $endDate = $this->input('end_date');
 

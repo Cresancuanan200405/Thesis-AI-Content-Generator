@@ -110,5 +110,6 @@ export default function Login({ status, canResetPassword }: Props) {
 
 Login.layout = {
     title: 'Welcome back',
-    description: 'Sign in to keep your campaigns, brand guidance, and content calendar moving.',
+    description:
+        'Sign in to keep your campaigns, brand guidance, and content calendar moving.',
 };

@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Event;
 use App\Models\Product;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 
 class GeneratorRequest extends FormRequest
@@ -12,6 +14,9 @@ class GeneratorRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    /**
+     * @return array<string, array<int, string>>
+     */
     public function rules(): array
     {
         return [
@@ -32,7 +37,7 @@ class GeneratorRequest extends FormRequest
         ];
     }
 
-    public function withValidator($validator): void
+    public function withValidator(Validator $validator): void
     {
         $validator->after(function ($validator) {
             $user = $this->user();
@@ -50,7 +55,7 @@ class GeneratorRequest extends FormRequest
             }
 
             if ($this->filled('event_id')) {
-                $event = \App\Models\Event::query()->whereKey($this->input('event_id'))->first();
+                $event = Event::query()->whereKey($this->input('event_id'))->first();
 
                 if (! $event || (! $event->is_global && $event->user_id !== $user->id)) {
                     $validator->errors()->add('event_id', 'The selected event does not belong to your account or it is not a valid global event.');

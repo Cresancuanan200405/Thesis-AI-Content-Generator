@@ -72,9 +72,9 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
             'upcoming_events' => $user->events()->where('date', '>=', now()->toDateString())->orderBy('date')->limit(5)->get()->map(fn ($event) => [
                 'id' => $event->id,
                 'name' => $event->name,
-                'date' => $event->date?->format('M j, Y'),
+                'date' => $event->date->format('M j, Y'),
                 'category' => $event->type,
-                'days' => $event->date ? now()->diffInDays($event->date, false).' days left' : null,
+                'days' => now()->diffInDays($event->date, false).' days left',
             ])->values()->all(),
             'recent_designs' => $recentDesigns,
         ]);

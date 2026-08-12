@@ -7,17 +7,22 @@ use App\Models\Product;
 
 class MarketingPromptBuilder
 {
+    /**
+     * @param  array<string, mixed>  $payload
+     */
     public function build(array $payload, Business $business): string
     {
         $contentStyle = is_array($payload['content_style'] ?? null) ? array_values($payload['content_style']) : [];
         $brandTone = is_array($payload['brand_tone'] ?? null) ? array_values($payload['brand_tone']) : [];
 
-        $productName = $payload['product_name'] ?? 'Custom product';
+        $productName = 'Custom product';
         $product = null;
 
         if (! empty($payload['product_id'])) {
             $product = Product::query()->whereKey($payload['product_id'])->first();
-            $productName = $product?->name ?? $productName;
+            if ($product) {
+                $productName = $product->name;
+            }
         }
 
         $lines = [
@@ -27,7 +32,7 @@ class MarketingPromptBuilder
             'Category: '.($business->category ?? 'General'),
             'PRODUCT: '.$productName,
             'Name: '.$productName,
-            'Description: '.($product?->description ?? 'No product description provided.'),
+            'Description: '.($product ? $product->description : 'No product description provided.'),
             'Price: '.($product ? '$'.number_format((float) $product->price, 2, '.', ',') : '$0.00'),
             'Marketing goal: '.($payload['marketing_goal'] ?? 'Increase awareness and engagement'),
             'Content style: '.($contentStyle ? implode(', ', $contentStyle) : 'Not specified'),
@@ -78,8 +83,13 @@ class MarketingPromptBuilder
                 $lines[] = 'Typography: '.$brandKit->typography;
             }
 
+            $visualPreferences = $brandKit->visual_preferences;
+            if (is_array($visualPreferences)) {
+                $visualPreferences = implode(', ', $visualPreferences);
+            }
+
             $lines[] = 'Brand guidelines: '.($brandKit->brand_guidelines ?: 'Follow brand consistency');
-            $lines[] = 'Visual preferences: '.($brandKit->visual_preferences ?: 'Clean, modern layout');
+            $lines[] = 'Visual preferences: '.($visualPreferences ?: 'Clean, modern layout');
         }
 
         return implode("\n", $lines);

@@ -92,5 +92,6 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
 
 ResetPassword.layout = {
     title: 'Choose a new password',
-    description: 'Create a strong password to protect your marketing workspace.',
+    description:
+        'Create a strong password to protect your marketing workspace.',
 };

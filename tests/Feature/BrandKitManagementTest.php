@@ -3,6 +3,7 @@
 use App\Models\BrandKit;
 use App\Models\Business;
 use App\Models\User;
+use App\Services\MarketingPromptBuilder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -256,7 +257,7 @@ it('generator prompt contains brand colors and brand attributes', function () {
         'brand_tone' => ['Professional', 'Warm'],
     ];
 
-    $prompt = app(\App\Services\MarketingPromptBuilder::class)->build($payload, $business);
+    $prompt = app(MarketingPromptBuilder::class)->build($payload, $business);
 
     expect($prompt)->toContain('Brand colors:')
         ->and($prompt)->toContain('#111827')

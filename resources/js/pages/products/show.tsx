@@ -10,8 +10,12 @@ export default function ProductShowPage({ product }: any) {
             <div className="space-y-6 p-4 md:p-6">
                 <div className="flex items-center justify-between gap-3 rounded-2xl border bg-card p-6 shadow-sm">
                     <div>
-                        <p className="text-sm font-medium text-muted-foreground">Products</p>
-                        <h1 className="mt-2 text-3xl font-semibold tracking-tight">{product?.name}</h1>
+                        <p className="text-sm font-medium text-muted-foreground">
+                            Products
+                        </p>
+                        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+                            {product?.name}
+                        </h1>
                     </div>
                     <Button asChild variant="outline">
                         <Link href="/products">
@@ -28,17 +32,28 @@ export default function ProductShowPage({ product }: any) {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
-                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Price</p>
-                                <p className="mt-1 text-lg font-semibold">${Number(product?.price ?? 0).toFixed(2)}</p>
+                                <p className="text-xs tracking-wide text-muted-foreground uppercase">
+                                    Price
+                                </p>
+                                <p className="mt-1 text-lg font-semibold">
+                                    ${Number(product?.price ?? 0).toFixed(2)}
+                                </p>
                             </div>
                             <div>
-                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Business</p>
-                                <p className="mt-1 text-lg font-medium">{product?.business_name}</p>
+                                <p className="text-xs tracking-wide text-muted-foreground uppercase">
+                                    Business
+                                </p>
+                                <p className="mt-1 text-lg font-medium">
+                                    {product?.business_name}
+                                </p>
                             </div>
                             <div>
-                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Description</p>
-                                <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
-                                    {product?.description || 'No description provided.'}
+                                <p className="text-xs tracking-wide text-muted-foreground uppercase">
+                                    Description
+                                </p>
+                                <p className="mt-1 text-sm whitespace-pre-wrap text-muted-foreground">
+                                    {product?.description ||
+                                        'No description provided.'}
                                 </p>
                             </div>
                         </CardContent>
@@ -52,21 +67,36 @@ export default function ProductShowPage({ product }: any) {
                             {product?.designs?.length ? (
                                 <div className="space-y-3">
                                     {product.designs.map((design: any) => (
-                                        <div key={design.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
+                                        <div
+                                            key={design.id}
+                                            className="flex items-center justify-between gap-3 rounded-lg border p-3"
+                                        >
                                             <div className="flex items-center gap-3">
                                                 {design.image_url ? (
-                                                    <img src={design.image_url} alt={design.product_name} className="h-12 w-12 rounded-md object-cover" />
+                                                    <img
+                                                        src={design.image_url}
+                                                        alt={
+                                                            design.product_name
+                                                        }
+                                                        className="h-12 w-12 rounded-md object-cover"
+                                                    />
                                                 ) : null}
                                                 <div>
-                                                    <p className="font-medium">{design.product_name}</p>
-                                                    <p className="text-sm text-muted-foreground">{design.status}</p>
+                                                    <p className="font-medium">
+                                                        {design.product_name}
+                                                    </p>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {design.status}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-sm text-muted-foreground">No designs have used this product yet.</p>
+                                <p className="text-sm text-muted-foreground">
+                                    No designs have used this product yet.
+                                </p>
                             )}
                         </CardContent>
                     </Card>

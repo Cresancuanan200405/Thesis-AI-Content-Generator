@@ -4,6 +4,7 @@ use App\Models\Business;
 use App\Models\Campaign;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\MarketingPromptBuilder;
 
 it('authenticated user can list own products', function () {
     $user = User::factory()->create(['onboarding_completed' => true]);
@@ -213,7 +214,7 @@ it('marketing prompt builder includes product information', function () {
         'price' => 49.99,
     ]);
 
-    $prompt = app(\App\Services\MarketingPromptBuilder::class)->build([
+    $prompt = app(MarketingPromptBuilder::class)->build([
         'product_id' => $product->id,
         'product_name' => $product->name,
         'marketing_goal' => 'Increase awareness',

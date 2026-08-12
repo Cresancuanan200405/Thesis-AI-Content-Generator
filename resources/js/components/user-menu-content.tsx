@@ -1,12 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import {
-    Bell,
-    BriefcaseBusiness,
-    CreditCard,
-    LogOut,
-    Settings,
-    User,
-} from 'lucide-react';
+import { Bell, CreditCard, LogOut, Settings, User } from 'lucide-react';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -41,25 +34,43 @@ export function UserMenuContent({ user }: Props) {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
                 <DropdownMenuItem asChild>
-                    <Link className="block w-full cursor-pointer" href={edit()} prefetch onClick={cleanup}>
+                    <Link
+                        className="block w-full cursor-pointer"
+                        href={edit()}
+                        prefetch
+                        onClick={cleanup}
+                    >
                         <User className="mr-2 h-4 w-4" />
                         My Profile
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                    <Link className="block w-full cursor-pointer" href={edit()} prefetch onClick={cleanup}>
+                    <Link
+                        className="block w-full cursor-pointer"
+                        href={edit()}
+                        prefetch
+                        onClick={cleanup}
+                    >
                         <Settings className="mr-2 h-4 w-4" />
                         Account Settings
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                    <button type="button" className="flex w-full items-center" onClick={cleanup}>
+                    <button
+                        type="button"
+                        className="flex w-full items-center"
+                        onClick={cleanup}
+                    >
                         <Bell className="mr-2 h-4 w-4" />
                         Notifications
                     </button>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                    <button type="button" className="flex w-full items-center" onClick={cleanup}>
+                    <button
+                        type="button"
+                        className="flex w-full items-center"
+                        onClick={cleanup}
+                    >
                         <CreditCard className="mr-2 h-4 w-4" />
                         Subscription
                     </button>

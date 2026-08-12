@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Onboarding;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 
 class SaveBrandOnboardingRequest extends FormRequest
@@ -13,6 +12,9 @@ class SaveBrandOnboardingRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
         return [

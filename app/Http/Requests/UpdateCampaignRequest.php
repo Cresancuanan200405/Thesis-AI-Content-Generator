@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Event;
+use App\Models\Product;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateCampaignRequest extends FormRequest
@@ -11,6 +14,9 @@ class UpdateCampaignRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    /**
+     * @return array<string, array<int, string>>
+     */
     public function rules(): array
     {
         return [
@@ -26,7 +32,7 @@ class UpdateCampaignRequest extends FormRequest
         ];
     }
 
-    public function withValidator($validator): void
+    public function withValidator(Validator $validator): void
     {
         $validator->after(function ($validator) {
             $user = $this->user();
@@ -42,7 +48,7 @@ class UpdateCampaignRequest extends FormRequest
             }
 
             if ($this->filled('product_id')) {
-                $product = \App\Models\Product::query()->whereKey($this->input('product_id'))->first();
+                $product = Product::query()->whereKey($this->input('product_id'))->first();
 
                 if (! $product || $product->business_id !== $user->business()->value('id')) {
                     $validator->errors()->add('product_id', 'The selected product does not belong to your business.');
@@ -50,7 +56,7 @@ class UpdateCampaignRequest extends FormRequest
             }
 
             if ($this->filled('event_id')) {
-                $event = \App\Models\Event::query()->whereKey($this->input('event_id'))->first();
+                $event = Event::query()->whereKey($this->input('event_id'))->first();
 
                 if (! $event || (! $event->is_global && $event->user_id !== $user->id)) {
                     $validator->errors()->add('event_id', 'The selected event must be either a global event or one of your own events.');

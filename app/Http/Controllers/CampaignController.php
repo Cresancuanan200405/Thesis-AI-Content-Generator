@@ -5,8 +5,12 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreCampaignRequest;
 use App\Http\Requests\UpdateCampaignRequest;
 use App\Models\Campaign;
+use App\Models\Design;
+use App\Models\User;
 use Carbon\CarbonInterface;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -14,11 +18,20 @@ class CampaignController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = $request->user()->campaigns()
+        /** @var User $user */
+        $user = $request->user();
+
+        $query = $user->campaigns()
             ->with(['business', 'event', 'product', 'designs'])
             ->latest('updated_at');
 
-        if ($search = $request->string('search')->trim()) {
+        $search = $request->query('search', '');
+        if (! is_string($search)) {
+            $search = '';
+        }
+        $search = trim($search);
+
+        if ($search !== '') {
             $query->where(function ($builder) use ($search) {
                 $builder->where('name', 'like', "%{$search}%")
                     ->orWhere('objective', 'like', "%{$search}%")
@@ -30,10 +43,12 @@ class CampaignController extends Controller
             $query->where('status', $status);
         }
 
+        /** @var LengthAwarePaginator<int, Campaign> $campaigns */
         $campaigns = $query->paginate(12)->withQueryString();
 
         return Inertia::render('campaigns/index', [
-            'campaigns' => $campaigns->through(function (Campaign $campaign) {
+            'campaigns' => $campaigns->through(function ($campaign, int $key): array {
+                /** @var Campaign $campaign */
                 $startDate = $campaign->getAttributeValue('start_date');
                 $endDate = $campaign->getAttributeValue('end_date');
 
@@ -53,7 +68,7 @@ class CampaignController extends Controller
                 ];
             })->values()->all(),
             'filters' => [
-                'search' => $search ?? '',
+                'search' => $search,
                 'status' => $status ?? '',
             ],
             'pagination' => [
@@ -88,7 +103,7 @@ class CampaignController extends Controller
                 'event_name' => $campaign->event?->name,
                 'start_date' => $startDate instanceof CarbonInterface ? $startDate->format('Y-m-d') : null,
                 'end_date' => $endDate instanceof CarbonInterface ? $endDate->format('Y-m-d') : null,
-                'designs' => $campaign->designs->map(fn ($design) => [
+                'designs' => $campaign->designs->map(fn (Design $design): array => [
                     'id' => $design->id,
                     'product_name' => $design->product_name,
                     'tagline' => $design->tagline,
@@ -100,8 +115,9 @@ class CampaignController extends Controller
         ]);
     }
 
-    public function store(StoreCampaignRequest $request)
+    public function store(StoreCampaignRequest $request): RedirectResponse
     {
+        /** @var User $user */
         $user = $request->user();
 
         $campaign = $user->campaigns()->create([
@@ -120,7 +136,7 @@ class CampaignController extends Controller
         return redirect()->route('campaigns.index')->with('success', 'Campaign created successfully.');
     }
 
-    public function update(UpdateCampaignRequest $request, Campaign $campaign)
+    public function update(UpdateCampaignRequest $request, Campaign $campaign): RedirectResponse
     {
         $this->authorize('update', $campaign);
 
@@ -142,7 +158,7 @@ class CampaignController extends Controller
         return redirect()->route('campaigns.index')->with('success', 'Campaign updated successfully.');
     }
 
-    public function destroy(Campaign $campaign)
+    public function destroy(Campaign $campaign): RedirectResponse
     {
         $this->authorize('delete', $campaign);
 

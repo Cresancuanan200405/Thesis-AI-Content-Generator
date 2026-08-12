@@ -4,12 +4,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 
-export default function ProductsIndexPage({ products = [], filters = {}, count = 0 }: any) {
+export default function ProductsIndexPage({
+    products = [],
+    filters = {},
+    count = 0,
+}: any) {
     const updateSearch = (value: string) => {
-        router.get('/products', { search: value }, {
-            preserveScroll: true,
-            replace: true,
-        });
+        router.get(
+            '/products',
+            { search: value },
+            {
+                preserveScroll: true,
+                replace: true,
+            },
+        );
     };
 
     return (
@@ -18,8 +26,12 @@ export default function ProductsIndexPage({ products = [], filters = {}, count =
             <div className="space-y-6 p-4 md:p-6">
                 <div className="flex flex-col gap-4 rounded-2xl border bg-card p-6 shadow-sm md:flex-row md:items-center md:justify-between">
                     <div>
-                        <p className="text-sm font-medium text-muted-foreground">Products</p>
-                        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Your product catalog</h1>
+                        <p className="text-sm font-medium text-muted-foreground">
+                            Products
+                        </p>
+                        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+                            Your product catalog
+                        </h1>
                     </div>
                     <Button asChild size="lg" className="gap-2">
                         <Link href="/products/create">
@@ -35,7 +47,9 @@ export default function ProductsIndexPage({ products = [], filters = {}, count =
                             <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                                 value={filters.search ?? ''}
-                                onChange={(event) => updateSearch(event.target.value)}
+                                onChange={(event) =>
+                                    updateSearch(event.target.value)
+                                }
                                 placeholder="Search products"
                                 className="pl-9"
                             />
@@ -52,13 +66,18 @@ export default function ProductsIndexPage({ products = [], filters = {}, count =
                         <CardContent className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
                             <div className="text-4xl">📦</div>
                             <div>
-                                <h2 className="text-xl font-semibold">No products yet</h2>
+                                <h2 className="text-xl font-semibold">
+                                    No products yet
+                                </h2>
                                 <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                                    Add your first product so it can be used in campaigns and generated marketing content.
+                                    Add your first product so it can be used in
+                                    campaigns and generated marketing content.
                                 </p>
                             </div>
                             <Button asChild>
-                                <Link href="/products/create">Add your first product</Link>
+                                <Link href="/products/create">
+                                    Add your first product
+                                </Link>
                             </Button>
                         </CardContent>
                     </Card>
@@ -69,31 +88,57 @@ export default function ProductsIndexPage({ products = [], filters = {}, count =
                                 <CardContent className="space-y-4 p-5">
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
-                                            <h2 className="text-xl font-semibold">{product.name}</h2>
-                                            <p className="text-sm text-muted-foreground">{product.created_at}</p>
+                                            <h2 className="text-xl font-semibold">
+                                                {product.name}
+                                            </h2>
+                                            <p className="text-sm text-muted-foreground">
+                                                {product.created_at}
+                                            </p>
                                         </div>
                                         <span className="rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-                                            ${Number(product.price ?? 0).toFixed(2)}
+                                            $
+                                            {Number(product.price ?? 0).toFixed(
+                                                2,
+                                            )}
                                         </span>
                                     </div>
 
                                     <p className="line-clamp-3 text-sm text-muted-foreground">
-                                        {product.description || 'No description provided yet.'}
+                                        {product.description ||
+                                            'No description provided yet.'}
                                     </p>
 
                                     <div className="flex items-center gap-2 pt-2">
-                                        <Button variant="outline" asChild size="sm">
-                                            <Link href={product.show_url}>View</Link>
+                                        <Button
+                                            variant="outline"
+                                            asChild
+                                            size="sm"
+                                        >
+                                            <Link href={product.show_url}>
+                                                View
+                                            </Link>
                                         </Button>
-                                        <Button variant="outline" asChild size="sm">
-                                            <Link href={product.edit_url}>Edit</Link>
+                                        <Button
+                                            variant="outline"
+                                            asChild
+                                            size="sm"
+                                        >
+                                            <Link href={product.edit_url}>
+                                                Edit
+                                            </Link>
                                         </Button>
                                         <Button
                                             variant="destructive"
                                             size="sm"
                                             onClick={() => {
-                                                if (window.confirm('Delete this product?')) {
-                                                    router.delete(`/products/${product.id}`);
+                                                if (
+                                                    window.confirm(
+                                                        'Delete this product?',
+                                                    )
+                                                ) {
+                                                    router.delete(
+                                                        `/products/${product.id}`,
+                                                    );
                                                 }
                                             }}
                                         >

@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\Rules\ImageFile;
 
 class UpdateBrandKitRequest extends FormRequest
 {
@@ -12,6 +13,9 @@ class UpdateBrandKitRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    /**
+     * @return array<string, array<int, ImageFile|string>|string>
+     */
     public function rules(): array
     {
         return [

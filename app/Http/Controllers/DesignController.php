@@ -2,13 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Campaign;
 use App\Models\Design;
+use App\Models\Event;
+use App\Models\Product;
+use App\Models\User;
 use App\Services\DesignRegenerationService;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DesignController extends Controller
 {
@@ -16,12 +24,13 @@ class DesignController extends Controller
 
     public function index(Request $request): Response
     {
+        /** @var User $user */
         $user = $request->user();
         $query = $user->designs()
             ->with(['event', 'product', 'business', 'campaign'])
             ->latest();
 
-        $search = trim((string) $request->string('search'));
+        $search = trim((string) $request->query('search', ''));
         $productId = $request->input('product_id');
         $campaignId = $request->input('campaign_id');
         $eventId = $request->input('event_id');
@@ -57,13 +66,17 @@ class DesignController extends Controller
             $query->latest();
         }
 
+        /** @var LengthAwarePaginator<int, Design> $designs */
         $designs = $query->paginate(12)->withQueryString();
+        /** @var Collection<int, Event> $events */
         $events = $user->events()->orderBy('date')->get();
+        /** @var Collection<int, Product> $products */
         $products = $user->business?->products()->orderBy('name')->get() ?? collect();
+        /** @var Collection<int, Campaign> $campaigns */
         $campaigns = $user->campaigns()->orderBy('start_date')->get();
 
         return Inertia::render('designs/index', [
-            'designs' => $designs->through(fn (Design $design) => [
+            'designs' => $designs->through(fn (Design $design, int $key): array => [
                 'id' => $design->id,
                 'product_name' => $design->product_name,
                 'campaign_name' => $design->campaign?->name,
@@ -74,15 +87,15 @@ class DesignController extends Controller
                 'image_url' => $this->imageUrl($design),
                 'show_url' => route('designs.show', $design),
             ]),
-            'events' => $events->map(fn ($event) => [
+            'events' => $events->map(fn (Event $event): array => [
                 'id' => $event->id,
                 'name' => $event->name,
             ])->values()->all(),
-            'products' => $products->map(fn ($product) => [
+            'products' => $products->map(fn (Product $product): array => [
                 'id' => $product->id,
                 'name' => $product->name,
             ])->values()->all(),
-            'campaigns' => $campaigns->map(fn ($campaign) => [
+            'campaigns' => $campaigns->map(fn ($campaign): array => [
                 'id' => $campaign->id,
                 'name' => $campaign->name,
             ])->values()->all(),
@@ -128,7 +141,7 @@ class DesignController extends Controller
         ]);
     }
 
-    public function download(Design $design)
+    public function download(Design $design): BinaryFileResponse
     {
         $this->authorize('download', $design);
 
@@ -142,7 +155,7 @@ class DesignController extends Controller
         );
     }
 
-    public function regenerate(Design $design)
+    public function regenerate(Design $design): RedirectResponse
     {
         $this->authorize('regenerate', $design);
 
@@ -155,7 +168,7 @@ class DesignController extends Controller
         return redirect()->route('designs.show', $newDesign)->with('success', 'Design regenerated successfully.');
     }
 
-    public function destroy(Design $design)
+    public function destroy(Design $design): RedirectResponse
     {
         $this->authorize('delete', $design);
 

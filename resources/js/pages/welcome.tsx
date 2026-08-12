@@ -63,7 +63,10 @@ export default function Welcome() {
                 <header className="mx-auto w-full max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
                     <nav className="rounded-full border border-white/10 bg-slate-950/55 px-4 py-3 shadow-[0_20px_80px_rgba(15,23,42,0.45)] backdrop-blur-xl sm:px-6">
                         <div className="flex items-center justify-between gap-4">
-                            <Link href={home()} className="flex items-center gap-3">
+                            <Link
+                                href={home()}
+                                className="flex items-center gap-3"
+                            >
                                 <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-slate-900 text-white shadow-sm">
                                     <AppLogoIcon className="h-5 w-5 fill-current" />
                                 </div>
@@ -89,15 +92,24 @@ export default function Welcome() {
                             <div className="hidden items-center gap-3 md:flex">
                                 {auth.user ? (
                                     <Button asChild size="sm">
-                                        <Link href={dashboard()}>Open dashboard</Link>
+                                        <Link href={dashboard()}>
+                                            Open dashboard
+                                        </Link>
                                     </Button>
                                 ) : (
                                     <>
-                                        <Button asChild variant="ghost" size="sm" className="text-slate-200 hover:text-white">
+                                        <Button
+                                            asChild
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-slate-200 hover:text-white"
+                                        >
                                             <Link href={login()}>Log in</Link>
                                         </Button>
                                         <Button asChild size="sm">
-                                            <Link href={register()}>Start free</Link>
+                                            <Link href={register()}>
+                                                Start free
+                                            </Link>
                                         </Button>
                                     </>
                                 )}
@@ -106,7 +118,9 @@ export default function Welcome() {
                             <button
                                 type="button"
                                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-slate-900 text-slate-200 md:hidden"
-                                onClick={() => setMobileMenuOpen((value) => !value)}
+                                onClick={() =>
+                                    setMobileMenuOpen((value) => !value)
+                                }
                                 aria-label="Toggle navigation"
                             >
                                 {mobileMenuOpen ? (
@@ -132,15 +146,25 @@ export default function Welcome() {
                                 <div className="flex gap-3 pt-2">
                                     {auth.user ? (
                                         <Button asChild className="w-full">
-                                            <Link href={dashboard()}>Open dashboard</Link>
+                                            <Link href={dashboard()}>
+                                                Open dashboard
+                                            </Link>
                                         </Button>
                                     ) : (
                                         <>
-                                            <Button asChild variant="outline" className="flex-1">
-                                                <Link href={login()}>Log in</Link>
+                                            <Button
+                                                asChild
+                                                variant="outline"
+                                                className="flex-1"
+                                            >
+                                                <Link href={login()}>
+                                                    Log in
+                                                </Link>
                                             </Button>
                                             <Button asChild className="flex-1">
-                                                <Link href={register()}>Start free</Link>
+                                                <Link href={register()}>
+                                                    Start free
+                                                </Link>
                                             </Button>
                                         </>
                                     )}
@@ -150,7 +174,7 @@ export default function Welcome() {
                     </nav>
                 </header>
 
-                <main className="mx-auto max-w-7xl px-4 pb-20 pt-12 sm:px-6 lg:px-8">
+                <main className="mx-auto max-w-7xl px-4 pt-12 pb-20 sm:px-6 lg:px-8">
                     <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
                         <div className="max-w-xl">
                             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-sm font-medium text-blue-100">
@@ -160,21 +184,35 @@ export default function Welcome() {
 
                             <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
                                 Turn campaign ideas into
-                                <span className="block text-blue-400">steady growth.</span>
+                                <span className="block text-blue-400">
+                                    steady growth.
+                                </span>
                             </h1>
 
                             <p className="mt-6 max-w-lg text-lg leading-8 text-slate-300">
-                                Launch a smarter marketing engine with AI-powered creative guidance, reusable brand direction, and a calendar your team can act on every week.
+                                Launch a smarter marketing engine with
+                                AI-powered creative guidance, reusable brand
+                                direction, and a calendar your team can act on
+                                every week.
                             </p>
 
                             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                                <Button asChild size="lg" className="rounded-full px-6">
+                                <Button
+                                    asChild
+                                    size="lg"
+                                    className="rounded-full px-6"
+                                >
                                     <Link href={register()}>
                                         Start your free plan
                                         <ArrowRight className="ml-2 h-4 w-4" />
                                     </Link>
                                 </Button>
-                                <Button asChild variant="outline" size="lg" className="rounded-full px-6 border-white/10 bg-white/5 text-white hover:bg-white/10">
+                                <Button
+                                    asChild
+                                    variant="outline"
+                                    size="lg"
+                                    className="rounded-full border-white/10 bg-white/5 px-6 text-white hover:bg-white/10"
+                                >
                                     <Link href={login()}>
                                         <PlayCircle className="mr-2 h-4 w-4" />
                                         View dashboard
@@ -200,7 +238,7 @@ export default function Welcome() {
                                 <div className="rounded-[1.5rem] border border-white/10 bg-slate-950 p-4 text-slate-50">
                                     <div className="mb-5 flex items-center justify-between gap-3">
                                         <div>
-                                            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                                            <p className="text-xs tracking-[0.2em] text-slate-400 uppercase">
                                                 Campaign workspace
                                             </p>
                                             <h2 className="mt-2 text-xl font-semibold">
@@ -225,18 +263,26 @@ export default function Welcome() {
 
                                         <div className="grid gap-3 sm:grid-cols-2">
                                             <div className="rounded-2xl bg-slate-900/70 p-4 ring-1 ring-slate-800">
-                                                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                                                <p className="text-xs tracking-[0.2em] text-slate-400 uppercase">
                                                     Content mix
                                                 </p>
-                                                <p className="mt-4 text-3xl font-semibold text-white">28</p>
-                                                <p className="mt-1 text-sm text-slate-400">ideas this week</p>
+                                                <p className="mt-4 text-3xl font-semibold text-white">
+                                                    28
+                                                </p>
+                                                <p className="mt-1 text-sm text-slate-400">
+                                                    ideas this week
+                                                </p>
                                             </div>
                                             <div className="rounded-2xl bg-blue-500/10 p-4 ring-1 ring-blue-500/30">
-                                                <p className="text-xs uppercase tracking-[0.2em] text-blue-200">
+                                                <p className="text-xs tracking-[0.2em] text-blue-200 uppercase">
                                                     Next launch
                                                 </p>
-                                                <p className="mt-4 text-2xl font-semibold text-white">June 18</p>
-                                                <p className="mt-1 text-sm text-blue-100">Paid social + email</p>
+                                                <p className="mt-4 text-2xl font-semibold text-white">
+                                                    June 18
+                                                </p>
+                                                <p className="mt-1 text-sm text-blue-100">
+                                                    Paid social + email
+                                                </p>
                                             </div>
                                         </div>
 
@@ -246,9 +292,21 @@ export default function Welcome() {
                                                 <span>4 posts</span>
                                             </div>
                                             <div className="mt-4 flex gap-2">
-                                                {[48, 66, 88, 100].map((width, index) => (
-                                                    <div key={width} className="flex-1 rounded-t-xl bg-gradient-to-t from-blue-500 via-indigo-500 to-cyan-400" style={{ height: `${width / 2}px`, opacity: 0.55 + index * 0.15 }} />
-                                                ))}
+                                                {[48, 66, 88, 100].map(
+                                                    (width, index) => (
+                                                        <div
+                                                            key={width}
+                                                            className="flex-1 rounded-t-xl bg-gradient-to-t from-blue-500 via-indigo-500 to-cyan-400"
+                                                            style={{
+                                                                height: `${width / 2}px`,
+                                                                opacity:
+                                                                    0.55 +
+                                                                    index *
+                                                                        0.15,
+                                                            }}
+                                                        />
+                                                    ),
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -259,12 +317,15 @@ export default function Welcome() {
 
                     <section className="mt-20 border-t border-slate-200/80 pt-8">
                         <div className="flex flex-col gap-4 text-center">
-                            <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
+                            <p className="text-sm font-medium tracking-[0.2em] text-slate-500 uppercase">
                                 Trusted by teams shipping fast
                             </p>
                             <div className="grid grid-cols-2 gap-4 text-center text-lg font-semibold text-slate-400 sm:grid-cols-3 lg:grid-cols-5">
                                 {logos.map((name) => (
-                                    <div key={name} className="rounded-full border border-slate-200 bg-white/80 px-4 py-3">
+                                    <div
+                                        key={name}
+                                        className="rounded-full border border-slate-200 bg-white/80 px-4 py-3"
+                                    >
                                         {name}
                                     </div>
                                 ))}
@@ -274,7 +335,7 @@ export default function Welcome() {
 
                     <section id="how-it-works" className="mt-24">
                         <div className="mx-auto max-w-2xl text-center">
-                            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
+                            <p className="text-sm font-semibold tracking-[0.2em] text-blue-600 uppercase">
                                 How it works
                             </p>
                             <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
@@ -284,11 +345,16 @@ export default function Welcome() {
 
                         <div className="mt-12 grid gap-6 lg:grid-cols-3">
                             {steps.map((step, index) => (
-                                <div key={step} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.05)]">
+                                <div
+                                    key={step}
+                                    className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.05)]"
+                                >
                                     <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 font-semibold text-blue-700">
                                         0{index + 1}
                                     </div>
-                                    <p className="text-lg font-medium text-slate-900">{step}</p>
+                                    <p className="text-lg font-medium text-slate-900">
+                                        {step}
+                                    </p>
                                 </div>
                             ))}
                         </div>
@@ -300,7 +366,7 @@ export default function Welcome() {
                     >
                         <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
                             <div>
-                                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
+                                <p className="text-sm font-semibold tracking-[0.2em] text-blue-600 uppercase">
                                     Product overview
                                 </p>
                                 <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
@@ -309,25 +375,31 @@ export default function Welcome() {
                             </div>
 
                             <div className="grid gap-6 sm:grid-cols-3">
-                                {features.map(({ icon: Icon, title, description }) => (
-                                    <div
-                                        key={title}
-                                        className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
-                                    >
-                                        <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-                                            <Icon className="h-5 w-5" />
+                                {features.map(
+                                    ({ icon: Icon, title, description }) => (
+                                        <div
+                                            key={title}
+                                            className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
+                                        >
+                                            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+                                                <Icon className="h-5 w-5" />
+                                            </div>
+                                            <h3 className="text-lg font-semibold text-slate-900">
+                                                {title}
+                                            </h3>
+                                            <p className="mt-3 text-sm leading-6 text-slate-600">
+                                                {description}
+                                            </p>
                                         </div>
-                                        <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-                                        <p className="mt-3 text-sm leading-6 text-slate-600">{description}</p>
-                                    </div>
-                                ))}
+                                    ),
+                                )}
                             </div>
                         </div>
                     </section>
 
                     <section id="features" className="mt-24">
                         <div className="mx-auto max-w-2xl text-center">
-                            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
+                            <p className="text-sm font-semibold tracking-[0.2em] text-blue-600 uppercase">
                                 Why teams switch
                             </p>
                             <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
@@ -349,7 +421,9 @@ export default function Welcome() {
                                     <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                                         <Check className="h-4 w-4" />
                                     </div>
-                                    <p className="text-base font-medium text-slate-900">{item}</p>
+                                    <p className="text-base font-medium text-slate-900">
+                                        {item}
+                                    </p>
                                 </div>
                             ))}
                         </div>
@@ -361,17 +435,20 @@ export default function Welcome() {
                     >
                         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                             <div className="max-w-xl">
-                                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-100">
+                                <p className="text-sm font-semibold tracking-[0.2em] text-blue-100 uppercase">
                                     Built to grow with you
                                 </p>
                                 <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-                                    From your first campaign to your next expansion.
+                                    From your first campaign to your next
+                                    expansion.
                                 </h2>
                             </div>
 
                             <div className="flex items-baseline gap-2 text-4xl font-semibold">
                                 $39
-                                <span className="text-base text-blue-100">/ month</span>
+                                <span className="text-base text-blue-100">
+                                    / month
+                                </span>
                             </div>
                         </div>
 

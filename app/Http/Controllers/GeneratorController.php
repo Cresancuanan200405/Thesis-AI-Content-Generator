@@ -8,11 +8,14 @@ use App\Models\Campaign;
 use App\Models\Design;
 use App\Models\Event;
 use App\Models\GenerationRequest;
+use App\Models\Product;
+use App\Models\User;
 use App\Services\MarketingPromptBuilder;
 use App\Services\OpenAIImageService;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
@@ -21,9 +24,13 @@ class GeneratorController extends Controller
 {
     public function index(Request $request): Response
     {
+        /** @var User|null $user */
         $user = $request->user();
+        /** @var Business|null $business */
         $business = $user?->business()->with('brandKit')->first();
+        /** @var Collection<int, Product> $products */
         $products = $business?->products()->orderBy('name')->get() ?? collect();
+        /** @var Campaign|null $campaign */
         $campaign = null;
 
         if ($request->filled('campaign')) {
@@ -70,24 +77,26 @@ class GeneratorController extends Controller
                 'secondary_color' => '#F59E0B',
                 'accent_color' => '#E5E7EB',
             ],
-            'products' => $products->map(fn ($product) => [
+            'products' => $products->map(fn ($product): array => [
                 'id' => $product->id,
                 'name' => $product->name,
                 'description' => $product->description,
                 'price' => $product->price,
             ])->values()->all(),
-            'events' => $events->map(fn ($event) => [
+            'events' => $events->map(fn (Event $event): array => [
                 'id' => $event->id,
                 'name' => $event->name,
-                'date' => $event->date?->format('Y-m-d'),
+                'date' => $event->date->format('Y-m-d'),
                 'type' => $event->type,
             ])->values()->all(),
         ]);
     }
 
-    public function store(StoreGeneratorRequest $request)
+    public function store(StoreGeneratorRequest $request): RedirectResponse
     {
+        /** @var User $user */
         $user = $request->user();
+        /** @var Business $business */
         $business = $user->business()->firstOrFail();
         $payload = $request->validated();
 
@@ -167,6 +176,9 @@ class GeneratorController extends Controller
         return redirect()->route('generator.index')->with('success', 'Your marketing asset has been generated.');
     }
 
+    /**
+     * @return string[]
+     */
     private function decodeJsonList(mixed $value): array
     {
         if (is_array($value)) {

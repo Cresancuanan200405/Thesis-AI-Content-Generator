@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use Laravel\Fortify\Features;
 
 beforeEach(function () {
@@ -25,7 +26,7 @@ test('new users can register', function () {
 });
 
 test('unverified user is redirected to the verification notice instead of onboarding', function () {
-    $user = \App\Models\User::factory()->unverified()->create();
+    $user = User::factory()->unverified()->create();
 
     $this->actingAs($user)
         ->get(route('onboarding.show'))

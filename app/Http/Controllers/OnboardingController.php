@@ -48,29 +48,33 @@ class OnboardingController extends Controller
             }
         }
 
+        $businessData = [
+            'id' => $business?->id,
+            'name' => $business ? $business->name : '',
+            'industry' => $business ? $business->industry : '',
+            'category' => $business ? $business->category : '',
+            'description' => $business ? $business->description : '',
+            'target_audience' => $business ? $business->target_audience : '',
+            'unique_selling_point' => $business ? $business->unique_selling_point : '',
+            'content_style' => $contentStyle ?? [],
+            'default_tagline_behavior' => $business ? $business->default_tagline_behavior : '',
+        ];
+
+        $brandData = [
+            'logo_path' => $brandKit?->logo_path,
+            'primary_color' => $brandKit ? $brandKit->primary_color : '#111827',
+            'secondary_color' => $brandKit ? $brandKit->secondary_color : '#F59E0B',
+            'accent_color' => $brandKit ? $brandKit->accent_color : '#E5E7EB',
+            'brand_tone' => $brandTone ?? [],
+            'typography' => $brandKit ? $brandKit->typography : '',
+            'brand_guidelines' => $brandKit ? $brandKit->brand_guidelines : '',
+            'visual_preferences' => $brandKit ? $brandKit->visual_preferences : '',
+        ];
+
         return Inertia::render('onboarding/index', [
             'step' => (int) ($request->query('step', 1)),
-            'business' => [
-                'id' => $business?->id,
-                'name' => $business?->name ?? '',
-                'industry' => $business?->industry ?? '',
-                'category' => $business?->category ?? '',
-                'description' => $business?->description ?? '',
-                'target_audience' => $business?->target_audience ?? '',
-                'unique_selling_point' => $business?->unique_selling_point ?? '',
-                'content_style' => $contentStyle ?? [],
-                'default_tagline_behavior' => $business?->default_tagline_behavior ?? '',
-            ],
-            'brand' => [
-                'logo_path' => $brandKit?->logo_path,
-                'primary_color' => $brandKit?->primary_color ?? '#111827',
-                'secondary_color' => $brandKit?->secondary_color ?? '#F59E0B',
-                'accent_color' => $brandKit?->accent_color ?? '#E5E7EB',
-                'brand_tone' => $brandTone ?? [],
-                'typography' => $brandKit?->typography ?? '',
-                'brand_guidelines' => $brandKit?->brand_guidelines ?? '',
-                'visual_preferences' => $brandKit?->visual_preferences ?? '',
-            ],
+            'business' => $businessData,
+            'brand' => $brandData,
         ]);
     }
 

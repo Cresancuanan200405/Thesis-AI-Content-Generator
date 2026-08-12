@@ -4,7 +4,6 @@ use App\Models\BrandKit;
 use App\Models\Business;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Hash;
 
 it('guest cannot access onboarding', function () {
     $response = $this->get('/onboarding');

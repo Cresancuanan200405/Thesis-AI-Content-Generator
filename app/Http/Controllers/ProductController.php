@@ -16,7 +16,9 @@ class ProductController extends Controller
     {
         $query = $request->user()->business()->firstOrFail()->products()->latest('updated_at');
 
-        if ($search = $request->string('search')->trim()) {
+        $search = (string) $request->string('search')->trim();
+
+        if ($search !== '') {
             $query->where(function ($builder) use ($search) {
                 $builder->where('name', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%")
