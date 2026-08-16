@@ -17,7 +17,7 @@ Route::get('/test-resend', function () {
     Mail::raw('This is a test email from MarketPilot using Resend.', function ($message) {
         $message->to('cresancuanan182@gmail.com')
             ->subject('MarketPilot Resend Test')
-            ->from('onboarding@resend.dev', 'MarketPilot');
+            ->from(config('mail.from.address'), config('mail.from.name'));
     });
 
     return response()->json([

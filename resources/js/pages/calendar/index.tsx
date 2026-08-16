@@ -7,11 +7,58 @@ import {
     Sparkles,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 
-const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const weekdayLabels = [
+    'Mon',
+    'Tue',
+    'Wed',
+    'Thu',
+    'Fri',
+    'Sat',
+    'Sun',
+];
+
+const eventTypeStyles: Record<string, string> = {
+    holiday:
+        'border-orange-500/20 bg-orange-500/10 text-orange-700 dark:text-orange-300',
+
+    seasonal:
+        'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+
+    commercial:
+        'border-blue-500/20 bg-blue-500/10 text-blue-700 dark:text-blue-300',
+
+    custom:
+        'border-violet-500/20 bg-violet-500/10 text-violet-700 dark:text-violet-300',
+};
+
+const filterOptions = [
+    {
+        value: 'all',
+        label: 'All',
+    },
+    {
+        value: 'holidays',
+        label: 'Holidays',
+    },
+    {
+        value: 'commercial',
+        label: 'Commercial',
+    },
+    {
+        value: 'custom',
+        label: 'Custom',
+    },
+];
 
 export default function CalendarPage({
     events = [],
@@ -19,21 +66,26 @@ export default function CalendarPage({
     upcoming_events = [],
 }: any) {
     const [month, setMonth] = useState(
-        () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+        () =>
+            new Date(
+                new Date().getFullYear(),
+                new Date().getMonth(),
+                1,
+            ),
     );
 
-    const eventTypeStyles: Record<string, string> = {
-        holiday: 'bg-orange-500/15 text-orange-200 border border-orange-400/30',
-        seasonal:
-            'bg-emerald-500/15 text-emerald-200 border border-emerald-400/30',
-        commercial: 'bg-blue-500/15 text-blue-200 border border-blue-400/30',
-        custom: 'bg-violet-500/15 text-violet-200 border border-violet-400/30',
-    };
+    /*
+    |--------------------------------------------------------------------------
+    | Filter
+    |--------------------------------------------------------------------------
+    */
 
     const changeFilter = (value: string) => {
         router.get(
             '/calendar',
-            { filter: value === 'all' ? '' : value },
+            {
+                filter: value === 'all' ? '' : value,
+            },
             {
                 preserveScroll: true,
                 replace: true,
@@ -41,279 +93,1138 @@ export default function CalendarPage({
         );
     };
 
+    /*
+    |--------------------------------------------------------------------------
+    | Calendar calculation
+    |--------------------------------------------------------------------------
+    */
+
     const monthView = useMemo(() => {
         const year = month.getFullYear();
         const monthIndex = month.getMonth();
-        const firstDay = new Date(year, monthIndex, 1);
-        const lastDay = new Date(year, monthIndex + 1, 0);
+
+        const firstDay = new Date(
+            year,
+            monthIndex,
+            1,
+        );
+
+        const lastDay = new Date(
+            year,
+            monthIndex + 1,
+            0,
+        );
+
         const daysInMonth = lastDay.getDate();
-        const leadingDays = (firstDay.getDay() + 6) % 7;
-        const totalCells = Math.ceil((leadingDays + daysInMonth) / 7) * 7;
 
-        const cells = Array.from({ length: totalCells }, (_, index) => {
-            const dateIndex = index - leadingDays + 1;
-            const date = new Date(year, monthIndex, dateIndex);
+        const leadingDays =
+            (firstDay.getDay() + 6) % 7;
 
-            return {
-                date,
-                currentMonth: date.getMonth() === monthIndex,
-            };
-        });
+        const totalCells =
+            Math.ceil(
+                (leadingDays + daysInMonth) / 7,
+            ) * 7;
 
-        const datesByKey = new Map<string, any[]>();
+        const cells = Array.from(
+            {
+                length: totalCells,
+            },
+            (_, index) => {
+                const dateIndex =
+                    index -
+                    leadingDays +
+                    1;
+
+                const date = new Date(
+                    year,
+                    monthIndex,
+                    dateIndex,
+                );
+
+                return {
+                    date,
+                    currentMonth:
+                        date.getMonth() ===
+                        monthIndex,
+                };
+            },
+        );
+
+        const datesByKey = new Map<
+            string,
+            any[]
+        >();
 
         for (const event of events) {
             if (!event.date) {
                 continue;
             }
 
-            const key = new Date(event.date).toDateString();
-            const value = datesByKey.get(key) ?? [];
+            const eventDate = new Date(
+                event.date,
+            );
+
+            if (Number.isNaN(eventDate.getTime())) {
+                continue;
+            }
+
+            const key =
+                eventDate.toDateString();
+
+            const value =
+                datesByKey.get(key) ?? [];
+
             value.push(event);
-            datesByKey.set(key, value);
+
+            datesByKey.set(
+                key,
+                value,
+            );
         }
 
-        return { cells, datesByKey };
+        return {
+            cells,
+            datesByKey,
+        };
     }, [events, month]);
 
-    const monthLabel = month.toLocaleString('en-US', {
-        month: 'long',
-        year: 'numeric',
-    });
+    /*
+    |--------------------------------------------------------------------------
+    | Month label
+    |--------------------------------------------------------------------------
+    */
+
+    const monthLabel =
+        month.toLocaleString(
+            'en-US',
+            {
+                month: 'long',
+                year: 'numeric',
+            },
+        );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Month navigation
+    |--------------------------------------------------------------------------
+    */
+
+    const previousMonth = () => {
+        setMonth(
+            new Date(
+                month.getFullYear(),
+                month.getMonth() - 1,
+                1,
+            ),
+        );
+    };
+
+    const nextMonth = () => {
+        setMonth(
+            new Date(
+                month.getFullYear(),
+                month.getMonth() + 1,
+                1,
+            ),
+        );
+    };
+
+    const goToToday = () => {
+        const today = new Date();
+
+        setMonth(
+            new Date(
+                today.getFullYear(),
+                today.getMonth(),
+                1,
+            ),
+        );
+    };
+
+    /*
+    |--------------------------------------------------------------------------
+    | Helpers
+    |--------------------------------------------------------------------------
+    */
+
+    const isCurrentMonth = (
+        date: Date,
+    ) => {
+        return (
+            date.getMonth() ===
+                month.getMonth() &&
+            date.getFullYear() ===
+                month.getFullYear()
+        );
+    };
+
+    const isToday = (date: Date) => {
+        return (
+            date.toDateString() ===
+            new Date().toDateString()
+        );
+    };
 
     return (
         <>
             <Head title="Marketing Calendar" />
-            <div className="space-y-6 p-4 md:p-6">
-                <div className="flex flex-col gap-4 rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6 shadow-[0_20px_80px_rgba(15,23,42,0.35)] backdrop-blur-xl md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-slate-300">
-                            Marketing Calendar
-                        </p>
-                        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">
-                            Plan launches and seasonal campaigns
-                        </h1>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() =>
-                                changeFilter(filter === 'all' ? 'all' : 'all')
-                            }
-                            className="border-white/10 bg-white/5 text-white hover:bg-white/10"
+
+            <div className="min-h-screen bg-background text-foreground">
+                <div
+                    className="
+                        space-y-6
+                        p-4
+                        duration-500
+                        animate-in
+                        fade-in
+                        md:space-y-8
+                        md:p-6
+                        lg:p-8
+                    "
+                >
+
+                    {/* =====================================================
+                        PAGE HEADER
+                    ====================================================== */}
+
+                    <section
+                        className="
+                            relative
+                            overflow-hidden
+                            rounded-2xl
+                            border
+                            border-border
+                            bg-card
+                            p-5
+                            shadow-[0_2px_8px_rgba(0,0,0,0.05)]
+                            transition-all
+                            duration-300
+                            hover:shadow-[0_8px_24px_rgba(0,0,0,0.07)]
+                            md:p-6
+                        "
+                    >
+                        {/* Decorative background */}
+                        <div
+                            className="
+                                pointer-events-none
+                                absolute
+                                -right-20
+                                -top-20
+                                h-48
+                                w-48
+                                rounded-full
+                                bg-primary/5
+                                blur-3xl
+                            "
+                        />
+
+                        <div
+                            className="
+                                relative
+                                flex
+                                flex-col
+                                gap-5
+                                md:flex-row
+                                md:items-center
+                                md:justify-between
+                            "
                         >
-                            <Filter className="mr-2 h-4 w-4" />
-                            {filter === 'all' ? 'All events' : filter}
-                        </Button>
-                        <Button asChild>
-                            <Link href="/generator">Create campaign asset</Link>
-                        </Button>
-                    </div>
-                </div>
-
-                <div className="grid gap-6 xl:grid-cols-[1.4fr_0.6fr]">
-                    <Card className="border-white/10 bg-slate-950/55 text-white shadow-[0_16px_50px_rgba(15,23,42,0.28)] backdrop-blur-xl">
-                        <CardHeader className="flex flex-col gap-4 border-b border-white/10 md:flex-row md:items-center md:justify-between">
-                            <CardTitle className="flex items-center gap-2 text-xl text-white">
-                                <CalendarDays className="h-5 w-5 text-blue-400" />
-                                Event timeline
-                            </CardTitle>
-                            <div className="flex flex-wrap gap-2">
-                                {[
-                                    'all',
-                                    'holidays',
-                                    'commercial',
-                                    'custom',
-                                ].map((item) => (
-                                    <Button
-                                        key={item}
-                                        variant={
-                                            filter === item ||
-                                            (item === 'all' && filter === 'all')
-                                                ? 'default'
-                                                : 'outline'
-                                        }
-                                        size="sm"
-                                        onClick={() => changeFilter(item)}
-                                        className={
-                                            filter === item ||
-                                            (item === 'all' && filter === 'all')
-                                                ? ''
-                                                : 'border-white/10 bg-white/5 text-white hover:bg-white/10'
-                                        }
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                    <div
+                                        className="
+                                            flex
+                                            h-9
+                                            w-9
+                                            shrink-0
+                                            items-center
+                                            justify-center
+                                            rounded-lg
+                                            bg-primary/10
+                                        "
                                     >
-                                        {item === 'all' ? 'All' : item}
-                                    </Button>
-                                ))}
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-5 pt-5">
-                            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-900/60 p-3">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() =>
-                                        setMonth(
-                                            new Date(
-                                                month.getFullYear(),
-                                                month.getMonth() - 1,
-                                                1,
-                                            ),
-                                        )
-                                    }
-                                    className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-                                >
-                                    <ArrowLeft className="h-4 w-4" />
-                                </Button>
-                                <div className="text-center">
-                                    <p className="text-xs tracking-[0.2em] text-slate-400 uppercase">
-                                        Calendar
-                                    </p>
-                                    <h2 className="text-lg font-semibold text-white">
-                                        {monthLabel}
-                                    </h2>
-                                </div>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() =>
-                                        setMonth(
-                                            new Date(
-                                                month.getFullYear(),
-                                                month.getMonth() + 1,
-                                                1,
-                                            ),
-                                        )
-                                    }
-                                    className="border-white/10 bg-white/5 text-white hover:bg-white/10"
-                                >
-                                    <ArrowRight className="h-4 w-4" />
-                                </Button>
-                            </div>
-
-                            <div className="grid grid-cols-7 gap-2 text-center text-xs tracking-[0.15em] text-slate-400 uppercase">
-                                {weekdayLabels.map((name) => (
-                                    <div key={name} className="py-2">
-                                        {name}
+                                        <CalendarDays className="h-4 w-4 text-primary" />
                                     </div>
-                                ))}
+
+                                    <p className="text-sm font-medium text-muted-foreground">
+                                        Marketing Calendar
+                                    </p>
+                                </div>
+
+                                <h1
+                                    className="
+                                        mt-3
+                                        text-2xl
+                                        font-semibold
+                                        tracking-tight
+                                        text-foreground
+                                        md:text-3xl
+                                    "
+                                >
+                                    Plan launches and seasonal campaigns
+                                </h1>
+
+                                <p
+                                    className="
+                                        mt-2
+                                        max-w-2xl
+                                        text-sm
+                                        leading-6
+                                        text-muted-foreground
+                                    "
+                                >
+                                    Organize upcoming marketing
+                                    opportunities and plan your
+                                    campaigns around important dates.
+                                </p>
                             </div>
 
-                            <div className="grid grid-cols-7 gap-2">
-                                {monthView.cells.map(
-                                    ({ date, currentMonth }, index) => {
-                                        const isoKey = date
-                                            .toISOString()
-                                            .split('T')[0];
-                                        const dayEvents =
-                                            monthView.datesByKey.get(
-                                                new Date(isoKey).toDateString(),
-                                            ) ?? [];
-                                        const isToday =
-                                            date.toDateString() ===
-                                            new Date().toDateString();
+                            <div
+                                className="
+                                    flex
+                                    flex-col
+                                    gap-2
+                                    sm:flex-row
+                                "
+                            >
+                                <Button
+                                    variant="outline"
+                                    onClick={() =>
+                                        changeFilter('all')
+                                    }
+                                    className="
+                                        gap-2
+                                        shadow-none
+                                        transition-all
+                                        duration-200
+                                        hover:-translate-y-0.5
+                                    "
+                                >
+                                    <Filter className="h-4 w-4" />
 
-                                        return (
+                                    {filter === 'all'
+                                        ? 'All events'
+                                        : filter}
+                                </Button>
+
+                                <Button
+                                    asChild
+                                    className="
+                                        gap-2
+                                        shadow-sm
+                                        transition-all
+                                        duration-200
+                                        hover:-translate-y-0.5
+                                        hover:shadow-md
+                                    "
+                                >
+                                    <Link href="/generator">
+                                        Create campaign asset
+
+                                        <ArrowRight className="h-4 w-4" />
+                                    </Link>
+                                </Button>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* =====================================================
+                        MAIN CONTENT
+                    ====================================================== */}
+
+                    <div
+                        className="
+                            grid
+                            gap-6
+                            xl:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.55fr)]
+                        "
+                    >
+
+                        {/* =================================================
+                            CALENDAR
+                        ================================================== */}
+
+                        <Card
+                            className="
+                                overflow-hidden
+                                rounded-2xl
+                                border-border
+                                bg-card
+                                shadow-[0_2px_8px_rgba(0,0,0,0.05)]
+                                transition-all
+                                duration-300
+                                hover:shadow-[0_8px_24px_rgba(0,0,0,0.07)]
+                            "
+                        >
+                            {/* -------------------------------------------------
+                                CALENDAR HEADER
+                            -------------------------------------------------- */}
+
+                            <CardHeader
+                                className="
+                                    border-b
+                                    border-border
+                                    p-5
+                                    md:p-6
+                                "
+                            >
+                                <div
+                                    className="
+                                        flex
+                                        flex-col
+                                        gap-5
+                                        lg:flex-row
+                                        lg:items-center
+                                        lg:justify-between
+                                    "
+                                >
+                                    <div>
+                                        <CardTitle
+                                            className="
+                                                flex
+                                                items-center
+                                                gap-2
+                                                text-lg
+                                                text-foreground
+                                            "
+                                        >
                                             <div
-                                                key={`${isoKey}-${index}`}
-                                                className={[
-                                                    'min-h-[110px] rounded-2xl border p-2',
-                                                    currentMonth
-                                                        ? 'border-white/10 bg-slate-900/60'
-                                                        : 'border-white/5 bg-slate-900/20 text-slate-500',
-                                                    isToday
-                                                        ? 'ring-1 ring-blue-400/70'
-                                                        : '',
-                                                ].join(' ')}
+                                                className="
+                                                    flex
+                                                    h-8
+                                                    w-8
+                                                    items-center
+                                                    justify-center
+                                                    rounded-lg
+                                                    bg-primary/10
+                                                "
                                             >
+                                                <CalendarDays className="h-4 w-4 text-primary" />
+                                            </div>
+
+                                            Event timeline
+                                        </CardTitle>
+
+                                        <p className="mt-1 text-sm text-muted-foreground">
+                                            Browse your marketing
+                                            opportunities by date.
+                                        </p>
+                                    </div>
+
+                                    {/* Filters */}
+
+                                    <div
+                                        className="
+                                            flex
+                                            flex-wrap
+                                            gap-1.5
+                                            rounded-lg
+                                            bg-muted/40
+                                            p-1
+                                        "
+                                    >
+                                        {filterOptions.map(
+                                            (item) => {
+                                                const active =
+                                                    filter ===
+                                                    item.value;
+
+                                                return (
+                                                    <button
+                                                        key={
+                                                            item.value
+                                                        }
+                                                        type="button"
+                                                        onClick={() =>
+                                                            changeFilter(
+                                                                item.value,
+                                                            )
+                                                        }
+                                                        className={`
+                                                            rounded-md
+                                                            px-3
+                                                            py-1.5
+                                                            text-xs
+                                                            font-medium
+                                                            transition-all
+                                                            duration-200
+
+                                                            ${
+                                                                active
+                                                                    ? 'bg-background text-foreground shadow-sm'
+                                                                    : 'text-muted-foreground hover:bg-background/70 hover:text-foreground'
+                                                            }
+                                                        `}
+                                                    >
+                                                        {
+                                                            item.label
+                                                        }
+                                                    </button>
+                                                );
+                                            },
+                                        )}
+                                    </div>
+                                </div>
+                            </CardHeader>
+
+                            {/* -------------------------------------------------
+                                CALENDAR CONTENT
+                            -------------------------------------------------- */}
+
+                            <CardContent className="space-y-5 p-4 md:p-6">
+
+                                {/* Month toolbar */}
+
+                                <div
+                                    className="
+                                        flex
+                                        items-center
+                                        justify-between
+                                        rounded-xl
+                                        border
+                                        border-border
+                                        bg-muted/20
+                                        p-2
+                                        transition-colors
+                                    "
+                                >
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={
+                                            previousMonth
+                                        }
+                                        className="
+                                            h-9
+                                            w-9
+                                            rounded-lg
+                                            transition-all
+                                            duration-200
+                                            hover:-translate-x-0.5
+                                        "
+                                        aria-label="Previous month"
+                                    >
+                                        <ArrowLeft className="h-4 w-4" />
+                                    </Button>
+
+                                    <div className="text-center">
+                                        <p
+                                            className="
+                                                text-[10px]
+                                                font-medium
+                                                tracking-[0.18em]
+                                                text-muted-foreground
+                                                uppercase
+                                            "
+                                        >
+                                            Calendar
+                                        </p>
+
+                                        <h2
+                                            className="
+                                                mt-0.5
+                                                text-base
+                                                font-semibold
+                                                text-foreground
+                                                md:text-lg
+                                            "
+                                        >
+                                            {monthLabel}
+                                        </h2>
+                                    </div>
+
+                                    <div className="flex items-center gap-1.5">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={
+                                                goToToday
+                                            }
+                                            className="
+                                                hidden
+                                                h-9
+                                                shadow-none
+                                                transition-all
+                                                duration-200
+                                                hover:-translate-y-0.5
+                                                sm:inline-flex
+                                            "
+                                        >
+                                            Today
+                                        </Button>
+
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={
+                                                nextMonth
+                                            }
+                                            className="
+                                                h-9
+                                                w-9
+                                                rounded-lg
+                                                transition-all
+                                                duration-200
+                                                hover:translate-x-0.5
+                                            "
+                                            aria-label="Next month"
+                                        >
+                                            <ArrowRight className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {/* Weekdays */}
+
+                                <div
+                                    className="
+                                        grid
+                                        grid-cols-7
+                                        gap-1.5
+                                        sm:gap-2
+                                    "
+                                >
+                                    {weekdayLabels.map(
+                                        (name) => (
+                                            <div
+                                                key={name}
+                                                className="
+                                                    py-1.5
+                                                    text-center
+                                                    text-[10px]
+                                                    font-semibold
+                                                    tracking-wide
+                                                    text-muted-foreground
+                                                    uppercase
+                                                    sm:text-[11px]
+                                                "
+                                            >
+                                                {name}
+                                            </div>
+                                        ),
+                                    )}
+                                </div>
+
+                                {/* Calendar grid */}
+
+                                <div
+                                    className="
+                                        grid
+                                        grid-cols-7
+                                        gap-1.5
+                                        sm:gap-2
+                                    "
+                                >
+                                    {monthView.cells.map(
+                                        (
+                                            { date },
+                                            index,
+                                        ) => {
+                                            const dateKey =
+                                                date.toDateString();
+
+                                            const dayEvents =
+                                                monthView
+                                                    .datesByKey
+                                                    .get(
+                                                        dateKey,
+                                                    ) ??
+                                                [];
+
+                                            const today =
+                                                isToday(
+                                                    date,
+                                                );
+
+                                            const inMonth =
+                                                isCurrentMonth(
+                                                    date,
+                                                );
+
+                                            return (
                                                 <div
-                                                    className={[
-                                                        'mb-2 flex items-center justify-between text-xs',
-                                                        currentMonth
-                                                            ? 'text-slate-300'
-                                                            : 'text-slate-500',
-                                                    ].join(' ')}
-                                                >
-                                                    <span
-                                                        className={
-                                                            isToday
-                                                                ? 'rounded-full bg-blue-500 px-1.5 py-0.5 text-white'
+                                                    key={`${dateKey}-${index}`}
+                                                    className={`
+                                                        group
+                                                        relative
+                                                        min-h-[92px]
+                                                        overflow-hidden
+                                                        rounded-xl
+                                                        border
+                                                        p-1.5
+                                                        transition-all
+                                                        duration-200
+                                                        sm:min-h-[110px]
+                                                        sm:p-2
+
+                                                        ${
+                                                            inMonth
+                                                                ? 'border-border bg-background hover:-translate-y-0.5 hover:bg-muted/20 hover:shadow-sm'
+                                                                : 'border-border/50 bg-muted/20 text-muted-foreground'
+                                                        }
+
+                                                        ${
+                                                            today
+                                                                ? 'border-primary/40 bg-primary/[0.03] ring-1 ring-primary/30'
                                                                 : ''
                                                         }
-                                                    >
-                                                        {date.getDate()}
-                                                    </span>
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    {dayEvents
-                                                        .slice(0, 2)
-                                                        .map((event: any) => (
-                                                            <div
-                                                                key={event.id}
-                                                                className={`rounded-md px-2 py-1 text-[10px] font-medium ${eventTypeStyles[event.type] ?? 'border border-white/10 bg-slate-700/80 text-slate-100'}`}
-                                                            >
-                                                                {event.name}
-                                                            </div>
-                                                        ))}
-                                                    {dayEvents.length > 2 && (
-                                                        <div className="text-[10px] text-slate-400">
-                                                            +
-                                                            {dayEvents.length -
-                                                                2}{' '}
-                                                            more
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    },
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
+                                                    `}
+                                                >
+                                                    {/* Today indicator */}
 
-                    <Card className="border-white/10 bg-slate-950/55 text-white shadow-[0_16px_50px_rgba(15,23,42,0.28)] backdrop-blur-xl">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-xl text-white">
-                                <Sparkles className="h-5 w-5 text-blue-400" />
-                                Upcoming opportunities
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {upcoming_events.length === 0 ? (
-                                <p className="text-sm text-slate-400">
-                                    No upcoming campaigns scheduled.
-                                </p>
-                            ) : (
-                                upcoming_events.map((event: any) => (
-                                    <div
-                                        key={event.id}
-                                        className="rounded-xl border border-white/10 bg-slate-900/60 p-3"
-                                    >
-                                        <div className="flex items-center justify-between gap-2">
-                                            <p className="font-medium text-white">
-                                                {event.name}
-                                            </p>
-                                            <Badge
-                                                variant="outline"
-                                                className="border-white/10 bg-white/5 text-slate-200"
+                                                    {today && (
+                                                        <span
+                                                            className="
+                                                                absolute
+                                                                right-2
+                                                                top-2
+                                                                h-1.5
+                                                                w-1.5
+                                                                rounded-full
+                                                                bg-primary
+                                                            "
+                                                        />
+                                                    )}
+
+                                                    {/* Date */}
+
+                                                    <div
+                                                        className="
+                                                            mb-2
+                                                            flex
+                                                            items-center
+                                                            justify-between
+                                                        "
+                                                    >
+                                                        <span
+                                                            className={`
+                                                                flex
+                                                                h-6
+                                                                min-w-6
+                                                                items-center
+                                                                justify-center
+                                                                rounded-full
+                                                                px-1.5
+                                                                text-xs
+                                                                font-medium
+                                                                transition-colors
+
+                                                                ${
+                                                                    today
+                                                                        ? 'bg-primary text-primary-foreground'
+                                                                        : inMonth
+                                                                          ? 'text-foreground'
+                                                                          : 'text-muted-foreground'
+                                                                }
+                                                            `}
+                                                        >
+                                                            {
+                                                                date.getDate()
+                                                            }
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Events */}
+
+                                                    <div className="space-y-1">
+                                                        {dayEvents
+                                                            .slice(
+                                                                0,
+                                                                2,
+                                                            )
+                                                            .map(
+                                                                (
+                                                                    event: any,
+                                                                ) => (
+                                                                    <div
+                                                                        key={
+                                                                            event.id
+                                                                        }
+                                                                        title={
+                                                                            event.name
+                                                                        }
+                                                                        className={`
+                                                                            truncate
+                                                                            rounded-md
+                                                                            border
+                                                                            px-1.5
+                                                                            py-1
+                                                                            text-[9px]
+                                                                            font-medium
+                                                                            leading-3.5
+                                                                            transition-all
+                                                                            duration-200
+                                                                            hover:brightness-95
+                                                                            sm:px-2
+                                                                            sm:text-[10px]
+
+                                                                            ${
+                                                                                eventTypeStyles[
+                                                                                    event
+                                                                                        .type
+                                                                                ] ??
+                                                                                'border-border bg-muted text-muted-foreground'
+                                                                            }
+                                                                        `}
+                                                                    >
+                                                                        {
+                                                                            event.name
+                                                                        }
+                                                                    </div>
+                                                                ),
+                                                            )}
+
+                                                        {dayEvents.length >
+                                                            2 && (
+                                                            <div
+                                                                className="
+                                                                    px-1
+                                                                    text-[9px]
+                                                                    font-medium
+                                                                    text-muted-foreground
+                                                                    sm:text-[10px]
+                                                                "
+                                                            >
+                                                                +
+                                                                {dayEvents.length -
+                                                                    2}{' '}
+                                                                more
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        },
+                                    )}
+                                </div>
+
+                                {/* Legend */}
+
+                                <div
+                                    className="
+                                        flex
+                                        flex-wrap
+                                        items-center
+                                        gap-x-4
+                                        gap-y-2
+                                        border-t
+                                        border-border
+                                        pt-4
+                                    "
+                                >
+                                    <span className="text-[11px] font-medium text-muted-foreground">
+                                        Event types
+                                    </span>
+
+                                    {Object.entries(
+                                        eventTypeStyles,
+                                    ).map(
+                                        ([
+                                            type,
+                                            styles,
+                                        ]) => (
+                                            <div
+                                                key={type}
+                                                className="flex items-center gap-1.5"
                                             >
-                                                {event.type}
-                                            </Badge>
-                                        </div>
-                                        <p className="mt-1 text-sm text-slate-300">
-                                            {event.date}
-                                        </p>
-                                        <p className="mt-1 text-xs text-slate-400">
-                                            {event.days}
+                                                <span
+                                                    className={`
+                                                        h-2
+                                                        w-2
+                                                        rounded-full
+                                                        ${styles
+                                                            .split(
+                                                                ' ',
+                                                            )
+                                                            .filter(
+                                                                (
+                                                                    item,
+                                                                ) =>
+                                                                    item.startsWith(
+                                                                        'bg-',
+                                                                    ),
+                                                            )
+                                                            .join(
+                                                                ' ',
+                                                            )}
+                                                    `}
+                                                />
+
+                                                <span className="text-[11px] capitalize text-muted-foreground">
+                                                    {
+                                                        type
+                                                    }
+                                                </span>
+                                            </div>
+                                        ),
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* =================================================
+                            UPCOMING EVENTS
+                        ================================================== */}
+
+                        <Card
+                            className="
+                                overflow-hidden
+                                rounded-2xl
+                                border-border
+                                bg-card
+                                shadow-[0_2px_8px_rgba(0,0,0,0.05)]
+                                transition-all
+                                duration-300
+                                hover:shadow-[0_8px_24px_rgba(0,0,0,0.07)]
+                            "
+                        >
+                            <CardHeader
+                                className="
+                                    border-b
+                                    border-border
+                                    p-5
+                                    md:p-6
+                                "
+                            >
+                                <div className="flex items-center justify-between gap-3">
+                                    <div>
+                                        <CardTitle
+                                            className="
+                                                flex
+                                                items-center
+                                                gap-2
+                                                text-lg
+                                                text-foreground
+                                            "
+                                        >
+                                            <div
+                                                className="
+                                                    flex
+                                                    h-8
+                                                    w-8
+                                                    items-center
+                                                    justify-center
+                                                    rounded-lg
+                                                    bg-primary/10
+                                                "
+                                            >
+                                                <Sparkles className="h-4 w-4 text-primary" />
+                                            </div>
+
+                                            Upcoming opportunities
+                                        </CardTitle>
+
+                                        <p className="mt-1 text-sm text-muted-foreground">
+                                            Your next marketing dates.
                                         </p>
                                     </div>
-                                ))
-                            )}
-                        </CardContent>
-                    </Card>
+
+                                    {upcoming_events.length >
+                                        0 && (
+                                        <Badge
+                                            variant="secondary"
+                                            className="shrink-0"
+                                        >
+                                            {
+                                                upcoming_events.length
+                                            }
+                                        </Badge>
+                                    )}
+                                </div>
+                            </CardHeader>
+
+                            <CardContent className="p-4 md:p-5">
+                                {upcoming_events.length ===
+                                0 ? (
+                                    <div
+                                        className="
+                                            rounded-xl
+                                            border
+                                            border-dashed
+                                            border-border
+                                            bg-muted/20
+                                            p-8
+                                            text-center
+                                        "
+                                    >
+                                        <div
+                                            className="
+                                                mx-auto
+                                                flex
+                                                h-10
+                                                w-10
+                                                items-center
+                                                justify-center
+                                                rounded-lg
+                                                bg-muted
+                                            "
+                                        >
+                                            <CalendarDays className="h-5 w-5 text-muted-foreground" />
+                                        </div>
+
+                                        <p className="mt-3 text-sm font-medium text-foreground">
+                                            No upcoming campaigns
+                                        </p>
+
+                                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                            Your upcoming marketing
+                                            opportunities will appear
+                                            here.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2.5">
+                                        {upcoming_events.map(
+                                            (
+                                                event: any,
+                                                index: number,
+                                            ) => (
+                                                <div
+                                                    key={
+                                                        event.id
+                                                    }
+                                                    className="
+                                                        group
+                                                        relative
+                                                        overflow-hidden
+                                                        rounded-xl
+                                                        border
+                                                        border-border
+                                                        bg-background
+                                                        p-4
+                                                        transition-all
+                                                        duration-200
+                                                        hover:-translate-y-0.5
+                                                        hover:bg-muted/20
+                                                        hover:shadow-sm
+                                                    "
+                                                >
+                                                    {/* Timeline line */}
+
+                                                    {index <
+                                                        upcoming_events.length -
+                                                            1 && (
+                                                        <div
+                                                            className="
+                                                                absolute
+                                                                bottom-[-12px]
+                                                                left-[23px]
+                                                                top-[55px]
+                                                                w-px
+                                                                bg-border
+                                                            "
+                                                        />
+                                                    )}
+
+                                                    <div className="relative flex gap-3">
+                                                        {/* Date marker */}
+
+                                                        <div
+                                                            className="
+                                                                flex
+                                                                h-9
+                                                                w-9
+                                                                shrink-0
+                                                                items-center
+                                                                justify-center
+                                                                rounded-lg
+                                                                border
+                                                                border-primary/20
+                                                                bg-primary/5
+                                                                text-primary
+                                                            "
+                                                        >
+                                                            <CalendarDays className="h-4 w-4" />
+                                                        </div>
+
+                                                        {/* Details */}
+
+                                                        <div className="min-w-0 flex-1">
+                                                            <div
+                                                                className="
+                                                                    flex
+                                                                    items-start
+                                                                    justify-between
+                                                                    gap-2
+                                                                "
+                                                            >
+                                                                <p
+                                                                    className="
+                                                                        truncate
+                                                                        text-sm
+                                                                        font-semibold
+                                                                        text-foreground
+                                                                    "
+                                                                >
+                                                                    {
+                                                                        event.name
+                                                                    }
+                                                                </p>
+
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="
+                                                                        shrink-0
+                                                                        border-border
+                                                                        bg-muted/30
+                                                                        text-[10px]
+                                                                        text-muted-foreground
+                                                                    "
+                                                                >
+                                                                    {
+                                                                        event.type
+                                                                    }
+                                                                </Badge>
+                                                            </div>
+
+                                                            <p className="mt-2 text-xs font-medium text-foreground">
+                                                                {
+                                                                    event.date
+                                                                }
+                                                            </p>
+
+                                                            <p className="mt-0.5 text-xs text-muted-foreground">
+                                                                {
+                                                                    event.days
+                                                                }
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ),
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Create asset */}
+
+                                <div className="mt-5 border-t border-border pt-5">
+                                    <Button
+                                        asChild
+                                        variant="outline"
+                                        className="
+                                            w-full
+                                            gap-2
+                                            shadow-none
+                                            transition-all
+                                            duration-200
+                                            hover:-translate-y-0.5
+                                            hover:shadow-sm
+                                        "
+                                    >
+                                        <Link href="/generator">
+                                            Create campaign asset
+
+                                            <ArrowRight className="h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
             </div>
         </>

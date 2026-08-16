@@ -1,16 +1,19 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
-    CalendarDays,
+    ArrowUpRight,
+    CalendarClock,
     Check,
-    Menu,
-    Palette,
+    Compass,
+    Moon,
     PlayCircle,
-    Sparkles,
-    Wand2,
+    Radar,
+    Sun,
+    Menu,
     X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Button } from '@/components/ui/button';
 import { dashboard, home, login, register } from '@/routes';
@@ -18,80 +21,348 @@ import { dashboard, home, login, register } from '@/routes';
 const navItems = [
     { label: 'Product', href: '#product' },
     { label: 'How it works', href: '#how-it-works' },
-    { label: 'Features', href: '#features' },
     { label: 'Pricing', href: '#pricing' },
-];
-
-const features = [
-    {
-        icon: Wand2,
-        title: 'Campaign generator',
-        description:
-            'Turn a fresh idea into a launch-ready campaign brief, content angles, and creative direction in minutes.',
-    },
-    {
-        icon: Palette,
-        title: 'Brand consistency',
-        description:
-            'Keep your messaging, tones, and visual identity aligned across every channel without reviewing every asset by hand.',
-    },
-    {
-        icon: CalendarDays,
-        title: 'Content calendar',
-        description:
-            'Plan launches, post ideas, and creative requirements in one collaborative system your team can actually follow.',
-    },
-];
-
-const steps = [
-    'Share your brand goals and audience',
-    'Generate campaign concepts and creative briefs',
-    'Review, schedule, and publish with confidence',
 ];
 
 const logos = ['Northstar', 'Luma', 'Arc Labs', 'Signal', 'Motive'];
 
+const bentoItems = [
+    {
+        size: 'lg' as const,
+        icon: Compass,
+        title: 'Flight plan generator',
+        description:
+            'Turn a rough campaign idea into a launch-ready brief, content angles, and creative direction in minutes — not a meeting.',
+    },
+    {
+        size: 'sm' as const,
+        icon: Radar,
+        title: 'Brand radar',
+        description:
+            'Every asset gets checked against your voice and visual identity before it ships.',
+    },
+    {
+        size: 'sm' as const,
+        icon: CalendarClock,
+        title: 'Mission calendar',
+        description:
+            'Launches and drafts live on one shared calendar your whole team flies by.',
+    },
+];
+
+const steps = [
+    {
+        title: "Log your brand's heading",
+        description:
+            'Set goals, audience, and voice once — it steers every brief after.',
+    },
+    {
+        title: 'Generate the brief',
+        description:
+            'Get campaign concepts, angles, and creative direction, ready to review.',
+    },
+    {
+        title: 'Review, schedule, publish',
+        description:
+            'Approve what works, adjust what doesn’t, and stay on course.',
+    },
+];
+
+const pricingIncludes = [
+    'Unlimited campaign briefs',
+    'Full brand radar checks',
+    'Shared mission calendar',
+    'Priority support',
+];
+
+/*
+|--------------------------------------------------------------------------
+| Theme
+|--------------------------------------------------------------------------
+*/
+
+type Theme = 'light' | 'dark';
+
+const getInitialTheme = (): Theme => {
+    if (typeof window === 'undefined') {
+        return 'light';
+    }
+
+    const savedTheme = window.localStorage.getItem('theme');
+
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+        return savedTheme;
+    }
+
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light';
+};
+
+/*
+|--------------------------------------------------------------------------
+| Shared glass styles
+|--------------------------------------------------------------------------
+*/
+
+const glass =
+    'border border-black/5 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]';
+
+const glassHover =
+    'transition-all duration-300 ease-out hover:-translate-y-1 hover:border-[#3B82F6]/40 hover:shadow-[0_25px_60px_-20px_rgba(59,130,246,0.25)] dark:hover:border-[#60A5FA]/40 dark:hover:shadow-[0_25px_60px_-20px_rgba(96,165,250,0.2)]';
+
+/*
+|--------------------------------------------------------------------------
+| Welcome Page
+|--------------------------------------------------------------------------
+*/
+
 export default function Welcome() {
     const { auth } = usePage().props;
+
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    /*
+     * The initial theme is determined before the first render.
+     *
+     * This avoids:
+     *
+     * setState synchronously within an effect
+     *
+     * which was causing the React warning/error in the previous version.
+     */
+    const [theme, setTheme] = useState<Theme>(getInitialTheme);
+
+    /*
+     * Synchronize the selected theme with:
+     *
+     * 1. <html class="dark">
+     * 2. localStorage
+     */
+    useEffect(() => {
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+
+        window.localStorage.setItem('theme', theme);
+    }, [theme]);
+
+    const toggleTheme = () => {
+        setTheme((currentTheme) =>
+            currentTheme === 'dark' ? 'light' : 'dark',
+        );
+    };
 
     return (
         <>
-            <Head title="AI Marketing Automation" />
+            <Head title="MarketPilot — Marketing Automation">
+                <link rel="preconnect" href="https://fonts.googleapis.com" />
+                <link
+                    rel="preconnect"
+                    href="https://fonts.gstatic.com"
+                    crossOrigin="anonymous"
+                />
+                <link
+                    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap"
+                    rel="stylesheet"
+                />
 
-            <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(96,165,250,0.18),_transparent_30%),linear-gradient(180deg,#050b14_0%,#0a1220_100%)] text-slate-100">
-                <header className="mx-auto w-full max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
-                    <nav className="rounded-full border border-white/10 bg-slate-950/55 px-4 py-3 shadow-[0_20px_80px_rgba(15,23,42,0.45)] backdrop-blur-xl sm:px-6">
+                <style>{`
+                    html {
+                        scroll-behavior: smooth;
+                    }
+                `}</style>
+            </Head>
+
+            <div
+                className="
+                    min-h-screen
+                    bg-[#F5F9FF]
+                    font-[Manrope,sans-serif]
+                    text-[#0F172A]
+                    antialiased
+                    transition-colors
+                    duration-300
+                    dark:bg-[#07111F]
+                    dark:text-slate-100
+                "
+            >
+                {/* Ambient background glow */}
+                <div
+                    aria-hidden
+                    className="
+                        pointer-events-none
+                        fixed
+                        inset-x-0
+                        top-0
+                        -z-10
+                        h-[640px]
+                        bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.14),transparent_60%)]
+                        dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.20),transparent_60%)]
+                    "
+                />
+
+                {/* ==========================================================
+                    NAVIGATION
+                =========================================================== */}
+
+                <header className="sticky top-0 z-50 mx-auto w-full max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
+                    <nav
+                        className={`
+                            rounded-2xl
+                            ${glass}
+                            px-4
+                            py-3
+                            shadow-[0_20px_60px_-25px_rgba(15,23,42,0.35)]
+                            transition-shadow
+                            duration-300
+                            sm:px-6
+                        `}
+                    >
                         <div className="flex items-center justify-between gap-4">
+                            {/* Logo */}
                             <Link
                                 href={home()}
-                                className="flex items-center gap-3"
+                                className="group flex items-center gap-3"
                             >
-                                <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-slate-900 text-white shadow-sm">
+                                <div
+                                    className="
+                                        flex
+                                        h-9
+                                        w-9
+                                        items-center
+                                        justify-center
+                                        rounded-full
+                                        border
+                                        border-[#3B82F6]/40
+                                        bg-[#3B82F6]/10
+                                        text-[#2563EB]
+                                        shadow-[0_0_0_1px_rgba(59,130,246,0.08)]
+                                        transition-transform
+                                        duration-300
+                                        group-hover:scale-105
+                                        group-hover:rotate-3
+                                        dark:bg-[#0F223D]
+                                        dark:text-[#60A5FA]
+                                    "
+                                >
                                     <AppLogoIcon className="h-5 w-5 fill-current" />
                                 </div>
+
                                 <div>
-                                    <p className="text-sm font-semibold tracking-[0.18em] text-slate-300 uppercase">
+                                    <p
+                                        className="
+                                            font-['Space_Grotesk',sans-serif]
+                                            text-sm
+                                            font-semibold
+                                            tracking-[0.14em]
+                                            uppercase
+                                        "
+                                    >
                                         MarketPilot
+                                    </p>
+
+                                    <p
+                                        className="
+                                            font-['IBM_Plex_Mono',monospace]
+                                            text-[10px]
+                                            tracking-[0.2em]
+                                            text-[#2563EB]
+                                            uppercase
+                                            dark:text-[#60A5FA]
+                                        "
+                                    >
+                                        Campaign Ops
                                     </p>
                                 </div>
                             </Link>
 
+                            {/* Desktop Navigation */}
                             <div className="hidden items-center gap-8 md:flex">
                                 {navItems.map((item) => (
                                     <a
                                         key={item.label}
                                         href={item.href}
-                                        className="text-sm font-medium text-slate-300 transition hover:text-white"
+                                        className="
+                                            group
+                                            relative
+                                            text-sm
+                                            font-medium
+                                            text-[#475569]
+                                            transition-colors
+                                            hover:text-[#0F172A]
+                                            focus-visible:outline-none
+                                            dark:text-slate-300
+                                            dark:hover:text-white
+                                        "
                                     >
                                         {item.label}
+
+                                        <span
+                                            className="
+                                                absolute
+                                                -bottom-1
+                                                left-0
+                                                h-px
+                                                w-0
+                                                bg-[#3B82F6]
+                                                transition-all
+                                                duration-300
+                                                group-hover:w-full
+                                            "
+                                        />
                                     </a>
                                 ))}
                             </div>
 
-                            <div className="hidden items-center gap-3 md:flex">
+                            {/* Right Side */}
+                            <div className="hidden items-center gap-2 md:flex">
+                                {/* Theme Toggle */}
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={toggleTheme}
+                                    aria-label={
+                                        theme === 'dark'
+                                            ? 'Switch to light mode'
+                                            : 'Switch to dark mode'
+                                    }
+                                    className="
+                                        h-9
+                                        w-9
+                                        rounded-full
+                                        text-[#475569]
+                                        transition-all
+                                        duration-300
+                                        hover:bg-[#3B82F6]/10
+                                        hover:text-[#2563EB]
+                                        dark:text-slate-300
+                                        dark:hover:bg-[#60A5FA]/10
+                                        dark:hover:text-[#60A5FA]
+                                    "
+                                >
+                                    {theme === 'dark' ? (
+                                        <Sun className="h-4 w-4" />
+                                    ) : (
+                                        <Moon className="h-4 w-4" />
+                                    )}
+                                </Button>
+
                                 {auth.user ? (
-                                    <Button asChild size="sm">
+                                    <Button
+                                        asChild
+                                        size="sm"
+                                        className="
+                                            rounded-full
+                                            bg-[#2563EB]
+                                            text-white
+                                            shadow-[0_8px_20px_-8px_rgba(37,99,235,0.6)]
+                                            transition-all
+                                            duration-300
+                                            hover:scale-[1.03]
+                                            hover:bg-[#1D4ED8]
+                                            hover:shadow-[0_12px_28px_-8px_rgba(37,99,235,0.7)]
+                                        "
+                                    >
                                         <Link href={dashboard()}>
                                             Open dashboard
                                         </Link>
@@ -102,11 +373,31 @@ export default function Welcome() {
                                             asChild
                                             variant="ghost"
                                             size="sm"
-                                            className="text-slate-200 hover:text-white"
+                                            className="
+                                                text-[#0F172A]
+                                                hover:bg-black/5
+                                                dark:text-slate-200
+                                                dark:hover:bg-white/5
+                                            "
                                         >
                                             <Link href={login()}>Log in</Link>
                                         </Button>
-                                        <Button asChild size="sm">
+
+                                        <Button
+                                            asChild
+                                            size="sm"
+                                            className="
+                                                rounded-full
+                                                bg-[#2563EB]
+                                                text-white
+                                                shadow-[0_8px_20px_-8px_rgba(37,99,235,0.6)]
+                                                transition-all
+                                                duration-300
+                                                hover:scale-[1.03]
+                                                hover:bg-[#1D4ED8]
+                                                hover:shadow-[0_12px_28px_-8px_rgba(37,99,235,0.7)]
+                                            "
+                                        >
                                             <Link href={register()}>
                                                 Start free
                                             </Link>
@@ -115,37 +406,108 @@ export default function Welcome() {
                                 )}
                             </div>
 
-                            <button
-                                type="button"
-                                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-slate-900 text-slate-200 md:hidden"
-                                onClick={() =>
-                                    setMobileMenuOpen((value) => !value)
-                                }
-                                aria-label="Toggle navigation"
-                            >
-                                {mobileMenuOpen ? (
-                                    <X className="h-4 w-4" />
-                                ) : (
-                                    <Menu className="h-4 w-4" />
-                                )}
-                            </button>
+                            {/* Mobile Controls */}
+                            <div className="flex items-center gap-2 md:hidden">
+                                {/* Mobile Theme Toggle */}
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={toggleTheme}
+                                    aria-label={
+                                        theme === 'dark'
+                                            ? 'Switch to light mode'
+                                            : 'Switch to dark mode'
+                                    }
+                                    className="
+                                        h-10
+                                        w-10
+                                        rounded-full
+                                        text-[#475569]
+                                        hover:bg-[#3B82F6]/10
+                                        hover:text-[#2563EB]
+                                        dark:text-slate-300
+                                        dark:hover:bg-[#60A5FA]/10
+                                        dark:hover:text-[#60A5FA]
+                                    "
+                                >
+                                    {theme === 'dark' ? (
+                                        <Sun className="h-4 w-4" />
+                                    ) : (
+                                        <Moon className="h-4 w-4" />
+                                    )}
+                                </Button>
+
+                                {/* Mobile Menu */}
+                                <button
+                                    type="button"
+                                    className={`
+                                        inline-flex
+                                        h-10
+                                        w-10
+                                        items-center
+                                        justify-center
+                                        rounded-full
+                                        ${glass}
+                                    `}
+                                    onClick={() =>
+                                        setMobileMenuOpen((value) => !value)
+                                    }
+                                    aria-label="Toggle navigation"
+                                >
+                                    {mobileMenuOpen ? (
+                                        <X className="h-4 w-4" />
+                                    ) : (
+                                        <Menu className="h-4 w-4" />
+                                    )}
+                                </button>
+                            </div>
                         </div>
 
+                        {/* Mobile Menu */}
                         {mobileMenuOpen && (
-                            <div className="mt-4 space-y-3 border-t border-white/10 pt-4 md:hidden">
+                            <div
+                                className="
+                                    mt-4
+                                    space-y-3
+                                    border-t
+                                    border-black/5
+                                    pt-4
+                                    dark:border-white/10
+                                    md:hidden
+                                "
+                            >
                                 {navItems.map((item) => (
                                     <a
                                         key={item.label}
                                         href={item.href}
-                                        className="block text-sm font-medium text-slate-300"
-                                        onClick={() => setMobileMenuOpen(false)}
+                                        className="
+                                            block
+                                            text-sm
+                                            font-medium
+                                            text-[#475569]
+                                            dark:text-slate-300
+                                        "
+                                        onClick={() =>
+                                            setMobileMenuOpen(false)
+                                        }
                                     >
                                         {item.label}
                                     </a>
                                 ))}
+
                                 <div className="flex gap-3 pt-2">
                                     {auth.user ? (
-                                        <Button asChild className="w-full">
+                                        <Button
+                                            asChild
+                                            className="
+                                                w-full
+                                                rounded-full
+                                                bg-[#2563EB]
+                                                text-white
+                                                hover:bg-[#1D4ED8]
+                                            "
+                                        >
                                             <Link href={dashboard()}>
                                                 Open dashboard
                                             </Link>
@@ -155,13 +517,27 @@ export default function Welcome() {
                                             <Button
                                                 asChild
                                                 variant="outline"
-                                                className="flex-1"
+                                                className="
+                                                    flex-1
+                                                    border-black/10
+                                                    dark:border-white/15
+                                                "
                                             >
                                                 <Link href={login()}>
                                                     Log in
                                                 </Link>
                                             </Button>
-                                            <Button asChild className="flex-1">
+
+                                            <Button
+                                                asChild
+                                                className="
+                                                    flex-1
+                                                    rounded-full
+                                                    bg-[#2563EB]
+                                                    text-white
+                                                    hover:bg-[#1D4ED8]
+                                                "
+                                            >
                                                 <Link href={register()}>
                                                     Start free
                                                 </Link>
@@ -174,44 +550,111 @@ export default function Welcome() {
                     </nav>
                 </header>
 
-                <main className="mx-auto max-w-7xl px-4 pt-12 pb-20 sm:px-6 lg:px-8">
-                    <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+                {/* ==========================================================
+                    MAIN
+                =========================================================== */}
+
+                <main className="mx-auto max-w-7xl px-4 pb-24 sm:px-6 lg:px-8">
+                    {/* ======================================================
+                        HERO
+                    ======================================================= */}
+
+                    <section className="grid items-center gap-10 pt-16 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:pt-24">
                         <div className="max-w-xl">
-                            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-sm font-medium text-blue-100">
-                                <Sparkles className="h-4 w-4" />
-                                Built for modern marketing teams
+                            <div
+                                className="
+                                    mb-6
+                                    inline-flex
+                                    items-center
+                                    gap-2
+                                    rounded-full
+                                    border
+                                    border-[#3B82F6]/30
+                                    bg-[#3B82F6]/10
+                                    px-3
+                                    py-1
+                                    font-['IBM_Plex_Mono',monospace]
+                                    text-xs
+                                    tracking-[0.12em]
+                                    text-[#2563EB]
+                                    uppercase
+                                    dark:text-[#60A5FA]
+                                "
+                            >
+                                <Compass className="h-3.5 w-3.5" />
+                                Campaign Operations
                             </div>
 
-                            <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
-                                Turn campaign ideas into
-                                <span className="block text-blue-400">
-                                    steady growth.
+                            <h1
+                                className="
+                                    font-['Space_Grotesk',sans-serif]
+                                    text-4xl
+                                    leading-[1.05]
+                                    font-semibold
+                                    tracking-tight
+                                    sm:text-5xl
+                                    lg:text-6xl
+                                "
+                            >
+                                Chart the campaign.
+                                <span className="block text-[#2563EB] dark:text-[#60A5FA]">
+                                    Hold the course.
                                 </span>
                             </h1>
 
-                            <p className="mt-6 max-w-lg text-lg leading-8 text-slate-300">
-                                Launch a smarter marketing engine with
-                                AI-powered creative guidance, reusable brand
-                                direction, and a calendar your team can act on
-                                every week.
+                            <p
+                                className="
+                                    mt-6
+                                    max-w-lg
+                                    text-lg
+                                    leading-8
+                                    text-[#475569]
+                                    dark:text-slate-300
+                                "
+                            >
+                                MarketPilot turns a rough idea into a
+                                launch-ready brief, keeps every asset
+                                on-brand, and lays the week out on one
+                                calendar your team actually flies by.
                             </p>
 
                             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                                 <Button
                                     asChild
                                     size="lg"
-                                    className="rounded-full px-6"
+                                    className="
+                                        group
+                                        rounded-full
+                                        bg-[#2563EB]
+                                        px-6
+                                        text-white
+                                        shadow-[0_15px_35px_-10px_rgba(37,99,235,0.55)]
+                                        transition-all
+                                        duration-300
+                                        hover:scale-[1.02]
+                                        hover:bg-[#1D4ED8]
+                                        hover:shadow-[0_20px_45px_-10px_rgba(37,99,235,0.65)]
+                                    "
                                 >
                                     <Link href={register()}>
-                                        Start your free plan
-                                        <ArrowRight className="ml-2 h-4 w-4" />
+                                        Start your flight plan
+                                        <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                                     </Link>
                                 </Button>
+
                                 <Button
                                     asChild
                                     variant="outline"
                                     size="lg"
-                                    className="rounded-full border-white/10 bg-white/5 px-6 text-white hover:bg-white/10"
+                                    className={`
+                                        rounded-full
+                                        px-6
+                                        ${glass}
+                                        transition-all
+                                        duration-300
+                                        hover:-translate-y-0.5
+                                        hover:border-[#3B82F6]/40
+                                    `}
                                 >
                                     <Link href={login()}>
                                         <PlayCircle className="mr-2 h-4 w-4" />
@@ -220,269 +663,946 @@ export default function Welcome() {
                                 </Button>
                             </div>
 
-                            <div className="mt-8 flex flex-wrap items-center gap-6 text-sm text-slate-300">
+                            <div
+                                className="
+                                    mt-8
+                                    flex
+                                    flex-wrap
+                                    items-center
+                                    gap-6
+                                    text-sm
+                                    text-[#475569]
+                                    dark:text-slate-300
+                                "
+                            >
                                 <div className="flex items-center gap-2">
-                                    <Check className="h-4 w-4 text-emerald-400" />
+                                    <Check className="h-4 w-4 text-[#0EA5E9]" />
                                     No credit card required
                                 </div>
+
                                 <div className="flex items-center gap-2">
-                                    <Check className="h-4 w-4 text-emerald-400" />
-                                    Setup in under 10 minutes
+                                    <Check className="h-4 w-4 text-[#0EA5E9]" />
+                                    Set up in under 10 minutes
                                 </div>
                             </div>
                         </div>
 
-                        <div className="relative">
-                            <div className="absolute -inset-6 rounded-[2rem] bg-gradient-to-br from-blue-500/30 via-indigo-500/20 to-cyan-400/20 blur-3xl" />
-                            <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950/70 p-4 shadow-[0_30px_80px_rgba(15,23,42,0.55)] sm:p-6">
-                                <div className="rounded-[1.5rem] border border-white/10 bg-slate-950 p-4 text-slate-50">
-                                    <div className="mb-5 flex items-center justify-between gap-3">
-                                        <div>
-                                            <p className="text-xs tracking-[0.2em] text-slate-400 uppercase">
-                                                Campaign workspace
-                                            </p>
-                                            <h2 className="mt-2 text-xl font-semibold">
-                                                Launch sprint
-                                            </h2>
+                        {/* Product Preview */}
+                        <div className="group relative">
+                            <div
+                                className="
+                                    absolute
+                                    -inset-6
+                                    rounded-[2rem]
+                                    bg-gradient-to-br
+                                    from-[#3B82F6]/25
+                                    via-[#06B6D4]/10
+                                    to-transparent
+                                    opacity-70
+                                    blur-3xl
+                                    transition-opacity
+                                    duration-500
+                                    group-hover:opacity-100
+                                "
+                            />
+
+                            <div
+                                className="
+                                    relative
+                                    overflow-hidden
+                                    rounded-[2rem]
+                                    border
+                                    border-white/10
+                                    bg-[#0B1628]/95
+                                    p-6
+                                    shadow-[0_40px_100px_-25px_rgba(0,0,0,0.6)]
+                                    backdrop-blur-xl
+                                    transition-shadow
+                                    duration-500
+                                    group-hover:shadow-[0_50px_120px_-25px_rgba(37,99,235,0.25)]
+                                    sm:p-8
+                                "
+                            >
+                                <div className="mb-6 flex items-center justify-between">
+                                    <div>
+                                        <p
+                                            className="
+                                                font-['IBM_Plex_Mono',monospace]
+                                                text-[10px]
+                                                tracking-[0.2em]
+                                                text-[#7C8CA6]
+                                                uppercase
+                                            "
+                                        >
+                                            Campaign heading
+                                        </p>
+
+                                        <h2
+                                            className="
+                                                mt-1
+                                                font-['Space_Grotesk',sans-serif]
+                                                text-lg
+                                                font-semibold
+                                                text-white
+                                            "
+                                        >
+                                            Q3 launch sprint
+                                        </h2>
+                                    </div>
+
+                                    <div
+                                        className="
+                                            rounded-full
+                                            bg-[#06B6D4]/15
+                                            px-2.5
+                                            py-1
+                                            font-['IBM_Plex_Mono',monospace]
+                                            text-[10px]
+                                            tracking-[0.08em]
+                                            text-[#22D3EE]
+                                            uppercase
+                                        "
+                                    >
+                                        On course
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-center py-4">
+                                    <div
+                                        className="
+                                            relative
+                                            flex
+                                            h-48
+                                            w-48
+                                            items-center
+                                            justify-center
+                                            rounded-full
+                                            transition-transform
+                                            duration-500
+                                            group-hover:scale-105
+                                        "
+                                        style={{
+                                            background:
+                                                'repeating-conic-gradient(from 0deg, rgba(59,130,246,0.55) 0deg 1deg, transparent 1deg 9deg)',
+                                        }}
+                                    >
+                                        <div
+                                            className="
+                                                flex
+                                                h-36
+                                                w-36
+                                                flex-col
+                                                items-center
+                                                justify-center
+                                                rounded-full
+                                                border
+                                                border-white/10
+                                                bg-[#101B30]
+                                            "
+                                            style={{
+                                                boxShadow:
+                                                    '0 0 0 1px rgba(59,130,246,0.12), 0 0 40px -6px rgba(59,130,246,0.5), inset 0 2px 10px rgba(0,0,0,0.6)',
+                                            }}
+                                        >
+                                            <span
+                                                className="
+                                                    font-['Space_Grotesk',sans-serif]
+                                                    text-3xl
+                                                    font-semibold
+                                                    text-[#60A5FA]
+                                                "
+                                            >
+                                                247°
+                                            </span>
+
+                                            <span
+                                                className="
+                                                    mt-1
+                                                    font-['IBM_Plex_Mono',monospace]
+                                                    text-[9px]
+                                                    tracking-[0.16em]
+                                                    text-[#7C8CA6]
+                                                    uppercase
+                                                "
+                                            >
+                                                Reach trending up
+                                            </span>
                                         </div>
-                                        <div className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-300">
-                                            12 assets ready
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div
+                                        className="
+                                            rounded-2xl
+                                            border
+                                            border-white/10
+                                            bg-[#101B30]
+                                            p-4
+                                            transition-colors
+                                            duration-300
+                                            hover:border-[#06B6D4]/40
+                                        "
+                                    >
+                                        <div
+                                            className="
+                                                flex
+                                                items-center
+                                                justify-between
+                                                font-['IBM_Plex_Mono',monospace]
+                                                text-[10px]
+                                                tracking-[0.1em]
+                                                text-[#7C8CA6]
+                                                uppercase
+                                            "
+                                        >
+                                            <span>Brand alignment</span>
+                                            <span className="text-[#22D3EE]">
+                                                92%
+                                            </span>
+                                        </div>
+
+                                        <div className="mt-3 h-1.5 rounded-full bg-white/5">
+                                            <div
+                                                className="
+                                                    h-1.5
+                                                    w-[92%]
+                                                    rounded-full
+                                                    bg-[#06B6D4]
+                                                    shadow-[0_0_10px_rgba(6,182,212,0.7)]
+                                                "
+                                            />
                                         </div>
                                     </div>
 
-                                    <div className="space-y-4">
-                                        <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
-                                            <div className="flex items-center justify-between text-sm text-slate-300">
-                                                <span>Brand kit</span>
-                                                <span>92% aligned</span>
-                                            </div>
-                                            <div className="mt-3 h-2 rounded-full bg-slate-800">
-                                                <div className="h-2 w-[92%] rounded-full bg-gradient-to-r from-blue-400 via-indigo-400 to-cyan-400" />
-                                            </div>
+                                    <div
+                                        className="
+                                            rounded-2xl
+                                            border
+                                            border-white/10
+                                            bg-[#101B30]
+                                            p-4
+                                            transition-colors
+                                            duration-300
+                                            hover:border-[#3B82F6]/40
+                                        "
+                                    >
+                                        <div
+                                            className="
+                                                flex
+                                                items-center
+                                                justify-between
+                                                font-['IBM_Plex_Mono',monospace]
+                                                text-[10px]
+                                                tracking-[0.1em]
+                                                text-[#7C8CA6]
+                                                uppercase
+                                            "
+                                        >
+                                            <span>Assets ready</span>
+                                            <span className="text-[#60A5FA]">
+                                                12
+                                            </span>
                                         </div>
 
-                                        <div className="grid gap-3 sm:grid-cols-2">
-                                            <div className="rounded-2xl bg-slate-900/70 p-4 ring-1 ring-slate-800">
-                                                <p className="text-xs tracking-[0.2em] text-slate-400 uppercase">
-                                                    Content mix
-                                                </p>
-                                                <p className="mt-4 text-3xl font-semibold text-white">
-                                                    28
-                                                </p>
-                                                <p className="mt-1 text-sm text-slate-400">
-                                                    ideas this week
-                                                </p>
-                                            </div>
-                                            <div className="rounded-2xl bg-blue-500/10 p-4 ring-1 ring-blue-500/30">
-                                                <p className="text-xs tracking-[0.2em] text-blue-200 uppercase">
-                                                    Next launch
-                                                </p>
-                                                <p className="mt-4 text-2xl font-semibold text-white">
-                                                    June 18
-                                                </p>
-                                                <p className="mt-1 text-sm text-blue-100">
-                                                    Paid social + email
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="rounded-2xl bg-slate-900/70 p-4 ring-1 ring-slate-800">
-                                            <div className="flex items-center justify-between text-sm text-slate-300">
-                                                <span>Weekly output</span>
-                                                <span>4 posts</span>
-                                            </div>
-                                            <div className="mt-4 flex gap-2">
-                                                {[48, 66, 88, 100].map(
-                                                    (width, index) => (
-                                                        <div
-                                                            key={width}
-                                                            className="flex-1 rounded-t-xl bg-gradient-to-t from-blue-500 via-indigo-500 to-cyan-400"
-                                                            style={{
-                                                                height: `${width / 2}px`,
-                                                                opacity:
-                                                                    0.55 +
-                                                                    index *
-                                                                        0.15,
-                                                            }}
-                                                        />
-                                                    ),
-                                                )}
-                                            </div>
+                                        <div className="mt-3 flex gap-1.5">
+                                            {[40, 60, 85, 100].map((height) => (
+                                                <div
+                                                    key={height}
+                                                    className="
+                                                        flex-1
+                                                        rounded-t-md
+                                                        bg-gradient-to-t
+                                                        from-[#2563EB]/40
+                                                        to-[#60A5FA]
+                                                    "
+                                                    style={{
+                                                        height: `${height / 3.2}px`,
+                                                    }}
+                                                />
+                                            ))}
                                         </div>
                                     </div>
+                                </div>
+
+                                <div
+                                    className="
+                                        mt-3
+                                        flex
+                                        items-center
+                                        justify-between
+                                        rounded-2xl
+                                        border
+                                        border-white/10
+                                        bg-[#101B30]
+                                        px-4
+                                        py-3
+                                        font-['IBM_Plex_Mono',monospace]
+                                        text-[11px]
+                                        tracking-[0.08em]
+                                        text-[#7C8CA6]
+                                        uppercase
+                                    "
+                                >
+                                    <span>Next launch</span>
+
+                                    <span className="text-slate-200">
+                                        Jun 18 · Paid social + email
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </section>
 
-                    <section className="mt-20 border-t border-slate-200/80 pt-8">
-                        <div className="flex flex-col gap-4 text-center">
-                            <p className="text-sm font-medium tracking-[0.2em] text-slate-500 uppercase">
-                                Trusted by teams shipping fast
+                    {/* ======================================================
+                        TRUST STRIP
+                    ======================================================= */}
+
+                    <section className="mt-20">
+                        <p
+                            className="
+                                text-center
+                                font-['IBM_Plex_Mono',monospace]
+                                text-xs
+                                tracking-[0.2em]
+                                text-[#64748B]
+                                uppercase
+                                dark:text-[#7C8CA6]
+                            "
+                        >
+                            Piloted by teams shipping fast
+                        </p>
+
+                        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                            {logos.map((name) => (
+                                <div
+                                    key={name}
+                                    className={`
+                                        rounded-full
+                                        ${glass}
+                                        px-4
+                                        py-3
+                                        text-center
+                                        font-['Space_Grotesk',sans-serif]
+                                        text-base
+                                        font-medium
+                                        text-[#475569]
+                                        transition-all
+                                        duration-300
+                                        hover:-translate-y-0.5
+                                        hover:text-[#0F172A]
+                                        hover:shadow-[0_15px_35px_-20px_rgba(37,99,235,0.3)]
+                                        dark:text-slate-300
+                                        dark:hover:text-white
+                                    `}
+                                >
+                                    {name}
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* ======================================================
+                        PRODUCT
+                    ======================================================= */}
+
+                    <section id="product" className="mt-24">
+                        <div className="mx-auto max-w-2xl text-center">
+                            <p
+                                className="
+                                    font-['IBM_Plex_Mono',monospace]
+                                    text-xs
+                                    font-semibold
+                                    tracking-[0.2em]
+                                    text-[#2563EB]
+                                    uppercase
+                                    dark:text-[#60A5FA]
+                                "
+                            >
+                                Product overview
                             </p>
-                            <div className="grid grid-cols-2 gap-4 text-center text-lg font-semibold text-slate-400 sm:grid-cols-3 lg:grid-cols-5">
-                                {logos.map((name) => (
+
+                            <h2
+                                className="
+                                    mt-4
+                                    font-['Space_Grotesk',sans-serif]
+                                    text-3xl
+                                    font-semibold
+                                    tracking-tight
+                                    sm:text-4xl
+                                "
+                            >
+                                Keep every campaign aligned with your brand.
+                            </h2>
+                        </div>
+
+                        <div className="mt-12 grid gap-4 md:grid-cols-3 md:grid-rows-2">
+                            <div
+                                className={`
+                                    group
+                                    rounded-[1.75rem]
+                                    ${glass}
+                                    ${glassHover}
+                                    p-8
+                                    md:col-span-2
+                                    md:row-span-2
+                                `}
+                            >
+                                <div
+                                    className="
+                                        flex
+                                        h-12
+                                        w-12
+                                        items-center
+                                        justify-center
+                                        rounded-2xl
+                                        bg-[#0F172A]
+                                        text-[#60A5FA]
+                                        shadow-[0_10px_25px_-8px_rgba(15,23,42,0.5)]
+                                        transition-transform
+                                        duration-300
+                                        group-hover:scale-110
+                                        group-hover:rotate-6
+                                        dark:bg-[#10213A]
+                                    "
+                                >
+                                    <Compass className="h-6 w-6" />
+                                </div>
+
+                                <h3
+                                    className="
+                                        mt-5
+                                        font-['Space_Grotesk',sans-serif]
+                                        text-2xl
+                                        font-semibold
+                                    "
+                                >
+                                    {bentoItems[0].title}
+                                </h3>
+
+                                <p className="mt-3 max-w-md text-[#475569] dark:text-slate-300">
+                                    {bentoItems[0].description}
+                                </p>
+
+                                <span
+                                    className="
+                                        mt-6
+                                        inline-flex
+                                        items-center
+                                        gap-1
+                                        font-['IBM_Plex_Mono',monospace]
+                                        text-xs
+                                        tracking-[0.1em]
+                                        text-[#2563EB]
+                                        uppercase
+                                        transition-transform
+                                        duration-300
+                                        group-hover:translate-x-1
+                                        dark:text-[#60A5FA]
+                                    "
+                                >
+                                    See a sample brief
+                                    <ArrowUpRight className="h-3.5 w-3.5" />
+                                </span>
+                            </div>
+
+                            {bentoItems.slice(1).map(
+                                ({ icon: Icon, title, description }) => (
                                     <div
-                                        key={name}
-                                        className="rounded-full border border-slate-200 bg-white/80 px-4 py-3"
+                                        key={title}
+                                        className={`
+                                            group
+                                            rounded-[1.75rem]
+                                            ${glass}
+                                            ${glassHover}
+                                            p-6
+                                        `}
                                     >
-                                        {name}
+                                        <div
+                                            className="
+                                                flex
+                                                h-10
+                                                w-10
+                                                items-center
+                                                justify-center
+                                                rounded-xl
+                                                bg-[#0F172A]
+                                                text-[#60A5FA]
+                                                shadow-[0_8px_18px_-6px_rgba(15,23,42,0.5)]
+                                                transition-transform
+                                                duration-300
+                                                group-hover:scale-110
+                                                group-hover:rotate-6
+                                                dark:bg-[#10213A]
+                                            "
+                                        >
+                                            <Icon className="h-5 w-5" />
+                                        </div>
+
+                                        <h3
+                                            className="
+                                                mt-4
+                                                font-['Space_Grotesk',sans-serif]
+                                                text-lg
+                                                font-semibold
+                                            "
+                                        >
+                                            {title}
+                                        </h3>
+
+                                        <p className="mt-2 text-sm leading-6 text-[#475569] dark:text-slate-300">
+                                            {description}
+                                        </p>
+                                    </div>
+                                ),
+                            )}
+
+                            <div
+                                className={`
+                                    group
+                                    flex
+                                    flex-col
+                                    justify-center
+                                    rounded-[1.75rem]
+                                    ${glass}
+                                    ${glassHover}
+                                    p-6
+                                `}
+                            >
+                                <span
+                                    className="
+                                        font-['Space_Grotesk',sans-serif]
+                                        text-4xl
+                                        font-semibold
+                                        text-[#2563EB]
+                                        dark:text-[#60A5FA]
+                                    "
+                                >
+                                    40%
+                                </span>
+
+                                <p className="mt-2 text-sm leading-6 text-[#475569] dark:text-slate-300">
+                                    Faster campaign launches, on average, once
+                                    the brief and calendar are shared.
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* ======================================================
+                        HOW IT WORKS
+                    ======================================================= */}
+
+                    <section id="how-it-works" className="mt-24">
+                        <div className="mx-auto max-w-2xl text-center">
+                            <p
+                                className="
+                                    font-['IBM_Plex_Mono',monospace]
+                                    text-xs
+                                    font-semibold
+                                    tracking-[0.2em]
+                                    text-[#2563EB]
+                                    uppercase
+                                    dark:text-[#60A5FA]
+                                "
+                            >
+                                How it works
+                            </p>
+
+                            <h2
+                                className="
+                                    mt-4
+                                    font-['Space_Grotesk',sans-serif]
+                                    text-3xl
+                                    font-semibold
+                                    tracking-tight
+                                    sm:text-4xl
+                                "
+                            >
+                                One system for strategy, content, and
+                                execution.
+                            </h2>
+                        </div>
+
+                        <div className="relative mt-14">
+                            <div
+                                className="
+                                    absolute
+                                    top-0
+                                    bottom-0
+                                    left-6
+                                    w-px
+                                    bg-gradient-to-b
+                                    from-[#3B82F6]/60
+                                    via-black/10
+                                    to-transparent
+                                    dark:via-white/10
+                                    lg:left-1/2
+                                    lg:-translate-x-1/2
+                                "
+                            />
+
+                            <div className="space-y-6 lg:space-y-10">
+                                {steps.map((step, index) => (
+                                    <div
+                                        key={step.title}
+                                        className={`
+                                            relative
+                                            flex
+                                            items-start
+                                            gap-6
+                                            lg:w-1/2
+                                            ${
+                                                index % 2 === 1
+                                                    ? 'lg:ml-auto lg:flex-row-reverse lg:text-right'
+                                                    : ''
+                                            }
+                                        `}
+                                    >
+                                        <div
+                                            className="
+                                                relative
+                                                z-10
+                                                flex
+                                                h-12
+                                                w-12
+                                                shrink-0
+                                                items-center
+                                                justify-center
+                                                rounded-full
+                                                border
+                                                border-[#3B82F6]/40
+                                                bg-[#3B82F6]/10
+                                                font-['IBM_Plex_Mono',monospace]
+                                                text-sm
+                                                font-semibold
+                                                text-[#2563EB]
+                                                shadow-[0_0_0_6px_#F5F9FF]
+                                                dark:text-[#60A5FA]
+                                                dark:shadow-[0_0_0_6px_#07111F]
+                                            "
+                                        >
+                                            0{index + 1}
+                                        </div>
+
+                                        <div
+                                            className={`
+                                                group
+                                                flex-1
+                                                rounded-2xl
+                                                ${glass}
+                                                ${glassHover}
+                                                p-5
+                                            `}
+                                        >
+                                            <p
+                                                className="
+                                                    font-['Space_Grotesk',sans-serif]
+                                                    text-lg
+                                                    font-semibold
+                                                "
+                                            >
+                                                {step.title}
+                                            </p>
+
+                                            <p className="mt-2 text-sm leading-6 text-[#475569] dark:text-slate-300">
+                                                {step.description}
+                                            </p>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     </section>
 
-                    <section id="how-it-works" className="mt-24">
-                        <div className="mx-auto max-w-2xl text-center">
-                            <p className="text-sm font-semibold tracking-[0.2em] text-blue-600 uppercase">
-                                How it works
-                            </p>
-                            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-                                One system for strategy, content, and execution.
-                            </h2>
-                        </div>
+                    {/* ======================================================
+                        PRICING
+                    ======================================================= */}
 
-                        <div className="mt-12 grid gap-6 lg:grid-cols-3">
-                            {steps.map((step, index) => (
+                    <section id="pricing" className="mt-24">
+                        <div className="mx-auto max-w-md">
+                            <div
+                                className={`
+                                    group
+                                    relative
+                                    overflow-hidden
+                                    rounded-[2rem]
+                                    ${glass}
+                                    p-8
+                                    shadow-[0_30px_80px_-30px_rgba(15,23,42,0.25)]
+                                    transition-all
+                                    duration-300
+                                    hover:shadow-[0_40px_100px_-30px_rgba(37,99,235,0.3)]
+                                    dark:shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]
+                                `}
+                            >
                                 <div
-                                    key={step}
-                                    className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.05)]"
+                                    className="
+                                        absolute
+                                        -top-16
+                                        -right-16
+                                        h-40
+                                        w-40
+                                        rounded-full
+                                        bg-[#3B82F6]/15
+                                        blur-3xl
+                                        transition-opacity
+                                        duration-500
+                                        group-hover:opacity-80
+                                    "
+                                />
+
+                                <p
+                                    className="
+                                        font-['IBM_Plex_Mono',monospace]
+                                        text-xs
+                                        font-semibold
+                                        tracking-[0.2em]
+                                        text-[#2563EB]
+                                        uppercase
+                                        dark:text-[#60A5FA]
+                                    "
                                 >
-                                    <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 font-semibold text-blue-700">
-                                        0{index + 1}
-                                    </div>
-                                    <p className="text-lg font-medium text-slate-900">
-                                        {step}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-
-                    <section
-                        id="product"
-                        className="mt-24 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.05)] sm:p-8 lg:p-10"
-                    >
-                        <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-                            <div>
-                                <p className="text-sm font-semibold tracking-[0.2em] text-blue-600 uppercase">
-                                    Product overview
-                                </p>
-                                <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-                                    Keep every campaign aligned with your brand.
-                                </h2>
-                            </div>
-
-                            <div className="grid gap-6 sm:grid-cols-3">
-                                {features.map(
-                                    ({ icon: Icon, title, description }) => (
-                                        <div
-                                            key={title}
-                                            className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
-                                        >
-                                            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-                                                <Icon className="h-5 w-5" />
-                                            </div>
-                                            <h3 className="text-lg font-semibold text-slate-900">
-                                                {title}
-                                            </h3>
-                                            <p className="mt-3 text-sm leading-6 text-slate-600">
-                                                {description}
-                                            </p>
-                                        </div>
-                                    ),
-                                )}
-                            </div>
-                        </div>
-                    </section>
-
-                    <section id="features" className="mt-24">
-                        <div className="mx-auto max-w-2xl text-center">
-                            <p className="text-sm font-semibold tracking-[0.2em] text-blue-600 uppercase">
-                                Why teams switch
-                            </p>
-                            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-                                Marketing operations that feel simple to run.
-                            </h2>
-                        </div>
-
-                        <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-                            {[
-                                'AI-generated campaign briefs',
-                                'Reusable brand guidelines',
-                                'Approval-ready content planning',
-                                'Shared calendar visibility',
-                            ].map((item) => (
-                                <div
-                                    key={item}
-                                    className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-                                >
-                                    <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                                        <Check className="h-4 w-4" />
-                                    </div>
-                                    <p className="text-base font-medium text-slate-900">
-                                        {item}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-
-                    <section
-                        id="pricing"
-                        className="mt-24 rounded-[2rem] border border-blue-100 bg-gradient-to-br from-blue-600 to-indigo-600 p-8 text-white shadow-[0_35px_90px_rgba(59,130,246,0.35)] sm:p-12"
-                    >
-                        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                            <div className="max-w-xl">
-                                <p className="text-sm font-semibold tracking-[0.2em] text-blue-100 uppercase">
                                     Built to grow with you
                                 </p>
-                                <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
+
+                                <div className="mt-4 flex items-baseline gap-2">
+                                    <span
+                                        className="
+                                            font-['Space_Grotesk',sans-serif]
+                                            text-4xl
+                                            font-semibold
+                                            text-[#2563EB]
+                                            dark:text-[#60A5FA]
+                                        "
+                                    >
+                                        $39
+                                    </span>
+
+                                    <span className="text-base text-[#64748B] dark:text-slate-400">
+                                        / month
+                                    </span>
+                                </div>
+
+                                <p className="mt-2 text-sm text-[#64748B] dark:text-slate-400">
                                     From your first campaign to your next
                                     expansion.
-                                </h2>
-                            </div>
+                                </p>
 
-                            <div className="flex items-baseline gap-2 text-4xl font-semibold">
-                                $39
-                                <span className="text-base text-blue-100">
-                                    / month
-                                </span>
+                                <ul className="mt-6 space-y-3">
+                                    {pricingIncludes.map((item) => (
+                                        <li
+                                            key={item}
+                                            className="flex items-center gap-3 text-sm"
+                                        >
+                                            <span
+                                                className="
+                                                    flex
+                                                    h-5
+                                                    w-5
+                                                    shrink-0
+                                                    items-center
+                                                    justify-center
+                                                    rounded-full
+                                                    bg-[#06B6D4]/15
+                                                    text-[#0891B2]
+                                                    dark:text-[#22D3EE]
+                                                "
+                                            >
+                                                <Check className="h-3 w-3" />
+                                            </span>
+
+                                            {item}
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                <div className="mt-8 flex flex-col gap-3">
+                                    <Button
+                                        asChild
+                                        className="
+                                            w-full
+                                            rounded-full
+                                            bg-[#2563EB]
+                                            text-white
+                                            shadow-[0_15px_35px_-10px_rgba(37,99,235,0.55)]
+                                            transition-all
+                                            duration-300
+                                            hover:scale-[1.02]
+                                            hover:bg-[#1D4ED8]
+                                        "
+                                    >
+                                        <Link href={register()}>
+                                            Create account
+                                        </Link>
+                                    </Button>
+
+                                    <Button
+                                        asChild
+                                        variant="ghost"
+                                        className="
+                                            w-full
+                                            rounded-full
+                                            border
+                                            border-black/10
+                                            hover:bg-[#3B82F6]/5
+                                            dark:border-white/15
+                                            dark:hover:bg-white/10
+                                        "
+                                    >
+                                        <Link href={login()}>Log in</Link>
+                                    </Button>
+                                </div>
                             </div>
                         </div>
+                    </section>
 
-                        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                    {/* ======================================================
+                        CTA
+                    ======================================================= */}
+
+                    <section className="mt-24">
+                        <div
+                            className={`
+                                flex
+                                flex-col
+                                items-center
+                                gap-6
+                                rounded-[2rem]
+                                ${glass}
+                                p-10
+                                text-center
+                                shadow-[0_30px_80px_-30px_rgba(15,23,42,0.25)]
+                                dark:shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]
+                                sm:flex-row
+                                sm:justify-between
+                                sm:text-left
+                            `}
+                        >
+                            <div>
+                                <h2
+                                    className="
+                                        font-['Space_Grotesk',sans-serif]
+                                        text-2xl
+                                        font-semibold
+                                        sm:text-3xl
+                                    "
+                                >
+                                    Ready to fly a smoother season of
+                                    campaigns?
+                                </h2>
+
+                                <p className="mt-2 text-[#475569] dark:text-slate-300">
+                                    Set your heading in under ten minutes.
+                                </p>
+                            </div>
+
                             <Button
                                 asChild
-                                variant="secondary"
-                                className="rounded-full bg-white text-slate-900 hover:bg-slate-100"
+                                size="lg"
+                                className="
+                                    group
+                                    shrink-0
+                                    rounded-full
+                                    bg-[#2563EB]
+                                    px-6
+                                    text-white
+                                    shadow-[0_15px_35px_-10px_rgba(37,99,235,0.55)]
+                                    transition-all
+                                    duration-300
+                                    hover:scale-[1.02]
+                                    hover:bg-[#1D4ED8]
+                                "
                             >
-                                <Link href={register()}>Create account</Link>
-                            </Button>
-                            <Button
-                                asChild
-                                variant="ghost"
-                                className="rounded-full border border-white/40 text-white hover:bg-white/10"
-                            >
-                                <Link href={login()}>Already using it?</Link>
+                                <Link href={register()}>
+                                    Start free
+                                    <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                                </Link>
                             </Button>
                         </div>
                     </section>
                 </main>
 
-                <footer className="border-t border-slate-200/80 bg-white/60 backdrop-blur-sm">
-                    <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-8 text-sm text-slate-600 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+                {/* ==========================================================
+                    FOOTER
+                =========================================================== */}
+
+                <footer className="border-t border-black/5 dark:border-white/10">
+                    <div
+                        className="
+                            mx-auto
+                            flex
+                            max-w-7xl
+                            flex-col
+                            gap-4
+                            px-4
+                            py-8
+                            text-sm
+                            text-[#64748B]
+                            sm:px-6
+                            lg:flex-row
+                            lg:items-center
+                            lg:justify-between
+                            lg:px-8
+                            dark:text-slate-400
+                        "
+                    >
                         <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-white">
+                            <div
+                                className="
+                                    flex
+                                    h-8
+                                    w-8
+                                    items-center
+                                    justify-center
+                                    rounded-full
+                                    border
+                                    border-[#3B82F6]/30
+                                    bg-[#3B82F6]/10
+                                    text-[#2563EB]
+                                    dark:bg-[#10213A]
+                                    dark:text-[#60A5FA]
+                                "
+                            >
                                 <AppLogoIcon className="h-4 w-4 fill-current" />
                             </div>
+
                             MarketPilot
                         </div>
+
                         <div className="flex flex-wrap gap-5">
-                            <a href="#product">Product</a>
-                            <a href="#how-it-works">How it works</a>
-                            <a href="#features">Features</a>
+                            <a
+                                href="#product"
+                                className="
+                                    transition-colors
+                                    hover:text-[#2563EB]
+                                    dark:hover:text-[#60A5FA]
+                                "
+                            >
+                                Product
+                            </a>
+
+                            <a
+                                href="#how-it-works"
+                                className="
+                                    transition-colors
+                                    hover:text-[#2563EB]
+                                    dark:hover:text-[#60A5FA]
+                                "
+                            >
+                                How it works
+                            </a>
+
+                            <a
+                                href="#pricing"
+                                className="
+                                    transition-colors
+                                    hover:text-[#2563EB]
+                                    dark:hover:text-[#60A5FA]
+                                "
+                            >
+                                Pricing
+                            </a>
                         </div>
                     </div>
                 </footer>
