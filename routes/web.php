@@ -87,6 +87,7 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
     Route::post('designs/{design}/regenerate', [DesignController::class, 'regenerate'])->name('designs.regenerate');
     Route::delete('designs/{design}', [DesignController::class, 'destroy'])->name('designs.destroy');
     Route::get('calendar', [EventController::class, 'index'])->name('calendar.index');
+    Route::get('calendar/events-year', [EventController::class, 'getYearEvents'])->name('calendar.year-events');
     Route::post('events', [EventController::class, 'store'])->name('events.store');
     Route::get('events/{event}', [EventController::class, 'show'])->name('events.show');
     Route::put('events/{event}', [EventController::class, 'update'])->name('events.update');

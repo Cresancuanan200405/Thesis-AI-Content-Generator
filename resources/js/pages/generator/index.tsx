@@ -1,31 +1,78 @@
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     ArrowRight,
+    CalendarDays,
     Check,
+    ImagePlus,
     Sparkles,
+    Upload,
+    X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
     CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 
-const stepTitles = [
-    'Product details',
-    'Content style',
-    'Tagline & reference',
-    'Review',
+/* ==========================================================================
+   TYPES
+========================================================================== */
+
+type Step = 1 | 2 | 3;
+
+type TaglineMode = 'manual' | 'ai' | 'none';
+
+type GenerationState = 'idle' | 'generating' | 'ready';
+
+interface EventItem {
+    id: number | string;
+    name: string;
+    date?: string | null;
+    days?: number | string | null;
+}
+
+interface GeneratorForm {
+    product_name: string;
+    image_prompt: string;
+    price: string;
+    event_id: string;
+
+    content_style: string[];
+    brand_tone: string[];
+
+    tagline_mode: TaglineMode;
+    tagline: string;
+
+    reference_image: File | null;
+}
+
+/* ==========================================================================
+   OPTIONS
+========================================================================== */
+
+const contentStyleOptions: string[] = [
+    'Product-focused',
+    'Lifestyle',
+    'Promotional',
+    'Educational',
+    'Social Media',
+    'Seasonal',
+    'Minimal',
+    'Storytelling',
+    'Premium',
+    'Editorial',
 ];
 
-const toneOptions = [
+const toneOptions: string[] = [
     'Professional',
     'Friendly',
     'Luxury',
@@ -38,115 +85,257 @@ const toneOptions = [
     'Premium',
 ];
 
-const contentStyleOptions = [
-    'Product-focused',
-    'Lifestyle',
-    'Promotional',
-    'Educational',
-    'Social Media',
-    'Seasonal',
-    'Minimal',
-    'Storytelling',
-];
-
-const tagLineModes = [
-    {
-        value: 'auto',
-        label: 'Generate automatically',
-        description:
-            'Let the system create a suitable tagline.',
-    },
+const taglineOptions: {
+    value: TaglineMode;
+    label: string;
+    description: string;
+}[] = [
     {
         value: 'manual',
-        label: 'Use my tagline',
-        description:
-            'Provide the exact tagline you want to use.',
+        label: 'Write my own',
+        description: 'Use your exact text.',
     },
     {
-        value: 'ask_me',
-        label: 'Ask me each time',
-        description:
-            'Choose the tagline behavior for each generation.',
+        value: 'ai',
+        label: 'Generate with AI',
+        description: 'AI creates the tagline.',
+    },
+    {
+        value: 'none',
+        label: 'No tagline',
+        description: 'No text overlay.',
     },
 ];
 
-function toggleValue(values: string[], next: string) {
-    return values.includes(next)
-        ? values.filter((value) => value !== next)
-        : [...values, next];
+/* ==========================================================================
+   HOLIDAY / EVENT SUGGESTIONS
+========================================================================== */
+
+interface EventSuggestion {
+    styles: string[];
+    tones: string[];
 }
 
+const eventSuggestions: Record<string, EventSuggestion> = {
+    christmas: {
+        styles: ['Seasonal', 'Lifestyle', 'Premium'],
+        tones: ['Warm', 'Friendly', 'Elegant'],
+    },
+
+    'christmas day': {
+        styles: ['Seasonal', 'Lifestyle', 'Premium'],
+        tones: ['Warm', 'Friendly', 'Elegant'],
+    },
+
+    'valentine': {
+        styles: ['Lifestyle', 'Premium', 'Storytelling'],
+        tones: ['Warm', 'Elegant', 'Playful'],
+    },
+
+    'valentine day': {
+        styles: ['Lifestyle', 'Premium', 'Storytelling'],
+        tones: ['Warm', 'Elegant', 'Playful'],
+    },
+
+    'new year': {
+        styles: ['Promotional', 'Premium', 'Editorial'],
+        tones: ['Bold', 'Elegant', 'Modern'],
+    },
+
+    halloween: {
+        styles: ['Seasonal', 'Storytelling', 'Social Media'],
+        tones: ['Bold', 'Playful', 'Modern'],
+    },
+
+    'mother day': {
+        styles: ['Lifestyle', 'Storytelling', 'Premium'],
+        tones: ['Warm', 'Elegant', 'Friendly'],
+    },
+
+    'father day': {
+        styles: ['Lifestyle', 'Promotional', 'Product-focused'],
+        tones: ['Bold', 'Warm', 'Professional'],
+    },
+
+    'black friday': {
+        styles: ['Promotional', 'Product-focused', 'Social Media'],
+        tones: ['Bold', 'Modern', 'Professional'],
+    },
+
+    'labor day': {
+        styles: ['Promotional', 'Lifestyle', 'Social Media'],
+        tones: ['Bold', 'Friendly', 'Professional'],
+    },
+
+    easter: {
+        styles: ['Seasonal', 'Lifestyle', 'Storytelling'],
+        tones: ['Friendly', 'Warm', 'Playful'],
+    },
+};
+
+/* ==========================================================================
+   HELPERS
+========================================================================== */
+
+function normalizeEventName(value: string): string {
+    return value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+}
+
+function findEventSuggestion(
+    eventName: string,
+): EventSuggestion | null {
+    const normalized = normalizeEventName(eventName);
+
+    if (!normalized) {
+        return null;
+    }
+
+    for (const [keyword, suggestion] of Object.entries(
+        eventSuggestions,
+    )) {
+        const normalizedKeyword =
+            normalizeEventName(keyword);
+
+        if (
+            normalized.includes(normalizedKeyword) ||
+            normalizedKeyword.includes(normalized)
+        ) {
+            return suggestion;
+        }
+    }
+
+    return null;
+}
+
+function toggleValue(
+    values: string[],
+    value: string,
+    max: number,
+): string[] {
+    if (values.includes(value)) {
+        return values.filter(
+            (item) => item !== value,
+        );
+    }
+
+    if (values.length >= max) {
+        return values;
+    }
+
+    return [...values, value];
+}
+
+/* ==========================================================================
+   COMPONENT
+========================================================================== */
+
 export default function GeneratorPage() {
-    const pageProps = usePage().props as any;
+    const pageProps = usePage().props as {
+        events?: EventItem[];
+        campaign?: {
+            id?: number | string;
+            product_name?: string;
+            image_prompt?: string;
+            price?: string | number;
+            event_id?: number | string;
+        } | null;
+        errors?: Record<string, string>;
+    };
 
-    const {
-        business,
-        brand,
-        products = [],
-        events = [],
-        campaign = null,
-        errors = {},
-    } = pageProps;
+    const campaign = pageProps.campaign ?? null;
+    const errors = pageProps.errors ?? {};
 
-    const [currentStep, setCurrentStep] = useState(1);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    /* ----------------------------------------------------------------------
+       EVENTS
+    ---------------------------------------------------------------------- */
 
-    const [form, setForm] = useState({
-        product_id: campaign?.product_id
-            ? String(campaign.product_id)
-            : '',
-
-        event_id: campaign?.event_id
-            ? String(campaign.event_id)
-            : '',
-
-        product_name: business?.name
-            ? `${business.name} Offer`
-            : '',
-
-        marketing_goal: campaign?.objective || '',
-
-        content_style: Array.isArray(brand?.brand_tone)
-            ? [...brand.brand_tone]
-            : [],
-
-        brand_tone: Array.isArray(brand?.brand_tone)
-            ? [...brand.brand_tone]
-            : [],
-
-        tagline: '',
-
-        tagline_mode: 'auto',
-
-        target_audience:
-            business?.target_audience ?? '',
-
-        unique_selling_point:
-            business?.unique_selling_point ?? '',
-
-        notes: '',
-
-        reference_image: null as File | null,
-    });
-
-    const progress = useMemo(
-        () => (currentStep / stepTitles.length) * 100,
-        [currentStep],
+    const events = useMemo(
+        () => pageProps.events ?? [],
+        [pageProps.events],
     );
 
-    const selectedProduct = products.find(
-        (item: any) =>
-            String(item.id) === String(form.product_id),
+    /* ----------------------------------------------------------------------
+       STATE
+    ---------------------------------------------------------------------- */
+
+    const [currentStep, setCurrentStep] =
+        useState<Step>(1);
+
+    const [generationState, setGenerationState] =
+        useState<GenerationState>('idle');
+
+    const [generationProgress, setGenerationProgress] =
+        useState(0);
+
+    const [form, setForm] =
+        useState<GeneratorForm>({
+            product_name:
+                campaign?.product_name ?? '',
+
+            image_prompt:
+                campaign?.image_prompt ?? '',
+
+            price:
+                campaign?.price !== undefined
+                    ? String(campaign.price)
+                    : '',
+
+            event_id:
+                campaign?.event_id !== undefined
+                    ? String(campaign.event_id)
+                    : '',
+
+            content_style: [],
+
+            brand_tone: [],
+
+            tagline_mode: 'ai',
+
+            tagline: '',
+
+            reference_image: null,
+        });
+
+    /* ----------------------------------------------------------------------
+       SELECTED EVENT
+    ---------------------------------------------------------------------- */
+
+    const selectedEvent = useMemo(
+        () =>
+            events.find(
+                (event) =>
+                    String(event.id) ===
+                    String(form.event_id),
+            ),
+        [events, form.event_id],
     );
 
-    const selectedEvent = events.find(
-        (item: any) =>
-            String(item.id) === String(form.event_id),
+    /* ----------------------------------------------------------------------
+       EVENT SUGGESTION
+    ---------------------------------------------------------------------- */
+
+    const eventSuggestion = useMemo(
+        () =>
+            selectedEvent
+                ? findEventSuggestion(
+                      selectedEvent.name,
+                  )
+                : null,
+        [selectedEvent],
     );
 
-    const updateField = <K extends keyof typeof form>(
+    /* ----------------------------------------------------------------------
+       FORM UPDATE
+    ---------------------------------------------------------------------- */
+
+    const updateField = <
+        K extends keyof GeneratorForm,
+    >(
         field: K,
-        value: (typeof form)[K],
+        value: GeneratorForm[K],
     ) => {
         setForm((previous) => ({
             ...previous,
@@ -154,1427 +343,1322 @@ export default function GeneratorPage() {
         }));
     };
 
+    /* ----------------------------------------------------------------------
+       PRICE HANDLER
+       Numbers only. Allows decimal values.
+    ---------------------------------------------------------------------- */
+
+    const handlePriceChange = (
+        value: string,
+    ) => {
+        const numericValue =
+            value.replace(/[^0-9.]/g, '');
+
+        const parts =
+            numericValue.split('.');
+
+        const cleanedValue =
+            parts.length > 2
+                ? `${parts[0]}.${parts
+                      .slice(1)
+                      .join('')}`
+                : numericValue;
+
+        updateField(
+            'price',
+            cleanedValue,
+        );
+    };
+
+    /* ----------------------------------------------------------------------
+       VALIDATION
+       
+       Style and tone are OPTIONAL.
+       Maximum = 3.
+    ---------------------------------------------------------------------- */
+
+    const stepOneValid =
+        form.product_name.trim().length > 0 &&
+        form.image_prompt.trim().length > 0;
+
+    const stepTwoValid = true;
+
+    const stepThreeValid =
+        form.tagline_mode !== 'manual' ||
+        form.tagline.trim().length > 0;
+
+    const canGenerate =
+        stepOneValid &&
+        stepTwoValid &&
+        stepThreeValid;
+
+    /* ----------------------------------------------------------------------
+       EVENT AUTO-SUGGESTION
+    ---------------------------------------------------------------------- */
+
+    const applyEventSuggestions = () => {
+        if (!eventSuggestion) {
+            return;
+        }
+
+        updateField(
+            'content_style',
+            eventSuggestion.styles.slice(0, 3),
+        );
+
+        updateField(
+            'brand_tone',
+            eventSuggestion.tones.slice(0, 3),
+        );
+    };
+
+    /* ----------------------------------------------------------------------
+       NAVIGATION
+    ---------------------------------------------------------------------- */
+
     const nextStep = () => {
-        if (currentStep < stepTitles.length) {
-            setCurrentStep((value) => value + 1);
+        if (
+            currentStep === 1 &&
+            !stepOneValid
+        ) {
+            return;
+        }
+
+        if (currentStep < 3) {
+            setCurrentStep(
+                (previous) =>
+                    (previous + 1) as Step,
+            );
         }
     };
 
     const previousStep = () => {
         if (currentStep > 1) {
-            setCurrentStep((value) => value - 1);
+            setCurrentStep(
+                (previous) =>
+                    (previous - 1) as Step,
+            );
         }
     };
 
-    const submit = () => {
-        if (isSubmitting) {
+    /* ----------------------------------------------------------------------
+       FILE
+    ---------------------------------------------------------------------- */
+
+    const handleReferenceImage = (
+        file: File | null,
+    ) => {
+        updateField(
+            'reference_image',
+            file,
+        );
+    };
+
+    /* ----------------------------------------------------------------------
+       MOCK GENERATION
+       
+       This intentionally does NOT call an AI API.
+       It gives the user a realistic generation UI
+       until an API key is available.
+    ---------------------------------------------------------------------- */
+
+    const generateMarketingImage = () => {
+        if (
+            generationState === 'generating' ||
+            !canGenerate
+        ) {
             return;
         }
 
-        setIsSubmitting(true);
-
-        const payload = new FormData();
-
-        if (form.product_id) {
-            payload.append(
-                'product_id',
-                form.product_id,
-            );
-        }
-
-        if (form.event_id) {
-            payload.append(
-                'event_id',
-                form.event_id,
-            );
-        }
-
-        if (campaign?.id) {
-            payload.append(
-                'campaign_id',
-                String(campaign.id),
-            );
-        }
-
-        payload.append(
-            'product_name',
-            form.product_name ||
-                selectedProduct?.name ||
-                'Custom product',
+        setGenerationState(
+            'generating',
         );
 
-        payload.append(
-            'marketing_goal',
-            form.marketing_goal,
-        );
+        setGenerationProgress(0);
 
-        payload.append(
-            'target_audience',
-            form.target_audience ||
-                business?.target_audience ||
-                '',
-        );
+        let progress = 0;
 
-        payload.append(
-            'unique_selling_point',
-            form.unique_selling_point ||
-                business?.unique_selling_point ||
-                '',
-        );
+        const interval =
+            window.setInterval(() => {
+                progress += 20;
 
-        if (campaign?.name) {
-            payload.append(
-                'campaign_name',
-                campaign.name,
-            );
-        }
+                setGenerationProgress(
+                    Math.min(progress, 100),
+                );
 
-        if (campaign?.objective) {
-            payload.append(
-                'campaign_objective',
-                campaign.objective,
-            );
-        }
+                if (progress >= 100) {
+                    window.clearInterval(
+                        interval,
+                    );
 
-        if (campaign?.target_audience) {
-            payload.append(
-                'campaign_target_audience',
-                campaign.target_audience,
-            );
-        }
-
-        payload.append(
-            'tagline',
-            form.tagline || '',
-        );
-
-        payload.append(
-            'tagline_mode',
-            form.tagline_mode || 'auto',
-        );
-
-        payload.append(
-            'notes',
-            form.notes || '',
-        );
-
-        form.content_style.forEach((item) =>
-            payload.append(
-                'content_style[]',
-                item,
-            ),
-        );
-
-        form.brand_tone.forEach((item) =>
-            payload.append(
-                'brand_tone[]',
-                item,
-            ),
-        );
-
-        if (form.reference_image) {
-            payload.append(
-                'reference_image',
-                form.reference_image,
-            );
-        }
-
-        router.post('/generator', payload, {
-            forceFormData: true,
-            preserveScroll: true,
-
-            onFinish: () =>
-                setIsSubmitting(false),
-
-            onError: () =>
-                setIsSubmitting(false),
-        });
+                    window.setTimeout(() => {
+                        setGenerationState(
+                            'ready',
+                        );
+                    }, 500);
+                }
+            }, 500);
     };
 
-    const renderStep = () => {
-        /* ================================================================
-           STEP 1 — PRODUCT DETAILS
-        ================================================================= */
-
-        if (currentStep === 1) {
-            return (
-                <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
-                    {/* Product */}
-                    <div className="space-y-2">
-                        <Label htmlFor="product_id">
-                            Product
-                        </Label>
-
-                        <select
-                            id="product_id"
-                            value={form.product_id}
-                            onChange={(event) =>
-                                updateField(
-                                    'product_id',
-                                    event.target.value,
-                                )
-                            }
-                            className="
-                                flex
-                                h-10
-                                w-full
-                                rounded-md
-                                border
-                                border-input
-                                bg-background
-                                px-3
-                                py-2
-                                text-sm
-                                text-foreground
-                                outline-none
-
-                                transition-all
-                                duration-200
-
-                                hover:border-ring/50
-
-                                focus:border-ring
-                                focus:ring-2
-                                focus:ring-ring/30
-
-                                focus:shadow-[0_0_0_3px_hsl(var(--ring)/0.08)]
-                            "
-                        >
-                            <option value="">
-                                Select an existing product
-                            </option>
-
-                            {products.map(
-                                (product: any) => (
-                                    <option
-                                        key={product.id}
-                                        value={product.id}
-                                    >
-                                        {product.name}
-                                    </option>
-                                ),
-                            )}
-                        </select>
-
-                        {errors.product_id && (
-                            <p className="animate-in fade-in slide-in-from-top-1 text-sm text-destructive duration-200">
-                                {errors.product_id}
-                            </p>
-                        )}
-                    </div>
-
-                    {/* Product Name */}
-                    <div className="space-y-2">
-                        <Label htmlFor="product_name">
-                            Product name
-                        </Label>
-
-                        <Input
-                            id="product_name"
-                            value={form.product_name}
-                            onChange={(event) =>
-                                updateField(
-                                    'product_name',
-                                    event.target.value,
-                                )
-                            }
-                            placeholder="North Star Seasonal Blend"
-                            className="
-                                transition-all
-                                duration-200
-                                hover:border-ring/50
-                                focus-visible:shadow-[0_0_0_3px_hsl(var(--ring)/0.08)]
-                            "
-                        />
-
-                        <p className="text-xs text-muted-foreground">
-                            Give your campaign a clear product
-                            or offer name.
-                        </p>
-
-                        {errors.product_name && (
-                            <p className="animate-in fade-in slide-in-from-top-1 text-sm text-destructive duration-200">
-                                {errors.product_name}
-                            </p>
-                        )}
-                    </div>
-
-                    {/* Event */}
-                    <div className="space-y-2">
-                        <Label htmlFor="event_id">
-                            Campaign event
-                        </Label>
-
-                        <select
-                            id="event_id"
-                            value={form.event_id}
-                            onChange={(event) =>
-                                updateField(
-                                    'event_id',
-                                    event.target.value,
-                                )
-                            }
-                            className="
-                                flex
-                                h-10
-                                w-full
-                                rounded-md
-                                border
-                                border-input
-                                bg-background
-                                px-3
-                                py-2
-                                text-sm
-                                text-foreground
-                                outline-none
-
-                                transition-all
-                                duration-200
-
-                                hover:border-ring/50
-
-                                focus:border-ring
-                                focus:ring-2
-                                focus:ring-ring/30
-
-                                focus:shadow-[0_0_0_3px_hsl(var(--ring)/0.08)]
-                            "
-                        >
-                            <option value="">
-                                Select an upcoming event
-                            </option>
-
-                            {events.map(
-                                (event: any) => (
-                                    <option
-                                        key={event.id}
-                                        value={event.id}
-                                    >
-                                        {event.name}{' '}
-                                        {event.date
-                                            ? `(${event.date})`
-                                            : ''}
-                                    </option>
-                                ),
-                            )}
-                        </select>
-
-                        {errors.event_id && (
-                            <p className="animate-in fade-in slide-in-from-top-1 text-sm text-destructive duration-200">
-                                {errors.event_id}
-                            </p>
-                        )}
-                    </div>
-
-                    {/* Marketing Goal */}
-                    <div className="space-y-2">
-                        <Label htmlFor="marketing_goal">
-                            Primary marketing goal
-                        </Label>
-
-                        <Textarea
-                            id="marketing_goal"
-                            value={form.marketing_goal}
-                            onChange={(event) =>
-                                updateField(
-                                    'marketing_goal',
-                                    event.target.value,
-                                )
-                            }
-                            placeholder="Drive weekend traffic and increase conversion for the new seasonal release."
-                            className="
-                                min-h-28
-                                resize-none
-                                transition-all
-                                duration-200
-                                hover:border-ring/50
-                                focus-visible:shadow-[0_0_0_3px_hsl(var(--ring)/0.08)]
-                            "
-                        />
-
-                        <p className="text-xs text-muted-foreground">
-                            Describe what you want this campaign
-                            to accomplish.
-                        </p>
-
-                        {errors.marketing_goal && (
-                            <p className="animate-in fade-in slide-in-from-top-1 text-sm text-destructive duration-200">
-                                {errors.marketing_goal}
-                            </p>
-                        )}
-                    </div>
-                </div>
-            );
-        }
-
-        /* ================================================================
-           STEP 2 — CONTENT STYLE
-        ================================================================= */
-
-        if (currentStep === 2) {
-            return (
-                <div className="space-y-9 animate-in fade-in slide-in-from-right-2 duration-300">
-                    {/* Content Style */}
-                    <div className="space-y-4">
-                        <div>
-                            <Label>
-                                Content style
-                            </Label>
-
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                Select one or more visual directions
-                                for your marketing content.
-                            </p>
-                        </div>
-
-                        <div className="grid gap-3 sm:grid-cols-2">
-                            {contentStyleOptions.map(
-                                (option) => {
-                                    const active =
-                                        form.content_style.includes(
-                                            option,
-                                        );
-
-                                    return (
-                                        <button
-                                            key={option}
-                                            type="button"
-                                            onClick={() =>
-                                                updateField(
-                                                    'content_style',
-                                                    toggleValue(
-                                                        form.content_style,
-                                                        option,
-                                                    ),
-                                                )
-                                            }
-                                            className={`
-                                                group
-                                                rounded-xl
-                                                border
-                                                p-4
-                                                text-left
-
-                                                transition-all
-                                                duration-200
-
-                                                hover:-translate-y-0.5
-                                                hover:shadow-sm
-
-                                                active:translate-y-0
-
-                                                ${
-                                                    active
-                                                        ? 'border-primary bg-primary/5 text-foreground shadow-sm ring-1 ring-primary/20'
-                                                        : 'border-border bg-background hover:bg-muted/50'
-                                                }
-                                            `}
-                                        >
-                                            <div className="flex items-center justify-between gap-3">
-                                                <span
-                                                    className={`
-                                                        text-sm
-                                                        font-medium
-                                                        transition-colors
-                                                        duration-200
-
-                                                        ${
-                                                            active
-                                                                ? 'text-primary'
-                                                                : 'text-foreground'
-                                                        }
-                                                    `}
-                                                >
-                                                    {option}
-                                                </span>
-
-                                                <div
-                                                    className={`
-                                                        flex
-                                                        h-6
-                                                        w-6
-                                                        items-center
-                                                        justify-center
-                                                        rounded-full
-                                                        border
-
-                                                        transition-all
-                                                        duration-200
-
-                                                        ${
-                                                            active
-                                                                ? 'scale-100 border-primary bg-primary text-primary-foreground'
-                                                                : 'scale-95 border-border group-hover:scale-100'
-                                                        }
-                                                    `}
-                                                >
-                                                    {active && (
-                                                        <Check className="h-3.5 w-3.5 animate-in zoom-in-50 duration-200" />
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </button>
-                                    );
-                                },
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Brand Tone */}
-                    <div className="space-y-4">
-                        <div>
-                            <Label>
-                                Brand tone
-                            </Label>
-
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                Choose the personality your marketing
-                                content should communicate.
-                            </p>
-                        </div>
-
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                            {toneOptions.map(
-                                (option) => {
-                                    const active =
-                                        form.brand_tone.includes(
-                                            option,
-                                        );
-
-                                    return (
-                                        <button
-                                            key={option}
-                                            type="button"
-                                            onClick={() =>
-                                                updateField(
-                                                    'brand_tone',
-                                                    toggleValue(
-                                                        form.brand_tone,
-                                                        option,
-                                                    ),
-                                                )
-                                            }
-                                            className={`
-                                                group
-                                                rounded-xl
-                                                border
-                                                p-3.5
-                                                text-left
-
-                                                transition-all
-                                                duration-200
-
-                                                hover:-translate-y-0.5
-                                                hover:shadow-sm
-
-                                                active:translate-y-0
-
-                                                ${
-                                                    active
-                                                        ? 'border-primary bg-primary/5 text-primary shadow-sm ring-1 ring-primary/20'
-                                                        : 'border-border bg-background text-foreground hover:bg-muted/50'
-                                                }
-                                            `}
-                                        >
-                                            <div className="flex items-center justify-between gap-3">
-                                                <span className="text-sm font-medium">
-                                                    {option}
-                                                </span>
-
-                                                <div
-                                                    className={`
-                                                        flex
-                                                        h-5
-                                                        w-5
-                                                        items-center
-                                                        justify-center
-                                                        rounded-full
-                                                        transition-all
-                                                        duration-200
-
-                                                        ${
-                                                            active
-                                                                ? 'scale-100'
-                                                                : 'scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-50'
-                                                        }
-                                                    `}
-                                                >
-                                                    {active && (
-                                                        <Check className="h-4 w-4 animate-in zoom-in-50 duration-200" />
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </button>
-                                    );
-                                },
-                            )}
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        /* ================================================================
-           STEP 3 — TAGLINE & REFERENCE
-        ================================================================= */
-
-        if (currentStep === 3) {
-            return (
-                <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
-                    {/* Tagline Mode */}
-                    <div className="space-y-4">
-                        <div>
-                            <Label>
-                                Tagline behavior
-                            </Label>
-
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                Decide how the tagline should be
-                                handled during generation.
-                            </p>
-                        </div>
-
-                        <div className="grid gap-3 md:grid-cols-3">
-                            {tagLineModes.map(
-                                (option) => {
-                                    const active =
-                                        form.tagline_mode ===
-                                        option.value;
-
-                                    return (
-                                        <button
-                                            key={option.value}
-                                            type="button"
-                                            onClick={() =>
-                                                updateField(
-                                                    'tagline_mode',
-                                                    option.value,
-                                                )
-                                            }
-                                            className={`
-                                                group
-                                                rounded-xl
-                                                border
-                                                p-4
-                                                text-left
-
-                                                transition-all
-                                                duration-200
-
-                                                hover:-translate-y-0.5
-                                                hover:shadow-sm
-
-                                                active:translate-y-0
-
-                                                ${
-                                                    active
-                                                        ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20'
-                                                        : 'border-border bg-background hover:bg-muted/50'
-                                                }
-                                            `}
-                                        >
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div>
-                                                    <p
-                                                        className={`
-                                                            text-sm
-                                                            font-medium
-                                                            transition-colors
-                                                            duration-200
-
-                                                            ${
-                                                                active
-                                                                    ? 'text-primary'
-                                                                    : 'text-foreground'
-                                                            }
-                                                        `}
-                                                    >
-                                                        {option.label}
-                                                    </p>
-
-                                                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                                                        {
-                                                            option.description
-                                                        }
-                                                    </p>
-                                                </div>
-
-                                                <div
-                                                    className={`
-                                                        flex
-                                                        h-6
-                                                        w-6
-                                                        shrink-0
-                                                        items-center
-                                                        justify-center
-                                                        rounded-full
-                                                        transition-all
-                                                        duration-200
-
-                                                        ${
-                                                            active
-                                                                ? 'scale-100 bg-primary text-primary-foreground'
-                                                                : 'scale-90 border border-border opacity-60'
-                                                        }
-                                                    `}
-                                                >
-                                                    {active && (
-                                                        <Check className="h-3.5 w-3.5 animate-in zoom-in-50 duration-200" />
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </button>
-                                    );
-                                },
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Tagline */}
-                    <div className="space-y-2">
-                        <Label htmlFor="tagline">
-                            Custom tagline
-                        </Label>
-
-                        <Input
-                            id="tagline"
-                            value={form.tagline}
-                            onChange={(event) =>
-                                updateField(
-                                    'tagline',
-                                    event.target.value,
-                                )
-                            }
-                            placeholder="Fresh coffee, made for your everyday ritual."
-                            className="
-                                transition-all
-                                duration-200
-                                hover:border-ring/50
-                                focus-visible:shadow-[0_0_0_3px_hsl(var(--ring)/0.08)]
-                            "
-                        />
-
-                        <p className="text-xs text-muted-foreground">
-                            You can leave this empty when using
-                            automatic generation.
-                        </p>
-                    </div>
-
-                    {/* Reference Image */}
-                    <div className="space-y-3">
-                        <div>
-                            <Label htmlFor="reference_image">
-                                Reference image
-                            </Label>
-
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                Optionally provide an image to help
-                                guide the visual direction.
-                            </p>
-                        </div>
-
-                        <div
-                            className="
-                                rounded-xl
-                                border
-                                border-dashed
-                                border-border
-                                bg-muted/20
-                                p-5
-
-                                transition-all
-                                duration-200
-
-                                hover:border-primary/40
-                                hover:bg-muted/30
-                            "
-                        >
-                            <Input
-                                id="reference_image"
-                                type="file"
-                                accept="image/png,image/jpeg,image/webp"
-                                onChange={(event) =>
-                                    updateField(
-                                        'reference_image',
-                                        event.target.files?.[0] ??
-                                            null,
-                                    )
-                                }
-                                className="cursor-pointer"
-                            />
-                        </div>
-
-                        {form.reference_image && (
-                            <p className="animate-in fade-in slide-in-from-top-1 text-xs text-muted-foreground duration-200">
-                                Selected:{' '}
-                                <span className="font-medium text-foreground">
-                                    {
-                                        form.reference_image
-                                            .name
-                                    }
-                                </span>
-                            </p>
-                        )}
-
-                        {errors.reference_image && (
-                            <p className="animate-in fade-in slide-in-from-top-1 text-sm text-destructive duration-200">
-                                {errors.reference_image}
-                            </p>
-                        )}
-                    </div>
-                </div>
-            );
-        }
-
-        /* ================================================================
-           STEP 4 — REVIEW
-        ================================================================= */
-
-        return (
-            <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
-                {/* Summary */}
-                <div
-                    className="
-                        rounded-xl
-                        border
-                        border-border
-                        bg-muted/30
-                        p-5
-
-                        transition-all
-                        duration-300
-
-                        hover:bg-muted/40
-                    "
-                >
-                    <div className="flex items-center gap-3">
-                        <div
-                            className="
-                                flex
-                                h-10
-                                w-10
-                                items-center
-                                justify-center
-                                rounded-xl
-                                border
-                                border-border
-                                bg-background
-
-                                shadow-sm
-
-                                transition-transform
-                                duration-300
-
-                                hover:scale-105
-                            "
-                        >
-                            <Check className="h-4 w-4 text-primary" />
-                        </div>
-
-                        <div>
-                            <h3 className="font-semibold text-foreground">
-                                Generation summary
-                            </h3>
-
-                            <p className="text-sm text-muted-foreground">
-                                Review your inputs before generating
-                                the design.
-                            </p>
-                        </div>
-                    </div>
-
-                    <dl className="mt-6 grid gap-5 text-sm md:grid-cols-2">
-                        <div>
-                            <dt className="text-muted-foreground">
-                                Product
-                            </dt>
-
-                            <dd className="mt-1 font-medium text-foreground">
-                                {form.product_name ||
-                                    selectedProduct?.name ||
-                                    'Custom product'}
-                            </dd>
-                        </div>
-
-                        <div>
-                            <dt className="text-muted-foreground">
-                                Event
-                            </dt>
-
-                            <dd className="mt-1 font-medium text-foreground">
-                                {selectedEvent?.name ||
-                                    'No event selected'}
-                            </dd>
-                        </div>
-
-                        <div className="md:col-span-2">
-                            <dt className="text-muted-foreground">
-                                Marketing goal
-                            </dt>
-
-                            <dd className="mt-1 font-medium leading-6 text-foreground">
-                                {form.marketing_goal ||
-                                    'No goal provided yet'}
-                            </dd>
-                        </div>
-
-                        <div>
-                            <dt className="text-muted-foreground">
-                                Content style
-                            </dt>
-
-                            <dd className="mt-1 font-medium text-foreground">
-                                {form.content_style.join(
-                                    ', ',
-                                ) || 'Not selected'}
-                            </dd>
-                        </div>
-
-                        <div>
-                            <dt className="text-muted-foreground">
-                                Brand tone
-                            </dt>
-
-                            <dd className="mt-1 font-medium text-foreground">
-                                {form.brand_tone.join(
-                                    ', ',
-                                ) || 'Not selected'}
-                            </dd>
-                        </div>
-
-                        <div className="md:col-span-2">
-                            <dt className="text-muted-foreground">
-                                Tagline
-                            </dt>
-
-                            <dd className="mt-1 font-medium text-foreground">
-                                {form.tagline ||
-                                    'Auto-generated by the workflow'}
-                            </dd>
-                        </div>
-                    </dl>
-                </div>
-
-                {/* Target Audience */}
-                <div className="space-y-2">
-                    <Label htmlFor="target_audience">
-                        Target audience
+    /* ----------------------------------------------------------------------
+       RESET GENERATION
+    ---------------------------------------------------------------------- */
+
+    const createAnother = () => {
+        setGenerationState('idle');
+        setGenerationProgress(0);
+        setCurrentStep(1);
+    };
+
+    /* ==========================================================================
+       STEP 1
+    ========================================================================== */
+
+    const renderStepOne = () => (
+        <div className="animate-in fade-in slide-in-from-right-2 duration-300">
+            <div className="grid gap-5 md:grid-cols-2">
+                {/* PRODUCT */}
+                <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="product_name">
+                        Product / Service Name
                     </Label>
 
                     <Input
-                        id="target_audience"
-                        value={form.target_audience}
+                        id="product_name"
+                        value={
+                            form.product_name
+                        }
                         onChange={(event) =>
                             updateField(
-                                'target_audience',
+                                'product_name',
                                 event.target.value,
                             )
                         }
-                        placeholder="Young professionals, local commuters, and wellness shoppers"
-                        className="
-                            transition-all
-                            duration-200
-                            hover:border-ring/50
-                            focus-visible:shadow-[0_0_0_3px_hsl(var(--ring)/0.08)]
-                        "
+                        placeholder="e.g. Luxury Gift Box"
                     />
+
+                    {errors.product_name && (
+                        <p className="text-xs text-destructive">
+                            {
+                                errors.product_name
+                            }
+                        </p>
+                    )}
                 </div>
 
-                {/* USP */}
-                <div className="space-y-2">
-                    <Label htmlFor="unique_selling_point">
-                        Unique selling point
+                {/* IMAGE PROMPT */}
+                <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="image_prompt">
+                        Image Prompt
                     </Label>
 
                     <Textarea
-                        id="unique_selling_point"
-                        value={form.unique_selling_point}
+                        id="image_prompt"
+                        value={
+                            form.image_prompt
+                        }
                         onChange={(event) =>
                             updateField(
-                                'unique_selling_point',
+                                'image_prompt',
                                 event.target.value,
                             )
                         }
-                        placeholder="Small-batch ingredients, premium packaging, and a neighborhood-first brand experience."
-                        className="
-                            min-h-24
-                            resize-none
-                            transition-all
-                            duration-200
-                            hover:border-ring/50
-                            focus-visible:shadow-[0_0_0_3px_hsl(var(--ring)/0.08)]
-                        "
+                        placeholder="Describe the product, scene, composition, environment, or visual idea."
+                        className="min-h-28 resize-none"
                     />
+
+                    <p className="text-xs text-muted-foreground">
+                        Describe the visual you
+                        want.
+                    </p>
+
+                    {errors.image_prompt && (
+                        <p className="text-xs text-destructive">
+                            {
+                                errors.image_prompt
+                            }
+                        </p>
+                    )}
                 </div>
 
-                {/* Notes */}
+                {/* PRICE */}
                 <div className="space-y-2">
-                    <Label htmlFor="notes">
-                        Creative notes
+                    <Label htmlFor="price">
+                        Price
+                        <span className="ml-1 font-normal text-muted-foreground">
+                            optional
+                        </span>
                     </Label>
 
-                    <Textarea
-                        id="notes"
-                        value={form.notes}
+                    <Input
+                        id="price"
+                        inputMode="decimal"
+                        value={form.price}
                         onChange={(event) =>
-                            updateField(
-                                'notes',
+                            handlePriceChange(
                                 event.target.value,
                             )
                         }
-                        placeholder="Use warm studio lighting, clean product framing, and a premium but approachable visual direction."
-                        className="
-                            min-h-24
-                            resize-none
-                            transition-all
-                            duration-200
-                            hover:border-ring/50
-                            focus-visible:shadow-[0_0_0_3px_hsl(var(--ring)/0.08)]
-                        "
+                        placeholder="e.g. 999"
                     />
+
+                    <p className="text-xs text-muted-foreground">
+                        Numbers only.
+                    </p>
+                </div>
+
+                {/* EVENT */}
+                <div className="space-y-2">
+                    <Label htmlFor="event_id">
+                        Holiday / Event
+                    </Label>
+
+                    <select
+                        id="event_id"
+                        value={
+                            form.event_id
+                        }
+                        onChange={(event) =>
+                            updateField(
+                                'event_id',
+                                event.target.value,
+                            )
+                        }
+                        className="
+                            flex
+                            h-10
+                            w-full
+                            rounded-md
+                            border
+                            border-input
+                            bg-background
+                            px-3
+                            py-2
+                            text-sm
+                            text-foreground
+                            outline-none
+                            focus:border-ring
+                            focus:ring-2
+                            focus:ring-ring/30
+                        "
+                    >
+                        <option value="">
+                            No event selected
+                        </option>
+
+                        {events.map(
+                            (event) => (
+                                <option
+                                    key={
+                                        event.id
+                                    }
+                                    value={
+                                        event.id
+                                    }
+                                >
+                                    {
+                                        event.name
+                                    }
+                                </option>
+                            ),
+                        )}
+                    </select>
                 </div>
             </div>
-        );
-    };
+
+            {/* EVENT INFO */}
+            {selectedEvent && (
+                <div className="mt-5 flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                        <CalendarDays className="h-4 w-4 text-primary" />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium">
+                            {
+                                selectedEvent.name
+                            }
+                        </p>
+
+                        <p className="text-xs text-muted-foreground">
+                            {selectedEvent.date ||
+                                'Campaign event'}
+                        </p>
+                    </div>
+
+                    {selectedEvent.days !==
+                        undefined &&
+                        selectedEvent.days !==
+                            null && (
+                            <Badge variant="secondary">
+                                {
+                                    selectedEvent.days
+                                }{' '}
+                                days
+                            </Badge>
+                        )}
+                </div>
+            )}
+        </div>
+    );
+
+    /* ==========================================================================
+       STEP 2
+    ========================================================================== */
+
+    const renderStepTwo = () => (
+        <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
+            {/* EVENT RECOMMENDATION */}
+            {eventSuggestion && (
+                <div className="flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p className="text-sm font-medium">
+                            Suggested for{' '}
+                            {
+                                selectedEvent?.name
+                            }
+                        </p>
+
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                            Use styles and tones
+                            that fit this event.
+                        </p>
+                    </div>
+
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={
+                            applyEventSuggestions
+                        }
+                        className="shrink-0"
+                    >
+                        <Sparkles className="mr-2 h-3.5 w-3.5" />
+                        Use suggestions
+                    </Button>
+                </div>
+            )}
+
+            {/* VISUAL THEME */}
+            <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <Label>
+                            Visual Theme
+                        </Label>
+
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            Choose up to 3
+                        </p>
+                    </div>
+
+                    <span className="text-xs font-medium text-muted-foreground">
+                        {
+                            form.content_style
+                                .length
+                        }{' '}
+                        / 3
+                    </span>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                    {contentStyleOptions.map(
+                        (style) => {
+                            const active =
+                                form.content_style.includes(
+                                    style,
+                                );
+
+                            const disabled =
+                                !active &&
+                                form
+                                    .content_style
+                                    .length >=
+                                    3;
+
+                            return (
+                                <button
+                                    key={
+                                        style
+                                    }
+                                    type="button"
+                                    disabled={
+                                        disabled
+                                    }
+                                    onClick={() =>
+                                        updateField(
+                                            'content_style',
+                                            toggleValue(
+                                                form.content_style,
+                                                style,
+                                                3,
+                                            ),
+                                        )
+                                    }
+                                    className={`
+                                        rounded-full
+                                        border
+                                        px-3
+                                        py-2
+                                        text-xs
+                                        font-medium
+                                        transition-all
+
+                                        ${
+                                            active
+                                                ? 'border-primary bg-primary text-primary-foreground'
+                                                : disabled
+                                                  ? 'cursor-not-allowed border-border bg-muted/30 text-muted-foreground/40'
+                                                  : 'border-border bg-background hover:border-primary/40 hover:bg-muted/50'
+                                        }
+                                    `}
+                                >
+                                    {active && (
+                                        <Check className="mr-1 inline h-3 w-3" />
+                                    )}
+
+                                    {style}
+                                </button>
+                            );
+                        },
+                    )}
+                </div>
+            </div>
+
+            {/* BRAND TONE */}
+            <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <Label>
+                            Brand Tone
+                        </Label>
+
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            Choose up to 3
+                        </p>
+                    </div>
+
+                    <span className="text-xs font-medium text-muted-foreground">
+                        {
+                            form.brand_tone
+                                .length
+                        }{' '}
+                        / 3
+                    </span>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                    {toneOptions.map(
+                        (tone) => {
+                            const active =
+                                form.brand_tone.includes(
+                                    tone,
+                                );
+
+                            const disabled =
+                                !active &&
+                                form
+                                    .brand_tone
+                                    .length >=
+                                    3;
+
+                            return (
+                                <button
+                                    key={
+                                        tone
+                                    }
+                                    type="button"
+                                    disabled={
+                                        disabled
+                                    }
+                                    onClick={() =>
+                                        updateField(
+                                            'brand_tone',
+                                            toggleValue(
+                                                form.brand_tone,
+                                                tone,
+                                                3,
+                                            ),
+                                        )
+                                    }
+                                    className={`
+                                        rounded-full
+                                        border
+                                        px-3
+                                        py-2
+                                        text-xs
+                                        font-medium
+                                        transition-all
+
+                                        ${
+                                            active
+                                                ? 'border-primary bg-primary text-primary-foreground'
+                                                : disabled
+                                                  ? 'cursor-not-allowed border-border bg-muted/30 text-muted-foreground/40'
+                                                  : 'border-border bg-background hover:border-primary/40 hover:bg-muted/50'
+                                        }
+                                    `}
+                                >
+                                    {active && (
+                                        <Check className="mr-1 inline h-3 w-3" />
+                                    )}
+
+                                    {tone}
+                                </button>
+                            );
+                        },
+                    )}
+                </div>
+            </div>
+
+            {/* EMPTY SELECTION STATE */}
+            {form.content_style.length ===
+                0 &&
+                form.brand_tone.length ===
+                    0 && (
+                    <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 text-center text-xs text-muted-foreground">
+                        You can skip these or
+                        choose up to 3 each.
+                    </div>
+                )}
+        </div>
+    );
+
+    /* ==========================================================================
+       STEP 3
+    ========================================================================== */
+
+    const renderStepThree = () => (
+        <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
+            {/* TAGLINE */}
+            <div className="space-y-3">
+                <div>
+                    <Label>
+                        Tagline
+                    </Label>
+
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        Choose how text is handled.
+                    </p>
+                </div>
+
+                <div className="grid gap-2 md:grid-cols-3">
+                    {taglineOptions.map(
+                        (option) => {
+                            const active =
+                                form.tagline_mode ===
+                                option.value;
+
+                            return (
+                                <button
+                                    key={
+                                        option.value
+                                    }
+                                    type="button"
+                                    onClick={() =>
+                                        updateField(
+                                            'tagline_mode',
+                                            option.value,
+                                        )
+                                    }
+                                    className={`
+                                        rounded-xl
+                                        border
+                                        p-3
+                                        text-left
+                                        transition-all
+
+                                        ${
+                                            active
+                                                ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                                                : 'border-border hover:bg-muted/50'
+                                        }
+                                    `}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-medium">
+                                            {
+                                                option.label
+                                            }
+                                        </span>
+
+                                        {active && (
+                                            <Check className="h-4 w-4 text-primary" />
+                                        )}
+                                    </div>
+
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                        {
+                                            option.description
+                                        }
+                                    </p>
+                                </button>
+                            );
+                        },
+                    )}
+                </div>
+            </div>
+
+            {/* MANUAL */}
+            {form.tagline_mode ===
+                'manual' && (
+                <div className="space-y-2">
+                    <Label htmlFor="tagline">
+                        Your tagline
+                    </Label>
+
+                    <Input
+                        id="tagline"
+                        value={
+                            form.tagline
+                        }
+                        onChange={(event) =>
+                            updateField(
+                                'tagline',
+                                event.target.value,
+                            )
+                        }
+                        placeholder="Make every moment special."
+                    />
+
+                    {!form.tagline.trim() && (
+                        <p className="text-xs text-destructive">
+                            Enter your tagline
+                            to continue.
+                        </p>
+                    )}
+                </div>
+            )}
+
+            {/* AI */}
+            {form.tagline_mode ===
+                'ai' && (
+                <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                    </div>
+
+                    <div>
+                        <p className="text-sm font-medium">
+                            AI tagline
+                        </p>
+
+                        <p className="text-xs text-muted-foreground">
+                            Uses your product,
+                            event, style, and
+                            tone.
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* NONE */}
+            {form.tagline_mode ===
+                'none' && (
+                <div className="rounded-xl border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+                    The image will have no text
+                    overlay.
+                </div>
+            )}
+
+            {/* REFERENCE IMAGE */}
+            <div className="space-y-3">
+                <div>
+                    <Label>
+                        Reference Image
+                        <span className="ml-1 font-normal text-muted-foreground">
+                            optional
+                        </span>
+                    </Label>
+
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        Add an image for visual
+                        guidance.
+                    </p>
+                </div>
+
+                {!form.reference_image ? (
+                    <label
+                        htmlFor="reference_image"
+                        className="
+                            flex
+                            cursor-pointer
+                            items-center
+                            gap-3
+                            rounded-xl
+                            border
+                            border-dashed
+                            border-border
+                            bg-muted/20
+                            p-4
+                            hover:border-primary/40
+                            hover:bg-muted/40
+                        "
+                    >
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-background">
+                            <Upload className="h-4 w-4 text-muted-foreground" />
+                        </div>
+
+                        <div>
+                            <p className="text-sm font-medium">
+                                Upload reference
+                            </p>
+
+                            <p className="text-xs text-muted-foreground">
+                                PNG, JPG, WEBP
+                            </p>
+                        </div>
+
+                        <Input
+                            id="reference_image"
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            className="hidden"
+                            onChange={(
+                                event,
+                            ) =>
+                                handleReferenceImage(
+                                    event.target.files?.[0] ??
+                                        null,
+                                )
+                            }
+                        />
+                    </label>
+                ) : (
+                    <div className="flex items-center gap-3 rounded-xl border bg-muted/30 p-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-background">
+                            <ImagePlus className="h-4 w-4 text-primary" />
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">
+                                {
+                                    form
+                                        .reference_image
+                                        .name
+                                }
+                            </p>
+
+                            <p className="text-xs text-muted-foreground">
+                                Reference selected
+                            </p>
+                        </div>
+
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                                handleReferenceImage(
+                                    null,
+                                )
+                            }
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
+    /* ==========================================================================
+       SUMMARY
+       
+       IMPORTANT:
+       No Generate button here.
+       There is only ONE Generate button in the main form footer.
+    ========================================================================== */
+
+    const summary = (
+        <Card className="rounded-2xl border-border shadow-sm lg:sticky lg:top-24 lg:self-start">
+            <CardHeader className="border-b p-5">
+                <CardTitle className="flex items-center gap-2 text-base">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Campaign Summary
+                </CardTitle>
+
+                <p className="text-xs text-muted-foreground">
+                    Your selections.
+                </p>
+            </CardHeader>
+
+            <CardContent className="space-y-4 p-5">
+                <SummaryItem
+                    label="Product"
+                    value={
+                        form.product_name ||
+                        '—'
+                    }
+                />
+
+                <SummaryItem
+                    label="Event"
+                    value={
+                        selectedEvent?.name ||
+                        '—'
+                    }
+                />
+
+                <SummaryItem
+                    label="Price"
+                    value={
+                        form.price
+                            ? `₱${form.price}`
+                            : '—'
+                    }
+                />
+
+                <SummaryItem
+                    label="Themes"
+                    value={
+                        form.content_style
+                            .length
+                            ? form.content_style.join(
+                                  ', ',
+                              )
+                            : 'None'
+                    }
+                />
+
+                <SummaryItem
+                    label="Tone"
+                    value={
+                        form.brand_tone
+                            .length
+                            ? form.brand_tone.join(
+                                  ', ',
+                              )
+                            : 'None'
+                    }
+                />
+
+                <SummaryItem
+                    label="Tagline"
+                    value={
+                        form.tagline_mode ===
+                        'ai'
+                            ? 'AI'
+                            : form.tagline_mode ===
+                                'none'
+                              ? 'None'
+                              : form.tagline ||
+                                '—'
+                    }
+                />
+
+                <SummaryItem
+                    label="Reference"
+                    value={
+                        form.reference_image
+                            ? 'Added'
+                            : 'None'
+                    }
+                />
+            </CardContent>
+        </Card>
+    );
+
+    /* ==========================================================================
+       GENERATION MOCKUP
+    ========================================================================== */
+
+    const generationPanel = (
+        <Card className="mx-auto max-w-3xl overflow-hidden rounded-2xl border-border shadow-sm">
+            <CardHeader className="border-b p-5 md:p-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                            AI Generation
+                        </p>
+
+                        <h2 className="mt-1 text-lg font-semibold">
+                            {generationState ===
+                            'generating'
+                                ? 'Creating your image'
+                                : 'Generation ready'}
+                        </h2>
+                    </div>
+
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                    </div>
+                </div>
+            </CardHeader>
+
+            <CardContent className="p-5 md:p-7">
+                {generationState ===
+                    'generating' && (
+                    <div className="space-y-6">
+                        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-2xl border border-primary/20 bg-primary/5">
+                            <Sparkles className="h-8 w-8 animate-pulse text-primary" />
+                        </div>
+
+                        <div className="text-center">
+                            <p className="text-sm font-medium">
+                                Preparing your
+                                marketing visual
+                            </p>
+
+                            <p className="mt-1 text-xs text-muted-foreground">
+                                This is a mock
+                                generation while
+                                the AI service is
+                                being connected.
+                            </p>
+                        </div>
+
+                        <div className="mx-auto max-w-md">
+                            <div className="mb-2 flex justify-between text-xs text-muted-foreground">
+                                <span>
+                                    Generating
+                                </span>
+
+                                <span>
+                                    {
+                                        generationProgress
+                                    }
+                                    %
+                                </span>
+                            </div>
+
+                            <div className="h-2 overflow-hidden rounded-full bg-muted">
+                                <div
+                                    className="h-full rounded-full bg-primary transition-all duration-500"
+                                    style={{
+                                        width: `${generationProgress}%`,
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {generationState ===
+                    'ready' && (
+                    <div className="space-y-6">
+                        {/* MOCK IMAGE TAB */}
+                        <div className="overflow-hidden rounded-2xl border border-border bg-muted/20">
+                            <div className="flex items-center gap-2 border-b bg-background px-4 py-3">
+                                <div className="h-2 w-2 rounded-full bg-primary" />
+
+                                <span className="text-xs font-medium">
+                                    Generated
+                                    Marketing
+                                    Image
+                                </span>
+
+                                <Badge
+                                    variant="secondary"
+                                    className="ml-auto"
+                                >
+                                    Mockup
+                                </Badge>
+                            </div>
+
+                            <div className="flex min-h-[280px] items-center justify-center p-8">
+                                <div className="w-full max-w-md rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-8 text-center">
+                                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+                                        <ImagePlus className="h-6 w-6 text-primary" />
+                                    </div>
+
+                                    <p className="mt-4 text-sm font-semibold">
+                                        Image
+                                        preview
+                                        placeholder
+                                    </p>
+
+                                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                        The actual
+                                        AI-generated
+                                        image will
+                                        appear here
+                                        once the
+                                        image API
+                                        is connected.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* SIMPLE STATUS */}
+                        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                                    <Check className="h-4 w-4 text-primary" />
+                                </div>
+
+                                <div>
+                                    <p className="text-sm font-medium">
+                                        Mock generation
+                                        complete
+                                    </p>
+
+                                    <p className="text-xs text-muted-foreground">
+                                        Ready for the
+                                        real AI image
+                                        service.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end">
+                            <Button
+                                type="button"
+                                onClick={
+                                    createAnother
+                                }
+                            >
+                                Create Another
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+
+    /* ==========================================================================
+       RENDER
+    ========================================================================== */
 
     return (
         <>
             <Head title="AI Marketing Studio" />
 
             <div className="min-h-screen bg-background text-foreground">
-                <div className="space-y-8 p-4 md:p-6 lg:p-8">
-                    {/* =====================================================
-                        PAGE HEADER
-                    ====================================================== */}
-                    <section
-                        className="
-                            space-y-2
+                <div className="p-4 md:p-6 lg:p-8">
+                    {/* HEADER */}
+                    <section className="mb-6">
+                        <div className="flex items-center gap-2">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                                <Sparkles className="h-4 w-4 text-primary" />
+                            </div>
 
-                            animate-in
-                            fade-in
-                            slide-in-from-bottom-2
-                            duration-500
-                        "
-                    >
-                        <p className="text-sm font-medium text-muted-foreground">
-                            AI Marketing Studio
-                        </p>
+                            <p className="text-sm font-medium text-muted-foreground">
+                                AI Marketing Studio
+                            </p>
+                        </div>
 
-                        <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-                            Create a marketing brief
+                        <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
+                            Create your marketing
+                            image
                         </h1>
 
-                        <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-                            Define your product, brand direction, and
-                            campaign context before generating your
-                            marketing asset.
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Build your campaign in
+                            three simple steps.
                         </p>
                     </section>
 
-                    {/* =====================================================
-                        MAIN GENERATOR CARD
-                    ====================================================== */}
-                    <Card
-                        className="
-                            overflow-hidden
-                            rounded-2xl
-                            border-border
-                            bg-card
+                    {/* GENERATION TAB */}
+                    {generationState !==
+                    'idle' ? (
+                        generationPanel
+                    ) : (
+                        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+                            {/* MAIN FORM */}
+                            <Card className="overflow-hidden rounded-2xl border-border shadow-sm">
+                                {/* STEP HEADER */}
+                                <CardHeader className="border-b p-5 md:p-6">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                                                Step{' '}
+                                                {
+                                                    currentStep
+                                                }{' '}
+                                                of 3
+                                            </p>
 
-                            shadow-[0_2px_8px_rgba(0,0,0,0.06)]
+                                            <h2 className="mt-1 text-lg font-semibold">
+                                                {currentStep ===
+                                                1
+                                                    ? 'Product & Campaign'
+                                                    : currentStep ===
+                                                        2
+                                                      ? 'Content Style'
+                                                      : 'Tagline & Reference'}
+                                            </h2>
+                                        </div>
 
-                            transition-all
-                            duration-300
-
-                            hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)]
-
-                            animate-in
-                            fade-in
-                            slide-in-from-bottom-3
-                            duration-500
-                        "
-                    >
-                        {/* =================================================
-                            STEP HEADER
-                        ================================================== */}
-                        <CardHeader className="border-b border-border p-5 md:p-6">
-                            <div className="space-y-6">
-                                {/* Step Indicator */}
-                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium text-foreground">
-                                            Step {currentStep} of{' '}
-                                            {stepTitles.length}
-                                        </p>
-
-                                        <p
-                                            key={currentStep}
-                                            className="
-                                                mt-1
-                                                text-sm
-                                                text-muted-foreground
-
-                                                animate-in
-                                                fade-in
-                                                slide-in-from-left-1
-                                                duration-200
-                                            "
-                                        >
-                                            {
-                                                stepTitles[
-                                                    currentStep -
-                                                        1
-                                                ]
-                                            }
-                                        </p>
-                                    </div>
-
-                                    <span className="rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
-                                        {Math.round(progress)}%
-                                    </span>
-                                </div>
-
-                                {/* Progress */}
-                                <div className="relative">
-                                    <Progress
-                                        value={progress}
-                                        className="h-1.5 overflow-hidden"
-                                    />
-
-                                    <div
-                                        className="
-                                            pointer-events-none
-                                            absolute
-                                            inset-y-0
-                                            left-0
-                                            rounded-full
-                                            bg-primary/20
-                                            blur-sm
-                                            transition-all
-                                            duration-500
-                                        "
-                                        style={{
-                                            width: `${progress}%`,
-                                        }}
-                                    />
-                                </div>
-
-                                {/* Step Navigation */}
-                                <div className="hidden grid-cols-4 gap-2 md:grid">
-                                    {stepTitles.map(
-                                        (
-                                            title,
-                                            index,
-                                        ) => {
-                                            const step =
-                                                index + 1;
-
-                                            const active =
-                                                step ===
-                                                currentStep;
-
-                                            const completed =
-                                                step <
-                                                currentStep;
-
-                                            return (
-                                                <button
-                                                    key={
-                                                        title
-                                                    }
-                                                    type="button"
-                                                    onClick={() =>
-                                                        setCurrentStep(
-                                                            step,
-                                                        )
-                                                    }
-                                                    className={`
-                                                        group
-                                                        rounded-xl
-                                                        px-3
-                                                        py-2.5
-                                                        text-left
-                                                        text-xs
-
-                                                        transition-all
-                                                        duration-200
-
-                                                        hover:-translate-y-0.5
-
-                                                        ${
-                                                            active
-                                                                ? 'bg-primary/10 text-primary shadow-sm'
-                                                                : completed
-                                                                  ? 'text-foreground hover:bg-muted'
-                                                                  : 'text-muted-foreground hover:bg-muted/60'
+                                        {/* STEP INDICATORS */}
+                                        <div className="flex items-center gap-1.5">
+                                            {[1, 2, 3].map(
+                                                (
+                                                    step,
+                                                ) => (
+                                                    <button
+                                                        key={
+                                                            step
                                                         }
-                                                    `}
-                                                >
-                                                    <div className="flex items-center gap-2.5">
-                                                        <span
-                                                            className={`
-                                                                flex
-                                                                h-6
-                                                                w-6
-                                                                shrink-0
-                                                                items-center
-                                                                justify-center
-                                                                rounded-full
-                                                                border
-                                                                text-[10px]
-                                                                font-semibold
-
-                                                                transition-all
-                                                                duration-200
-
-                                                                ${
-                                                                    active
-                                                                        ? 'scale-105 border-primary bg-primary text-primary-foreground shadow-sm'
-                                                                        : completed
-                                                                          ? 'border-primary/40 bg-primary/10 text-primary'
-                                                                          : 'border-border bg-background group-hover:border-primary/30'
-                                                                }
-                                                            `}
-                                                        >
-                                                            {completed ? (
-                                                                <Check className="h-3 w-3 animate-in zoom-in-50 duration-200" />
-                                                            ) : (
-                                                                step
-                                                            )}
-                                                        </span>
-
-                                                        <span>
-                                                            {
-                                                                title
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (
+                                                                step <
+                                                                currentStep
+                                                            ) {
+                                                                setCurrentStep(
+                                                                    step as Step,
+                                                                );
                                                             }
-                                                        </span>
-                                                    </div>
-                                                </button>
-                                            );
-                                        },
-                                    )}
-                                </div>
-                            </div>
-                        </CardHeader>
 
-                        {/* =================================================
-                            CONTENT
-                        ================================================== */}
-                        <CardContent className="p-5 md:p-7">
-                            {renderStep()}
+                                                            if (
+                                                                step ===
+                                                                2
+                                                            ) {
+                                                                if (
+                                                                    stepOneValid
+                                                                ) {
+                                                                    setCurrentStep(
+                                                                        2,
+                                                                    );
+                                                                }
+                                                            }
 
-                            {/* =================================================
-                                FOOTER ACTIONS
-                            ================================================== */}
-                            <div className="mt-10 flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={
-                                        previousStep
-                                    }
-                                    disabled={
-                                        currentStep === 1 ||
-                                        isSubmitting
-                                    }
-                                    className="
-                                        gap-2
-                                        shadow-none
+                                                            if (
+                                                                step ===
+                                                                3
+                                                            ) {
+                                                                if (
+                                                                    stepOneValid
+                                                                ) {
+                                                                    setCurrentStep(
+                                                                        3,
+                                                                    );
+                                                                }
+                                                            }
+                                                        }}
+                                                        className={`
+                                                            h-1.5
+                                                            rounded-full
+                                                            transition-all
 
-                                        transition-all
-                                        duration-200
+                                                            ${
+                                                                step ===
+                                                                currentStep
+                                                                    ? 'w-7 bg-primary'
+                                                                    : step <
+                                                                        currentStep
+                                                                      ? 'w-4 bg-primary/40'
+                                                                      : 'w-4 bg-muted'
+                                                            }
+                                                        `}
+                                                        aria-label={`Step ${step}`}
+                                                    />
+                                                ),
+                                            )}
+                                        </div>
+                                    </div>
+                                </CardHeader>
 
-                                        hover:-translate-x-0.5
-                                        hover:shadow-sm
-                                    "
-                                >
-                                    <ArrowLeft className="h-4 w-4" />
+                                {/* CONTENT */}
+                                <CardContent className="p-5 md:p-7">
+                                    {currentStep ===
+                                        1 &&
+                                        renderStepOne()}
 
-                                    Back
-                                </Button>
+                                    {currentStep ===
+                                        2 &&
+                                        renderStepTwo()}
 
-                                {currentStep <
-                                stepTitles.length ? (
-                                    <Button
-                                        type="button"
-                                        onClick={
-                                            nextStep
-                                        }
-                                        className="
-                                            group
-                                            gap-2
-                                            shadow-sm
+                                    {currentStep ===
+                                        3 &&
+                                        renderStepThree()}
 
-                                            transition-all
-                                            duration-200
+                                    {/* FOOTER */}
+                                    <div className="mt-8 flex items-center justify-between border-t border-border pt-5">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={
+                                                previousStep
+                                            }
+                                            disabled={
+                                                currentStep ===
+                                                1
+                                            }
+                                            className="gap-2"
+                                        >
+                                            <ArrowLeft className="h-4 w-4" />
+                                            Back
+                                        </Button>
 
-                                            hover:translate-x-0.5
-                                            hover:shadow-md
-                                        "
-                                        disabled={
-                                            isSubmitting
-                                        }
-                                    >
-                                        Continue
-
-                                        <ArrowRight
-                                            className="
-                                                h-4
-                                                w-4
-
-                                                transition-transform
-                                                duration-200
-
-                                                group-hover:translate-x-1
-                                            "
-                                        />
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        type="button"
-                                        onClick={
-                                            submit
-                                        }
-                                        className="
-                                            group
-                                            gap-2
-                                            shadow-sm
-
-                                            transition-all
-                                            duration-200
-
-                                            hover:scale-[1.01]
-                                            hover:shadow-md
-
-                                            active:scale-[0.99]
-                                        "
-                                        disabled={
-                                            isSubmitting
-                                        }
-                                    >
-                                        {isSubmitting ? (
-                                            <>
-                                                <span
-                                                    className="
-                                                        h-4
-                                                        w-4
-                                                        animate-spin
-                                                        rounded-full
-                                                        border-2
-                                                        border-current
-                                                        border-t-transparent
-                                                    "
-                                                />
-
-                                                Creating your
-                                                marketing
-                                                visual
-                                            </>
+                                        {currentStep <
+                                        3 ? (
+                                            <Button
+                                                type="button"
+                                                onClick={
+                                                    nextStep
+                                                }
+                                                disabled={
+                                                    currentStep ===
+                                                        1 &&
+                                                    !stepOneValid
+                                                }
+                                                className="group gap-2"
+                                            >
+                                                Continue
+                                                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                            </Button>
                                         ) : (
-                                            <>
-                                                Generate design
-
-                                                <Sparkles
-                                                    className="
-                                                        h-4
-                                                        w-4
-
-                                                        transition-transform
-                                                        duration-300
-
-                                                        group-hover:rotate-12
-                                                        group-hover:scale-110
-                                                    "
-                                                />
-                                            </>
+                                            <Button
+                                                type="button"
+                                                onClick={
+                                                    generateMarketingImage
+                                                }
+                                                disabled={
+                                                    !canGenerate
+                                                }
+                                                className="group gap-2"
+                                            >
+                                                <Sparkles className="h-4 w-4" />
+                                                Generate
+                                            </Button>
                                         )}
-                                    </Button>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* =====================================================
-                        GENERATION STATUS
-                    ====================================================== */}
-                    {isSubmitting && (
-                        <Card
-                            className="
-                                overflow-hidden
-                                rounded-2xl
-                                border-border
-                                bg-card
-
-                                shadow-[0_2px_8px_rgba(0,0,0,0.06)]
-
-                                animate-in
-                                fade-in
-                                slide-in-from-bottom-2
-                                duration-300
-                            "
-                        >
-                            <CardContent className="p-5">
-                                <div className="flex items-center gap-4">
-                                    <div
-                                        className="
-                                            relative
-                                            flex
-                                            h-11
-                                            w-11
-                                            shrink-0
-                                            items-center
-                                            justify-center
-                                            rounded-xl
-                                            border
-                                            border-primary/20
-                                            bg-primary/5
-                                        "
-                                    >
-                                        <span
-                                            className="
-                                                absolute
-                                                h-8
-                                                w-8
-                                                animate-ping
-                                                rounded-full
-                                                bg-primary/10
-                                            "
-                                        />
-
-                                        <span
-                                            className="
-                                                relative
-                                                h-5
-                                                w-5
-                                                animate-spin
-                                                rounded-full
-                                                border-2
-                                                border-primary
-                                                border-t-transparent
-                                            "
-                                        />
                                     </div>
+                                </CardContent>
+                            </Card>
 
-                                    <div className="min-w-0">
-                                        <p className="font-medium text-foreground">
-                                            Preparing your campaign
-                                        </p>
-
-                                        <p className="mt-1 text-sm text-muted-foreground">
-                                            Creating your marketing
-                                            visual and finalizing
-                                            your design.
-                                        </p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                            {/* SUMMARY */}
+                            {summary}
+                        </div>
                     )}
                 </div>
             </div>
         </>
     );
 }
+
+/* ==========================================================================
+   SUMMARY ITEM
+========================================================================== */
+
+function SummaryItem({
+    label,
+    value,
+}: {
+    label: string;
+    value: string;
+}) {
+    return (
+        <div className="flex items-start justify-between gap-4">
+            <span className="shrink-0 text-xs text-muted-foreground">
+                {label}
+            </span>
+
+            <span className="max-w-[190px] text-right text-xs font-medium">
+                {value}
+            </span>
+        </div>
+    );
+}
+
+/* ==========================================================================
+   LAYOUT
+========================================================================== */
 
 GeneratorPage.layout = {
     breadcrumbs: [

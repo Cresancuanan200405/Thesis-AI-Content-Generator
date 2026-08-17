@@ -6,9 +6,12 @@ use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use App\Models\Event;
 use App\Models\User;
+use App\Services\PhilippineHolidayService;
 use Carbon\CarbonInterface;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -64,6 +67,60 @@ class EventController extends Controller
                 })
                 ->values()->all(),
             'filter' => $filter,
+        ]);
+    }
+
+    /**
+     * Fetch events for a specific year (used by React calendar via AJAX).
+     * Automatically syncs Philippine holidays if needed.
+     */
+    public function getYearEvents(Request $request, PhilippineHolidayService $holidayService): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $year = $request->input('year', now()->year);
+        $filter = $request->input('filter', 'all');
+
+        // Ensure Philippine holidays are synced for this year
+        try {
+            $holidayService->ensureYearSynced((int) $year);
+        } catch (\Exception $e) {
+            Log::error("Failed to sync holidays for year {$year}: {$e->getMessage()}");
+            // Continue anyway - we'll return what's available in the database
+        }
+
+        // Build query for events in the specified year
+        $query = Event::query()
+            ->where(fn ($query) => $query->where('user_id', $user->id)->orWhere('is_global', true))
+            ->whereYear('date', $year)
+            ->orderBy('date');
+
+        // Apply filters
+        if ($filter === 'holidays') {
+            $query->whereIn('type', ['holiday', 'seasonal']);
+        } elseif ($filter === 'commercial') {
+            $query->where('type', 'commercial');
+        } elseif ($filter === 'custom') {
+            $query->where('type', 'custom');
+        }
+
+        $events = $query->get();
+
+        return response()->json([
+            'year' => $year,
+            'events' => $events->map(function (Event $event): array {
+                $eventDate = $event->getAttributeValue('date');
+
+                return [
+                    'id' => $event->id,
+                    'name' => $event->name,
+                    'description' => $event->description,
+                    'date' => $eventDate instanceof CarbonInterface ? $eventDate->format('Y-m-d') : null,
+                    'type' => $event->type,
+                    'is_global' => (bool) $event->is_global,
+                    'user_id' => $event->user_id,
+                ];
+            })->values()->all(),
         ]);
     }
 

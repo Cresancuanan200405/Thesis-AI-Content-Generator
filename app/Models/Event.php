@@ -7,7 +7,21 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int|null $user_id
+ * @property string $name
+ * @property string|null $description
+ * @property Carbon $date
+ * @property string $type
+ * @property bool $is_global
+ * @property string|null $country
+ * @property string|null $source
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ */
 class Event extends Model
 {
     /** @use HasFactory<EventFactory> */
@@ -20,6 +34,8 @@ class Event extends Model
         'date',
         'type',
         'is_global',
+        'country',
+        'source',
     ];
 
     protected $casts = [

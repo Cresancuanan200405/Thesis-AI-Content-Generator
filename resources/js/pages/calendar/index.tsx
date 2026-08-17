@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+﻿import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft,
     ArrowRight,
@@ -6,7 +6,13 @@ import {
     Filter,
     Sparkles,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -61,7 +67,7 @@ const filterOptions = [
 ];
 
 export default function CalendarPage({
-    events = [],
+    events: initialEvents = [],
     filter = 'all',
     upcoming_events = [],
 }: any) {
@@ -73,6 +79,97 @@ export default function CalendarPage({
                 1,
             ),
     );
+
+    const [allEvents, setAllEvents] = useState(
+        initialEvents,
+    );
+
+    const [isLoadingYear, setIsLoadingYear] =
+        useState(false);
+
+    const loadedYearsRef = useRef<Set<number>>(
+        new Set([new Date().getFullYear()]),
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Load events for a specific year
+    |--------------------------------------------------------------------------
+    */
+
+    const loadYearEvents = useCallback(
+        async (year: number, currentFilter: string) => {
+            if (loadedYearsRef.current.has(year)) {
+                return;
+            }
+
+            setIsLoadingYear(true);
+
+            try {
+                const params = new URLSearchParams({
+                    year: year.toString(),
+                    filter: currentFilter || 'all',
+                });
+
+                const response = await fetch(
+                    `/calendar/events-year?${params}`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    },
+                );
+
+                if (!response.ok) {
+                    console.error(
+                        `Failed to load events for year ${year}`,
+                    );
+
+                    return;
+                }
+
+                const data = await response.json();
+
+                setAllEvents((prev: any[]) => {
+                    // Combine with existing events, avoiding duplicates
+                    const eventIds = new Set(
+                        prev.map((e: any) => e.id),
+                    );
+
+                    const newEvents = data.events.filter(
+                        (e: any) => !eventIds.has(e.id),
+                    );
+
+                    return [...prev, ...newEvents];
+                });
+
+                loadedYearsRef.current.add(year);
+            } catch (error) {
+                console.error(
+                    `Error loading events for year ${year}:`,
+                    error,
+                );
+            } finally {
+                setIsLoadingYear(false);
+            }
+        },
+        [],
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Auto-load events when month changes
+    |--------------------------------------------------------------------------
+    */
+
+     
+    useEffect(() => {
+        const year = month.getFullYear();
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        loadYearEvents(year, filter);
+    }, [month, filter, loadYearEvents]);
 
     /*
     |--------------------------------------------------------------------------
@@ -92,6 +189,38 @@ export default function CalendarPage({
             },
         );
     };
+
+    /*
+    |--------------------------------------------------------------------------
+    | Apply filter to all loaded events
+    |--------------------------------------------------------------------------
+    */
+
+    const filteredEvents = useMemo(() => {
+        if (filter === 'holidays') {
+            return allEvents.filter(
+                (event: any) =>
+                    event.type === 'holiday' ||
+                    event.type === 'seasonal',
+            );
+        }
+
+        if (filter === 'commercial') {
+            return allEvents.filter(
+                (event: any) =>
+                    event.type === 'commercial',
+            );
+        }
+
+        if (filter === 'custom') {
+            return allEvents.filter(
+                (event: any) =>
+                    event.type === 'custom',
+            );
+        }
+
+        return allEvents;
+    }, [allEvents, filter]);
 
     /*
     |--------------------------------------------------------------------------
@@ -155,7 +284,7 @@ export default function CalendarPage({
             any[]
         >();
 
-        for (const event of events) {
+        for (const event of filteredEvents) {
             if (!event.date) {
                 continue;
             }
@@ -186,7 +315,7 @@ export default function CalendarPage({
             cells,
             datesByKey,
         };
-    }, [events, month]);
+    }, [filteredEvents, month]);
 
     /*
     |--------------------------------------------------------------------------
@@ -595,6 +724,9 @@ export default function CalendarPage({
                                         onClick={
                                             previousMonth
                                         }
+                                        disabled={
+                                            isLoadingYear
+                                        }
                                         className="
                                             h-9
                                             w-9
@@ -642,6 +774,9 @@ export default function CalendarPage({
                                             onClick={
                                                 goToToday
                                             }
+                                            disabled={
+                                                isLoadingYear
+                                            }
                                             className="
                                                 hidden
                                                 h-9
@@ -661,6 +796,9 @@ export default function CalendarPage({
                                             size="icon"
                                             onClick={
                                                 nextMonth
+                                            }
+                                            disabled={
+                                                isLoadingYear
                                             }
                                             className="
                                                 h-9
