@@ -2,10 +2,13 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft,
     Download,
+    Heart,
     ImageIcon,
     Sparkles,
     Trash2,
 } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +28,46 @@ import {
 } from '@/components/ui/dialog';
 
 export default function DesignShowPage({ design }: any) {
+    const [isFavorite, setIsFavorite] = useState<boolean>(
+        Boolean(design.is_favorite),
+    );
+
+    const toggleFavorite = async () => {
+        const nextVal = !isFavorite;
+        setIsFavorite(nextVal);
+
+        try {
+            const res = await fetch(`/designs/${design.id}/favorite`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN':
+                        document.querySelector<HTMLMetaElement>(
+                            'meta[name="csrf-token"]',
+                        )?.content || '',
+                },
+            });
+
+            if (!res.ok) {
+                throw new Error('Failed to update favorite');
+            }
+
+            const data = await res.json();
+            setIsFavorite(data.is_favorite);
+            toast.success(
+                data.message ||
+                    (data.is_favorite
+                        ? 'Added to favorites'
+                        : 'Removed from favorites'),
+            );
+        } catch (err) {
+            setIsFavorite(!nextVal);
+            toast.error('Unable to update favorite status.');
+        }
+    };
+
     const handleDelete = () => {
         router.delete(`/designs/${design.id}`);
     };
@@ -59,7 +102,25 @@ export default function DesignShowPage({ design }: any) {
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={toggleFavorite}
+                                className={`gap-2 bg-background/60 ${
+                                    isFavorite
+                                        ? 'border-rose-500/40 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 hover:text-rose-600'
+                                        : 'hover:text-rose-500'
+                                }`}
+                            >
+                                <Heart
+                                    className={`h-4 w-4 ${
+                                        isFavorite ? 'fill-rose-500 text-rose-500' : ''
+                                    }`}
+                                />
+                                {isFavorite ? 'Favorited' : 'Favorite'}
+                            </Button>
+
                             <Button
                                 asChild
                                 variant="outline"

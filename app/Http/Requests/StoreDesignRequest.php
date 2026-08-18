@@ -2,13 +2,13 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Design;
+use App\Models\Campaign;
 use App\Models\Event;
 use App\Models\Product;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreCampaignRequest extends FormRequest
+class StoreDesignRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -21,16 +21,23 @@ class StoreCampaignRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'product_id' => ['nullable', 'exists:products,id'],
+            'product_name' => ['required', 'string', 'max:255'],
+            'prompt' => ['nullable', 'string', 'max:3000'],
+            'image_prompt' => ['nullable', 'string', 'max:3000'],
+            'price' => ['nullable', 'numeric', 'min:0'],
             'event_id' => ['nullable', 'exists:events,id'],
-            'design_id' => ['nullable', 'exists:designs,id'],
-            'objective' => ['nullable', 'string', 'max:2000'],
-            'target_audience' => ['nullable', 'string', 'max:255'],
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'status' => ['nullable', 'in:draft,scheduled,active,completed'],
+            'product_id' => ['nullable', 'exists:products,id'],
+            'campaign_id' => ['nullable', 'exists:campaigns,id'],
+            'brand_tone' => ['nullable'],
+            'brand_tone.*' => ['string', 'max:255'],
+            'visual_theme' => ['nullable'],
+            'visual_theme.*' => ['string', 'max:255'],
+            'content_style' => ['nullable'],
+            'content_style.*' => ['string', 'max:255'],
+            'tagline' => ['nullable', 'string', 'max:255'],
+            'tagline_mode' => ['nullable', 'string', 'max:50'],
+            'include_logo' => ['nullable', 'boolean'],
+            'reference_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
         ];
     }
 
@@ -59,11 +66,11 @@ class StoreCampaignRequest extends FormRequest
                 }
             }
 
-            if ($this->filled('design_id')) {
-                $design = Design::query()->whereKey($this->input('design_id'))->first();
+            if ($this->filled('campaign_id')) {
+                $campaign = Campaign::query()->whereKey($this->input('campaign_id'))->first();
 
-                if (! $design || $design->user_id !== $user->id) {
-                    $validator->errors()->add('design_id', 'The selected design does not belong to your account.');
+                if (! $campaign || $campaign->user_id !== $user->id) {
+                    $validator->errors()->add('campaign_id', 'The selected campaign does not belong to your account.');
                 }
             }
         });

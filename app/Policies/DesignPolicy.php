@@ -17,6 +17,11 @@ class DesignPolicy
         return $user->id === $design->user_id;
     }
 
+    public function update(User $user, Design $design): bool
+    {
+        return $user->id === $design->user_id;
+    }
+
     public function delete(User $user, Design $design): bool
     {
         return $user->id === $design->user_id;

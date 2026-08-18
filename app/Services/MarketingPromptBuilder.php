@@ -61,8 +61,6 @@ class MarketingPromptBuilder
             $lines[] = 'Additional notes: '.$payload['notes'];
         }
 
-
-
         return implode("\n", $lines);
     }
 }

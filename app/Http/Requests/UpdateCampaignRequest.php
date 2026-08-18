@@ -24,11 +24,11 @@ class UpdateCampaignRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:2000'],
             'product_id' => ['nullable', 'exists:products,id'],
             'event_id' => ['nullable', 'exists:events,id'],
-            'objective' => ['sometimes', 'required', 'string', 'max:2000'],
+            'objective' => ['nullable', 'string', 'max:2000'],
             'target_audience' => ['nullable', 'string', 'max:255'],
-            'start_date' => ['sometimes', 'required', 'date'],
+            'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'status' => ['sometimes', 'required', 'in:draft,scheduled,active,completed'],
+            'status' => ['nullable', 'in:draft,scheduled,active,completed'],
         ];
     }
 

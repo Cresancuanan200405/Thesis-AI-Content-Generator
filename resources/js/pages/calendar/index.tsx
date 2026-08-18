@@ -1,4 +1,4 @@
-﻿import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft,
     ArrowRight,
@@ -7,9 +7,13 @@ import {
     Clock3,
     Filter,
     Info,
+    Layers,
+    Loader2,
     Plus,
     Sparkles,
     Tag,
+    Trash2,
+    X,
 } from 'lucide-react';
 import {
     useCallback,
@@ -18,6 +22,7 @@ import {
     useRef,
     useState,
 } from 'react';
+import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -31,6 +36,7 @@ import {
     Dialog,
     DialogContent,
     DialogDescription,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
@@ -272,6 +278,104 @@ export default function CalendarPage({
 
     const [isEventDialogOpen, setIsEventDialogOpen] =
         useState(false);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delete event state
+    |--------------------------------------------------------------------------
+    */
+
+    const [eventToDelete, setEventToDelete] = useState<CalendarEvent | null>(null);
+    const [isDeletingEvent, setIsDeletingEvent] = useState(false);
+
+    const handleDeleteEvent = () => {
+        if (!eventToDelete) return;
+        setIsDeletingEvent(true);
+        router.delete(`/events/${eventToDelete.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                const deletedId = eventToDelete.id;
+                setAllEvents((prev) => prev.filter((e) => e.id !== deletedId));
+                setIsEventDialogOpen(false);
+                setEventToDelete(null);
+                toast.success('Event deleted successfully.');
+            },
+            onError: () => {
+                toast.error('Failed to delete event.');
+            },
+            onFinish: () => {
+                setIsDeletingEvent(false);
+            },
+        });
+    };
+
+    /*
+    |--------------------------------------------------------------------------
+    | Create campaign from event state
+    |--------------------------------------------------------------------------
+    */
+
+    const [isCampaignDialogOpen, setIsCampaignDialogOpen] = useState(false);
+    const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
+    const [campaignFormData, setCampaignFormData] = useState({
+        name: '',
+        event_id: '',
+        start_date: '',
+        end_date: '',
+        status: 'draft',
+    });
+    const [campaignErrors, setCampaignErrors] = useState<Record<string, string>>({});
+
+    const openCreateCampaignFromEvent = (event: CalendarEvent) => {
+        const defaultDate = event.date ?? '';
+        setCampaignFormData({
+            name: `${event.name} Campaign`,
+            event_id: String(event.id),
+            start_date: defaultDate,
+            end_date: defaultDate,
+            status: 'draft',
+        });
+        setCampaignErrors({});
+        setIsCampaignDialogOpen(true);
+    };
+
+    const handleCreateCampaignSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (isCreatingCampaign) return;
+
+        if (!campaignFormData.name.trim()) {
+            setCampaignErrors({ name: 'Campaign name is required.' });
+            return;
+        }
+
+        setIsCreatingCampaign(true);
+        setCampaignErrors({});
+
+        router.post(
+            '/campaigns',
+            {
+                name: campaignFormData.name.trim(),
+                event_id: campaignFormData.event_id ? Number(campaignFormData.event_id) : null,
+                start_date: campaignFormData.start_date || null,
+                end_date: campaignFormData.end_date || null,
+                status: campaignFormData.status,
+            },
+            {
+                onSuccess: () => {
+                    setIsCampaignDialogOpen(false);
+                    setIsEventDialogOpen(false);
+                    toast.success('Campaign created successfully!');
+                },
+                onError: (errs) => {
+                    setCampaignErrors(errs);
+                    toast.error('Failed to create campaign. Please check inputs.');
+                },
+                onFinish: () => {
+                    setIsCreatingCampaign(false);
+                },
+            },
+        );
+    };
 
     /*
     |--------------------------------------------------------------------------
@@ -975,14 +1079,37 @@ export default function CalendarPage({
     |--------------------------------------------------------------------------
     */
 
-    const sortedUpcomingEvents =
-        useMemo(() => {
-            return [
-                ...upcoming_events,
-            ].slice(0, 8);
-        }, [
-            upcoming_events,
-        ]);
+    const sortedUpcomingEvents = useMemo(() => {
+        const todayDate = new Date();
+        todayDate.setHours(0, 0, 0, 0);
+        const todayStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`;
+
+        const futureEvents = allEvents.filter(
+            (ev) => (ev.date ?? '') >= todayStr,
+        );
+
+        return sortEventsByDate(futureEvents)
+            .slice(0, 10)
+            .map((ev) => {
+                let daysText = ev.days;
+                if (!daysText && ev.date) {
+                    const eventDate = new Date(`${ev.date}T00:00:00`);
+                    const diffTime = eventDate.getTime() - todayDate.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    daysText =
+                        diffDays === 0
+                            ? 'Today'
+                            : diffDays === 1
+                              ? 'Tomorrow'
+                              : `${diffDays} days left`;
+                }
+
+                return {
+                    ...ev,
+                    days: daysText,
+                };
+            });
+    }, [allEvents]);
 
     /*
     |--------------------------------------------------------------------------
@@ -2075,37 +2202,48 @@ export default function CalendarPage({
                     {selectedEvent && (
                         <>
                             <DialogHeader>
-                                <div className="flex items-start gap-3">
-                                    <div
-                                        className={`
-                                            flex
-                                            h-12
-                                            w-12
-                                            shrink-0
-                                            items-center
-                                            justify-center
-                                            rounded-2xl
-                                            border
-                                            ${getEventTypeClass(
-                                                selectedEvent.type,
-                                            )}
-                                        `}
-                                    >
-                                        <CalendarDays className="h-5 w-5" />
+                                <div className="flex items-start justify-between gap-3 pr-6">
+                                    <div className="flex items-start gap-3 min-w-0">
+                                        <div
+                                            className={`
+                                                flex
+                                                h-12
+                                                w-12
+                                                shrink-0
+                                                items-center
+                                                justify-center
+                                                rounded-2xl
+                                                border
+                                                ${getEventTypeClass(
+                                                    selectedEvent.type,
+                                                )}
+                                            `}
+                                        >
+                                            <CalendarDays className="h-5 w-5" />
+                                        </div>
+
+                                        <div className="min-w-0">
+                                            <DialogTitle className="text-xl">
+                                                {selectedEvent.name}
+                                            </DialogTitle>
+
+                                            <DialogDescription>
+                                                Marketing calendar event details
+                                            </DialogDescription>
+                                        </div>
                                     </div>
 
-                                    <div className="min-w-0">
-                                        <DialogTitle className="text-xl">
-                                            {
-                                                selectedEvent.name
-                                            }
-                                        </DialogTitle>
-
-                                        <DialogDescription>
-                                            Marketing calendar
-                                            event details
-                                        </DialogDescription>
-                                    </div>
+                                    {(!selectedEvent.is_global || selectedEvent.type === 'custom') && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setEventToDelete(selectedEvent)}
+                                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                                            title="Delete event"
+                                            aria-label="Delete event"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    )}
                                 </div>
                             </DialogHeader>
 
@@ -2215,38 +2353,217 @@ export default function CalendarPage({
                                 )}
                             </div>
 
-                            <div className="flex gap-2 pt-2">
+                            <div className="flex flex-col sm:flex-row gap-2 pt-2">
                                 <Button
-                                    variant="outline"
-                                    onClick={() =>
-                                        setIsEventDialogOpen(
-                                            false,
-                                        )
-                                    }
-                                    className="flex-1"
+                                    onClick={() => {
+                                        setIsEventDialogOpen(false);
+                                        router.visit(
+                                            `/generator?event_id=${selectedEvent.id}&event_name=${encodeURIComponent(
+                                                selectedEvent.name,
+                                            )}`,
+                                        );
+                                    }}
+                                    className="flex-1 gap-2 rounded-xl shadow-sm"
                                 >
-                                    Close
+                                    <Sparkles className="h-4 w-4" />
+                                    Create Visual
                                 </Button>
 
                                 <Button
-                                    onClick={() =>
-                                        openCreateDialog(
-                                            selectedEvent.date
-                                                ? new Date(
-                                                      `${selectedEvent.date}T00:00:00`,
-                                                  )
-                                                : undefined,
-                                        )
-                                    }
-                                    className="flex-1 gap-2"
+                                    variant="secondary"
+                                    onClick={() => openCreateCampaignFromEvent(selectedEvent)}
+                                    className="flex-1 gap-2 rounded-xl"
                                 >
-                                    <Plus className="h-4 w-4" />
-
-                                    Create event
+                                    <Layers className="h-4 w-4" />
+                                    Create Campaign
                                 </Button>
                             </div>
                         </>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            {/* =============================================================
+                CREATE CAMPAIGN FROM EVENT DIALOG
+            ============================================================= */}
+
+            <Dialog
+                open={isCampaignDialogOpen}
+                onOpenChange={(open) => {
+                    if (!open && !isCreatingCampaign) {
+                        setIsCampaignDialogOpen(false);
+                    }
+                }}
+            >
+                <DialogContent className="rounded-2xl sm:max-w-lg">
+                    <form onSubmit={handleCreateCampaignSubmit}>
+                        <DialogHeader>
+                            <DialogTitle className="text-lg">
+                                Create Campaign from Event
+                            </DialogTitle>
+                            <DialogDescription>
+                                Launch a new marketing campaign linked to this event.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="mt-6 space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="camp-name">Campaign Name</Label>
+                                <Input
+                                    id="camp-name"
+                                    value={campaignFormData.name}
+                                    onChange={(e) =>
+                                        setCampaignFormData((prev) => ({
+                                            ...prev,
+                                            name: e.target.value,
+                                        }))
+                                    }
+                                    placeholder="e.g. Independence Day Big Sale"
+                                    disabled={isCreatingCampaign}
+                                    className={campaignErrors.name ? 'border-destructive' : ''}
+                                />
+                                {campaignErrors.name && (
+                                    <p className="text-xs text-destructive">
+                                        {campaignErrors.name}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="camp-status">Status</Label>
+                                <Select
+                                    value={campaignFormData.status}
+                                    onValueChange={(value) =>
+                                        setCampaignFormData((prev) => ({
+                                            ...prev,
+                                            status: value,
+                                        }))
+                                    }
+                                    disabled={isCreatingCampaign}
+                                >
+                                    <SelectTrigger id="camp-status">
+                                        <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="draft">Draft</SelectItem>
+                                        <SelectItem value="scheduled">Scheduled</SelectItem>
+                                        <SelectItem value="active">Active</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="camp-start">Start Date</Label>
+                                    <Input
+                                        id="camp-start"
+                                        type="date"
+                                        value={campaignFormData.start_date}
+                                        onChange={(e) =>
+                                            setCampaignFormData((prev) => ({
+                                                ...prev,
+                                                start_date: e.target.value,
+                                            }))
+                                        }
+                                        disabled={isCreatingCampaign}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="camp-end">End Date</Label>
+                                    <Input
+                                        id="camp-end"
+                                        type="date"
+                                        value={campaignFormData.end_date}
+                                        onChange={(e) =>
+                                            setCampaignFormData((prev) => ({
+                                                ...prev,
+                                                end_date: e.target.value,
+                                            }))
+                                        }
+                                        disabled={isCreatingCampaign}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <DialogFooter className="mt-6 gap-2 sm:gap-0">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsCampaignDialogOpen(false)}
+                                disabled={isCreatingCampaign}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={isCreatingCampaign || !campaignFormData.name.trim()}
+                                className="gap-2"
+                            >
+                                {isCreatingCampaign ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Creating Campaign...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Layers className="h-4 w-4" />
+                                        Create Campaign
+                                    </>
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* =============================================================
+                DELETE EVENT CONFIRMATION DIALOG
+            ============================================================= */}
+
+            <Dialog
+                open={!!eventToDelete}
+                onOpenChange={(open) => {
+                    if (!open && !isDeletingEvent) {
+                        setEventToDelete(null);
+                    }
+                }}
+            >
+                <DialogContent className="rounded-2xl sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg">
+                            Delete Calendar Event?
+                        </DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete{' '}
+                            <span className="font-semibold text-foreground">
+                                "{eventToDelete?.name}"
+                            </span>
+                            ? This event will be removed from your calendar.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <DialogFooter className="mt-6 gap-2 sm:gap-0">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setEventToDelete(null)}
+                            disabled={isDeletingEvent}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={handleDeleteEvent}
+                            disabled={isDeletingEvent}
+                            className="gap-2"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                            {isDeletingEvent ? 'Deleting...' : 'Delete Event'}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 

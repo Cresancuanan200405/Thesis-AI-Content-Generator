@@ -99,7 +99,10 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
     Route::get('generator', [GeneratorController::class, 'index'])->name('generator.index');
     Route::post('generator', [GeneratorController::class, 'store'])->name('generator.store');
     Route::get('designs', [DesignController::class, 'index'])->name('designs.index');
+    Route::post('designs', [DesignController::class, 'store'])->name('designs.store');
     Route::get('designs/{design}', [DesignController::class, 'show'])->name('designs.show');
+    Route::post('designs/{design}/favorite', [DesignController::class, 'toggleFavorite'])->name('designs.favorite');
+    Route::post('designs/{design}/attach-campaign', [DesignController::class, 'attachCampaign'])->name('designs.attach-campaign');
     Route::get('designs/{design}/download', [DesignController::class, 'download'])->name('designs.download');
     Route::post('designs/{design}/regenerate', [DesignController::class, 'regenerate'])->name('designs.regenerate');
     Route::delete('designs/{design}', [DesignController::class, 'destroy'])->name('designs.destroy');

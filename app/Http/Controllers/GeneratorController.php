@@ -12,6 +12,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Services\MarketingPromptBuilder;
 use App\Services\OpenAIImageService;
+use App\Services\PhilippineHolidayService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,7 @@ use RuntimeException;
 
 class GeneratorController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, PhilippineHolidayService $holidayService): Response
     {
         /** @var User|null $user */
         $user = $request->user();
@@ -37,10 +38,21 @@ class GeneratorController extends Controller
             $campaign = $user?->campaigns()->with(['product', 'event', 'business'])->whereKey($request->input('campaign'))->first();
         }
 
+        // Sync holidays for current year and upcoming 2 years
+        foreach ([now()->year, now()->year + 1, now()->year + 2] as $year) {
+            try {
+                $holidayService->ensureYearSynced((int) $year);
+            } catch (\Exception $e) {
+                Log::error("Failed to sync holidays for year {$year}: {$e->getMessage()}");
+            }
+        }
+
         $events = Event::query()
             ->where(fn ($query) => $query->where('user_id', $user?->id)->orWhere('is_global', true))
             ->orderBy('date')
             ->get();
+
+        $campaigns = $user?->campaigns()->orderByDesc('created_at')->get() ?? collect();
 
         return Inertia::render('generator/index', [
             'business' => $business ? [
@@ -51,6 +63,8 @@ class GeneratorController extends Controller
                 'description' => $business->description,
                 'target_audience' => $business->target_audience,
                 'unique_selling_point' => $business->unique_selling_point,
+                'logo_path' => $business->logo_path,
+                'logo_url' => $business->logo_path ? asset('storage/'.$business->logo_path) : null,
                 'content_style' => $this->decodeJsonList($business->content_style),
                 'default_tagline_behavior' => $business->default_tagline_behavior,
             ] : null,
@@ -62,6 +76,15 @@ class GeneratorController extends Controller
                 'product_id' => $campaign->product_id,
                 'event_id' => $campaign->event_id,
             ] : null,
+            'initial_event_id' => $request->input('event_id') ?: $request->input('event'),
+            'initial_product_name' => $request->input('product_name') ?: $request->input('product'),
+            'campaigns' => $campaigns->map(fn (Campaign $c): array => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'status' => $c->status,
+                'start_date' => $c->start_date?->format('Y-m-d'),
+                'end_date' => $c->end_date?->format('Y-m-d'),
+            ])->values()->all(),
             'products' => $products->map(fn ($product): array => [
                 'id' => $product->id,
                 'name' => $product->name,

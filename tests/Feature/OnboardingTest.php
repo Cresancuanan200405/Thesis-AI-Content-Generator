@@ -2,7 +2,6 @@
 
 use App\Models\Business;
 use App\Models\User;
-use Illuminate\Http\UploadedFile;
 
 it('guest cannot access onboarding', function () {
     $response = $this->get('/onboarding');

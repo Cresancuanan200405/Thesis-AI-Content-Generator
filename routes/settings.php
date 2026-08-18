@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\LogoController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use Illuminate\Support\Facades\Route;
@@ -22,4 +23,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('user-password.update');
 
     Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
+
+    Route::get('settings/logo', [LogoController::class, 'edit'])->name('logo.edit');
+    Route::post('settings/logo', [LogoController::class, 'update'])->name('logo.update');
+    Route::delete('settings/logo', [LogoController::class, 'destroy'])->name('logo.destroy');
 });
