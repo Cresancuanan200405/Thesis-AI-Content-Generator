@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\BrandKitController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\DesignController;
 use App\Http\Controllers\EventController;
@@ -26,11 +25,29 @@ Route::get('/test-resend', function () {
     ]);
 })->name('test.resend');
 
+Route::middleware('auth')->group(function () {
+    Route::post('email/verify-code', function (Request $request) {
+        $request->validate([
+            'code' => ['required', 'string', 'digits:6'],
+        ]);
+
+        $user = $request->user();
+
+        if (! $user || ! $user->verifyEmailCode($request->string('code')->toString())) {
+            return back()->withErrors([
+                'code' => 'That verification code is invalid or has expired.',
+            ])->withInput();
+        }
+
+        return redirect()->intended('/dashboard');
+    })->name('verification.code');
+});
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('onboarding', [OnboardingController::class, 'show'])->name('onboarding.show');
     Route::post('onboarding/business', [OnboardingController::class, 'saveBusiness'])->name('onboarding.business');
-    Route::post('onboarding/brand', [OnboardingController::class, 'saveBrand'])->name('onboarding.brand');
     Route::post('onboarding/preferences', [OnboardingController::class, 'savePreferences'])->name('onboarding.preferences');
+    Route::post('onboarding/logo', [OnboardingController::class, 'saveLogo'])->name('onboarding.logo');
     Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
 });
 
@@ -107,8 +124,6 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
     Route::put('products/{product}', [ProductController::class, 'update'])->name('products.update');
     Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
 
-    Route::get('brand-kit', [BrandKitController::class, 'edit'])->name('brand-kit.edit');
-    Route::put('brand-kit', [BrandKitController::class, 'update'])->name('brand-kit.update');
 });
 
 require __DIR__.'/settings.php';

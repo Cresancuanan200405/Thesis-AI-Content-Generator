@@ -32,6 +32,23 @@ it('authenticated user can view the marketing calendar', function () {
         ->assertOk();
 });
 
+it('calendar syncs current year Philippine holidays for display', function () {
+    $user = User::factory()->create([
+        'onboarding_completed' => true,
+    ]);
+
+    Event::query()->where('country', 'PH')->delete();
+
+    $this->actingAs($user)
+        ->get('/calendar')
+        ->assertOk();
+
+    expect(Event::query()
+        ->where('country', 'PH')
+        ->whereYear('date', now()->year)
+        ->exists())->toBeTrue();
+});
+
 it('user can create an event', function () {
     $user = User::factory()->create([
         'onboarding_completed' => true,

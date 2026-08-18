@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
+use App\Notifications\VerifyEmailNotification;
 use Database\Factories\UserFactory;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -51,6 +51,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
+            'email_verification_expires_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'onboarding_completed' => 'boolean',
@@ -60,7 +61,51 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function sendEmailVerificationNotification(): void
     {
-        $this->notify(new VerifyEmail);
+        $this->generateEmailVerificationCode();
+
+        $this->notify(new VerifyEmailNotification($this->email_verification_code));
+    }
+
+    public function generateEmailVerificationCode(): string
+    {
+        $code = (string) random_int(100000, 999999);
+
+        $this->forceFill([
+            'email_verification_code' => $code,
+            'email_verification_expires_at' => now()->addMinutes(15),
+        ])->save();
+
+        return $code;
+    }
+
+    public function verifyEmailCode(string $code): bool
+    {
+        $normalizedCode = preg_replace('/\D+/', '', $code) ?? '';
+
+        if ($this->email_verified_at !== null || $this->email_verification_code === null || $this->email_verification_expires_at === null) {
+            return false;
+        }
+
+        if (now()->greaterThan($this->email_verification_expires_at)) {
+            $this->forceFill([
+                'email_verification_code' => null,
+                'email_verification_expires_at' => null,
+            ])->save();
+
+            return false;
+        }
+
+        if (! hash_equals((string) $this->email_verification_code, $normalizedCode)) {
+            return false;
+        }
+
+        $this->forceFill([
+            'email_verified_at' => now(),
+            'email_verification_code' => null,
+            'email_verification_expires_at' => null,
+        ])->save();
+
+        return true;
     }
 
     /**

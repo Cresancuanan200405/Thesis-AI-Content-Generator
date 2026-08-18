@@ -375,9 +375,11 @@ export default function Welcome() {
                                             size="sm"
                                             className="
                                                 text-[#0F172A]
-                                                hover:bg-black/5
+                                                hover:bg-[#2563EB]/5
+                                                hover:text-[#1D4ED8]
                                                 dark:text-slate-200
                                                 dark:hover:bg-white/5
+                                                dark:hover:text-[#60A5FA]
                                             "
                                         >
                                             <Link href={login()}>Log in</Link>

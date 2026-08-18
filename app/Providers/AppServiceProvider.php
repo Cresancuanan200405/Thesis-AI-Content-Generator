@@ -2,12 +2,10 @@
 
 namespace App\Providers;
 
-use App\Models\BrandKit;
 use App\Models\Campaign;
 use App\Models\Design;
 use App\Models\Event;
 use App\Models\Product;
-use App\Policies\BrandKitPolicy;
 use App\Policies\CampaignPolicy;
 use App\Policies\DesignPolicy;
 use App\Policies\EventPolicy;
@@ -55,7 +53,6 @@ class AppServiceProvider extends ServiceProvider
                 ->line('If you did not create this account, no further action is required.');
         });
 
-        Gate::policy(BrandKit::class, BrandKitPolicy::class);
         Gate::policy(Design::class, DesignPolicy::class);
         Gate::policy(Event::class, EventPolicy::class);
         Gate::policy(Campaign::class, CampaignPolicy::class);

@@ -6,6 +6,7 @@ use App\Http\Requests\StoreCampaignRequest;
 use App\Http\Requests\UpdateCampaignRequest;
 use App\Models\Campaign;
 use App\Models\Design;
+use App\Models\Event;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Http\RedirectResponse;
@@ -46,6 +47,19 @@ class CampaignController extends Controller
         /** @var LengthAwarePaginator<int, Campaign> $campaigns */
         $campaigns = $query->paginate(12)->withQueryString();
 
+        $events = Event::query()
+            ->where(fn ($query) => $query->where('user_id', $user->id)->orWhere('is_global', true))
+            ->orderBy('date')
+            ->get()
+            ->map(fn ($event): array => [
+                'id' => $event->id,
+                'name' => $event->name,
+                'date' => $event->date?->format('Y-m-d'),
+                'type' => $event->type,
+            ])
+            ->values()
+            ->all();
+
         return Inertia::render('campaigns/index', [
             'campaigns' => $campaigns->through(function ($campaign, int $key): array {
                 /** @var Campaign $campaign */
@@ -67,6 +81,7 @@ class CampaignController extends Controller
                     'show_url' => route('campaigns.show', $campaign),
                 ];
             })->values()->all(),
+            'events' => $events,
             'filters' => [
                 'search' => $search,
                 'status' => $status ?? '',

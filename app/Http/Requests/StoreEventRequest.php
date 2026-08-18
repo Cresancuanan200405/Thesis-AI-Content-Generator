@@ -18,11 +18,12 @@ class StoreEventRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'start_date' => ['required', 'date'],
+            'name' => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string', 'max:500'],
+            'date' => ['required_without:start_date', 'nullable', 'date', 'after:today'],
+            'start_date' => ['required_without:date', 'nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'type' => ['required', 'in:holiday,seasonal,commercial,custom'],
+            'type' => ['nullable', 'in:holiday,seasonal,commercial,custom'],
         ];
     }
 
@@ -36,5 +37,21 @@ class StoreEventRequest extends FormRequest
                 $validator->errors()->add('end_date', 'The end date must be on or after the start date.');
             }
         });
+    }
+
+    /**
+     * Get the date field, supporting both 'date' and 'start_date' inputs.
+     */
+    public function getDate(): string
+    {
+        return $this->input('date') ?? $this->input('start_date');
+    }
+
+    /**
+     * Get the type, defaulting to 'custom' if not specified.
+     */
+    public function getType(): string
+    {
+        return $this->input('type', 'custom');
     }
 }

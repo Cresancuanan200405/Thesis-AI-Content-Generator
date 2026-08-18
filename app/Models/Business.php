@@ -24,7 +24,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $default_tagline_behavior
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property BrandKit|null $brandKit
  * @property Collection<int,Product> $products
  * @property Collection<int,Campaign> $campaigns
  * @property Collection<int,Design> $designs
@@ -40,10 +39,12 @@ class Business extends Model
         'industry',
         'category',
         'description',
+        'logo_path',
         'target_audience',
         'unique_selling_point',
         'content_style',
         'default_tagline_behavior',
+        'marketing_preferences',
     ];
 
     protected $casts = [
@@ -55,14 +56,6 @@ class Business extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    /**
-     * @return HasOne<BrandKit, $this>
-     */
-    public function brandKit(): HasOne
-    {
-        return $this->hasOne(BrandKit::class);
     }
 
     /**

@@ -22,6 +22,8 @@ class SaveMarketingPreferencesRequest extends FormRequest
             'content_style' => ['nullable', 'array'],
             'content_style.*' => ['string', 'max:255'],
             'default_tagline_behavior' => ['nullable', 'string', 'max:255'],
+            'marketing_preferences' => ['nullable', 'array'],
+            'marketing_preferences.*' => ['string', 'max:255'],
         ];
     }
 }

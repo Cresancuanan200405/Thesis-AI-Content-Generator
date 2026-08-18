@@ -28,7 +28,7 @@ class StoreCampaignRequest extends FormRequest
             'target_audience' => ['nullable', 'string', 'max:255'],
             'start_date' => ['required', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'status' => ['required', 'in:draft,active,completed,archived'],
+            'status' => ['required', 'in:draft,scheduled,active,completed'],
         ];
     }
 

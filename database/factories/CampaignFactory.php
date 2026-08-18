@@ -25,7 +25,7 @@ class CampaignFactory extends Factory
             'description' => fake()->paragraph(),
             'start_date' => fake()->dateTimeBetween('now', '+2 months')->format('Y-m-d'),
             'end_date' => fake()->dateTimeBetween('+3 months', '+6 months')->format('Y-m-d'),
-            'status' => fake()->randomElement(['draft', 'active', 'completed', 'archived']),
+            'status' => fake()->randomElement(['draft', 'scheduled', 'active', 'completed']),
         ];
     }
 }

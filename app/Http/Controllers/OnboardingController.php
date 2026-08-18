@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Onboarding\SaveBrandOnboardingRequest;
 use App\Http\Requests\Onboarding\SaveBusinessOnboardingRequest;
 use App\Http\Requests\Onboarding\SaveMarketingPreferencesRequest;
 use Illuminate\Http\RedirectResponse;
@@ -30,7 +29,6 @@ class OnboardingController extends Controller
         }
 
         $business = $user->business()->first();
-        $brandKit = $business?->brandKit()->first();
 
         $contentStyle = $business?->content_style;
         if (is_string($contentStyle) && $contentStyle !== '') {
@@ -40,41 +38,23 @@ class OnboardingController extends Controller
             }
         }
 
-        $brandTone = $brandKit?->brand_tone;
-        if (is_string($brandTone) && $brandTone !== '') {
-            $decodedBrandTone = json_decode($brandTone, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decodedBrandTone)) {
-                $brandTone = $decodedBrandTone;
-            }
-        }
-
         $businessData = [
             'id' => $business?->id,
             'name' => $business ? $business->name : '',
             'industry' => $business ? $business->industry : '',
             'category' => $business ? $business->category : '',
             'description' => $business ? $business->description : '',
+            'logo_path' => $business?->logo_path,
+            'logo_url' => $business && $business->logo_path ? Storage::url($business->logo_path) : null,
             'target_audience' => $business ? $business->target_audience : '',
             'unique_selling_point' => $business ? $business->unique_selling_point : '',
             'content_style' => $contentStyle ?? [],
             'default_tagline_behavior' => $business ? $business->default_tagline_behavior : '',
         ];
 
-        $brandData = [
-            'logo_path' => $brandKit?->logo_path,
-            'primary_color' => $brandKit ? $brandKit->primary_color : '#111827',
-            'secondary_color' => $brandKit ? $brandKit->secondary_color : '#F59E0B',
-            'accent_color' => $brandKit ? $brandKit->accent_color : '#E5E7EB',
-            'brand_tone' => $brandTone ?? [],
-            'typography' => $brandKit ? $brandKit->typography : '',
-            'brand_guidelines' => $brandKit ? $brandKit->brand_guidelines : '',
-            'visual_preferences' => $brandKit ? $brandKit->visual_preferences : '',
-        ];
-
         return Inertia::render('onboarding/index', [
             'step' => (int) ($request->query('step', 1)),
             'business' => $businessData,
-            'brand' => $brandData,
         ]);
     }
 
@@ -87,52 +67,7 @@ class OnboardingController extends Controller
             $request->validated()
         );
 
-        return redirect()->route('onboarding.show', ['step' => 'brand']);
-    }
-
-    public function saveBrand(SaveBrandOnboardingRequest $request): RedirectResponse
-    {
-        $user = $request->user();
-        $business = $user->business()->firstOrCreate(
-            ['user_id' => $user->id],
-            [
-                'user_id' => $user->id,
-                'name' => $user->name ?: 'My Business',
-                'industry' => 'General',
-                'category' => 'General',
-                'description' => '',
-            ]
-        );
-
-        $brandData = $request->validated();
-
-        if (isset($brandData['brand_tone'])) {
-            $brandData['brand_tone'] = json_encode(array_values($brandData['brand_tone']));
-        }
-
-        if (isset($brandData['visual_preferences']) && is_string($brandData['visual_preferences'])) {
-            $visualPreferences = $brandData['visual_preferences'];
-            $brandData['visual_preferences'] = trim($visualPreferences);
-        }
-
-        if ($request->hasFile('logo')) {
-            $path = $request->file('logo')->store('brand-logos', 'public');
-            $brandData['logo_path'] = $path;
-        }
-
-        if ($request->input('remove_logo') === '1') {
-            if ($business->brandKit && $business->brandKit->logo_path) {
-                Storage::disk('public')->delete($business->brandKit->logo_path);
-            }
-            $brandData['logo_path'] = null;
-        }
-
-        $business->brandKit()->updateOrCreate(
-            ['business_id' => $business->id],
-            $brandData
-        );
-
-        return redirect()->route('onboarding.show', ['step' => 'preferences']);
+        return redirect()->route('onboarding.show', ['step' => 2]);
     }
 
     public function savePreferences(SaveMarketingPreferencesRequest $request): RedirectResponse
@@ -155,20 +90,110 @@ class OnboardingController extends Controller
             $payload['content_style'] = json_encode(array_values($payload['content_style']));
         }
 
+        if (isset($payload['marketing_preferences'])) {
+            $payload['marketing_preferences'] = json_encode(array_values($payload['marketing_preferences']));
+        }
+
         $business->update($payload);
 
-        return redirect()->route('onboarding.show', ['step' => 'complete']);
+        return redirect()->route('onboarding.show', ['step' => 4]);
+    }
+
+    public function saveLogo(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        $business = $user->business()->firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'user_id' => $user->id,
+                'name' => $user->name ?: 'My Business',
+                'industry' => 'General',
+                'category' => 'General',
+                'description' => '',
+            ]
+        );
+
+        $request->validate([
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:2048'],
+            'marketing_preferences' => ['nullable'],
+        ]);
+
+        $payload = [];
+
+        if ($request->has('marketing_preferences')) {
+            $marketingPreferences = $request->input('marketing_preferences');
+
+            if (is_string($marketingPreferences)) {
+                $marketingPreferences = json_decode($marketingPreferences, true) ?? [];
+            }
+
+            $payload['marketing_preferences'] = json_encode(array_values((array) $marketingPreferences));
+        }
+
+        if ($request->hasFile('logo')) {
+            $path = $request->file('logo')->store('business-logos', 'public');
+            $payload['logo_path'] = $path;
+        }
+
+        if ($payload !== []) {
+            $business->update($payload);
+        }
+
+        return $this->complete($request);
     }
 
     public function complete(Request $request): RedirectResponse
     {
         $user = $request->user();
 
+        $business = $user->business()->firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'user_id' => $user->id,
+                'name' => $user->name ?: 'My Business',
+                'industry' => 'General',
+                'category' => 'General',
+                'description' => '',
+            ]
+        );
+
+        $request->validate([
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:2048'],
+            'marketing_preferences' => ['nullable'],
+        ]);
+
+        $payload = [];
+
+        if ($request->has('marketing_preferences')) {
+            $marketingPreferences = $request->input('marketing_preferences');
+
+            if (is_string($marketingPreferences)) {
+                $marketingPreferences = json_decode($marketingPreferences, true) ?? [];
+            }
+
+            $payload['marketing_preferences'] = json_encode(array_values((array) $marketingPreferences));
+        }
+
+        if ($request->hasFile('logo')) {
+            $path = $request->file('logo')->store('business-logos', 'public');
+            $payload['logo_path'] = $path;
+        }
+
+        if ($payload !== []) {
+            $business->update($payload);
+        }
+
         $user->forceFill([
             'onboarding_completed' => true,
             'onboarding_completed_at' => now(),
         ])->save();
 
-        return redirect()->route('dashboard');
+        return redirect()->route('dashboard')
+            ->with('success', 'Setup completed successfully.')
+            ->with('toast', [
+                'type' => 'success',
+                'message' => 'Setup completed successfully.',
+            ]);
     }
 }

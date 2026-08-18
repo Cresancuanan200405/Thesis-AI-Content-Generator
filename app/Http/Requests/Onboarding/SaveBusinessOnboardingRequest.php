@@ -20,7 +20,7 @@ class SaveBusinessOnboardingRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'industry' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'max:255'],
-            'description' => ['required', 'string', 'max:2000'],
+            'description' => ['nullable', 'string', 'max:2000'],
         ];
     }
 }

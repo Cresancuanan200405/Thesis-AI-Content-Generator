@@ -23,6 +23,10 @@ test('new users can register', function () {
 
     $this->assertAuthenticated();
     $response->assertRedirect(route('verification.notice', absolute: false));
+    $response->assertSessionHas('toast', [
+        'type' => 'success',
+        'message' => 'Account created successfully. Please verify your email to continue onboarding.',
+    ]);
 });
 
 test('unverified user is redirected to the verification notice instead of onboarding', function () {

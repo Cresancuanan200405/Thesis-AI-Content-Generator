@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\BrandKit;
 use App\Models\Business;
 use App\Models\Campaign;
 use App\Models\Design;
@@ -37,16 +36,6 @@ class DatabaseSeeder extends Seeder
             'industry' => 'Retail',
             'category' => 'E-commerce',
             'description' => 'A boutique lifestyle brand creating premium everyday essentials for modern homes.',
-        ]);
-
-        BrandKit::factory()->create([
-            'business_id' => $business->id,
-            'primary_color' => '#1F2937',
-            'secondary_color' => '#F59E0B',
-            'accent_color' => '#F3F4F6',
-            'brand_tone' => 'Professional',
-            'typography' => 'Modern Sans',
-            'brand_guidelines' => 'Clean layouts, premium tone, confident product photography, and lifestyle detail.',
         ]);
 
         Product::factory()->count(3)->create([

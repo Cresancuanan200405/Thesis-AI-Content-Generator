@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\BrandKit;
 use App\Models\Business;
 use App\Models\Campaign;
 use App\Models\Design;
@@ -19,11 +18,6 @@ it('creates the core marketing records and relationships', function () {
         'name' => 'Foundation Business',
         'industry' => 'Retail',
         'category' => 'E-commerce',
-    ]);
-
-    $brandKit = BrandKit::factory()->create([
-        'business_id' => $business->id,
-        'brand_tone' => 'Professional',
     ]);
 
     $product = Product::factory()->create([
@@ -60,7 +54,6 @@ it('creates the core marketing records and relationships', function () {
     ]);
 
     expect($user->business->id)->toBe($business->id)
-        ->and($business->brandKit->id)->toBe($brandKit->id)
         ->and($business->products->first()->id)->toBe($product->id)
         ->and($user->events->first()->id)->toBe($event->id)
         ->and($user->campaigns->first()->id)->toBe($campaign->id)

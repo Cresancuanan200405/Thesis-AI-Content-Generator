@@ -33,7 +33,7 @@ class WelcomeEmailNotification extends Notification implements ShouldQueue
             ->subject('Welcome to MarketPilot')
             ->greeting('Hi '.$notifiable->name.'!')
             ->line('Your workspace is ready and your marketing engine is set to go.')
-            ->line('Use your dashboard to generate campaigns, build brand kits, and plan launches.')
+            ->line('Use your dashboard to generate campaigns, schedule campaigns, and plan launches.')
             ->action('Open Dashboard', url('/dashboard'))
             ->line('We are excited to help you grow your next campaign.');
     }

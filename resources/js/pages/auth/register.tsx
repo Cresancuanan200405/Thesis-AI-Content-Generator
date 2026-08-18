@@ -56,7 +56,7 @@ export default function Register({ passwordRules }: Props) {
 
                                 <div className={fieldGlow}>
                                     <User
-                                        className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors duration-300 group-focus-within:text-[#3B82F6]"
+                                        className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors duration-300 group-focus-within:text-[#2563EB] dark:text-slate-500"
                                     />
 
                                     <Input
@@ -68,7 +68,7 @@ export default function Register({ passwordRules }: Props) {
                                         autoComplete="name"
                                         name="name"
                                         placeholder="Full name"
-                                        className="pl-9 transition-colors duration-300 focus-visible:border-[#3B82F6] focus-visible:ring-[#3B82F6]/30"
+                                        className="border-slate-200 bg-white pl-9 text-slate-900 transition-colors duration-300 placeholder:text-slate-400 focus-visible:border-[#2563EB] focus-visible:ring-[#2563EB]/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
                                     />
                                 </div>
 
@@ -88,7 +88,7 @@ export default function Register({ passwordRules }: Props) {
 
                                 <div className={fieldGlow}>
                                     <Mail
-                                        className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors duration-300 group-focus-within:text-[#3B82F6]"
+                                        className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors duration-300 group-focus-within:text-[#2563EB] dark:text-slate-500"
                                     />
 
                                     <Input
@@ -99,7 +99,7 @@ export default function Register({ passwordRules }: Props) {
                                         autoComplete="email"
                                         name="email"
                                         placeholder="email@example.com"
-                                        className="pl-9 transition-colors duration-300 focus-visible:border-[#3B82F6] focus-visible:ring-[#3B82F6]/30"
+                                        className="border-slate-200 bg-white pl-9 text-slate-900 transition-colors duration-300 placeholder:text-slate-400 focus-visible:border-[#2563EB] focus-visible:ring-[#2563EB]/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
                                     />
                                 </div>
 
@@ -163,7 +163,7 @@ export default function Register({ passwordRules }: Props) {
                             ------------------------------------------------- */}
                             <Button
                                 type="submit"
-                                className="group mt-2 w-full rounded-full bg-[#3B82F6] text-white shadow-[0_15px_35px_-12px_rgba(59,130,246,0.6)] transition-all duration-300 hover:scale-[1.02] hover:bg-[#2563EB] hover:shadow-[0_20px_45px_-12px_rgba(59,130,246,0.7)] disabled:opacity-70 disabled:hover:scale-100"
+                                className="group mt-2 w-full rounded-full bg-[#2563EB] text-white shadow-[0_15px_35px_-12px_rgba(37,99,235,0.6)] transition-all duration-300 hover:scale-[1.02] hover:bg-[#1D4ED8] hover:shadow-[0_20px_45px_-12px_rgba(37,99,235,0.7)] disabled:opacity-70 disabled:hover:scale-100"
                                 tabIndex={5}
                                 disabled={processing}
                                 data-test="register-user-button"
@@ -187,7 +187,7 @@ export default function Register({ passwordRules }: Props) {
                             <TextLink
                                 href={login()}
                                 tabIndex={6}
-                                className="text-[#2563EB] transition-colors duration-300 hover:text-[#3B82F6] dark:text-[#60A5FA] dark:hover:text-[#93C5FD]"
+                                className="text-[#2563EB] transition-colors duration-300 hover:text-[#1D4ED8] dark:text-[#60A5FA] dark:hover:text-[#93C5FD]"
                             >
                                 Log in
                             </TextLink>

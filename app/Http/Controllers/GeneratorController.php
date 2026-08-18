@@ -27,7 +27,7 @@ class GeneratorController extends Controller
         /** @var User|null $user */
         $user = $request->user();
         /** @var Business|null $business */
-        $business = $user?->business()->with('brandKit')->first();
+        $business = $user?->business()->first();
         /** @var Collection<int, Product> $products */
         $products = $business?->products()->orderBy('name')->get() ?? collect();
         /** @var Campaign|null $campaign */
@@ -62,21 +62,6 @@ class GeneratorController extends Controller
                 'product_id' => $campaign->product_id,
                 'event_id' => $campaign->event_id,
             ] : null,
-            'brand' => $business?->brandKit ? [
-                'brand_tone' => $this->decodeJsonList($business->brandKit->brand_tone),
-                'visual_preferences' => $business->brandKit->visual_preferences,
-                'brand_guidelines' => $business->brandKit->brand_guidelines,
-                'primary_color' => $business->brandKit->primary_color,
-                'secondary_color' => $business->brandKit->secondary_color,
-                'accent_color' => $business->brandKit->accent_color,
-            ] : [
-                'brand_tone' => [],
-                'visual_preferences' => '',
-                'brand_guidelines' => '',
-                'primary_color' => '#111827',
-                'secondary_color' => '#F59E0B',
-                'accent_color' => '#E5E7EB',
-            ],
             'products' => $products->map(fn ($product): array => [
                 'id' => $product->id,
                 'name' => $product->name,

@@ -31,8 +31,8 @@ type Props = {
 
 const fieldGlow =
     'group relative rounded-lg transition-all duration-300 ' +
-    'focus-within:shadow-[0_0_0_3px_rgba(37,99,235,0.18)] ' +
-    'hover:shadow-[0_0_0_3px_rgba(37,99,235,0.08)]';
+    'focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.18)] ' +
+    'hover:shadow-[0_0_0_3px_rgba(59,130,246,0.08)]';
 
 export default function Login({ status, canResetPassword }: Props) {
     return (
@@ -67,10 +67,11 @@ export default function Login({ status, canResetPassword }: Props) {
                                             h-4
                                             w-4
                                             -translate-y-1/2
-                                            text-muted-foreground
+                                            text-slate-400
                                             transition-colors
                                             duration-300
                                             group-focus-within:text-[#2563EB]
+                                            dark:text-slate-500
                                         "
                                     />
 
@@ -84,11 +85,13 @@ export default function Login({ status, canResetPassword }: Props) {
                                         autoComplete="email"
                                         placeholder="email@example.com"
                                         className="
+                                            border-slate-200 bg-white text-slate-900
                                             pl-9
-                                            transition-colors
-                                            duration-300
+                                            transition-colors duration-300
+                                            placeholder:text-slate-400
                                             focus-visible:border-[#2563EB]
                                             focus-visible:ring-[#2563EB]/30
+                                            dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500
                                         "
                                     />
                                 </div>
@@ -126,12 +129,12 @@ export default function Login({ status, canResetPassword }: Props) {
                                             href={request()}
                                             className="
                                                 text-sm
-                                                text-[#1D4ED8]
+                                                text-[#2563EB]
                                                 transition-colors
                                                 duration-300
-                                                hover:text-[#2563EB]
-                                                dark:text-[#3B82F6]
-                                                dark:hover:text-[#60A5FA]
+                                                hover:text-[#1D4ED8]
+                                                dark:text-[#60A5FA]
+                                                dark:hover:text-[#93C5FD]
                                             "
                                             tabIndex={5}
                                         >
@@ -200,7 +203,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     transition-all
                                     duration-300
                                     hover:scale-[1.02]
-                                    hover:bg-[#3B82F6]
+                                    hover:bg-[#1D4ED8]
                                     hover:shadow-[0_20px_45px_-12px_rgba(37,99,235,0.7)]
                                     disabled:opacity-70
                                     disabled:hover:scale-100
@@ -241,12 +244,12 @@ export default function Login({ status, canResetPassword }: Props) {
                                 href={register()}
                                 tabIndex={6}
                                 className="
-                                    text-[#1D4ED8]
+                                    text-[#2563EB]
                                     transition-colors
                                     duration-300
-                                    hover:text-[#2563EB]
-                                    dark:text-[#3B82F6]
-                                    dark:hover:text-[#60A5FA]
+                                    hover:text-[#1D4ED8]
+                                    dark:text-[#60A5FA]
+                                    dark:hover:text-[#93C5FD]
                                 "
                             >
                                 Sign up

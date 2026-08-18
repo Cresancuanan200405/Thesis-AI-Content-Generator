@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\BrandKit;
 use App\Models\Business;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -49,38 +48,15 @@ it('business information is saved correctly', function () {
             'name' => 'North Star Coffee',
             'industry' => 'Food & Beverage',
             'category' => 'Coffee Shop',
-            'description' => 'A premium neighborhood coffee roaster serving specialty drinks.',
         ])
-        ->assertRedirect('/onboarding?step=brand');
+        ->assertRedirect('/onboarding?step=2');
 
     $business = $user->fresh()->business;
 
     expect($business)->not->toBeNull()
         ->and($business->name)->toBe('North Star Coffee')
         ->and($business->industry)->toBe('Food & Beverage')
-        ->and($business->category)->toBe('Coffee Shop')
-        ->and($business->description)->toBe('A premium neighborhood coffee roaster serving specialty drinks.');
-});
-
-it('brand information is saved correctly', function () {
-    $user = User::factory()->create();
-
-    $this->actingAs($user)
-        ->post('/onboarding/brand', [
-            'brand_tone' => ['Professional', 'Warm'],
-            'typography' => 'Modern Sans',
-            'brand_guidelines' => 'Keep the design sharp and modern.',
-            'visual_preferences' => 'Warm lighting and clean studio shots.',
-        ])
-        ->assertRedirect('/onboarding?step=preferences');
-
-    $brandKit = $user->fresh()->business->brandKit;
-
-    expect($brandKit)->not->toBeNull()
-        ->and($brandKit->brand_tone)->toBe('["Professional","Warm"]')
-        ->and($brandKit->typography)->toBe('Modern Sans')
-        ->and($brandKit->brand_guidelines)->toBe('Keep the design sharp and modern.')
-        ->and($brandKit->visual_preferences)->toBe('Warm lighting and clean studio shots.');
+        ->and($business->category)->toBe('Coffee Shop');
 });
 
 it('marketing preferences are saved correctly', function () {
@@ -88,20 +64,34 @@ it('marketing preferences are saved correctly', function () {
 
     $this->actingAs($user)
         ->post('/onboarding/preferences', [
-            'target_audience' => 'Young professionals aged 25-40',
-            'unique_selling_point' => 'Small-batch roasting with local ingredients',
-            'content_style' => ['Product-focused', 'Lifestyle'],
-            'default_tagline_behavior' => 'Always generate automatically',
+            'marketing_preferences' => ['Social Media', 'Email Campaigns'],
         ])
-        ->assertRedirect('/onboarding?step=complete');
+        ->assertRedirect('/onboarding?step=4');
 
     $business = $user->fresh()->business;
 
     expect($business)->not->toBeNull()
-        ->and($business->target_audience)->toBe('Young professionals aged 25-40')
-        ->and($business->unique_selling_point)->toBe('Small-batch roasting with local ingredients')
-        ->and($business->content_style)->toBe('["Product-focused","Lifestyle"]')
-        ->and($business->default_tagline_behavior)->toBe('Always generate automatically');
+        ->and($business->marketing_preferences)->toBe('["Social Media","Email Campaigns"]');
+});
+
+it('optional business logo can be saved during onboarding', function () {
+    $user = User::factory()->create();
+    $user->business()->create([
+        'name' => 'North Star Coffee',
+        'industry' => 'Food & Beverage',
+        'category' => 'Coffee Shop',
+    ]);
+
+    $this->actingAs($user)
+        ->post('/onboarding/logo', [
+            'marketing_preferences' => ['Social Media', 'Email Campaigns'],
+        ])
+        ->assertRedirect('/dashboard');
+
+    $user->refresh();
+
+    expect($user->business->marketing_preferences)->toBe('["Social Media","Email Campaigns"]')
+        ->and($user->business->logo_path)->toBeNull();
 });
 
 it('user cannot modify another users business record', function () {
@@ -118,31 +108,28 @@ it('user cannot modify another users business record', function () {
             'name' => 'My Business',
             'industry' => 'Retail',
             'category' => 'Coffee Shop',
-            'description' => 'Updated from owner account',
         ])
-        ->assertRedirect('/onboarding?step=brand');
+        ->assertRedirect('/onboarding?step=2');
 
     expect($other->fresh()->business->name)->toBe('Other Business');
 });
 
-it('user cannot modify another users brand kit record', function () {
-    $owner = User::factory()->create();
-    $other = User::factory()->create();
-
-    $business = Business::factory()->create(['user_id' => $other->id]);
-    BrandKit::factory()->create([
-        'business_id' => $business->id,
-        'brand_tone' => 'Luxury',
+it('email verification accepts a six digit code', function () {
+    $user = User::factory()->create([
+        'email_verified_at' => null,
     ]);
 
-    $this->actingAs($owner)
-        ->post('/onboarding/brand', [
-            'brand_tone' => ['Minimal'],
-            'typography' => 'Classic Serif',
-        ])
-        ->assertRedirect('/onboarding?step=preferences');
+    $code = $user->generateEmailVerificationCode();
 
-    expect($other->fresh()->business->brandKit->brand_tone)->toBe('Luxury');
+    $this->actingAs($user)
+        ->post('/email/verify-code', [
+            'code' => $code,
+        ])
+        ->assertRedirect('/dashboard');
+
+    $user->refresh();
+
+    expect($user->email_verified_at)->not->toBeNull();
 });
 
 it('completing onboarding sets onboarding flags', function () {
@@ -170,7 +157,7 @@ it('completed user can access dashboard', function () {
         ->assertOk();
 });
 
-it('registration redirects to email verification before onboarding', function () {
+it('registration creates a pending account before onboarding is complete', function () {
     $response = $this->post('/register', [
         'name' => 'New Onboarder',
         'email' => 'new-onboarder@example.com',
@@ -179,19 +166,11 @@ it('registration redirects to email verification before onboarding', function ()
     ]);
 
     $response->assertRedirect('/email/verify');
-    $this->assertDatabaseHas('users', ['email' => 'new-onboarder@example.com']);
-});
 
-it('logo upload validation works', function () {
-    $user = User::factory()->create();
+    $user = User::query()->where('email', 'new-onboarder@example.com')->firstOrFail();
 
-    $response = $this->actingAs($user)
-        ->post('/onboarding/brand', [
-            'logo' => UploadedFile::fake()->create('bad.txt', 500, 'text/plain'),
-            'brand_tone' => ['Professional'],
-        ]);
-
-    $response->assertSessionHasErrors('logo');
+    expect($user->onboarding_completed)->toBeFalse()
+        ->and($user->onboarding_completed_at)->toBeNull();
 });
 
 it('onboarding business step preserves existing values when revisiting', function () {
@@ -200,7 +179,6 @@ it('onboarding business step preserves existing values when revisiting', functio
         'name' => 'Existing Business',
         'industry' => 'Technology',
         'category' => 'Software Company',
-        'description' => 'Existing description',
     ]);
 
     $this->actingAs($user)
@@ -208,9 +186,8 @@ it('onboarding business step preserves existing values when revisiting', functio
             'name' => 'Updated Business',
             'industry' => 'Technology',
             'category' => 'SaaS Company',
-            'description' => 'Updated description',
         ])
-        ->assertRedirect('/onboarding?step=brand');
+        ->assertRedirect('/onboarding?step=2');
 
     $business = $user->fresh()->business;
 
@@ -224,7 +201,6 @@ it('onboarding shows existing saved values in the response', function () {
         'name' => 'Saved Business',
         'industry' => 'Retail',
         'category' => 'Clothing Store',
-        'description' => 'Saved description',
     ]);
 
     $this->actingAs($user)

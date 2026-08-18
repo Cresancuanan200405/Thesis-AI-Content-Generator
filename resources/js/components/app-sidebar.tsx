@@ -5,7 +5,6 @@ import {
     LayoutDashboard,
     Megaphone,
     Package,
-    Palette,
     Sparkles,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
@@ -52,11 +51,6 @@ const mainNavItems: NavItem[] = [
         title: 'Campaigns',
         href: '/campaigns',
         icon: Megaphone,
-    },
-    {
-        title: 'Brand Kit',
-        href: '/brand-kit',
-        icon: Palette,
     },
 ];
 

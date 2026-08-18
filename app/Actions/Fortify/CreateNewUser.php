@@ -29,6 +29,8 @@ class CreateNewUser implements CreatesNewUsers
             'name' => $input['name'],
             'email' => $input['email'],
             'password' => $input['password'],
+            'onboarding_completed' => false,
+            'onboarding_completed_at' => null,
         ]);
 
         $user->notify(new WelcomeEmailNotification);

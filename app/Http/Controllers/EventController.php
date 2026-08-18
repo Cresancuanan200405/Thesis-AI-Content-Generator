@@ -17,11 +17,19 @@ use Inertia\Response;
 
 class EventController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, PhilippineHolidayService $holidayService): Response
     {
         /** @var User $user */
         $user = $request->user();
         $filter = $request->input('filter', 'all');
+
+        foreach ([now()->year, now()->year + 1] as $year) {
+            try {
+                $holidayService->ensureYearSynced((int) $year);
+            } catch (\Exception $e) {
+                Log::error("Failed to sync holidays for year {$year}: {$e->getMessage()}");
+            }
+        }
 
         $query = Event::query()
             ->where(fn ($query) => $query->where('user_id', $user->id)->orWhere('is_global', true))
@@ -124,15 +132,56 @@ class EventController extends Controller
         ]);
     }
 
-    public function store(StoreEventRequest $request): RedirectResponse
+    public function store(StoreEventRequest $request): RedirectResponse|JsonResponse
     {
-        $request->user()->events()->create([
-            'name' => $request->input('name'),
+        $eventDate = $request->getDate();
+        $eventType = $request->getType();
+
+        // Check for duplicates: user_id + date + name
+        $duplicate = Event::where('user_id', $request->user()->id)
+            ->where('date', $eventDate)
+            ->where('name', trim($request->input('name')))
+            ->exists();
+
+        if ($duplicate) {
+            $error = 'You already have an event with this name on this date.';
+
+            // Return JSON for AJAX requests
+            if ($request->wantsJson() || $request->header('Accept') === 'application/json') {
+                return response()->json(
+                    ['message' => $error, 'errors' => ['name' => [$error]]],
+                    422,
+                );
+            }
+
+            return back()->withErrors(['name' => $error]);
+        }
+
+        $event = $request->user()->events()->create([
+            'name' => trim($request->input('name')),
             'description' => $request->input('description'),
-            'date' => $request->input('start_date'),
-            'type' => $request->input('type', 'custom'),
+            'date' => $eventDate,
+            'type' => $eventType,
             'is_global' => false,
         ]);
+
+        // Return JSON for AJAX requests
+        if ($request->wantsJson() || $request->header('Accept') === 'application/json') {
+            $eventDate = $event->getAttributeValue('date');
+
+            return response()->json([
+                'message' => 'Event created successfully.',
+                'event' => [
+                    'id' => $event->id,
+                    'name' => $event->name,
+                    'description' => $event->description,
+                    'date' => $eventDate instanceof CarbonInterface ? $eventDate->format('Y-m-d') : null,
+                    'type' => $event->type,
+                    'is_global' => (bool) $event->is_global,
+                    'user_id' => $event->user_id,
+                ],
+            ], 201);
+        }
 
         return redirect()->route('calendar.index')->with('success', 'Event created successfully.');
     }

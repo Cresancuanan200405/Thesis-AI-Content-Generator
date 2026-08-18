@@ -3,8 +3,13 @@ import {
     ArrowLeft,
     ArrowRight,
     CalendarDays,
+    CheckCircle2,
+    Clock3,
     Filter,
+    Info,
+    Plus,
     Sparkles,
+    Tag,
 } from 'lucide-react';
 import {
     useCallback,
@@ -22,6 +27,51 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+
+/*
+|--------------------------------------------------------------------------
+| Types
+|--------------------------------------------------------------------------
+*/
+
+type CalendarEvent = {
+    id: string | number;
+    name: string;
+    date: string;
+    description?: string | null;
+    type?: string | null;
+    days?: string | null;
+};
+
+type FormData = {
+    name: string;
+    date: string;
+    description: string;
+    type: string;
+};
+
+/*
+|--------------------------------------------------------------------------
+| Constants
+|--------------------------------------------------------------------------
+*/
 
 const weekdayLabels = [
     'Mon',
@@ -47,10 +97,17 @@ const eventTypeStyles: Record<string, string> = {
         'border-violet-500/20 bg-violet-500/10 text-violet-700 dark:text-violet-300',
 };
 
+const eventTypeLabels: Record<string, string> = {
+    holiday: 'Holiday',
+    seasonal: 'Seasonal',
+    commercial: 'Commercial',
+    custom: 'Custom',
+};
+
 const filterOptions = [
     {
         value: 'all',
-        label: 'All',
+        label: 'All events',
     },
     {
         value: 'holidays',
@@ -66,11 +123,94 @@ const filterOptions = [
     },
 ];
 
+/*
+|--------------------------------------------------------------------------
+| Helpers
+|--------------------------------------------------------------------------
+*/
+
+const emptyForm: FormData = {
+    name: '',
+    date: '',
+    description: '',
+    type: 'custom',
+};
+
+function formatDateForInput(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+}
+
+function formatLongDate(date: Date) {
+    return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+    });
+}
+
+function formatEventDate(date: string) {
+    const parsed = new Date(date);
+
+    if (Number.isNaN(parsed.getTime())) {
+        return date;
+    }
+
+    return parsed.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    });
+}
+
+function getEventTypeLabel(type?: string | null) {
+    if (!type) {
+        return 'Custom';
+    }
+
+    return (
+        eventTypeLabels[type] ??
+        type.charAt(0).toUpperCase() + type.slice(1)
+    );
+}
+
+function getEventTypeClass(type?: string | null) {
+    return (
+        eventTypeStyles[type ?? 'custom'] ??
+        'border-border bg-muted text-muted-foreground'
+    );
+}
+
+function sortEventsByDate(events: CalendarEvent[]) {
+    return [...events].sort((a, b) => {
+        const aDate = a.date ? new Date(a.date).getTime() : Number.MAX_SAFE_INTEGER;
+        const bDate = b.date ? new Date(b.date).getTime() : Number.MAX_SAFE_INTEGER;
+
+        return aDate - bDate;
+    });
+}
+
+/*
+|--------------------------------------------------------------------------
+| Component
+|--------------------------------------------------------------------------
+*/
+
 export default function CalendarPage({
     events: initialEvents = [],
     filter = 'all',
     upcoming_events = [],
 }: any) {
+    /*
+    |--------------------------------------------------------------------------
+    | Calendar state
+    |--------------------------------------------------------------------------
+    */
+
     const [month, setMonth] = useState(
         () =>
             new Date(
@@ -80,8 +220,8 @@ export default function CalendarPage({
             ),
     );
 
-    const [allEvents, setAllEvents] = useState(
-        initialEvents,
+    const [allEvents, setAllEvents] = useState<CalendarEvent[]>(
+        sortEventsByDate(initialEvents),
     );
 
     const [isLoadingYear, setIsLoadingYear] =
@@ -93,12 +233,87 @@ export default function CalendarPage({
 
     /*
     |--------------------------------------------------------------------------
+    | Create event state
+    |--------------------------------------------------------------------------
+    */
+
+    const [isCreateDialogOpen, setIsCreateDialogOpen] =
+        useState(false);
+
+    const [isCreatingEvent, setIsCreatingEvent] =
+        useState(false);
+
+    const [formData, setFormData] =
+        useState<FormData>(emptyForm);
+
+    const [formErrors, setFormErrors] =
+        useState<Record<string, string>>({});
+
+    /*
+    |--------------------------------------------------------------------------
+    | Selected calendar day state
+    |--------------------------------------------------------------------------
+    */
+
+    const [selectedDate, setSelectedDate] =
+        useState<Date | null>(null);
+
+    const [isDayDialogOpen, setIsDayDialogOpen] =
+        useState(false);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Selected event state
+    |--------------------------------------------------------------------------
+    */
+
+    const [selectedEvent, setSelectedEvent] =
+        useState<CalendarEvent | null>(null);
+
+    const [isEventDialogOpen, setIsEventDialogOpen] =
+        useState(false);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Today's date
+    |--------------------------------------------------------------------------
+    */
+
+    const today = useMemo(() => {
+        const date = new Date();
+
+        return new Date(
+            date.getFullYear(),
+            date.getMonth(),
+            date.getDate(),
+        );
+    }, []);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Minimum create-event date
+    |--------------------------------------------------------------------------
+    */
+
+    const minimumEventDate = useMemo(() => {
+        const tomorrow = new Date();
+
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        return formatDateForInput(tomorrow);
+    }, []);
+
+    /*
+    |--------------------------------------------------------------------------
     | Load events for a specific year
     |--------------------------------------------------------------------------
     */
 
     const loadYearEvents = useCallback(
-        async (year: number, currentFilter: string) => {
+        async (
+            year: number,
+            currentFilter: string,
+        ) => {
             if (loadedYearsRef.current.has(year)) {
                 return;
             }
@@ -116,8 +331,9 @@ export default function CalendarPage({
                     {
                         method: 'GET',
                         headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest',
+                            Accept: 'application/json',
+                            'X-Requested-With':
+                                'XMLHttpRequest',
                         },
                     },
                 );
@@ -132,17 +348,24 @@ export default function CalendarPage({
 
                 const data = await response.json();
 
-                setAllEvents((prev: any[]) => {
-                    // Combine with existing events, avoiding duplicates
+                setAllEvents((previousEvents) => {
                     const eventIds = new Set(
-                        prev.map((e: any) => e.id),
+                        previousEvents.map(
+                            (event) => event.id,
+                        ),
                     );
 
-                    const newEvents = data.events.filter(
-                        (e: any) => !eventIds.has(e.id),
+                    const newEvents = (
+                        data.events ?? []
+                    ).filter(
+                        (event: CalendarEvent) =>
+                            !eventIds.has(event.id),
                     );
 
-                    return [...prev, ...newEvents];
+                    return sortEventsByDate([
+                        ...previousEvents,
+                        ...newEvents,
+                    ]);
                 });
 
                 loadedYearsRef.current.add(year);
@@ -164,12 +387,18 @@ export default function CalendarPage({
     |--------------------------------------------------------------------------
     */
 
-     
     useEffect(() => {
         const year = month.getFullYear();
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        loadYearEvents(year, filter);
-    }, [month, filter, loadYearEvents]);
+        const timeoutId = window.setTimeout(() => {
+            void loadYearEvents(year, filter);
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [
+        month,
+        filter,
+        loadYearEvents,
+    ]);
 
     /*
     |--------------------------------------------------------------------------
@@ -181,7 +410,10 @@ export default function CalendarPage({
         router.get(
             '/calendar',
             {
-                filter: value === 'all' ? '' : value,
+                filter:
+                    value === 'all'
+                        ? ''
+                        : value,
             },
             {
                 preserveScroll: true,
@@ -192,35 +424,35 @@ export default function CalendarPage({
 
     /*
     |--------------------------------------------------------------------------
-    | Apply filter to all loaded events
+    | Apply filter
     |--------------------------------------------------------------------------
     */
 
     const filteredEvents = useMemo(() => {
-        if (filter === 'holidays') {
-            return allEvents.filter(
-                (event: any) =>
-                    event.type === 'holiday' ||
-                    event.type === 'seasonal',
-            );
-        }
+        const sortedEvents =
+            filter === 'holidays'
+                ? allEvents.filter(
+                      (event) =>
+                          event.type === 'holiday' ||
+                          event.type === 'seasonal',
+                  )
+                : filter === 'commercial'
+                  ? allEvents.filter(
+                        (event) =>
+                            event.type === 'commercial',
+                    )
+                  : filter === 'custom'
+                    ? allEvents.filter(
+                          (event) =>
+                              event.type === 'custom',
+                      )
+                    : allEvents;
 
-        if (filter === 'commercial') {
-            return allEvents.filter(
-                (event: any) =>
-                    event.type === 'commercial',
-            );
-        }
-
-        if (filter === 'custom') {
-            return allEvents.filter(
-                (event: any) =>
-                    event.type === 'custom',
-            );
-        }
-
-        return allEvents;
-    }, [allEvents, filter]);
+        return sortEventsByDate(sortedEvents);
+    }, [
+        allEvents,
+        filter,
+    ]);
 
     /*
     |--------------------------------------------------------------------------
@@ -244,14 +476,17 @@ export default function CalendarPage({
             0,
         );
 
-        const daysInMonth = lastDay.getDate();
+        const daysInMonth =
+            lastDay.getDate();
 
         const leadingDays =
             (firstDay.getDay() + 6) % 7;
 
         const totalCells =
             Math.ceil(
-                (leadingDays + daysInMonth) / 7,
+                (leadingDays +
+                    daysInMonth) /
+                    7,
             ) * 7;
 
         const cells = Array.from(
@@ -281,7 +516,7 @@ export default function CalendarPage({
 
         const datesByKey = new Map<
             string,
-            any[]
+            CalendarEvent[]
         >();
 
         for (const event of filteredEvents) {
@@ -289,25 +524,28 @@ export default function CalendarPage({
                 continue;
             }
 
-            const eventDate = new Date(
-                event.date,
-            );
+            const eventDate =
+                new Date(event.date);
 
-            if (Number.isNaN(eventDate.getTime())) {
+            if (
+                Number.isNaN(
+                    eventDate.getTime(),
+                )
+            ) {
                 continue;
             }
 
             const key =
                 eventDate.toDateString();
 
-            const value =
+            const current =
                 datesByKey.get(key) ?? [];
 
-            value.push(event);
+            current.push(event);
 
             datesByKey.set(
                 key,
-                value,
+                current,
             );
         }
 
@@ -315,7 +553,10 @@ export default function CalendarPage({
             cells,
             datesByKey,
         };
-    }, [filteredEvents, month]);
+    }, [
+        filteredEvents,
+        month,
+    ]);
 
     /*
     |--------------------------------------------------------------------------
@@ -334,7 +575,7 @@ export default function CalendarPage({
 
     /*
     |--------------------------------------------------------------------------
-    | Month navigation
+    | Navigation
     |--------------------------------------------------------------------------
     */
 
@@ -359,12 +600,13 @@ export default function CalendarPage({
     };
 
     const goToToday = () => {
-        const today = new Date();
+        const currentDate =
+            new Date();
 
         setMonth(
             new Date(
-                today.getFullYear(),
-                today.getMonth(),
+                currentDate.getFullYear(),
+                currentDate.getMonth(),
                 1,
             ),
         );
@@ -372,9 +614,18 @@ export default function CalendarPage({
 
     /*
     |--------------------------------------------------------------------------
-    | Helpers
+    | Calendar helpers
     |--------------------------------------------------------------------------
     */
+
+    const isToday = (
+        date: Date,
+    ) => {
+        return (
+            date.toDateString() ===
+            today.toDateString()
+        );
+    };
 
     const isCurrentMonth = (
         date: Date,
@@ -387,12 +638,357 @@ export default function CalendarPage({
         );
     };
 
-    const isToday = (date: Date) => {
+    /*
+    |--------------------------------------------------------------------------
+    | Get events for selected date
+    |--------------------------------------------------------------------------
+    */
+
+    const selectedDateEvents = useMemo(() => {
+        if (!selectedDate) {
+            return [];
+        }
+
         return (
-            date.toDateString() ===
-            new Date().toDateString()
+            monthView.datesByKey.get(
+                selectedDate.toDateString(),
+            ) ?? []
+        );
+    }, [
+        selectedDate,
+        monthView.datesByKey,
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Open day details
+    |--------------------------------------------------------------------------
+    */
+
+    const openDayDetails = (
+        date: Date,
+    ) => {
+        setSelectedDate(date);
+        setIsDayDialogOpen(true);
+    };
+
+    /*
+    |--------------------------------------------------------------------------
+    | Open event details
+    |--------------------------------------------------------------------------
+    */
+
+    const openEventDetails = (
+        event: CalendarEvent,
+    ) => {
+        setSelectedEvent(event);
+        setIsEventDialogOpen(true);
+    };
+
+    /*
+    |--------------------------------------------------------------------------
+    | Open create dialog
+    |--------------------------------------------------------------------------
+    */
+
+    const openCreateDialog = (
+        date?: Date,
+    ) => {
+        const eventDate =
+            date &&
+            date > today
+                ? formatDateForInput(date)
+                : '';
+
+        setFormData({
+            ...emptyForm,
+            date: eventDate,
+        });
+
+        setFormErrors({});
+
+        setIsDayDialogOpen(false);
+
+        setIsCreateDialogOpen(true);
+    };
+
+    /*
+    |--------------------------------------------------------------------------
+    | Close create dialog
+    |--------------------------------------------------------------------------
+    */
+
+    const closeCreateDialog = () => {
+        if (isCreatingEvent) {
+            return;
+        }
+
+        setIsCreateDialogOpen(false);
+        setFormData(emptyForm);
+        setFormErrors({});
+    };
+
+    /*
+    |--------------------------------------------------------------------------
+    | Form validation
+    |--------------------------------------------------------------------------
+    */
+
+    const validateForm = () => {
+        const errors: Record<
+            string,
+            string
+        > = {};
+
+        const trimmedName =
+            formData.name.trim();
+
+        if (!trimmedName) {
+            errors.name =
+                'Event name is required.';
+        } else if (
+            trimmedName.length > 100
+        ) {
+            errors.name =
+                'Event name must not exceed 100 characters.';
+        }
+
+        if (!formData.date) {
+            errors.date =
+                'Event date is required.';
+        } else {
+            const selectedDateValue = new Date(
+                `${formData.date}T00:00:00`,
+            );
+
+            const current =
+                new Date();
+
+            current.setHours(
+                0,
+                0,
+                0,
+                0,
+            );
+
+            if (selectedDateValue <= current) {
+                errors.date =
+                    'Event date must be in the future.';
+            }
+        }
+
+        if (
+            formData.description.length >
+            500
+        ) {
+            errors.description =
+                'Description must not exceed 500 characters.';
+        }
+
+        const allowedTypes = [
+            'holiday',
+            'seasonal',
+            'commercial',
+            'custom',
+        ];
+
+        if (
+            formData.type &&
+            !allowedTypes.includes(
+                formData.type,
+            )
+        ) {
+            errors.type =
+                'Invalid event type.';
+        }
+
+        setFormErrors(errors);
+
+        return (
+            Object.keys(errors).length ===
+            0
         );
     };
+
+    /*
+    |--------------------------------------------------------------------------
+    | Create event
+    |--------------------------------------------------------------------------
+    */
+
+    const handleCreateEvent = async () => {
+        if (!validateForm()) {
+            return;
+        }
+
+        const csrfToken =
+            document.head
+                .querySelector(
+                    'meta[name="csrf-token"]',
+                )
+                ?.getAttribute(
+                    'content',
+                ) ?? '';
+
+        setIsCreatingEvent(true);
+
+        try {
+            const response =
+                await fetch(
+                    '/events',
+                    {
+                        method: 'POST',
+                        credentials:
+                            'same-origin',
+                        headers: {
+                            'Content-Type':
+                                'application/json',
+                            Accept:
+                                'application/json',
+                            'X-Requested-With':
+                                'XMLHttpRequest',
+                            'X-CSRF-TOKEN':
+                                csrfToken,
+                        },
+                        body: JSON.stringify(
+                            {
+                                name: formData.name.trim(),
+                                date: formData.date,
+                                description:
+                                    formData.description.trim(),
+                                type:
+                                    formData.type ||
+                                    'custom',
+                            },
+                        ),
+                    },
+                );
+
+            let data: any = {};
+
+            try {
+                data =
+                    await response.json();
+            } catch {
+                data = {};
+            }
+
+            if (!response.ok) {
+                const backendErrors =
+                    data.errors ?? {};
+
+                const normalizedErrors: Record<
+                    string,
+                    string
+                > = {};
+
+                Object.entries(
+                    backendErrors,
+                ).forEach(
+                    ([
+                        field,
+                        message,
+                    ]) => {
+                        normalizedErrors[
+                            field
+                        ] = Array.isArray(
+                            message,
+                        )
+                            ? String(
+                                  message[0],
+                              )
+                            : String(
+                                  message,
+                              );
+                    },
+                );
+
+                if (
+                    data.message &&
+                    Object.keys(
+                        normalizedErrors,
+                    ).length === 0
+                ) {
+                    normalizedErrors.submit =
+                        data.message;
+                }
+
+                setFormErrors(
+                    normalizedErrors,
+                );
+
+                return;
+            }
+
+            const newEvent =
+                data.event;
+
+            if (newEvent) {
+                setAllEvents(
+                    (previous) => {
+                        const exists =
+                            previous.some(
+                                (event) =>
+                                    event.id ===
+                                    newEvent.id,
+                            );
+
+                        if (exists) {
+                            return previous;
+                        }
+
+                        return [
+                            ...previous,
+                            newEvent,
+                        ];
+                    },
+                );
+            }
+
+            setIsCreateDialogOpen(false);
+
+            setFormData(
+                emptyForm,
+            );
+
+            setFormErrors({});
+        } catch (error) {
+            console.error(
+                'Error creating event:',
+                error,
+            );
+
+            setFormErrors({
+                submit:
+                    'Unable to create the event. Please try again.',
+            });
+        } finally {
+            setIsCreatingEvent(
+                false,
+            );
+        }
+    };
+
+    /*
+    |--------------------------------------------------------------------------
+    | Upcoming events
+    |--------------------------------------------------------------------------
+    */
+
+    const sortedUpcomingEvents =
+        useMemo(() => {
+            return [
+                ...upcoming_events,
+            ].slice(0, 8);
+        }, [
+            upcoming_events,
+        ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Render
+    |--------------------------------------------------------------------------
+    */
 
     return (
         <>
@@ -403,46 +999,50 @@ export default function CalendarPage({
                     className="
                         space-y-6
                         p-4
-                        duration-500
-                        animate-in
-                        fade-in
                         md:space-y-8
                         md:p-6
                         lg:p-8
                     "
                 >
-
                     {/* =====================================================
-                        PAGE HEADER
+                        HERO HEADER
                     ====================================================== */}
 
                     <section
                         className="
                             relative
                             overflow-hidden
-                            rounded-2xl
+                            rounded-3xl
                             border
                             border-border
                             bg-card
-                            p-5
-                            shadow-[0_2px_8px_rgba(0,0,0,0.05)]
-                            transition-all
-                            duration-300
-                            hover:shadow-[0_8px_24px_rgba(0,0,0,0.07)]
-                            md:p-6
+                            shadow-sm
                         "
                     >
-                        {/* Decorative background */}
                         <div
                             className="
                                 pointer-events-none
                                 absolute
-                                -right-20
-                                -top-20
-                                h-48
-                                w-48
+                                -right-24
+                                -top-24
+                                h-72
+                                w-72
                                 rounded-full
-                                bg-primary/5
+                                bg-primary/10
+                                blur-3xl
+                            "
+                        />
+
+                        <div
+                            className="
+                                pointer-events-none
+                                absolute
+                                -bottom-32
+                                left-1/3
+                                h-64
+                                w-64
+                                rounded-full
+                                bg-violet-500/5
                                 blur-3xl
                             "
                         />
@@ -452,82 +1052,82 @@ export default function CalendarPage({
                                 relative
                                 flex
                                 flex-col
-                                gap-5
-                                md:flex-row
-                                md:items-center
-                                md:justify-between
+                                gap-6
+                                p-6
+                                md:p-8
+                                lg:flex-row
+                                lg:items-end
+                                lg:justify-between
                             "
                         >
-                            <div className="min-w-0">
-                                <div className="flex items-center gap-2">
+                            <div className="max-w-3xl">
+                                <div className="flex items-center gap-3">
                                     <div
                                         className="
                                             flex
-                                            h-9
-                                            w-9
-                                            shrink-0
+                                            h-11
+                                            w-11
                                             items-center
                                             justify-center
-                                            rounded-lg
+                                            rounded-2xl
                                             bg-primary/10
+                                            text-primary
                                         "
                                     >
-                                        <CalendarDays className="h-4 w-4 text-primary" />
+                                        <CalendarDays className="h-5 w-5" />
                                     </div>
 
-                                    <p className="text-sm font-medium text-muted-foreground">
-                                        Marketing Calendar
-                                    </p>
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                                            Marketing Calendar
+                                        </p>
+
+                                        <p className="text-xs text-muted-foreground">
+                                            Campaign planning workspace
+                                        </p>
+                                    </div>
                                 </div>
 
                                 <h1
                                     className="
-                                        mt-3
-                                        text-2xl
+                                        mt-5
+                                        text-3xl
                                         font-semibold
                                         tracking-tight
-                                        text-foreground
-                                        md:text-3xl
+                                        md:text-4xl
                                     "
                                 >
-                                    Plan launches and seasonal campaigns
+                                    Plan around the moments
+                                    that matter.
                                 </h1>
 
                                 <p
                                     className="
-                                        mt-2
+                                        mt-3
                                         max-w-2xl
                                         text-sm
                                         leading-6
                                         text-muted-foreground
+                                        md:text-base
                                     "
                                 >
-                                    Organize upcoming marketing
-                                    opportunities and plan your
-                                    campaigns around important dates.
+                                    Organize holidays,
+                                    seasonal opportunities,
+                                    commercial moments,
+                                    and your own campaign
+                                    events in one place.
                                 </p>
                             </div>
 
-                            <div
-                                className="
-                                    flex
-                                    flex-col
-                                    gap-2
-                                    sm:flex-row
-                                "
-                            >
+                            <div className="flex flex-col gap-2 sm:flex-row">
                                 <Button
                                     variant="outline"
                                     onClick={() =>
-                                        changeFilter('all')
+                                        changeFilter(
+                                            'all',
+                                        )
                                     }
-                                    className="
-                                        gap-2
-                                        shadow-none
-                                        transition-all
-                                        duration-200
-                                        hover:-translate-y-0.5
-                                    "
+                                    className="gap-2"
                                 >
                                     <Filter className="h-4 w-4" />
 
@@ -537,18 +1137,26 @@ export default function CalendarPage({
                                 </Button>
 
                                 <Button
-                                    asChild
+                                    onClick={() =>
+                                        openCreateDialog()
+                                    }
                                     className="
                                         gap-2
                                         shadow-sm
-                                        transition-all
-                                        duration-200
-                                        hover:-translate-y-0.5
-                                        hover:shadow-md
                                     "
                                 >
+                                    <Plus className="h-4 w-4" />
+
+                                    Create Event
+                                </Button>
+
+                                <Button
+                                    asChild
+                                    variant="outline"
+                                    className="gap-2"
+                                >
                                     <Link href="/generator">
-                                        Create campaign asset
+                                        Create asset
 
                                         <ArrowRight className="h-4 w-4" />
                                     </Link>
@@ -558,37 +1166,28 @@ export default function CalendarPage({
                     </section>
 
                     {/* =====================================================
-                        MAIN CONTENT
+                        MAIN GRID
                     ====================================================== */}
 
                     <div
                         className="
                             grid
                             gap-6
-                            xl:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.55fr)]
+                            xl:grid-cols-[minmax(0,1.5fr)_360px]
                         "
                     >
-
                         {/* =================================================
-                            CALENDAR
+                            CALENDAR CARD
                         ================================================== */}
 
                         <Card
                             className="
                                 overflow-hidden
-                                rounded-2xl
+                                rounded-3xl
                                 border-border
-                                bg-card
-                                shadow-[0_2px_8px_rgba(0,0,0,0.05)]
-                                transition-all
-                                duration-300
-                                hover:shadow-[0_8px_24px_rgba(0,0,0,0.07)]
+                                shadow-sm
                             "
                         >
-                            {/* -------------------------------------------------
-                                CALENDAR HEADER
-                            -------------------------------------------------- */}
-
                             <CardHeader
                                 className="
                                     border-b
@@ -597,111 +1196,86 @@ export default function CalendarPage({
                                     md:p-6
                                 "
                             >
-                                <div
-                                    className="
-                                        flex
-                                        flex-col
-                                        gap-5
-                                        lg:flex-row
-                                        lg:items-center
-                                        lg:justify-between
-                                    "
-                                >
-                                    <div>
-                                        <CardTitle
-                                            className="
-                                                flex
-                                                items-center
-                                                gap-2
-                                                text-lg
-                                                text-foreground
-                                            "
-                                        >
-                                            <div
-                                                className="
-                                                    flex
-                                                    h-8
-                                                    w-8
-                                                    items-center
-                                                    justify-center
-                                                    rounded-lg
-                                                    bg-primary/10
-                                                "
-                                            >
-                                                <CalendarDays className="h-4 w-4 text-primary" />
-                                            </div>
-
-                                            Event timeline
-                                        </CardTitle>
-
-                                        <p className="mt-1 text-sm text-muted-foreground">
-                                            Browse your marketing
-                                            opportunities by date.
-                                        </p>
-                                    </div>
-
-                                    {/* Filters */}
-
+                                <div className="flex flex-col gap-5">
                                     <div
                                         className="
                                             flex
-                                            flex-wrap
-                                            gap-1.5
-                                            rounded-lg
-                                            bg-muted/40
-                                            p-1
+                                            flex-col
+                                            gap-4
+                                            lg:flex-row
+                                            lg:items-center
+                                            lg:justify-between
                                         "
                                     >
-                                        {filterOptions.map(
-                                            (item) => {
-                                                const active =
-                                                    filter ===
-                                                    item.value;
+                                        <div>
+                                            <CardTitle className="text-xl">
+                                                Event timeline
+                                            </CardTitle>
 
-                                                return (
-                                                    <button
-                                                        key={
-                                                            item.value
-                                                        }
-                                                        type="button"
-                                                        onClick={() =>
-                                                            changeFilter(
-                                                                item.value,
-                                                            )
-                                                        }
-                                                        className={`
-                                                            rounded-md
-                                                            px-3
-                                                            py-1.5
-                                                            text-xs
-                                                            font-medium
-                                                            transition-all
-                                                            duration-200
+                                            <p className="mt-1 text-sm text-muted-foreground">
+                                                Click any day to
+                                                inspect events or
+                                                create a new one.
+                                            </p>
+                                        </div>
 
-                                                            ${
-                                                                active
-                                                                    ? 'bg-background text-foreground shadow-sm'
-                                                                    : 'text-muted-foreground hover:bg-background/70 hover:text-foreground'
+                                        <div
+                                            className="
+                                                flex
+                                                flex-wrap
+                                                gap-1.5
+                                                rounded-xl
+                                                bg-muted/50
+                                                p-1
+                                            "
+                                        >
+                                            {filterOptions.map(
+                                                (
+                                                    item,
+                                                ) => {
+                                                    const active =
+                                                        filter ===
+                                                        item.value;
+
+                                                    return (
+                                                        <button
+                                                            key={
+                                                                item.value
                                                             }
-                                                        `}
-                                                    >
-                                                        {
-                                                            item.label
-                                                        }
-                                                    </button>
-                                                );
-                                            },
-                                        )}
+                                                            type="button"
+                                                            onClick={() =>
+                                                                changeFilter(
+                                                                    item.value,
+                                                                )
+                                                            }
+                                                            className={`
+                                                                rounded-lg
+                                                                px-3
+                                                                py-1.5
+                                                                text-xs
+                                                                font-medium
+                                                                transition-all
+
+                                                                ${
+                                                                    active
+                                                                        ? 'bg-background text-foreground shadow-sm'
+                                                                        : 'text-muted-foreground hover:text-foreground'
+                                                                }
+                                                            `}
+                                                        >
+                                                            {
+                                                                item.label
+                                                            }
+                                                        </button>
+                                                    );
+                                                },
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </CardHeader>
 
-                            {/* -------------------------------------------------
-                                CALENDAR CONTENT
-                            -------------------------------------------------- */}
-
                             <CardContent className="space-y-5 p-4 md:p-6">
-
                                 {/* Month toolbar */}
 
                                 <div
@@ -709,12 +1283,11 @@ export default function CalendarPage({
                                         flex
                                         items-center
                                         justify-between
-                                        rounded-xl
+                                        rounded-2xl
                                         border
                                         border-border
                                         bg-muted/20
                                         p-2
-                                        transition-colors
                                     "
                                 >
                                     <Button
@@ -727,42 +1300,20 @@ export default function CalendarPage({
                                         disabled={
                                             isLoadingYear
                                         }
-                                        className="
-                                            h-9
-                                            w-9
-                                            rounded-lg
-                                            transition-all
-                                            duration-200
-                                            hover:-translate-x-0.5
-                                        "
-                                        aria-label="Previous month"
+                                        className="h-9 w-9 rounded-xl"
                                     >
                                         <ArrowLeft className="h-4 w-4" />
                                     </Button>
 
                                     <div className="text-center">
-                                        <p
-                                            className="
-                                                text-[10px]
-                                                font-medium
-                                                tracking-[0.18em]
-                                                text-muted-foreground
-                                                uppercase
-                                            "
-                                        >
+                                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                                             Calendar
                                         </p>
 
-                                        <h2
-                                            className="
-                                                mt-0.5
-                                                text-base
-                                                font-semibold
-                                                text-foreground
-                                                md:text-lg
-                                            "
-                                        >
-                                            {monthLabel}
+                                        <h2 className="mt-0.5 text-lg font-semibold">
+                                            {
+                                                monthLabel
+                                            }
                                         </h2>
                                     </div>
 
@@ -777,15 +1328,7 @@ export default function CalendarPage({
                                             disabled={
                                                 isLoadingYear
                                             }
-                                            className="
-                                                hidden
-                                                h-9
-                                                shadow-none
-                                                transition-all
-                                                duration-200
-                                                hover:-translate-y-0.5
-                                                sm:inline-flex
-                                            "
+                                            className="hidden sm:inline-flex"
                                         >
                                             Today
                                         </Button>
@@ -800,15 +1343,7 @@ export default function CalendarPage({
                                             disabled={
                                                 isLoadingYear
                                             }
-                                            className="
-                                                h-9
-                                                w-9
-                                                rounded-lg
-                                                transition-all
-                                                duration-200
-                                                hover:translate-x-0.5
-                                            "
-                                            aria-label="Next month"
+                                            className="h-9 w-9 rounded-xl"
                                         >
                                             <ArrowRight className="h-4 w-4" />
                                         </Button>
@@ -817,48 +1352,41 @@ export default function CalendarPage({
 
                                 {/* Weekdays */}
 
-                                <div
-                                    className="
-                                        grid
-                                        grid-cols-7
-                                        gap-1.5
-                                        sm:gap-2
-                                    "
-                                >
+                                <div className="grid grid-cols-7 gap-2">
                                     {weekdayLabels.map(
-                                        (name) => (
+                                        (
+                                            weekday,
+                                        ) => (
                                             <div
-                                                key={name}
+                                                key={
+                                                    weekday
+                                                }
                                                 className="
-                                                    py-1.5
+                                                    py-1
                                                     text-center
                                                     text-[10px]
                                                     font-semibold
+                                                    uppercase
                                                     tracking-wide
                                                     text-muted-foreground
-                                                    uppercase
-                                                    sm:text-[11px]
                                                 "
                                             >
-                                                {name}
+                                                {
+                                                    weekday
+                                                }
                                             </div>
                                         ),
                                     )}
                                 </div>
 
-                                {/* Calendar grid */}
+                                {/* Calendar */}
 
-                                <div
-                                    className="
-                                        grid
-                                        grid-cols-7
-                                        gap-1.5
-                                        sm:gap-2
-                                    "
-                                >
+                                <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
                                     {monthView.cells.map(
                                         (
-                                            { date },
+                                            {
+                                                date,
+                                            },
                                             index,
                                         ) => {
                                             const dateKey =
@@ -872,7 +1400,7 @@ export default function CalendarPage({
                                                     ) ??
                                                 [];
 
-                                            const today =
+                                            const todayDate =
                                                 isToday(
                                                     date,
                                                 );
@@ -883,42 +1411,49 @@ export default function CalendarPage({
                                                 );
 
                                             return (
-                                                <div
+                                                <button
                                                     key={`${dateKey}-${index}`}
+                                                    type="button"
+                                                    onClick={() =>
+                                                        openDayDetails(
+                                                            date,
+                                                        )
+                                                    }
                                                     className={`
                                                         group
                                                         relative
-                                                        min-h-[92px]
+                                                        min-h-[105px]
                                                         overflow-hidden
-                                                        rounded-xl
+                                                        rounded-2xl
                                                         border
-                                                        p-1.5
+                                                        p-2
+                                                        text-left
                                                         transition-all
                                                         duration-200
-                                                        sm:min-h-[110px]
-                                                        sm:p-2
+                                                        sm:min-h-[125px]
+                                                        sm:p-2.5
 
                                                         ${
                                                             inMonth
-                                                                ? 'border-border bg-background hover:-translate-y-0.5 hover:bg-muted/20 hover:shadow-sm'
-                                                                : 'border-border/50 bg-muted/20 text-muted-foreground'
+                                                                ? 'border-border bg-background hover:-translate-y-0.5 hover:border-primary/30 hover:bg-muted/20 hover:shadow-md'
+                                                                : 'border-border/40 bg-muted/10 text-muted-foreground'
                                                         }
 
                                                         ${
-                                                            today
-                                                                ? 'border-primary/40 bg-primary/[0.03] ring-1 ring-primary/30'
+                                                            todayDate
+                                                                ? 'border-primary/40 bg-primary/[0.04] ring-1 ring-primary/20'
                                                                 : ''
                                                         }
                                                     `}
                                                 >
-                                                    {/* Today indicator */}
+                                                    {/* Today marker */}
 
-                                                    {today && (
+                                                    {todayDate && (
                                                         <span
                                                             className="
                                                                 absolute
-                                                                right-2
-                                                                top-2
+                                                                right-2.5
+                                                                top-2.5
                                                                 h-1.5
                                                                 w-1.5
                                                                 rounded-full
@@ -929,29 +1464,21 @@ export default function CalendarPage({
 
                                                     {/* Date */}
 
-                                                    <div
-                                                        className="
-                                                            mb-2
-                                                            flex
-                                                            items-center
-                                                            justify-between
-                                                        "
-                                                    >
+                                                    <div className="mb-2 flex items-center justify-between">
                                                         <span
                                                             className={`
                                                                 flex
-                                                                h-6
-                                                                min-w-6
+                                                                h-7
+                                                                min-w-7
                                                                 items-center
                                                                 justify-center
                                                                 rounded-full
                                                                 px-1.5
                                                                 text-xs
-                                                                font-medium
-                                                                transition-colors
+                                                                font-semibold
 
                                                                 ${
-                                                                    today
+                                                                    todayDate
                                                                         ? 'bg-primary text-primary-foreground'
                                                                         : inMonth
                                                                           ? 'text-foreground'
@@ -963,6 +1490,25 @@ export default function CalendarPage({
                                                                 date.getDate()
                                                             }
                                                         </span>
+
+                                                        {dayEvents.length >
+                                                            0 && (
+                                                            <span
+                                                                className="
+                                                                    text-[9px]
+                                                                    font-medium
+                                                                    text-muted-foreground
+                                                                "
+                                                            >
+                                                                {
+                                                                    dayEvents.length
+                                                                }{' '}
+                                                                {dayEvents.length ===
+                                                                1
+                                                                    ? 'event'
+                                                                    : 'events'}
+                                                            </span>
+                                                        )}
                                                     </div>
 
                                                     {/* Events */}
@@ -971,11 +1517,11 @@ export default function CalendarPage({
                                                         {dayEvents
                                                             .slice(
                                                                 0,
-                                                                2,
+                                                                3,
                                                             )
                                                             .map(
                                                                 (
-                                                                    event: any,
+                                                                    event,
                                                                 ) => (
                                                                     <div
                                                                         key={
@@ -986,26 +1532,19 @@ export default function CalendarPage({
                                                                         }
                                                                         className={`
                                                                             truncate
-                                                                            rounded-md
+                                                                            rounded-lg
                                                                             border
-                                                                            px-1.5
-                                                                            py-1
+                                                                            px-2
+                                                                            py-1.5
                                                                             text-[9px]
                                                                             font-medium
-                                                                            leading-3.5
+                                                                            leading-3
                                                                             transition-all
-                                                                            duration-200
-                                                                            hover:brightness-95
-                                                                            sm:px-2
                                                                             sm:text-[10px]
 
-                                                                            ${
-                                                                                eventTypeStyles[
-                                                                                    event
-                                                                                        .type
-                                                                                ] ??
-                                                                                'border-border bg-muted text-muted-foreground'
-                                                                            }
+                                                                            ${getEventTypeClass(
+                                                                                event.type,
+                                                                            )}
                                                                         `}
                                                                     >
                                                                         {
@@ -1016,24 +1555,32 @@ export default function CalendarPage({
                                                             )}
 
                                                         {dayEvents.length >
-                                                            2 && (
-                                                            <div
-                                                                className="
-                                                                    px-1
-                                                                    text-[9px]
-                                                                    font-medium
-                                                                    text-muted-foreground
-                                                                    sm:text-[10px]
-                                                                "
-                                                            >
+                                                            3 && (
+                                                            <div className="px-1 text-[9px] font-semibold text-muted-foreground">
                                                                 +
                                                                 {dayEvents.length -
-                                                                    2}{' '}
+                                                                    3}{' '}
                                                                 more
                                                             </div>
                                                         )}
                                                     </div>
-                                                </div>
+
+                                                    {/* Click hint */}
+
+                                                    <div
+                                                        className="
+                                                            pointer-events-none
+                                                            absolute
+                                                            bottom-2
+                                                            right-2
+                                                            opacity-0
+                                                            transition-opacity
+                                                            group-hover:opacity-100
+                                                        "
+                                                    >
+                                                        <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                                                    </div>
+                                                </button>
                                             );
                                         },
                                     )}
@@ -1046,14 +1593,14 @@ export default function CalendarPage({
                                         flex
                                         flex-wrap
                                         items-center
-                                        gap-x-4
+                                        gap-x-5
                                         gap-y-2
                                         border-t
                                         border-border
                                         pt-4
                                     "
                                 >
-                                    <span className="text-[11px] font-medium text-muted-foreground">
+                                    <span className="text-[11px] font-semibold text-muted-foreground">
                                         Event types
                                     </span>
 
@@ -1065,7 +1612,9 @@ export default function CalendarPage({
                                             styles,
                                         ]) => (
                                             <div
-                                                key={type}
+                                                key={
+                                                    type
+                                                }
                                                 className="flex items-center gap-1.5"
                                             >
                                                 <span
@@ -1104,270 +1653,1014 @@ export default function CalendarPage({
                         </Card>
 
                         {/* =================================================
-                            UPCOMING EVENTS
+                            RIGHT SIDEBAR
                         ================================================== */}
 
-                        <Card
-                            className="
-                                overflow-hidden
-                                rounded-2xl
-                                border-border
-                                bg-card
-                                shadow-[0_2px_8px_rgba(0,0,0,0.05)]
-                                transition-all
-                                duration-300
-                                hover:shadow-[0_8px_24px_rgba(0,0,0,0.07)]
-                            "
-                        >
-                            <CardHeader
-                                className="
-                                    border-b
-                                    border-border
-                                    p-5
-                                    md:p-6
-                                "
-                            >
-                                <div className="flex items-center justify-between gap-3">
-                                    <div>
-                                        <CardTitle
-                                            className="
-                                                flex
-                                                items-center
-                                                gap-2
-                                                text-lg
-                                                text-foreground
-                                            "
-                                        >
-                                            <div
-                                                className="
-                                                    flex
-                                                    h-8
-                                                    w-8
-                                                    items-center
-                                                    justify-center
-                                                    rounded-lg
-                                                    bg-primary/10
-                                                "
-                                            >
-                                                <Sparkles className="h-4 w-4 text-primary" />
-                                            </div>
+                        <div className="space-y-6">
+                            {/* Upcoming */}
 
-                                            Upcoming opportunities
-                                        </CardTitle>
+                            <Card className="overflow-hidden rounded-3xl border-border shadow-sm">
+                                <CardHeader className="border-b border-border p-5">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <CardTitle className="flex items-center gap-2 text-lg">
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                                    <Sparkles className="h-4 w-4" />
+                                                </div>
 
-                                        <p className="mt-1 text-sm text-muted-foreground">
-                                            Your next marketing dates.
-                                        </p>
-                                    </div>
+                                                Upcoming
+                                            </CardTitle>
 
-                                    {upcoming_events.length >
-                                        0 && (
-                                        <Badge
-                                            variant="secondary"
-                                            className="shrink-0"
-                                        >
-                                            {
-                                                upcoming_events.length
-                                            }
-                                        </Badge>
-                                    )}
-                                </div>
-                            </CardHeader>
-
-                            <CardContent className="p-4 md:p-5">
-                                {upcoming_events.length ===
-                                0 ? (
-                                    <div
-                                        className="
-                                            rounded-xl
-                                            border
-                                            border-dashed
-                                            border-border
-                                            bg-muted/20
-                                            p-8
-                                            text-center
-                                        "
-                                    >
-                                        <div
-                                            className="
-                                                mx-auto
-                                                flex
-                                                h-10
-                                                w-10
-                                                items-center
-                                                justify-center
-                                                rounded-lg
-                                                bg-muted
-                                            "
-                                        >
-                                            <CalendarDays className="h-5 w-5 text-muted-foreground" />
+                                            <p className="mt-1 text-xs text-muted-foreground">
+                                                Your next marketing
+                                                opportunities.
+                                            </p>
                                         </div>
 
-                                        <p className="mt-3 text-sm font-medium text-foreground">
-                                            No upcoming campaigns
-                                        </p>
-
-                                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                                            Your upcoming marketing
-                                            opportunities will appear
-                                            here.
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2.5">
-                                        {upcoming_events.map(
-                                            (
-                                                event: any,
-                                                index: number,
-                                            ) => (
-                                                <div
-                                                    key={
-                                                        event.id
-                                                    }
-                                                    className="
-                                                        group
-                                                        relative
-                                                        overflow-hidden
-                                                        rounded-xl
-                                                        border
-                                                        border-border
-                                                        bg-background
-                                                        p-4
-                                                        transition-all
-                                                        duration-200
-                                                        hover:-translate-y-0.5
-                                                        hover:bg-muted/20
-                                                        hover:shadow-sm
-                                                    "
-                                                >
-                                                    {/* Timeline line */}
-
-                                                    {index <
-                                                        upcoming_events.length -
-                                                            1 && (
-                                                        <div
-                                                            className="
-                                                                absolute
-                                                                bottom-[-12px]
-                                                                left-[23px]
-                                                                top-[55px]
-                                                                w-px
-                                                                bg-border
-                                                            "
-                                                        />
-                                                    )}
-
-                                                    <div className="relative flex gap-3">
-                                                        {/* Date marker */}
-
-                                                        <div
-                                                            className="
-                                                                flex
-                                                                h-9
-                                                                w-9
-                                                                shrink-0
-                                                                items-center
-                                                                justify-center
-                                                                rounded-lg
-                                                                border
-                                                                border-primary/20
-                                                                bg-primary/5
-                                                                text-primary
-                                                            "
-                                                        >
-                                                            <CalendarDays className="h-4 w-4" />
-                                                        </div>
-
-                                                        {/* Details */}
-
-                                                        <div className="min-w-0 flex-1">
-                                                            <div
-                                                                className="
-                                                                    flex
-                                                                    items-start
-                                                                    justify-between
-                                                                    gap-2
-                                                                "
-                                                            >
-                                                                <p
-                                                                    className="
-                                                                        truncate
-                                                                        text-sm
-                                                                        font-semibold
-                                                                        text-foreground
-                                                                    "
-                                                                >
-                                                                    {
-                                                                        event.name
-                                                                    }
-                                                                </p>
-
-                                                                <Badge
-                                                                    variant="outline"
-                                                                    className="
-                                                                        shrink-0
-                                                                        border-border
-                                                                        bg-muted/30
-                                                                        text-[10px]
-                                                                        text-muted-foreground
-                                                                    "
-                                                                >
-                                                                    {
-                                                                        event.type
-                                                                    }
-                                                                </Badge>
-                                                            </div>
-
-                                                            <p className="mt-2 text-xs font-medium text-foreground">
-                                                                {
-                                                                    event.date
-                                                                }
-                                                            </p>
-
-                                                            <p className="mt-0.5 text-xs text-muted-foreground">
-                                                                {
-                                                                    event.days
-                                                                }
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ),
+                                        {sortedUpcomingEvents.length >
+                                            0 && (
+                                            <Badge variant="secondary">
+                                                {
+                                                    sortedUpcomingEvents.length
+                                                }
+                                            </Badge>
                                         )}
                                     </div>
-                                )}
+                                </CardHeader>
 
-                                {/* Create asset */}
+                                <CardContent className="p-4">
+                                    {sortedUpcomingEvents.length ===
+                                    0 ? (
+                                        <div
+                                            className="
+                                                rounded-2xl
+                                                border
+                                                border-dashed
+                                                border-border
+                                                bg-muted/20
+                                                p-6
+                                                text-center
+                                            "
+                                        >
+                                            <CalendarDays className="mx-auto h-6 w-6 text-muted-foreground" />
 
-                                <div className="mt-5 border-t border-border pt-5">
+                                            <p className="mt-3 text-sm font-medium">
+                                                No upcoming events
+                                            </p>
+
+                                            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                                Create an event to
+                                                start planning your
+                                                next campaign.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {sortedUpcomingEvents.map(
+                                                (
+                                                    event: CalendarEvent,
+                                                ) => (
+                                                    <button
+                                                        key={
+                                                            event.id
+                                                        }
+                                                        type="button"
+                                                        onClick={() =>
+                                                            openEventDetails(
+                                                                event,
+                                                            )
+                                                        }
+                                                        className="
+                                                            w-full
+                                                            rounded-2xl
+                                                            border
+                                                            border-border
+                                                            bg-background
+                                                            p-3
+                                                            text-left
+                                                            transition-all
+                                                            hover:-translate-y-0.5
+                                                            hover:bg-muted/20
+                                                            hover:shadow-sm
+                                                        "
+                                                    >
+                                                        <div className="flex gap-3">
+                                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                                                <CalendarDays className="h-4 w-4" />
+                                                            </div>
+
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-start justify-between gap-2">
+                                                                    <p className="truncate text-sm font-semibold">
+                                                                        {
+                                                                            event.name
+                                                                        }
+                                                                    </p>
+
+                                                                    <Badge
+                                                                        variant="outline"
+                                                                        className="shrink-0 text-[9px]"
+                                                                    >
+                                                                        {getEventTypeLabel(
+                                                                            event.type,
+                                                                        )}
+                                                                    </Badge>
+                                                                </div>
+
+                                                                <p className="mt-1 text-xs font-medium text-foreground">
+                                                                    {formatEventDate(
+                                                                        event.date,
+                                                                    )}
+                                                                </p>
+
+                                                                {event.days && (
+                                                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                                                        {
+                                                                            event.days
+                                                                        }
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                ),
+                                            )}
+                                        </div>
+                                    )}
+
                                     <Button
-                                        asChild
+                                        onClick={() =>
+                                            openCreateDialog()
+                                        }
                                         variant="outline"
-                                        className="
-                                            w-full
-                                            gap-2
-                                            shadow-none
-                                            transition-all
-                                            duration-200
-                                            hover:-translate-y-0.5
-                                            hover:shadow-sm
-                                        "
+                                        className="mt-4 w-full gap-2"
                                     >
-                                        <Link href="/generator">
-                                            Create campaign asset
+                                        <Plus className="h-4 w-4" />
 
-                                            <ArrowRight className="h-4 w-4" />
-                                        </Link>
+                                        Add event
                                     </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                </CardContent>
+                            </Card>
+
+                            {/* Quick planning card */}
+
+                            <Card className="rounded-3xl border-border bg-muted/20 shadow-none">
+                                <CardContent className="p-5">
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background text-primary shadow-sm">
+                                            <CheckCircle2 className="h-4 w-4" />
+                                        </div>
+
+                                        <div>
+                                            <p className="text-sm font-semibold">
+                                                Planning tip
+                                            </p>
+
+                                            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                                Click a calendar date
+                                                to see all holidays
+                                                and marketing events
+                                                scheduled for that
+                                                day.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            {/* =============================================================
+                DAY DETAILS DIALOG
+            ============================================================= */}
+
+            <Dialog
+                open={isDayDialogOpen}
+                onOpenChange={
+                    setIsDayDialogOpen
+                }
+            >
+                <DialogContent className="max-h-[85vh] overflow-y-auto rounded-3xl sm:max-w-lg">
+                    <DialogHeader>
+                        <div className="flex items-start gap-3">
+                            <div
+                                className="
+                                    flex
+                                    h-11
+                                    w-11
+                                    shrink-0
+                                    items-center
+                                    justify-center
+                                    rounded-2xl
+                                    bg-primary/10
+                                    text-primary
+                                "
+                            >
+                                <CalendarDays className="h-5 w-5" />
+                            </div>
+
+                            <div>
+                                <DialogTitle className="text-xl">
+                                    {selectedDate
+                                        ? formatLongDate(
+                                              selectedDate,
+                                          )
+                                        : 'Day details'}
+                                </DialogTitle>
+
+                                <DialogDescription>
+                                    {selectedDateEvents.length >
+                                    0
+                                        ? `${selectedDateEvents.length} ${
+                                              selectedDateEvents.length ===
+                                              1
+                                                  ? 'event'
+                                                  : 'events'
+                                          } scheduled for this day.`
+                                        : 'There are no events scheduled for this day.'}
+                                </DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+
+                    {selectedDateEvents.length ===
+                    0 ? (
+                        <div className="py-5">
+                            <div
+                                className="
+                                    rounded-2xl
+                                    border
+                                    border-dashed
+                                    border-border
+                                    bg-muted/20
+                                    p-8
+                                    text-center
+                                "
+                            >
+                                <div
+                                    className="
+                                        mx-auto
+                                        flex
+                                        h-12
+                                        w-12
+                                        items-center
+                                        justify-center
+                                        rounded-2xl
+                                        bg-background
+                                        shadow-sm
+                                    "
+                                >
+                                    <CalendarDays className="h-5 w-5 text-muted-foreground" />
+                                </div>
+
+                                <h3 className="mt-4 text-sm font-semibold">
+                                    Nothing scheduled
+                                </h3>
+
+                                <p className="mx-auto mt-1 max-w-xs text-xs leading-5 text-muted-foreground">
+                                    Use this date for a
+                                    campaign, promotion,
+                                    launch, or other marketing
+                                    activity.
+                                </p>
+
+                                <Button
+                                    onClick={() =>
+                                        selectedDate &&
+                                        openCreateDialog(
+                                            selectedDate,
+                                        )
+                                    }
+                                    className="mt-5 gap-2"
+                                >
+                                    <Plus className="h-4 w-4" />
+
+                                    Create event
+                                </Button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {selectedDateEvents.map(
+                                (
+                                    event,
+                                ) => (
+                                    <button
+                                        key={
+                                            event.id
+                                        }
+                                        type="button"
+                                        onClick={() =>
+                                            openEventDetails(
+                                                event,
+                                            )
+                                        }
+                                        className="
+                                            w-full
+                                            rounded-2xl
+                                            border
+                                            border-border
+                                            bg-background
+                                            p-4
+                                            text-left
+                                            transition-all
+                                            hover:-translate-y-0.5
+                                            hover:bg-muted/20
+                                            hover:shadow-sm
+                                        "
+                                    >
+                                        <div className="flex gap-3">
+                                            <div
+                                                className={`
+                                                    flex
+                                                    h-10
+                                                    w-10
+                                                    shrink-0
+                                                    items-center
+                                                    justify-center
+                                                    rounded-xl
+                                                    border
+                                                    ${getEventTypeClass(
+                                                        event.type,
+                                                    )}
+                                                `}
+                                            >
+                                                <Tag className="h-4 w-4" />
+                                            </div>
+
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="min-w-0">
+                                                        <h3 className="truncate text-sm font-semibold">
+                                                            {
+                                                                event.name
+                                                            }
+                                                        </h3>
+
+                                                        <p className="mt-1 text-xs text-muted-foreground">
+                                                            {getEventTypeLabel(
+                                                                event.type,
+                                                            )}
+                                                        </p>
+                                                    </div>
+
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={`
+                                                            shrink-0
+                                                            text-[10px]
+                                                            ${getEventTypeClass(
+                                                                event.type,
+                                                            )}
+                                                        `}
+                                                    >
+                                                        {getEventTypeLabel(
+                                                            event.type,
+                                                        )}
+                                                    </Badge>
+                                                </div>
+
+                                                {event.description && (
+                                                    <p className="mt-3 line-clamp-2 text-xs leading-5 text-muted-foreground">
+                                                        {
+                                                            event.description
+                                                        }
+                                                    </p>
+                                                )}
+
+                                                <div className="mt-3 flex items-center gap-1.5 text-[11px] font-medium text-primary">
+                                                    <Info className="h-3.5 w-3.5" />
+
+                                                    View event details
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                ),
+                            )}
+
+                            {selectedDate && (
+                                <Button
+                                    variant="outline"
+                                    onClick={() =>
+                                        openCreateDialog(
+                                            selectedDate,
+                                        )
+                                    }
+                                    className="mt-2 w-full gap-2"
+                                >
+                                    <Plus className="h-4 w-4" />
+
+                                    Add another event
+                                </Button>
+                            )}
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* =============================================================
+                EVENT DETAILS DIALOG
+            ============================================================= */}
+
+            <Dialog
+                open={isEventDialogOpen}
+                onOpenChange={
+                    setIsEventDialogOpen
+                }
+            >
+                <DialogContent className="rounded-3xl sm:max-w-lg">
+                    {selectedEvent && (
+                        <>
+                            <DialogHeader>
+                                <div className="flex items-start gap-3">
+                                    <div
+                                        className={`
+                                            flex
+                                            h-12
+                                            w-12
+                                            shrink-0
+                                            items-center
+                                            justify-center
+                                            rounded-2xl
+                                            border
+                                            ${getEventTypeClass(
+                                                selectedEvent.type,
+                                            )}
+                                        `}
+                                    >
+                                        <CalendarDays className="h-5 w-5" />
+                                    </div>
+
+                                    <div className="min-w-0">
+                                        <DialogTitle className="text-xl">
+                                            {
+                                                selectedEvent.name
+                                            }
+                                        </DialogTitle>
+
+                                        <DialogDescription>
+                                            Marketing calendar
+                                            event details
+                                        </DialogDescription>
+                                    </div>
+                                </div>
+                            </DialogHeader>
+
+                            <div className="space-y-4">
+                                {/* Event type */}
+
+                                <div
+                                    className="
+                                        flex
+                                        items-center
+                                        justify-between
+                                        rounded-2xl
+                                        border
+                                        border-border
+                                        bg-muted/20
+                                        p-4
+                                    "
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Tag className="h-4 w-4 text-muted-foreground" />
+
+                                        <div>
+                                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                                Event type
+                                            </p>
+
+                                            <p className="mt-0.5 text-sm font-medium">
+                                                {getEventTypeLabel(
+                                                    selectedEvent.type,
+                                                )}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <Badge
+                                        variant="outline"
+                                        className={getEventTypeClass(
+                                            selectedEvent.type,
+                                        )}
+                                    >
+                                        {getEventTypeLabel(
+                                            selectedEvent.type,
+                                        )}
+                                    </Badge>
+                                </div>
+
+                                {/* Date */}
+
+                                <div
+                                    className="
+                                        flex
+                                        items-center
+                                        gap-3
+                                        rounded-2xl
+                                        border
+                                        border-border
+                                        p-4
+                                    "
+                                >
+                                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                        <CalendarDays className="h-4 w-4" />
+                                    </div>
+
+                                    <div>
+                                        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                            Date
+                                        </p>
+
+                                        <p className="mt-0.5 text-sm font-medium">
+                                            {formatEventDate(
+                                                selectedEvent.date,
+                                            )}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Description */}
+
+                                <div className="rounded-2xl border border-border p-4">
+                                    <div className="flex items-center gap-2">
+                                        <Info className="h-4 w-4 text-muted-foreground" />
+
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                            Description
+                                        </p>
+                                    </div>
+
+                                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                                        {selectedEvent.description?.trim()
+                                            ? selectedEvent.description
+                                            : 'No description was provided for this event.'}
+                                    </p>
+                                </div>
+
+                                {/* Days */}
+
+                                {selectedEvent.days && (
+                                    <div className="flex items-center gap-3 rounded-2xl bg-muted/30 p-4">
+                                        <Clock3 className="h-4 w-4 text-muted-foreground" />
+
+                                        <p className="text-sm text-muted-foreground">
+                                            {
+                                                selectedEvent.days
+                                            }
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex gap-2 pt-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={() =>
+                                        setIsEventDialogOpen(
+                                            false,
+                                        )
+                                    }
+                                    className="flex-1"
+                                >
+                                    Close
+                                </Button>
+
+                                <Button
+                                    onClick={() =>
+                                        openCreateDialog(
+                                            selectedEvent.date
+                                                ? new Date(
+                                                      `${selectedEvent.date}T00:00:00`,
+                                                  )
+                                                : undefined,
+                                        )
+                                    }
+                                    className="flex-1 gap-2"
+                                >
+                                    <Plus className="h-4 w-4" />
+
+                                    Create event
+                                </Button>
+                            </div>
+                        </>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* =============================================================
+                CREATE EVENT DIALOG
+            ============================================================= */}
+
+            <Dialog
+                open={isCreateDialogOpen}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        closeCreateDialog();
+                    } else {
+                        setIsCreateDialogOpen(true);
+                    }
+                }}
+            >
+                <DialogContent className="max-h-[90vh] overflow-y-auto rounded-3xl sm:max-w-lg">
+                    <DialogHeader>
+                        <div className="flex items-start gap-3">
+                            <div
+                                className="
+                                    flex
+                                    h-11
+                                    w-11
+                                    shrink-0
+                                    items-center
+                                    justify-center
+                                    rounded-2xl
+                                    bg-primary/10
+                                    text-primary
+                                "
+                            >
+                                <Plus className="h-5 w-5" />
+                            </div>
+
+                            <div>
+                                <DialogTitle className="text-xl">
+                                    Create event
+                                </DialogTitle>
+
+                                <DialogDescription>
+                                    Add a custom marketing
+                                    opportunity to your calendar.
+                                </DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+
+                    <div className="space-y-5">
+                        {/* Submit error */}
+
+                        {formErrors.submit && (
+                            <div
+                                className="
+                                    rounded-2xl
+                                    border
+                                    border-destructive/20
+                                    bg-destructive/5
+                                    p-4
+                                    text-sm
+                                    text-destructive
+                                "
+                            >
+                                {formErrors.submit}
+                            </div>
+                        )}
+
+                        {/* Event name */}
+
+                        <div className="space-y-2">
+                            <Label htmlFor="event-name">
+                                Event name
+                                <span className="ml-1 text-destructive">
+                                    *
+                                </span>
+                            </Label>
+
+                            <Input
+                                id="event-name"
+                                placeholder="e.g. Product launch"
+                                value={
+                                    formData.name
+                                }
+                                onChange={(
+                                    event,
+                                ) => {
+                                    setFormData(
+                                        (
+                                            previous,
+                                        ) => ({
+                                            ...previous,
+                                            name:
+                                                event
+                                                    .target
+                                                    .value,
+                                        }),
+                                    );
+
+                                    if (
+                                        formErrors.name
+                                    ) {
+                                        setFormErrors(
+                                            (
+                                                previous,
+                                            ) => ({
+                                                ...previous,
+                                                name: '',
+                                            }),
+                                        );
+                                    }
+                                }}
+                                disabled={
+                                    isCreatingEvent
+                                }
+                                maxLength={100}
+                                className="h-11 rounded-xl"
+                            />
+
+                            <div className="flex justify-between">
+                                {formErrors.name ? (
+                                    <p className="text-xs text-destructive">
+                                        {
+                                            formErrors.name
+                                        }
+                                    </p>
+                                ) : (
+                                    <span />
+                                )}
+
+                                <span className="text-[11px] text-muted-foreground">
+                                    {
+                                        formData
+                                            .name
+                                            .length
+                                    }
+                                    /100
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Date */}
+
+                        <div className="space-y-2">
+                            <Label htmlFor="event-date">
+                                Date
+                                <span className="ml-1 text-destructive">
+                                    *
+                                </span>
+                            </Label>
+
+                            <Input
+                                id="event-date"
+                                type="date"
+                                min={
+                                    minimumEventDate
+                                }
+                                value={
+                                    formData.date
+                                }
+                                onChange={(
+                                    event,
+                                ) => {
+                                    setFormData(
+                                        (
+                                            previous,
+                                        ) => ({
+                                            ...previous,
+                                            date:
+                                                event
+                                                    .target
+                                                    .value,
+                                        }),
+                                    );
+
+                                    if (
+                                        formErrors.date
+                                    ) {
+                                        setFormErrors(
+                                            (
+                                                previous,
+                                            ) => ({
+                                                ...previous,
+                                                date: '',
+                                            }),
+                                        );
+                                    }
+                                }}
+                                disabled={
+                                    isCreatingEvent
+                                }
+                                className="h-11 rounded-xl"
+                            />
+
+                            {formErrors.date && (
+                                <p className="text-xs text-destructive">
+                                    {
+                                        formErrors.date
+                                    }
+                                </p>
+                            )}
+
+                            <p className="text-[11px] text-muted-foreground">
+                                Events must be scheduled
+                                for a future date.
+                            </p>
+                        </div>
+
+                        {/* Description */}
+
+                        <div className="space-y-2">
+                            <Label htmlFor="event-description">
+                                Description
+                                <span className="ml-1 text-[10px] font-normal text-muted-foreground">
+                                    Optional
+                                </span>
+                            </Label>
+
+                            <Textarea
+                                id="event-description"
+                                placeholder="Add context, campaign notes, or important details..."
+                                value={
+                                    formData.description
+                                }
+                                onChange={(
+                                    event,
+                                ) => {
+                                    setFormData(
+                                        (
+                                            previous,
+                                        ) => ({
+                                            ...previous,
+                                            description:
+                                                event
+                                                    .target
+                                                    .value,
+                                        }),
+                                    );
+
+                                    if (
+                                        formErrors.description
+                                    ) {
+                                        setFormErrors(
+                                            (
+                                                previous,
+                                            ) => ({
+                                                ...previous,
+                                                description:
+                                                    '',
+                                            }),
+                                        );
+                                    }
+                                }}
+                                disabled={
+                                    isCreatingEvent
+                                }
+                                maxLength={500}
+                                rows={4}
+                                className="resize-none rounded-xl"
+                            />
+
+                            <div className="flex justify-between">
+                                {formErrors.description ? (
+                                    <p className="text-xs text-destructive">
+                                        {
+                                            formErrors.description
+                                        }
+                                    </p>
+                                ) : (
+                                    <span />
+                                )}
+
+                                <span className="text-[11px] text-muted-foreground">
+                                    {
+                                        formData
+                                            .description
+                                            .length
+                                    }
+                                    /500
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Event type */}
+
+                        <div className="space-y-2">
+                            <Label htmlFor="event-type">
+                                Event type
+                            </Label>
+
+                            <Select
+                                value={
+                                    formData.type
+                                }
+                                onValueChange={(
+                                    value,
+                                ) =>
+                                    setFormData(
+                                        (
+                                            previous,
+                                        ) => ({
+                                            ...previous,
+                                            type: value,
+                                        }),
+                                    )
+                                }
+                                disabled={
+                                    isCreatingEvent
+                                }
+                            >
+                                <SelectTrigger
+                                    id="event-type"
+                                    className="h-11 rounded-xl"
+                                >
+                                    <SelectValue placeholder="Select event type" />
+                                </SelectTrigger>
+
+                                <SelectContent>
+                                    <SelectItem value="custom">
+                                        Custom
+                                    </SelectItem>
+
+                                    <SelectItem value="commercial">
+                                        Commercial
+                                    </SelectItem>
+
+                                    <SelectItem value="seasonal">
+                                        Seasonal
+                                    </SelectItem>
+
+                                    <SelectItem value="holiday">
+                                        Holiday
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            {formErrors.type && (
+                                <p className="text-xs text-destructive">
+                                    {
+                                        formErrors.type
+                                    }
+                                </p>
+                            )}
+
+                            <p className="text-[11px] text-muted-foreground">
+                                Choose how this event should
+                                appear in the calendar.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Actions */}
+
+                    <div className="flex gap-3 border-t border-border pt-5">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={
+                                closeCreateDialog
+                            }
+                            disabled={
+                                isCreatingEvent
+                            }
+                            className="flex-1 rounded-xl"
+                        >
+                            Cancel
+                        </Button>
+
+                        <Button
+                            type="button"
+                            onClick={
+                                handleCreateEvent
+                            }
+                            disabled={
+                                isCreatingEvent
+                            }
+                            className="flex-1 gap-2 rounded-xl"
+                        >
+                            {isCreatingEvent ? (
+                                <>
+                                    <span
+                                        className="
+                                            h-4
+                                            w-4
+                                            animate-spin
+                                            rounded-full
+                                            border-2
+                                            border-current
+                                            border-t-transparent
+                                        "
+                                    />
+
+                                    Creating...
+                                </>
+                            ) : (
+                                <>
+                                    <Plus className="h-4 w-4" />
+
+                                    Create Event
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
+
+/*
+|--------------------------------------------------------------------------
+| Layout
+|--------------------------------------------------------------------------
+*/
 
 CalendarPage.layout = {
     breadcrumbs: [

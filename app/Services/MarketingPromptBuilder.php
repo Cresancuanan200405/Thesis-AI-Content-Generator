@@ -61,36 +61,7 @@ class MarketingPromptBuilder
             $lines[] = 'Additional notes: '.$payload['notes'];
         }
 
-        if (! empty($business->brandKit)) {
-            $brandKit = $business->brandKit;
-            $colorLines = [];
 
-            if (! empty($brandKit->primary_color)) {
-                $colorLines[] = 'Primary: '.$brandKit->primary_color;
-            }
-            if (! empty($brandKit->secondary_color)) {
-                $colorLines[] = 'Secondary: '.$brandKit->secondary_color;
-            }
-            if (! empty($brandKit->accent_color)) {
-                $colorLines[] = 'Accent: '.$brandKit->accent_color;
-            }
-
-            if (! empty($colorLines)) {
-                $lines[] = 'Brand colors: '.implode('; ', $colorLines);
-            }
-
-            if (! empty($brandKit->typography)) {
-                $lines[] = 'Typography: '.$brandKit->typography;
-            }
-
-            $visualPreferences = $brandKit->visual_preferences;
-            if (is_array($visualPreferences)) {
-                $visualPreferences = implode(', ', $visualPreferences);
-            }
-
-            $lines[] = 'Brand guidelines: '.($brandKit->brand_guidelines ?: 'Follow brand consistency');
-            $lines[] = 'Visual preferences: '.($visualPreferences ?: 'Clean, modern layout');
-        }
 
         return implode("\n", $lines);
     }

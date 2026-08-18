@@ -28,7 +28,7 @@ class UpdateCampaignRequest extends FormRequest
             'target_audience' => ['nullable', 'string', 'max:255'],
             'start_date' => ['sometimes', 'required', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'status' => ['sometimes', 'required', 'in:draft,active,completed,archived'],
+            'status' => ['sometimes', 'required', 'in:draft,scheduled,active,completed'],
         ];
     }
 

@@ -5,6 +5,7 @@ import {
     CalendarDays,
     Check,
     ImagePlus,
+    RefreshCcw,
     Sparkles,
     Upload,
     X,
@@ -210,6 +211,24 @@ function findEventSuggestion(
     return null;
 }
 
+function pickRandomItems<T>(
+    items: T[],
+    count: number,
+): T[] {
+    if (items.length === 0) {
+        return [];
+    }
+
+    const shuffled = [...items].sort(
+        () => Math.random() - 0.5,
+    );
+
+    return shuffled.slice(
+        0,
+        Math.min(count, items.length),
+    );
+}
+
 function toggleValue(
     values: string[],
     value: string,
@@ -226,6 +245,44 @@ function toggleValue(
     }
 
     return [...values, value];
+}
+
+function formatEventDateLabel(
+    value?: string | null,
+): string {
+    if (!value) {
+        return 'No date';
+    }
+
+    const [year, month, day] = value
+        .split('-')
+        .map(Number);
+
+    if (
+        !year ||
+        !month ||
+        !day ||
+        Number.isNaN(year) ||
+        Number.isNaN(month) ||
+        Number.isNaN(day)
+    ) {
+        return value;
+    }
+
+    const date = new Date(
+        year,
+        month - 1,
+        day,
+    );
+
+    return new Intl.DateTimeFormat(
+        'en-US',
+        {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+        },
+    ).format(date);
 }
 
 /* ==========================================================================
@@ -270,6 +327,9 @@ export default function GeneratorPage() {
     const [generationProgress, setGenerationProgress] =
         useState(0);
 
+    const [eventModalOpen, setEventModalOpen] =
+        useState(false);
+
     const [form, setForm] =
         useState<GeneratorForm>({
             product_name:
@@ -309,7 +369,7 @@ export default function GeneratorPage() {
                 (event) =>
                     String(event.id) ===
                     String(form.event_id),
-            ),
+            ) ?? null,
         [events, form.event_id],
     );
 
@@ -351,23 +411,58 @@ export default function GeneratorPage() {
     const handlePriceChange = (
         value: string,
     ) => {
-        const numericValue =
-            value.replace(/[^0-9.]/g, '');
-
-        const parts =
-            numericValue.split('.');
-
         const cleanedValue =
-            parts.length > 2
-                ? `${parts[0]}.${parts
-                      .slice(1)
-                      .join('')}`
-                : numericValue;
+            value.replace(/\D/g, '');
 
         updateField(
             'price',
             cleanedValue,
         );
+    };
+
+    const applySelectedEvent = (
+        eventId: string,
+    ) => {
+        setForm((previous) => ({
+            ...previous,
+            event_id: eventId,
+        }));
+
+        setEventModalOpen(false);
+    };
+
+    const generateTagline = () => {
+        const eventName =
+            selectedEvent?.name ||
+            'your campaign';
+
+        const eventWord =
+            eventName
+                .replace(/\s+\(.*?\)/g, '')
+                .trim() || 'campaign';
+
+        const templates = [
+            `${eventWord} made memorable.`,
+            `Celebrate ${eventWord} with a standout moment.`,
+            `${eventWord} deserves the spotlight.`,
+            `Turn ${eventWord} into a story worth sharing.`,
+            `Because ${eventWord} deserves more attention.`,
+            `Make ${eventWord} feel unforgettable.`,
+        ];
+
+        const randomTagline =
+            templates[
+                Math.floor(
+                    Math.random() *
+                        templates.length,
+                )
+            ];
+
+        setForm((previous) => ({
+            ...previous,
+            tagline_mode: 'ai',
+            tagline: randomTagline,
+        }));
     };
 
     /* ----------------------------------------------------------------------
@@ -394,6 +489,9 @@ export default function GeneratorPage() {
 
     /* ----------------------------------------------------------------------
        EVENT AUTO-SUGGESTION
+       
+       Each click applies random suggestions from the event's pool,
+       ensuring variety and not static/predictable results.
     ---------------------------------------------------------------------- */
 
     const applyEventSuggestions = () => {
@@ -403,12 +501,18 @@ export default function GeneratorPage() {
 
         updateField(
             'content_style',
-            eventSuggestion.styles.slice(0, 3),
+            pickRandomItems(
+                eventSuggestion.styles,
+                3,
+            ),
         );
 
         updateField(
             'brand_tone',
-            eventSuggestion.tones.slice(0, 3),
+            pickRandomItems(
+                eventSuggestion.tones,
+                3,
+            ),
         );
     };
 
@@ -510,6 +614,44 @@ export default function GeneratorPage() {
         setCurrentStep(1);
     };
 
+    const handleEdit = () => {
+        setGenerationState('idle');
+        setGenerationProgress(0);
+        setCurrentStep(1);
+    };
+
+    const handleRegenerate = () => {
+        setGenerationState('idle');
+        setGenerationProgress(0);
+        generateMarketingImage();
+    };
+
+    const downloadImage = () => {
+        const link =
+            document.createElement('a');
+        link.href =
+            'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22600%22%3E%3Crect fill=%22%23111827%22 width=%22800%22 height=%22600%22/%3E%3C/svg%3E';
+        link.download =
+            `marketing-image-${Date.now()}.svg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const saveToDesigns = () => {
+        console.log(
+            'Saving to designs:',
+            form,
+        );
+    };
+
+    const createCampaign = () => {
+        console.log(
+            'Creating campaign:',
+            form,
+        );
+    };
+
     /* ==========================================================================
        STEP 1
     ========================================================================== */
@@ -585,85 +727,57 @@ export default function GeneratorPage() {
                 <div className="space-y-2">
                     <Label htmlFor="price">
                         Price
-                        <span className="ml-1 font-normal text-muted-foreground">
-                            optional
-                        </span>
                     </Label>
 
-                    <Input
-                        id="price"
-                        inputMode="decimal"
-                        value={form.price}
-                        onChange={(event) =>
-                            handlePriceChange(
-                                event.target.value,
-                            )
-                        }
-                        placeholder="e.g. 999"
-                    />
+                    <div className="flex items-center overflow-hidden rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-primary/30">
+                        <span className="flex h-10 items-center justify-center border-r border-input bg-muted/30 px-3 text-sm font-semibold text-foreground">
+                            ₱
+                        </span>
+
+                        <Input
+                            id="price"
+                            inputMode="numeric"
+                            value={form.price}
+                            onChange={(event) =>
+                                handlePriceChange(
+                                    event.target.value,
+                                )
+                            }
+                            placeholder="999"
+                            className="h-10 border-0 bg-transparent text-base shadow-none focus-visible:ring-0"
+                        />
+                    </div>
 
                     <p className="text-xs text-muted-foreground">
-                        Numbers only.
+                        Numbers only — no letters.
                     </p>
                 </div>
 
                 {/* EVENT */}
                 <div className="space-y-2">
-                    <Label htmlFor="event_id">
+                    <Label>
                         Holiday / Event
                     </Label>
 
-                    <select
-                        id="event_id"
-                        value={
-                            form.event_id
+                    <button
+                        type="button"
+                        onClick={() =>
+                            setEventModalOpen(true)
                         }
-                        onChange={(event) =>
-                            updateField(
-                                'event_id',
-                                event.target.value,
-                            )
-                        }
-                        className="
-                            flex
-                            h-10
-                            w-full
-                            rounded-md
-                            border
-                            border-input
-                            bg-background
-                            px-3
-                            py-2
-                            text-sm
-                            text-foreground
-                            outline-none
-                            focus:border-ring
-                            focus:ring-2
-                            focus:ring-ring/30
-                        "
+                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 text-left text-sm text-foreground transition-colors hover:border-primary/50 hover:bg-primary/5"
                     >
-                        <option value="">
-                            No event selected
-                        </option>
+                        <span className="truncate">
+                            {selectedEvent
+                                ? selectedEvent.name
+                                : 'Choose a holiday or event'}
+                        </span>
 
-                        {events.map(
-                            (event) => (
-                                <option
-                                    key={
-                                        event.id
-                                    }
-                                    value={
-                                        event.id
-                                    }
-                                >
-                                    {
-                                        event.name
-                                    }
-                                </option>
-                            ),
-                        )}
-                    </select>
+                        <span className="text-xs text-muted-foreground">
+                            Select
+                        </span>
+                    </button>
                 </div>
+
             </div>
 
             {/* EVENT INFO */}
@@ -681,8 +795,11 @@ export default function GeneratorPage() {
                         </p>
 
                         <p className="text-xs text-muted-foreground">
-                            {selectedEvent.date ||
-                                'Campaign event'}
+                            {selectedEvent.date
+                                ? formatEventDateLabel(
+                                      selectedEvent.date,
+                                  )
+                                : 'Campaign event'}
                         </p>
                     </div>
 
@@ -1034,22 +1151,51 @@ export default function GeneratorPage() {
             {/* AI */}
             {form.tagline_mode ===
                 'ai' && (
-                <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                        <Sparkles className="h-4 w-4 text-primary" />
+                <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                                <Sparkles className="h-4 w-4 text-primary" />
+                            </div>
+
+                            <div>
+                                <p className="text-sm font-medium">
+                                    AI tagline
+                                </p>
+
+                                <p className="text-xs text-muted-foreground">
+                                    Uses your product,
+                                    event, style, and
+                                    tone.
+                                </p>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={generateTagline}
+                            className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-background px-2.5 py-1.5 text-[11px] font-medium text-primary transition-colors hover:bg-primary/5"
+                        >
+                            <RefreshCcw className="h-3.5 w-3.5" />
+                            Refresh
+                        </button>
                     </div>
 
-                    <div>
-                        <p className="text-sm font-medium">
-                            AI tagline
-                        </p>
-
-                        <p className="text-xs text-muted-foreground">
-                            Uses your product,
-                            event, style, and
-                            tone.
-                        </p>
-                    </div>
+                    {form.tagline ? (
+                        <div className="rounded-lg border border-primary/20 bg-background/80 p-3 text-sm font-medium text-foreground">
+                            “{form.tagline}”
+                        </div>
+                    ) : (
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={generateTagline}
+                            className="w-full"
+                        >
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            Generate with AI
+                        </Button>
+                    )}
                 </div>
             )}
 
@@ -1264,6 +1410,114 @@ export default function GeneratorPage() {
        GENERATION MOCKUP
     ========================================================================== */
 
+    const eventSelectionModal = eventModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+            <div className="max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
+                <div className="flex items-center justify-between border-b px-4 py-3 md:px-5">
+                    <div>
+                        <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                            Marketing calendar
+                        </p>
+                        <h3 className="mt-1 text-base font-semibold tracking-tight text-foreground">
+                            Choose a holiday or event
+                        </h3>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={() => setEventModalOpen(false)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-900/80 text-slate-300 transition-all duration-200 hover:bg-slate-800 hover:text-white"
+                        aria-label="Close event selector"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
+                </div>
+
+                <div className="max-h-[calc(90vh-90px)] space-y-3 overflow-y-auto p-3 md:p-4">
+                    <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
+                        <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                            Available events
+                        </p>
+                    </div>
+
+                    <div className="grid gap-2 md:grid-cols-2">
+                        {events.length > 0 ? (
+                            [...events]
+                                .sort((a, b) =>
+                                    (a.date ?? '').localeCompare(
+                                        b.date ?? '',
+                                    ),
+                                )
+                                .map((event) => {
+                                    const eventYear =
+                                        event.date?.slice(0, 4) ?? '—';
+
+                                    const isSelected =
+                                        String(event.id) ===
+                                        String(form.event_id);
+
+                                    return (
+                                        <button
+                                            key={event.id}
+                                            type="button"
+                                            onClick={() =>
+                                                applySelectedEvent(
+                                                    String(event.id),
+                                                )
+                                            }
+                                            className={`
+                                                group relative overflow-hidden rounded-xl border p-3 text-left transition-all duration-200 ease-out
+                                                ${
+                                                    isSelected
+                                                        ? 'border-primary/40 bg-primary/5 shadow-sm'
+                                                        : 'border-border/80 bg-muted/10 hover:-translate-y-0.5 hover:border-border hover:bg-slate-900/70'
+                                                }
+                                            `}
+                                        >
+                                            <span
+                                                className={`
+                                                    absolute inset-y-0 left-0 w-[2px] transition-colors
+                                                    ${
+                                                        isSelected
+                                                            ? 'bg-primary'
+                                                            : 'bg-slate-600 group-hover:bg-slate-400'
+                                                    }
+                                                `}
+                                            />
+
+                                            <div className="flex items-start justify-between gap-2.5 pl-2.5">
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="truncate text-[15px] font-semibold tracking-[-0.02em] text-foreground">
+                                                        {event.name}
+                                                    </p>
+                                                    <p className="mt-0.5 text-[11px] uppercase tracking-[0.12em] text-muted-foreground/80">
+                                                        {event.date
+                                                            ? formatEventDateLabel(
+                                                                  event.date,
+                                                              )
+                                                            : 'No date'}
+                                                    </p>
+                                                </div>
+
+                                                <span className="shrink-0 rounded-full border border-border bg-slate-950/80 px-1.5 py-0.5 text-[9px] font-medium tracking-[0.08em] text-muted-foreground transition-colors group-hover:border-border/80 group-hover:text-foreground">
+                                                    {eventYear}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    );
+                                })
+                        ) : (
+                            <div className="rounded-xl border border-dashed border-border bg-muted/20 p-4 text-sm text-muted-foreground md:col-span-2">
+                                No marketing calendar events are available yet.
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    ) : null;
+
     const generationPanel = (
         <Card className="mx-auto max-w-3xl overflow-hidden rounded-2xl border-border shadow-sm">
             <CardHeader className="border-b p-5 md:p-6">
@@ -1404,15 +1658,87 @@ export default function GeneratorPage() {
                             </div>
                         </div>
 
-                        <div className="flex justify-end">
-                            <Button
-                                type="button"
-                                onClick={
-                                    createAnother
-                                }
-                            >
-                                Create Another
-                            </Button>
+                        {/* ACTION BUTTONS */}
+                        <div className="space-y-4">
+                            {/* PRIMARY ACTIONS */}
+                            <div className="grid gap-3 sm:grid-cols-3">
+                                <Button
+                                    type="button"
+                                    onClick={
+                                        saveToDesigns
+                                    }
+                                    variant="outline"
+                                    className="border-border"
+                                >
+                                    <Check className="mr-2 h-4 w-4" />
+                                    Save to Designs
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    onClick={
+                                        createCampaign
+                                    }
+                                    variant="outline"
+                                    className="border-border"
+                                >
+                                    <Check className="mr-2 h-4 w-4" />
+                                    Create Campaign
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    onClick={
+                                        createAnother
+                                    }
+                                    className="bg-primary hover:bg-primary/90"
+                                >
+                                    <Sparkles className="mr-2 h-4 w-4" />
+                                    Create Another
+                                </Button>
+                            </div>
+
+                            {/* SECONDARY ACTIONS */}
+                            <div className="flex gap-2 pt-2">
+                                <Button
+                                    type="button"
+                                    onClick={
+                                        downloadImage
+                                    }
+                                    variant="ghost"
+                                    size="sm"
+                                    className="flex-1"
+                                >
+                                    <Upload className="mr-1.5 h-4 w-4" />
+                                    Download
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    onClick={
+                                        handleEdit
+                                    }
+                                    variant="ghost"
+                                    size="sm"
+                                    className="flex-1"
+                                >
+                                    <ArrowLeft className="mr-1.5 h-4 w-4" />
+                                    Edit
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    onClick={
+                                        handleRegenerate
+                                    }
+                                    variant="ghost"
+                                    size="sm"
+                                    className="flex-1"
+                                >
+                                    <RefreshCcw className="mr-1.5 h-4 w-4" />
+                                    Regenerate
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -1452,6 +1778,8 @@ export default function GeneratorPage() {
                             three simple steps.
                         </p>
                     </section>
+
+                    {eventSelectionModal}
 
                     {/* GENERATION TAB */}
                     {generationState !==
