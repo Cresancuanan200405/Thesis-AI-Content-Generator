@@ -1,27 +1,32 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     ArrowRight,
-    BookmarkCheck,
-    BookmarkPlus,
     Building2,
     Calendar,
     CalendarDays,
     Check,
+    ChevronDown,
+    Clock,
+    Download,
+    Edit3,
     ExternalLink,
     FolderPlus,
-    ImagePlus,
-    Link as LinkIcon,
+    ImageIcon,
+    Laptop,
+    Layers,
     Loader2,
+    Package,
     Plus,
     RefreshCcw,
     Search,
     Sparkles,
     Tag,
+    Trash2,
     Upload,
     X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
@@ -40,18 +45,24 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { HelpTooltip } from '@/components/help-tooltip';
+import { downloadVisualAsFormat } from '@/lib/download';
 
 /* ==========================================================================
-   TYPES
+   TYPES & CONSTANTS
 ========================================================================== */
 
 type Step = 1 | 2 | 3;
-
 type TaglineMode = 'manual' | 'ai' | 'none';
-
 type GenerationState = 'idle' | 'generating' | 'ready';
 
 interface EventItem {
@@ -60,6 +71,18 @@ interface EventItem {
     date?: string | null;
     days?: number | string | null;
     type?: string | null;
+    category?: string | null;
+    is_long_weekend?: boolean;
+    long_weekend_details?: string | null;
+    proclamation_no?: string | null;
+}
+
+interface ProductItem {
+    id: number | string;
+    name: string;
+    description?: string | null;
+    price?: string | number | null;
+    image_url?: string | null;
 }
 
 interface GeneratorForm {
@@ -67,20 +90,49 @@ interface GeneratorForm {
     image_prompt: string;
     price: string;
     event_id: string;
-
+    product_id: string;
     content_style: string[];
     brand_tone: string[];
-
     tagline_mode: TaglineMode;
     tagline: string;
-
     reference_image: File | null;
     include_logo: boolean;
+    aspect_ratio: string;
+    campaign_id?: string;
 }
 
-/* ==========================================================================
-   OPTIONS
-========================================================================== */
+const aspectRatioOptions = [
+    {
+        value: '1:1',
+        label: '1:1 Square',
+        description: 'Instagram & Facebook Feed',
+        badge: '1024 × 1024',
+    },
+    {
+        value: '9:16',
+        label: '9:16 Story / Reel',
+        description: 'Stories, Reels & TikTok',
+        badge: '1080 × 1920',
+    },
+    {
+        value: '16:9',
+        label: '16:9 Landscape',
+        description: 'Facebook Cover & Banners',
+        badge: '1920 × 1080',
+    },
+    {
+        value: '4:5',
+        label: '4:5 Portrait',
+        description: 'Instagram Feed Portrait',
+        badge: '1080 × 1350',
+    },
+    {
+        value: '4:3',
+        label: '4:3 Standard',
+        description: 'Display Ads & Content',
+        badge: '1200 × 900',
+    },
+];
 
 const contentStyleOptions: string[] = [
     'Product-focused',
@@ -105,760 +157,426 @@ const toneOptions: string[] = [
     'Elegant',
     'Warm',
     'Modern',
-    'Premium',
+    'Inspiring',
 ];
 
-const taglineOptions: {
-    value: TaglineMode;
-    label: string;
-    description: string;
-}[] = [
-        {
-            value: 'manual',
-            label: 'Write my own',
-            description: 'Use your exact text.',
-        },
-        {
-            value: 'ai',
-            label: 'Generate with AI',
-            description: 'AI creates the tagline.',
-        },
-        {
-            value: 'none',
-            label: 'No tagline',
-            description: 'No text overlay.',
-        },
-    ];
-
-/* ==========================================================================
-   HOLIDAY / EVENT SUGGESTIONS
-========================================================================== */
-
-interface EventSuggestion {
-    styles: string[];
-    tones: string[];
-}
-
-const eventSuggestions: Record<string, EventSuggestion> = {
-    christmas: {
-        styles: ['Seasonal', 'Lifestyle', 'Premium'],
-        tones: ['Warm', 'Friendly', 'Elegant'],
+const eventTypeStyles: Record<string, { bg: string; text: string; border: string; label: string }> = {
+    regular: {
+        bg: 'bg-rose-500/10 dark:bg-rose-500/20',
+        text: 'text-rose-700 dark:text-rose-300',
+        border: 'border-rose-500/30',
+        label: 'Regular Holiday',
     },
-
-    'christmas day': {
-        styles: ['Seasonal', 'Lifestyle', 'Premium'],
-        tones: ['Warm', 'Friendly', 'Elegant'],
+    special_non_working: {
+        bg: 'bg-amber-500/10 dark:bg-amber-500/20',
+        text: 'text-amber-700 dark:text-amber-300',
+        border: 'border-amber-500/30',
+        label: 'Special Non-Working',
     },
-
-    'valentine': {
-        styles: ['Lifestyle', 'Premium', 'Storytelling'],
-        tones: ['Warm', 'Elegant', 'Playful'],
+    special_working: {
+        bg: 'bg-orange-500/10 dark:bg-orange-500/20',
+        text: 'text-orange-700 dark:text-orange-300',
+        border: 'border-orange-500/30',
+        label: 'Special Working',
     },
-
-    'valentine day': {
-        styles: ['Lifestyle', 'Premium', 'Storytelling'],
-        tones: ['Warm', 'Elegant', 'Playful'],
+    islamic: {
+        bg: 'bg-emerald-500/10 dark:bg-emerald-500/20',
+        text: 'text-emerald-700 dark:text-emerald-300',
+        border: 'border-emerald-500/30',
+        label: 'Islamic Holiday',
     },
-
-    'new year': {
-        styles: ['Promotional', 'Premium', 'Editorial'],
-        tones: ['Bold', 'Elegant', 'Modern'],
+    holiday: {
+        bg: 'bg-rose-500/10 dark:bg-rose-500/20',
+        text: 'text-rose-700 dark:text-rose-300',
+        border: 'border-rose-500/30',
+        label: 'Regular Holiday',
     },
-
-    halloween: {
-        styles: ['Seasonal', 'Storytelling', 'Social Media'],
-        tones: ['Bold', 'Playful', 'Modern'],
+    seasonal: {
+        bg: 'bg-teal-500/10 dark:bg-teal-500/20',
+        text: 'text-teal-700 dark:text-teal-300',
+        border: 'border-teal-500/30',
+        label: 'Seasonal Theme',
     },
-
-    'mother day': {
-        styles: ['Lifestyle', 'Storytelling', 'Premium'],
-        tones: ['Warm', 'Elegant', 'Friendly'],
+    commercial: {
+        bg: 'bg-blue-500/10 dark:bg-blue-500/20',
+        text: 'text-blue-700 dark:text-blue-300',
+        border: 'border-blue-500/30',
+        label: 'Commercial',
     },
-
-    'father day': {
-        styles: ['Lifestyle', 'Promotional', 'Product-focused'],
-        tones: ['Bold', 'Warm', 'Professional'],
-    },
-
-    'black friday': {
-        styles: ['Promotional', 'Product-focused', 'Social Media'],
-        tones: ['Bold', 'Modern', 'Professional'],
-    },
-
-    'labor day': {
-        styles: ['Promotional', 'Lifestyle', 'Social Media'],
-        tones: ['Bold', 'Friendly', 'Professional'],
-    },
-
-    easter: {
-        styles: ['Seasonal', 'Lifestyle', 'Storytelling'],
-        tones: ['Friendly', 'Warm', 'Playful'],
+    custom: {
+        bg: 'bg-purple-500/10 dark:bg-purple-500/20',
+        text: 'text-purple-700 dark:text-purple-300',
+        border: 'border-purple-500/30',
+        label: 'Custom',
     },
 };
 
 /* ==========================================================================
-   HELPERS
+   DYNAMIC PROMPT & STYLE SUGGESTION ENGINE
 ========================================================================== */
 
-function normalizeEventName(value: string): string {
-    return value
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, ' ')
-        .trim();
+const promptArchetypes = [
+    (prod: string, evt: string) =>
+        `High-end commercial product photography of ${prod}, placed gracefully on a sleek pedestal with vibrant ${evt} decorative accents, subtle golden rim lighting, soft depth of field, 8k advertising aesthetic.`,
+    (prod: string, evt: string) =>
+        `Vibrant editorial lifestyle visual featuring ${prod} in the heart of a celebratory ${evt} setting, natural soft sunlight, festive warm atmosphere, authentic social media hero composition.`,
+    (prod: string, evt: string) =>
+        `Minimalist modern advertisement for ${prod} with stylized ${evt} motifs, clean architectural surfaces, dramatic soft shadows, ultra-clean premium retail billboard presentation.`,
+    (prod: string, evt: string) =>
+        `Dynamic promotional visual of ${prod} for ${evt} flash sale, subtle floating motion, ambient neon particle glow, punchy vibrant contrast, crisp commercial detail.`,
+    (prod: string, evt: string) =>
+        `Cozy and emotive ${evt} brand story scene with ${prod} taking center stage, surrounded by seasonal textures, rich celebratory ambiance, cinematic depth.`,
+    (prod: string, evt: string) =>
+        `Luxury dark-mode promotional mockup of ${prod}, illuminated by sleek metallic ribbons and modern studio spotlights themed for ${evt}, opulent reflections, magazine quality.`,
+    (prod: string, evt: string) =>
+        `Bright, airy flat-lay product composition of ${prod} with tasteful ${evt} seasonal elements, soft pastel palette, clean overhead perspective, high-end catalog quality.`,
+];
+
+const eventStyleBanks: Record<string, Array<{ styles: string[]; tones: string[] }>> = {
+    holiday: [
+        { styles: ['Seasonal', 'Lifestyle', 'Premium'], tones: ['Warm', 'Friendly', 'Elegant'] },
+        { styles: ['Social Media', 'Storytelling', 'Seasonal'], tones: ['Playful', 'Warm', 'Inspiring'] },
+        { styles: ['Premium', 'Editorial', 'Minimal'], tones: ['Luxury', 'Elegant', 'Modern'] },
+        { styles: ['Promotional', 'Seasonal', 'Product-focused'], tones: ['Bold', 'Warm', 'Friendly'] },
+    ],
+    commercial: [
+        { styles: ['Promotional', 'Product-focused', 'Social Media'], tones: ['Bold', 'Modern', 'Professional'] },
+        { styles: ['Minimal', 'Product-focused', 'Editorial'], tones: ['Modern', 'Bold', 'Luxury'] },
+        { styles: ['Social Media', 'Promotional', 'Lifestyle'], tones: ['Playful', 'Bold', 'Friendly'] },
+    ],
+    seasonal: [
+        { styles: ['Seasonal', 'Lifestyle', 'Storytelling'], tones: ['Friendly', 'Warm', 'Inspiring'] },
+        { styles: ['Editorial', 'Lifestyle', 'Premium'], tones: ['Elegant', 'Modern', 'Warm'] },
+        { styles: ['Product-focused', 'Seasonal', 'Minimal'], tones: ['Modern', 'Friendly', 'Professional'] },
+    ],
+    custom: [
+        { styles: ['Product-focused', 'Lifestyle', 'Premium'], tones: ['Professional', 'Modern', 'Warm'] },
+        { styles: ['Storytelling', 'Social Media', 'Promotional'], tones: ['Inspiring', 'Bold', 'Friendly'] },
+        { styles: ['Minimal', 'Editorial', 'Product-focused'], tones: ['Luxury', 'Professional', 'Modern'] },
+    ],
+};
+
+function formatEventDateLabel(value?: string | null): string {
+    if (!value) return 'No date';
+    const [year, month, day] = value.split('-').map(Number);
+    if (!year || !month || !day) return value;
+    const date = new Date(year, month - 1, day);
+    return new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    }).format(date);
 }
-
-function findEventSuggestion(
-    eventName: string,
-): EventSuggestion | null {
-    const normalized = normalizeEventName(eventName);
-
-    if (!normalized) {
-        return null;
-    }
-
-    for (const [keyword, suggestion] of Object.entries(
-        eventSuggestions,
-    )) {
-        const normalizedKeyword =
-            normalizeEventName(keyword);
-
-        if (
-            normalized.includes(normalizedKeyword) ||
-            normalizedKeyword.includes(normalized)
-        ) {
-            return suggestion;
-        }
-    }
-
-    return null;
-}
-
-function pickRandomItems<T>(
-    items: T[],
-    count: number,
-): T[] {
-    if (items.length === 0) {
-        return [];
-    }
-
-    const shuffled = [...items].sort(
-        () => Math.random() - 0.5,
-    );
-
-    return shuffled.slice(
-        0,
-        Math.min(count, items.length),
-    );
-}
-
-function toggleValue(
-    values: string[],
-    value: string,
-    max: number,
-): string[] {
-    if (values.includes(value)) {
-        return values.filter(
-            (item) => item !== value,
-        );
-    }
-
-    if (values.length >= max) {
-        return values;
-    }
-
-    return [...values, value];
-}
-
-function formatEventDateLabel(
-    value?: string | null,
-): string {
-    if (!value) {
-        return 'No date';
-    }
-
-    const [year, month, day] = value
-        .split('-')
-        .map(Number);
-
-    if (
-        !year ||
-        !month ||
-        !day ||
-        Number.isNaN(year) ||
-        Number.isNaN(month) ||
-        Number.isNaN(day)
-    ) {
-        return value;
-    }
-
-    const date = new Date(
-        year,
-        month - 1,
-        day,
-    );
-
-    return new Intl.DateTimeFormat(
-        'en-US',
-        {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-        },
-    ).format(date);
-}
-
-/* ==========================================================================
-   COMPONENT
-========================================================================== */
 
 export default function GeneratorPage() {
-    const pageProps = usePage().props as {
-        business?: {
-            id?: number;
-            name?: string;
-            logo_path?: string | null;
-            logo_url?: string | null;
-        } | null;
-        initial_event_id?: number | string | null;
-        initial_product_name?: string | null;
-        campaigns?: Array<{
-            id: number;
-            name: string;
-            status?: string;
-            start_date?: string | null;
-            end_date?: string | null;
-        }>;
-        events?: EventItem[];
-        campaign?: {
-            id?: number | string;
-            product_name?: string;
-            image_prompt?: string;
-            price?: string | number;
-            event_id?: number | string;
-        } | null;
-        errors?: Record<string, string>;
-    };
+    const pageProps = usePage().props as any;
+    const { business, campaign: initialCampaign, initial_campaign_id, initial_event_id, initial_product_name, products = [], events = [], campaigns = [] } = pageProps;
 
-    const campaign = pageProps.campaign ?? null;
-    const errors = pageProps.errors ?? {};
+    const [currentStep, setCurrentStep] = useState<Step>(1);
+    const [generationState, setGenerationState] = useState<GenerationState>('idle');
+    const [generationProgress, setGenerationProgress] = useState(0);
 
-    /* ----------------------------------------------------------------------
-       EVENTS & YEARS
-    ---------------------------------------------------------------------- */
+    // Form State
+    const [form, setForm] = useState<GeneratorForm>({
+        product_name: initial_product_name || initialCampaign?.product_name || '',
+        image_prompt: '',
+        price: '',
+        event_id: initial_event_id ? String(initial_event_id) : initialCampaign?.event_id ? String(initialCampaign.event_id) : '',
+        product_id: initialCampaign?.product_id ? String(initialCampaign.product_id) : '',
+        campaign_id: initial_campaign_id ? String(initial_campaign_id) : initialCampaign?.id ? String(initialCampaign.id) : '',
+        content_style: [],
+        brand_tone: [],
+        tagline_mode: 'ai',
+        tagline: '',
+        reference_image: null,
+        include_logo: Boolean(business?.logo_url),
+        aspect_ratio: '1:1',
+    });
 
-    const events = useMemo(
-        () => pageProps.events ?? [],
-        [pageProps.events],
+    // Reference image preview state
+    const [referenceImagePreview, setReferenceImagePreview] = useState<string | null>(null);
+    const [referenceImageSource, setReferenceImageSource] = useState<'none' | 'desktop' | 'product'>('none');
+    const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
+    const desktopFileInputRef = useRef<HTMLInputElement>(null);
+
+    // Dynamic prompt tracking
+    const [lastPromptIndex, setLastPromptIndex] = useState<number>(-1);
+    const [lastStyleSuggestionIndex, setLastStyleSuggestionIndex] = useState<number>(-1);
+
+    // Modal states
+    const [eventModalOpen, setEventModalOpen] = useState(false);
+    const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+    const [eventSearchQuery, setEventSearchQuery] = useState('');
+    const [eventCategoryFilter, setEventCategoryFilter] = useState('all');
+    const [selectedYearTab, setSelectedYearTab] = useState(String(new Date().getFullYear()));
+    const [productSearchQuery, setProductSearchQuery] = useState('');
+
+    // Save & Campaign Link states
+    const [isSavedToDesigns, setIsSavedToDesigns] = useState(false);
+    const [isSavingDesign, setIsSavingDesign] = useState(false);
+    const [savedDesign, setSavedDesign] = useState<any>(null);
+    const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
+    const [campaignModalTab, setCampaignModalTab] = useState<'existing' | 'new'>('existing');
+    const [selectedExistingCampaignId, setSelectedExistingCampaignId] = useState<string>('');
+    const [isAttachingCampaign, setIsAttachingCampaign] = useState(false);
+    const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
+    const [isCampaignCreated, setIsCampaignCreated] = useState(false);
+    const [campaignFormData, setCampaignFormData] = useState({ name: '', event_id: '', start_date: '', end_date: '' });
+    const [campaignFormErrors, setCampaignFormErrors] = useState<Record<string, string>>({});
+
+    // Full-screen viewer for generated visual
+    const [isPreviewFullViewOpen, setIsPreviewFullViewOpen] = useState(false);
+    const [isFullViewDetailsExpanded, setIsFullViewDetailsExpanded] = useState(false);
+
+    // Unsaved navigation warning modal
+    const [isUnsavedExitModalOpen, setIsUnsavedExitModalOpen] = useState(false);
+    const [pendingNavigationUrl, setPendingNavigationUrl] = useState<string | null>(null);
+    const [navigatingConfirmed, setNavigatingConfirmed] = useState(false);
+
+    // Edit and Regenerate confirmation modals
+    const [isEditConfirmOpen, setIsEditConfirmOpen] = useState(false);
+    const [isRegenerateConfirmOpen, setIsRegenerateConfirmOpen] = useState(false);
+
+    // Selected event object
+    const selectedEvent = useMemo(
+        () => events.find((e: EventItem) => String(e.id) === String(form.event_id)) || null,
+        [events, form.event_id],
     );
 
-    const currentYearStr = String(new Date().getFullYear());
-    const [selectedYearTab, setSelectedYearTab] = useState<string>(currentYearStr);
-    const [eventSearchQuery, setEventSearchQuery] = useState<string>('');
-    const [eventCategoryFilter, setEventCategoryFilter] = useState<string>('all');
+    // Active target campaign object
+    const activeCampaign = useMemo(() => {
+        if (!form.campaign_id) return initialCampaign || null;
+        return campaigns.find((c: any) => String(c.id) === String(form.campaign_id)) || initialCampaign || null;
+    }, [campaigns, form.campaign_id, initialCampaign]);
 
-    const availableYears = useMemo(() => {
-        const years = new Set<string>();
-        const currentYear = new Date().getFullYear();
-        years.add(String(currentYear));
-        years.add(String(currentYear + 1));
-        events.forEach((ev) => {
-            if (ev.date) {
-                const yr = ev.date.slice(0, 4);
-                if (yr && yr.length === 4) {
-                    years.add(yr);
-                }
-            }
-        });
-        return Array.from(years).sort();
-    }, [events]);
-
-    const filteredModalEvents = useMemo(() => {
-        return events.filter((ev) => {
-            // Year filter
-            if (selectedYearTab !== 'all') {
-                const yr = ev.date?.slice(0, 4);
-                if (yr !== selectedYearTab) {
-                    return false;
-                }
-            }
-
-            // Category filter
-            if (eventCategoryFilter === 'holidays' && ev.type !== 'holiday' && ev.type !== 'seasonal') {
-                return false;
-            }
-            if (eventCategoryFilter === 'commercial' && ev.type !== 'commercial') {
-                return false;
-            }
-            if (eventCategoryFilter === 'custom' && ev.type !== 'custom') {
-                return false;
-            }
-
-            // Search query
-            if (eventSearchQuery.trim() !== '') {
-                const q = eventSearchQuery.toLowerCase();
-                return ev.name.toLowerCase().includes(q) || (ev.type && ev.type.toLowerCase().includes(q));
-            }
-
-            return true;
-        }).sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''));
-    }, [events, selectedYearTab, eventCategoryFilter, eventSearchQuery]);
-
-    /* ----------------------------------------------------------------------
-       STATE
-    ---------------------------------------------------------------------- */
-
-    const [currentStep, setCurrentStep] =
-        useState<Step>(1);
-
-    const [generationState, setGenerationState] =
-        useState<GenerationState>('idle');
-
-    const [generationProgress, setGenerationProgress] =
-        useState(0);
-
-    const [eventModalOpen, setEventModalOpen] =
-        useState(false);
-
-    const [form, setForm] =
-        useState<GeneratorForm>({
-            product_name:
-                pageProps.initial_product_name ??
-                campaign?.product_name ??
-                '',
-
-            image_prompt:
-                campaign?.image_prompt ?? '',
-
-            price:
-                campaign?.price !== undefined
-                    ? String(campaign.price)
-                    : '',
-
-            event_id:
-                pageProps.initial_event_id !== undefined && pageProps.initial_event_id !== null
-                    ? String(pageProps.initial_event_id)
-                    : campaign?.event_id !== undefined
-                      ? String(campaign.event_id)
-                      : '',
-
-            content_style: [],
-
-            brand_tone: [],
-
-            tagline_mode: 'ai',
-
-            tagline: '',
-
-            reference_image: null,
-
-            include_logo: Boolean(pageProps.business?.logo_url),
-        });
-
+    // Set URL query params on load
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
+            const campaignIdParam = params.get('campaign_id') || params.get('campaign');
             const eventIdParam = params.get('event_id') || params.get('event');
-            const eventNameParam = params.get('event_name');
             const productParam = params.get('product_name') || params.get('product');
 
+            if (campaignIdParam && !form.campaign_id) {
+                setForm((prev) => ({ ...prev, campaign_id: campaignIdParam }));
+            }
             if (eventIdParam && !form.event_id) {
                 setForm((prev) => ({ ...prev, event_id: eventIdParam }));
-            } else if (eventNameParam && !form.event_id && events.length > 0) {
-                const matched = events.find(
-                    (e) => e.name.toLowerCase() === eventNameParam.toLowerCase(),
-                );
-                if (matched) {
-                    setForm((prev) => ({ ...prev, event_id: String(matched.id) }));
-                }
             }
-
             if (productParam && !form.product_name) {
                 setForm((prev) => ({ ...prev, product_name: productParam }));
             }
         }
-    }, [events]);
+    }, []);
 
-    const [isSavedToDesigns, setIsSavedToDesigns] = useState(false);
-    const [isSavingDesign, setIsSavingDesign] = useState(false);
-    const [savedDesign, setSavedDesign] = useState<{
-        id: number;
-        product_name: string;
-        tagline?: string | null;
-        image_url?: string | null;
-        show_url?: string;
-    } | null>(null);
+    // Unsaved navigation blocker
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (generationState === 'ready' && !isSavedToDesigns) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [generationState, isSavedToDesigns]);
 
-    const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
-    const [campaignModalTab, setCampaignModalTab] = useState<'existing' | 'new'>('existing');
-    const [selectedExistingCampaignId, setSelectedExistingCampaignId] = useState<string>('');
-    const [isAttachingCampaign, setIsAttachingCampaign] = useState<boolean>(false);
-    const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
-    const [isCampaignCreated, setIsCampaignCreated] = useState(false);
-    const [createdCampaign, setCreatedCampaign] = useState<{
-        id: number;
-        name: string;
-        show_url?: string;
-    } | null>(null);
+    useEffect(() => {
+        const removeListener = router.on('before', (event: any) => {
+            if (generationState === 'ready' && !isSavedToDesigns && !navigatingConfirmed) {
+                event.preventDefault();
+                setPendingNavigationUrl(event.detail.visit.url);
+                setIsUnsavedExitModalOpen(true);
+            }
+        });
+        return () => removeListener();
+    }, [generationState, isSavedToDesigns, navigatingConfirmed]);
 
-    const [campaignFormData, setCampaignFormData] = useState({
-        name: '',
-        event_id: '',
-        start_date: '',
-        end_date: '',
-    });
-    const [campaignFormErrors, setCampaignFormErrors] = useState<Record<string, string>>({});
+    // Generate dynamic non-repeating image prompt
+    const generateNewPrompt = (targetEvent = selectedEvent, targetProductName = form.product_name) => {
+        if (!targetEvent && !form.event_id) {
+            toast.info('Please select a holiday or marketing event first to generate a tailored visual prompt.');
+            setEventModalOpen(true);
+            return;
+        }
 
-    /* ----------------------------------------------------------------------
-       SELECTED EVENT
-    ---------------------------------------------------------------------- */
+        const prod = targetProductName.trim() || 'featured product';
+        const evt = targetEvent?.name || 'seasonal promotion';
 
-    const selectedEvent = useMemo(
-        () =>
-            events.find(
-                (event) =>
-                    String(event.id) ===
-                    String(form.event_id),
-            ) ?? null,
-        [events, form.event_id],
-    );
+        let nextIdx = Math.floor(Math.random() * promptArchetypes.length);
+        if (nextIdx === lastPromptIndex && promptArchetypes.length > 1) {
+            nextIdx = (nextIdx + 1) % promptArchetypes.length;
+        }
 
-    /* ----------------------------------------------------------------------
-       EVENT SUGGESTION
-    ---------------------------------------------------------------------- */
-
-    const eventSuggestion = useMemo(
-        () =>
-            selectedEvent
-                ? findEventSuggestion(
-                    selectedEvent.name,
-                )
-                : null,
-        [selectedEvent],
-    );
-
-    /* ----------------------------------------------------------------------
-       FORM UPDATE
-    ---------------------------------------------------------------------- */
-
-    const updateField = <
-        K extends keyof GeneratorForm,
-    >(
-        field: K,
-        value: GeneratorForm[K],
-    ) => {
-        setForm((previous) => ({
-            ...previous,
-            [field]: value,
-        }));
+        const generated = promptArchetypes[nextIdx](prod, evt);
+        setLastPromptIndex(nextIdx);
+        setForm((prev) => ({ ...prev, image_prompt: generated }));
+        toast.success('Generated creative prompt concept!');
     };
 
-    /* ----------------------------------------------------------------------
-       PRICE HANDLER
-       Numbers only. Allows decimal values.
-    ---------------------------------------------------------------------- */
+    // Auto-generate prompt when event or product is picked if prompt is empty
+    const handleSelectEvent = (eventItem: EventItem) => {
+        setForm((prev) => ({ ...prev, event_id: String(eventItem.id) }));
+        setEventModalOpen(false);
 
-    const handlePriceChange = (
-        value: string,
-    ) => {
-        const cleanedValue =
-            value.replace(/\D/g, '');
+        if (!form.image_prompt.trim()) {
+            generateNewPrompt(eventItem, form.product_name);
+        }
+        toast.success(`Selected "${eventItem.name}"`);
+    };
 
-        updateField(
-            'price',
-            cleanedValue,
+    // Smart cycle suggestions for Step 2
+    const applyDynamicSuggestions = () => {
+        const eventType = (selectedEvent?.type || 'holiday').toLowerCase();
+        const bank = eventStyleBanks[eventType] || eventStyleBanks.holiday;
+
+        let nextIdx = (lastStyleSuggestionIndex + 1) % bank.length;
+        setLastStyleSuggestionIndex(nextIdx);
+
+        const chosen = bank[nextIdx];
+        setForm((prev) => ({
+            ...prev,
+            content_style: chosen.styles,
+            brand_tone: chosen.tones,
+        }));
+
+        toast.success(
+            selectedEvent
+                ? `Applied style combination #${nextIdx + 1} for ${selectedEvent.name}!`
+                : 'Applied recommended styles & tones!',
         );
     };
 
-    const applySelectedEvent = (
-        eventId: string,
-    ) => {
-        setForm((previous) => ({
-            ...previous,
-            event_id: eventId,
-        }));
-
-        setEventModalOpen(false);
-    };
-
+    // Tagline generator
     const generateTagline = () => {
-        const eventName =
-            selectedEvent?.name ||
-            'your campaign';
-
-        const eventWord =
-            eventName
-                .replace(/\s+\(.*?\)/g, '')
-                .trim() || 'campaign';
-
+        const eventWord = selectedEvent?.name?.replace(/\s+\(.*?\)/g, '') || 'Special Moment';
         const templates = [
             `${eventWord} made memorable.`,
-            `Celebrate ${eventWord} with a standout moment.`,
+            `Celebrate ${eventWord} with style.`,
             `${eventWord} deserves the spotlight.`,
             `Turn ${eventWord} into a story worth sharing.`,
-            `Because ${eventWord} deserves more attention.`,
-            `Make ${eventWord} feel unforgettable.`,
+            `Make ${eventWord} truly unforgettable.`,
+            `Elevate your ${eventWord} experience.`,
         ];
+        const random = templates[Math.floor(Math.random() * templates.length)];
+        setForm((prev) => ({ ...prev, tagline_mode: 'ai', tagline: random }));
+    };
 
-        const randomTagline =
-            templates[
-            Math.floor(
-                Math.random() *
-                templates.length,
-            )
-            ];
+    // Desktop file reference
+    const handleDesktopFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setForm((prev) => ({
+                ...prev,
+                reference_image: file,
+                product_id: '',
+            }));
+            setSelectedProduct(null);
+            setReferenceImageSource('desktop');
+            const reader = new FileReader();
+            reader.onload = () => {
+                setReferenceImagePreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+            toast.success(`Loaded desktop reference: "${file.name}"`);
+        }
+    };
 
-        setForm((previous) => ({
-            ...previous,
-            tagline_mode: 'ai',
-            tagline: randomTagline,
+    // Select catalog product
+    const handleSelectProduct = (prod: ProductItem) => {
+        setSelectedProduct(prod);
+        setForm((prev) => ({
+            ...prev,
+            product_id: String(prod.id),
+            product_name: prev.product_name.trim() === '' ? prod.name : prev.product_name,
+            price: prod.price ? String(prod.price).replace(/\D/g, '') : prev.price,
+            reference_image: null,
         }));
+        setReferenceImageSource('product');
+        setReferenceImagePreview(prod.image_url ?? null);
+        setIsProductModalOpen(false);
+
+        if (!form.image_prompt.trim() && (selectedEvent || form.event_id)) {
+            generateNewPrompt(selectedEvent, prod.name);
+        }
+        toast.success(`Linked product "${prod.name}"`);
     };
 
-    /* ----------------------------------------------------------------------
-       VALIDATION
-       
-       Style and tone are OPTIONAL.
-       Maximum = 3.
-    ---------------------------------------------------------------------- */
-
-    const stepOneValid =
-        form.product_name.trim().length > 0 &&
-        form.image_prompt.trim().length > 0;
-
-    const stepTwoValid = true;
-
-    const stepThreeValid =
-        form.tagline_mode !== 'manual' ||
-        form.tagline.trim().length > 0;
-
-    const canGenerate =
-        stepOneValid &&
-        stepTwoValid &&
-        stepThreeValid;
-
-    /* ----------------------------------------------------------------------
-       EVENT AUTO-SUGGESTION
-       
-       Each click applies random suggestions from the event's pool,
-       ensuring variety and not static/predictable results.
-    ---------------------------------------------------------------------- */
-
-    const applyEventSuggestions = () => {
-        let suggestedStyles: string[] = [];
-        let suggestedTones: string[] = [];
-
-        if (eventSuggestion) {
-            suggestedStyles = pickRandomItems(eventSuggestion.styles, 3);
-            suggestedTones = pickRandomItems(eventSuggestion.tones, 3);
-        } else if (selectedEvent) {
-            const type = (selectedEvent.type || 'holiday').toLowerCase();
-            if (type.includes('holiday') || type.includes('season')) {
-                suggestedStyles = ['Seasonal', 'Lifestyle', 'Premium'];
-                suggestedTones = ['Warm', 'Friendly', 'Elegant'];
-            } else if (type.includes('commercial') || type.includes('sale')) {
-                suggestedStyles = ['Promotional', 'Product-focused', 'Social Media'];
-                suggestedTones = ['Bold', 'Modern', 'Professional'];
-            } else {
-                suggestedStyles = ['Storytelling', 'Lifestyle', 'Premium'];
-                suggestedTones = ['Warm', 'Playful', 'Modern'];
-            }
-        } else {
-            suggestedStyles = ['Lifestyle', 'Promotional', 'Social Media'];
-            suggestedTones = ['Modern', 'Friendly', 'Bold'];
-        }
-
-        if (suggestedStyles.length > 0 || suggestedTones.length > 0) {
-            updateField('content_style', suggestedStyles.slice(0, 3));
-            updateField('brand_tone', suggestedTones.slice(0, 3));
-            toast.success(
-                selectedEvent
-                    ? `Applied smart suggestions for ${selectedEvent.name}!`
-                    : 'Applied recommended styles & brand tones!',
-            );
+    const handleClearReferenceImage = () => {
+        setForm((prev) => ({ ...prev, reference_image: null, product_id: '' }));
+        setReferenceImagePreview(null);
+        setReferenceImageSource('none');
+        setSelectedProduct(null);
+        if (desktopFileInputRef.current) {
+            desktopFileInputRef.current.value = '';
         }
     };
 
-    /* ----------------------------------------------------------------------
-       NAVIGATION
-    ---------------------------------------------------------------------- */
-
-    const nextStep = () => {
-        if (
-            currentStep === 1 &&
-            !stepOneValid
-        ) {
-            return;
-        }
-
-        if (currentStep < 3) {
-            setCurrentStep(
-                (previous) =>
-                    (previous + 1) as Step,
-            );
-        }
-    };
-
-    const previousStep = () => {
-        if (currentStep > 1) {
-            setCurrentStep(
-                (previous) =>
-                    (previous - 1) as Step,
-            );
-        }
-    };
-
-    /* ----------------------------------------------------------------------
-       FILE
-    ---------------------------------------------------------------------- */
-
-    const handleReferenceImage = (
-        file: File | null,
-    ) => {
-        updateField(
-            'reference_image',
-            file,
-        );
-    };
-
-    /* ----------------------------------------------------------------------
-       MOCK GENERATION
-       
-       This intentionally does NOT call an AI API.
-       It gives the user a realistic generation UI
-       until an API key is available.
-    ---------------------------------------------------------------------- */
-
+    // Generation Flow
     const generateMarketingImage = () => {
-        if (
-            generationState === 'generating' ||
-            !canGenerate
-        ) {
+        if (!form.product_name.trim() || !form.image_prompt.trim()) {
+            toast.error('Please provide a product name and image prompt.');
             return;
         }
 
-        setGenerationState(
-            'generating',
-        );
-
+        setGenerationState('generating');
         setGenerationProgress(0);
 
         let progress = 0;
+        const interval = window.setInterval(() => {
+            progress += 25;
+            setGenerationProgress(Math.min(progress, 100));
 
-        const interval =
-            window.setInterval(() => {
-                progress += 20;
-
-                setGenerationProgress(
-                    Math.min(progress, 100),
-                );
-
-                if (progress >= 100) {
-                    window.clearInterval(
-                        interval,
-                    );
-
-                    window.setTimeout(() => {
-                        setGenerationState(
-                            'ready',
-                        );
-                    }, 500);
-                }
-            }, 500);
+            if (progress >= 100) {
+                window.clearInterval(interval);
+                window.setTimeout(() => {
+                    setGenerationState('ready');
+                }, 400);
+            }
+        }, 400);
     };
 
-    /* ----------------------------------------------------------------------
-       RESET GENERATION
-    ---------------------------------------------------------------------- */
-
-    const createAnother = () => {
-        setGenerationState('idle');
-        setGenerationProgress(0);
-        setCurrentStep(1);
-        setIsSavedToDesigns(false);
-        setSavedDesign(null);
-        setIsCampaignCreated(false);
-        setCreatedCampaign(null);
-    };
-
-    const handleEdit = () => {
-        setGenerationState('idle');
-        setGenerationProgress(0);
-        setCurrentStep(1);
-    };
-
-    const handleRegenerate = () => {
-        setGenerationState('idle');
-        setGenerationProgress(0);
-        setIsSavedToDesigns(false);
-        setSavedDesign(null);
-        generateMarketingImage();
-    };
-
-    const downloadImage = () => {
-        if (savedDesign?.image_url) {
-            const link = document.createElement('a');
-            link.href = savedDesign.image_url;
-            link.download = `${form.product_name || 'marketing-design'}.svg`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            return;
-        }
-
-        const link = document.createElement('a');
-        link.href =
-            'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22600%22%3E%3Crect fill=%22%23111827%22 width=%22800%22 height=%22600%22/%3E%3C/svg%3E';
-        link.download = `marketing-image-${Date.now()}.svg`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
+    // Save to designs backend
     const saveToDesigns = async () => {
-        if (isSavingDesign) {
-            return;
-        }
-
+        if (isSavingDesign) return;
         if (isSavedToDesigns && savedDesign) {
             toast.info('Design is already saved in My Designs.');
             return savedDesign;
         }
 
         setIsSavingDesign(true);
-
         try {
-            const payload = {
-                product_name: form.product_name,
-                image_prompt: form.image_prompt,
-                prompt: form.image_prompt,
-                price: form.price ? Number(form.price) : null,
-                event_id: form.event_id || null,
-                brand_tone: form.brand_tone,
-                visual_theme: form.content_style,
-                content_style: form.content_style,
-                tagline: form.tagline_mode === 'none' ? null : form.tagline,
-                tagline_mode: form.tagline_mode,
-                include_logo: form.include_logo,
-            };
+            const formData = new FormData();
+            formData.append('product_name', form.product_name);
+            formData.append('image_prompt', form.image_prompt);
+            formData.append('prompt', form.image_prompt);
+            if (form.price) formData.append('price', form.price);
+            if (form.event_id) formData.append('event_id', form.event_id);
+            if (form.product_id) formData.append('product_id', form.product_id);
+            if (form.campaign_id) formData.append('campaign_id', form.campaign_id);
+            if (form.aspect_ratio) formData.append('aspect_ratio', form.aspect_ratio);
+            formData.append('tagline_mode', form.tagline_mode);
+            if (form.tagline_mode !== 'none' && form.tagline) {
+                formData.append('tagline', form.tagline);
+            }
+            if (form.include_logo) formData.append('include_logo', '1');
+            if (form.reference_image) {
+                formData.append('reference_image', form.reference_image);
+            }
+            form.content_style.forEach((style) => formData.append('content_style[]', style));
+            form.brand_tone.forEach((tone) => formData.append('brand_tone[]', tone));
 
             const response = await fetch('/designs', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN':
-                        document.querySelector<HTMLMetaElement>(
-                            'meta[name="csrf-token"]',
-                        )?.content || '',
+                    'X-CSRF-TOKEN': document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '',
                 },
-                body: JSON.stringify(payload),
+                body: formData,
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to save design');
-            }
-
+            if (!response.ok) throw new Error('Failed to save design');
             const data = await response.json();
             setSavedDesign(data.design);
             setIsSavedToDesigns(true);
@@ -872,2035 +590,1336 @@ export default function GeneratorPage() {
         }
     };
 
-    const handleAttachToExistingCampaign = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (isAttachingCampaign) {
-            return;
-        }
-
-        if (!selectedExistingCampaignId) {
-            toast.error('Please select an existing campaign.');
-            return;
-        }
-
-        setIsAttachingCampaign(true);
-
-        try {
-            let currentDesign = savedDesign;
-
-            // If design has not been saved yet, auto-save it first
-            if (!currentDesign?.id) {
-                currentDesign = await saveToDesigns();
-                if (!currentDesign?.id) {
-                    throw new Error(
-                        'Failed to save design before linking campaign.',
-                    );
-                }
-            }
-
-            const res = await fetch(
-                `/designs/${currentDesign.id}/attach-campaign`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Accept: 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN':
-                            document.querySelector<HTMLMetaElement>(
-                                'meta[name="csrf-token"]',
-                            )?.content || '',
-                    },
-                    body: JSON.stringify({
-                        campaign_id: Number(selectedExistingCampaignId),
-                    }),
-                },
-            );
-
-            if (!res.ok) {
-                throw new Error('Failed to attach design to campaign');
-            }
-
-            const data = await res.json();
-            setCreatedCampaign(data.campaign);
-            setIsCampaignCreated(true);
-            setIsCampaignModalOpen(false);
-            toast.success(
-                `Design linked to ${data.campaign?.name || 'campaign'}!`,
-            );
-        } catch (err) {
-            console.error(err);
-            toast.error('Unable to link design to selected campaign.');
-        } finally {
-            setIsAttachingCampaign(false);
-        }
+    // Download visual with format selection (PNG, JPEG, SVG)
+    const downloadImage = (format: 'png' | 'jpeg' | 'svg' = 'png') => {
+        const targetUrl =
+            savedDesign?.image_url ||
+            'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22600%22%3E%3Crect fill=%22%23111827%22 width=%22800%22 height=%22600%22/%3E%3C/svg%3E';
+        downloadVisualAsFormat(targetUrl, form.product_name || 'marketing-visual', format);
     };
 
-    const openCampaignModal = () => {
-        const defaultName = selectedEvent
-            ? `${selectedEvent.name} Campaign`
-            : form.product_name
-                ? `${form.product_name} Campaign`
-                : 'New Campaign';
+    // Step Validation
+    const stepOneValid = form.product_name.trim().length > 0 && form.image_prompt.trim().length > 0;
+    const canGenerate = stepOneValid;
 
-        const today = new Date().toISOString().split('T')[0];
-        const eventDate = selectedEvent?.date || today;
-
-        setCampaignFormData({
-            name: defaultName,
-            event_id: form.event_id || '',
-            start_date: eventDate,
-            end_date: eventDate,
+    // Filter events in event modal
+    const availableYears = useMemo(() => {
+        const years = new Set<string>();
+        const curYr = new Date().getFullYear();
+        years.add(String(curYr));
+        years.add(String(curYr + 1));
+        events.forEach((ev: EventItem) => {
+            if (ev.date) years.add(ev.date.slice(0, 4));
         });
-        setCampaignFormErrors({});
-        // Default to 'existing' tab if user already has campaigns, else 'new'
-        if (pageProps.campaigns && pageProps.campaigns.length > 0) {
-            setCampaignModalTab('existing');
-            if (!selectedExistingCampaignId) {
-                setSelectedExistingCampaignId(String(pageProps.campaigns[0].id));
+        return Array.from(years).sort();
+    }, [events]);
+
+    const filteredEvents = useMemo(() => {
+        return events.filter((ev: EventItem) => {
+            if (selectedYearTab !== 'all' && ev.date) {
+                if (ev.date.slice(0, 4) !== selectedYearTab) return false;
             }
-        } else {
-            setCampaignModalTab('new');
-        }
-        setIsCampaignModalOpen(true);
-    };
-
-    const createCampaign = () => {
-        openCampaignModal();
-    };
-
-    const handleCreateCampaignSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (isCreatingCampaign) {
-            return;
-        }
-
-        const campaignName = campaignFormData.name.trim();
-        if (!campaignName) {
-            setCampaignFormErrors({
-                name: 'Campaign name is required.',
-            });
-            return;
-        }
-
-        setIsCreatingCampaign(true);
-        setCampaignFormErrors({});
-
-        try {
-            let currentDesignId = savedDesign?.id;
-
-            // If design has not been saved yet, auto-save it to persist and link it
-            if (!currentDesignId) {
-                const designPayload = {
-                    product_name: form.product_name,
-                    image_prompt: form.image_prompt,
-                    prompt: form.image_prompt,
-                    price: form.price ? Number(form.price) : null,
-                    event_id: form.event_id || null,
-                    brand_tone: form.brand_tone,
-                    visual_theme: form.content_style,
-                    content_style: form.content_style,
-                    tagline:
-                        form.tagline_mode === 'none'
-                            ? null
-                            : form.tagline,
-                    tagline_mode: form.tagline_mode,
-                };
-
-                const designRes = await fetch('/designs', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Accept: 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN':
-                            document.querySelector<HTMLMetaElement>(
-                                'meta[name="csrf-token"]',
-                            )?.content || '',
-                    },
-                    body: JSON.stringify(designPayload),
-                });
-
-                if (designRes.ok) {
-                    const designData = await designRes.json();
-                    setSavedDesign(designData.design);
-                    setIsSavedToDesigns(true);
-                    currentDesignId = designData.design?.id;
+            if (eventCategoryFilter !== 'all') {
+                if (eventCategoryFilter === 'long_weekend') {
+                    if (!ev.is_long_weekend) return false;
+                } else if (eventCategoryFilter === 'regular') {
+                    if (ev.category !== 'regular' && ev.type !== 'holiday') return false;
+                } else if (eventCategoryFilter === 'special_non_working') {
+                    if (ev.category !== 'special_non_working') return false;
+                } else if (eventCategoryFilter === 'special_working') {
+                    if (ev.category !== 'special_working') return false;
+                } else if (eventCategoryFilter === 'islamic') {
+                    if (ev.category !== 'islamic') return false;
+                } else if (eventCategoryFilter === 'commercial') {
+                    if (ev.type !== 'commercial' && ev.category !== 'commercial') return false;
+                } else if (eventCategoryFilter === 'custom') {
+                    if (ev.type !== 'custom' && ev.category !== 'custom') return false;
+                } else if (ev.type !== eventCategoryFilter && ev.category !== eventCategoryFilter) {
+                    return false;
                 }
             }
-
-            const campaignPayload = {
-                name: campaignName,
-                event_id: campaignFormData.event_id || null,
-                start_date:
-                    campaignFormData.start_date ||
-                    new Date().toISOString().split('T')[0],
-                end_date:
-                    campaignFormData.end_date ||
-                    campaignFormData.start_date ||
-                    new Date().toISOString().split('T')[0],
-                description: '',
-                objective: `Campaign for ${campaignName}`,
-                target_audience: '',
-                design_id: currentDesignId || null,
-                status: 'draft',
-            };
-
-            const res = await fetch('/campaigns', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Accept: 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN':
-                        document.querySelector<HTMLMetaElement>(
-                            'meta[name="csrf-token"]',
-                        )?.content || '',
-                },
-                body: JSON.stringify(campaignPayload),
-            });
-
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => ({}));
-                if (errorData.errors) {
-                    setCampaignFormErrors(errorData.errors);
-                }
-                throw new Error('Failed to create campaign');
+            if (eventSearchQuery.trim()) {
+                const query = eventSearchQuery.toLowerCase();
+                return (
+                    ev.name.toLowerCase().includes(query) ||
+                    (ev.type && ev.type.toLowerCase().includes(query)) ||
+                    (ev.category && ev.category.toLowerCase().includes(query)) ||
+                    (ev.proclamation_no && ev.proclamation_no.toLowerCase().includes(query))
+                );
             }
-
-            const data = await res.json();
-            setCreatedCampaign(data.campaign);
-            setIsCampaignCreated(true);
-            setIsCampaignModalOpen(false);
-            toast.success(
-                'Campaign created and connected with this design!',
-            );
-        } catch (err) {
-            console.error(err);
-            toast.error(
-                'Failed to create campaign. Please check the inputs.',
-            );
-        } finally {
-            setIsCreatingCampaign(false);
-        }
-    };
-
-    /* ==========================================================================
-       STEP 1
-    ========================================================================== */
-
-    const renderStepOne = () => (
-        <div className="animate-in fade-in slide-in-from-right-2 duration-300">
-            <div className="grid gap-5 md:grid-cols-2">
-                {/* PRODUCT */}
-                <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="product_name">
-                        Product / Service Name
-                    </Label>
-
-                    <Input
-                        id="product_name"
-                        value={
-                            form.product_name
-                        }
-                        onChange={(event) =>
-                            updateField(
-                                'product_name',
-                                event.target.value,
-                            )
-                        }
-                        placeholder="e.g. Luxury Gift Box"
-                    />
-
-                    {errors.product_name && (
-                        <p className="text-xs text-destructive">
-                            {
-                                errors.product_name
-                            }
-                        </p>
-                    )}
-                </div>
-
-                {/* IMAGE PROMPT */}
-                <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="image_prompt">
-                        Image Prompt
-                    </Label>
-
-                    <Textarea
-                        id="image_prompt"
-                        value={
-                            form.image_prompt
-                        }
-                        onChange={(event) =>
-                            updateField(
-                                'image_prompt',
-                                event.target.value,
-                            )
-                        }
-                        placeholder="Describe the product, scene, composition, environment, or visual idea."
-                        className="min-h-28 resize-none"
-                    />
-
-                    {errors.image_prompt && (
-                        <p className="text-xs text-destructive">
-                            {
-                                errors.image_prompt
-                            }
-                        </p>
-                    )}
-                </div>
-
-                {/* PRICE */}
-                <div className="space-y-2">
-                    <Label htmlFor="price">
-                        Price
-                    </Label>
-
-                    <div className="flex items-center overflow-hidden rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-primary/30">
-                        <span className="flex h-10 items-center justify-center border-r border-input bg-muted/30 px-3 text-sm font-semibold text-foreground">
-                            ₱
-                        </span>
-
-                        <Input
-                            id="price"
-                            inputMode="numeric"
-                            value={form.price}
-                            onChange={(event) =>
-                                handlePriceChange(
-                                    event.target.value,
-                                )
-                            }
-                            placeholder="999"
-                            className="h-10 border-0 bg-transparent text-base shadow-none focus-visible:ring-0"
-                        />
-                    </div>
-                </div>
-
-                {/* EVENT */}
-                <div className="space-y-2">
-                    <Label>
-                        Holiday / Event
-                    </Label>
-
-                    <button
-                        type="button"
-                        onClick={() =>
-                            setEventModalOpen(true)
-                        }
-                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 text-left text-sm text-foreground transition-colors hover:border-primary/50 hover:bg-primary/5"
-                    >
-                        <span className="truncate">
-                            {selectedEvent
-                                ? selectedEvent.name
-                                : 'Choose a holiday or event'}
-                        </span>
-
-                        <span className="text-xs text-muted-foreground">
-                            Select
-                        </span>
-                    </button>
-                </div>
-
-            </div>
-
-            {/* BRAND LOGO INCLUSION */}
-            <div className="mt-5 rounded-xl border border-border bg-card p-4 transition-all hover:border-border/80 shadow-sm">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted/40 p-1">
-                            {pageProps.business?.logo_url ? (
-                                <img
-                                    src={pageProps.business.logo_url}
-                                    alt="Brand Logo"
-                                    className="max-h-full max-w-full object-contain"
-                                />
-                            ) : (
-                                <Building2 className="h-5 w-5 text-muted-foreground/60" />
-                            )}
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <p className="text-sm font-semibold text-foreground">
-                                    Include Business Logo
-                                </p>
-                                {pageProps.business?.logo_url ? (
-                                    <Badge
-                                        variant="outline"
-                                        className="border-emerald-500/30 bg-emerald-500/10 text-[10px] text-emerald-600 dark:text-emerald-400"
-                                    >
-                                        Logo Ready
-                                    </Badge>
-                                ) : (
-                                    <Badge
-                                        variant="outline"
-                                        className="text-[10px] text-muted-foreground"
-                                    >
-                                        No Logo Set
-                                    </Badge>
-                                )}
-                            </div>
-                            <p className="mt-0.5 text-xs text-muted-foreground">
-                                {pageProps.business?.logo_url
-                                    ? `Embed the official ${pageProps.business?.name || 'brand'} logo watermark onto this generated marketing asset.`
-                                    : 'Upload your brand logo in Brand Logo settings to include it in generated visuals.'}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="flex shrink-0 items-center gap-2">
-                        {pageProps.business?.logo_url ? (
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setForm((prev) => ({
-                                        ...prev,
-                                        include_logo: !prev.include_logo,
-                                    }))
-                                }
-                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary/40 ${form.include_logo
-                                        ? 'bg-primary'
-                                        : 'bg-muted'
-                                    }`}
-                                role="switch"
-                                aria-checked={form.include_logo}
-                            >
-                                <span
-                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow ring-0 transition duration-200 ease-in-out ${form.include_logo
-                                            ? 'translate-x-5'
-                                            : 'translate-x-0'
-                                        }`}
-                                />
-                            </button>
-                        ) : (
-                            <Button
-                                asChild
-                                size="sm"
-                                variant="outline"
-                                className="h-8 gap-1 text-xs"
-                            >
-                                <Link href="/settings/logo">
-                                    Upload Logo
-                                    <ExternalLink className="h-3 w-3" />
-                                </Link>
-                            </Button>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-
-    /* ==========================================================================
-       STEP 2
-    ========================================================================== */
-
-    const renderStepTwo = () => (
-        <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
-            {/* EVENT RECOMMENDATION */}
-            {selectedEvent && (
-                <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-4">
-                    <div>
-                        <p className="text-xs font-medium text-primary">
-                            Event selected
-                        </p>
-
-                        <p className="text-sm font-semibold">
-                            {
-                                selectedEvent?.name
-                            }
-                        </p>
-                    </div>
-
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={
-                            applyEventSuggestions
-                        }
-                        className="shrink-0"
-                    >
-                        <Sparkles className="mr-2 h-3.5 w-3.5" />
-                        Use suggestions
-                    </Button>
-                </div>
-            )}
-
-            {/* VISUAL THEME */}
-            <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <Label>
-                            Visual Theme
-                        </Label>
-                    </div>
-
-                    <span className="text-xs font-medium text-muted-foreground">
-                        {
-                            form.content_style
-                                .length
-                        }{' '}
-                        / 3
-                    </span>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                    {contentStyleOptions.map(
-                        (style) => {
-                            const active =
-                                form.content_style.includes(
-                                    style,
-                                );
-
-                            const disabled =
-                                !active &&
-                                form
-                                    .content_style
-                                    .length >=
-                                3;
-
-                            return (
-                                <button
-                                    key={
-                                        style
-                                    }
-                                    type="button"
-                                    disabled={
-                                        disabled
-                                    }
-                                    onClick={() =>
-                                        updateField(
-                                            'content_style',
-                                            toggleValue(
-                                                form.content_style,
-                                                style,
-                                                3,
-                                            ),
-                                        )
-                                    }
-                                    className={`
-                                        rounded-full
-                                        border
-                                        px-3
-                                        py-2
-                                        text-xs
-                                        font-medium
-                                        transition-all
-
-                                        ${active
-                                            ? 'border-primary bg-primary text-primary-foreground'
-                                            : disabled
-                                                ? 'cursor-not-allowed border-border bg-muted/30 text-muted-foreground/40'
-                                                : 'border-border bg-background hover:border-primary/40 hover:bg-muted/50'
-                                        }
-                                    `}
-                                >
-                                    {active && (
-                                        <Check className="mr-1 inline h-3 w-3" />
-                                    )}
-
-                                    {style}
-                                </button>
-                            );
-                        },
-                    )}
-                </div>
-            </div>
-
-            {/* BRAND TONE */}
-            <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                    <Label>
-                        Brand Tone
-                    </Label>
-
-                    <span className="text-xs font-medium text-muted-foreground">
-                        {
-                            form.brand_tone
-                                .length
-                        }{' '}
-                        / 3
-                    </span>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                    {toneOptions.map(
-                        (tone) => {
-                            const active =
-                                form.brand_tone.includes(
-                                    tone,
-                                );
-
-                            const disabled =
-                                !active &&
-                                form
-                                    .brand_tone
-                                    .length >=
-                                3;
-
-                            return (
-                                <button
-                                    key={
-                                        tone
-                                    }
-                                    type="button"
-                                    disabled={
-                                        disabled
-                                    }
-                                    onClick={() =>
-                                        updateField(
-                                            'brand_tone',
-                                            toggleValue(
-                                                form.brand_tone,
-                                                tone,
-                                                3,
-                                            ),
-                                        )
-                                    }
-                                    className={`
-                                        rounded-full
-                                        border
-                                        px-3
-                                        py-2
-                                        text-xs
-                                        font-medium
-                                        transition-all
-
-                                        ${active
-                                            ? 'border-primary bg-primary text-primary-foreground'
-                                            : disabled
-                                                ? 'cursor-not-allowed border-border bg-muted/30 text-muted-foreground/40'
-                                                : 'border-border bg-background hover:border-primary/40 hover:bg-muted/50'
-                                        }
-                                    `}
-                                >
-                                    {active && (
-                                        <Check className="mr-1 inline h-3 w-3" />
-                                    )}
-
-                                    {tone}
-                                </button>
-                            );
-                        },
-                    )}
-                </div>
-            </div>
-
-            {/* EMPTY SELECTION STATE */}
-            {form.content_style.length ===
-                0 &&
-                form.brand_tone.length ===
-                0 && (
-                    <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 text-center text-xs text-muted-foreground">
-                        You can skip these or
-                        choose up to 3 each.
-                    </div>
-                )}
-        </div>
-    );
-
-    /* ==========================================================================
-       STEP 3
-    ========================================================================== */
-
-    const renderStepThree = () => (
-        <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
-            {/* TAGLINE */}
-            <div className="space-y-3">
-                <div>
-                    <Label>
-                        Tagline
-                    </Label>
-
-                    <p className="mt-1 text-xs text-muted-foreground">
-                        Choose how text is handled.
-                    </p>
-                </div>
-
-                <div className="grid gap-2 md:grid-cols-3">
-                    {taglineOptions.map(
-                        (option) => {
-                            const active =
-                                form.tagline_mode ===
-                                option.value;
-
-                            return (
-                                <button
-                                    key={
-                                        option.value
-                                    }
-                                    type="button"
-                                    onClick={() =>
-                                        updateField(
-                                            'tagline_mode',
-                                            option.value,
-                                        )
-                                    }
-                                    className={`
-                                        rounded-xl
-                                        border
-                                        p-3
-                                        text-left
-                                        transition-all
-
-                                        ${active
-                                            ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-                                            : 'border-border hover:bg-muted/50'
-                                        }
-                                    `}
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm font-medium">
-                                            {
-                                                option.label
-                                            }
-                                        </span>
-
-                                        {active && (
-                                            <Check className="h-4 w-4 text-primary" />
-                                        )}
-                                    </div>
-
-                                    <p className="mt-1 text-xs text-muted-foreground">
-                                        {
-                                            option.description
-                                        }
-                                    </p>
-                                </button>
-                            );
-                        },
-                    )}
-                </div>
-            </div>
-
-            {/* MANUAL */}
-            {form.tagline_mode ===
-                'manual' && (
-                    <div className="space-y-2">
-                        <Label htmlFor="tagline">
-                            Your tagline
-                        </Label>
-
-                        <Input
-                            id="tagline"
-                            value={
-                                form.tagline
-                            }
-                            onChange={(event) =>
-                                updateField(
-                                    'tagline',
-                                    event.target.value,
-                                )
-                            }
-                            placeholder="Make every moment special."
-                        />
-
-                        {!form.tagline.trim() && (
-                            <p className="text-xs text-destructive">
-                                Enter your tagline
-                                to continue.
-                            </p>
-                        )}
-                    </div>
-                )}
-
-            {/* AI */}
-            {form.tagline_mode ===
-                'ai' && (
-                    <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
-                        <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                                    <Sparkles className="h-4 w-4 text-primary" />
-                                </div>
-
-                                <div>
-                                    <p className="text-sm font-medium">
-                                        AI tagline
-                                    </p>
-
-                                    <p className="text-xs text-muted-foreground">
-                                        Uses your product,
-                                        event, style, and
-                                        tone.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={generateTagline}
-                                className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-background px-2.5 py-1.5 text-[11px] font-medium text-primary transition-colors hover:bg-primary/5"
-                            >
-                                <RefreshCcw className="h-3.5 w-3.5" />
-                                Refresh
-                            </button>
-                        </div>
-
-                        {form.tagline ? (
-                            <div className="rounded-lg border border-primary/20 bg-background/80 p-3 text-sm font-medium text-foreground">
-                                “{form.tagline}”
-                            </div>
-                        ) : (
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                onClick={generateTagline}
-                                className="w-full"
-                            >
-                                <Sparkles className="mr-2 h-4 w-4" />
-                                Generate with AI
-                            </Button>
-                        )}
-                    </div>
-                )}
-
-            {/* NONE */}
-            {form.tagline_mode ===
-                'none' && (
-                    <div className="rounded-xl border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-                        The image will have no text
-                        overlay.
-                    </div>
-                )}
-
-            {/* REFERENCE IMAGE */}
-            <div className="space-y-3">
-                <div>
-                    <Label>
-                        Reference Image
-                        <span className="ml-1 font-normal text-muted-foreground">
-                            optional
-                        </span>
-                    </Label>
-
-                    <p className="mt-1 text-xs text-muted-foreground">
-                        Add an image for visual
-                        guidance.
-                    </p>
-                </div>
-
-                {!form.reference_image ? (
-                    <label
-                        htmlFor="reference_image"
-                        className="
-                            flex
-                            cursor-pointer
-                            items-center
-                            gap-3
-                            rounded-xl
-                            border
-                            border-dashed
-                            border-border
-                            bg-muted/20
-                            p-4
-                            hover:border-primary/40
-                            hover:bg-muted/40
-                        "
-                    >
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-background">
-                            <Upload className="h-4 w-4 text-muted-foreground" />
-                        </div>
-
-                        <div>
-                            <p className="text-sm font-medium">
-                                Upload reference
-                            </p>
-
-                            <p className="text-xs text-muted-foreground">
-                                PNG, JPG, WEBP
-                            </p>
-                        </div>
-
-                        <Input
-                            id="reference_image"
-                            type="file"
-                            accept="image/png,image/jpeg,image/webp"
-                            className="hidden"
-                            onChange={(
-                                event,
-                            ) =>
-                                handleReferenceImage(
-                                    event.target.files?.[0] ??
-                                    null,
-                                )
-                            }
-                        />
-                    </label>
-                ) : (
-                    <div className="flex items-center gap-3 rounded-xl border bg-muted/30 p-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-background">
-                            <ImagePlus className="h-4 w-4 text-primary" />
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium">
-                                {
-                                    form
-                                        .reference_image
-                                        .name
-                                }
-                            </p>
-
-                            <p className="text-xs text-muted-foreground">
-                                Reference selected
-                            </p>
-                        </div>
-
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() =>
-                                handleReferenceImage(
-                                    null,
-                                )
-                            }
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-
-    /* ==========================================================================
-       SUMMARY
-       
-       IMPORTANT:
-       No Generate button here.
-       There is only ONE Generate button in the main form footer.
-    ========================================================================== */
-
-    const summary = (
-        <Card className="rounded-2xl border-border shadow-sm lg:sticky lg:top-24 lg:self-start">
-            <CardHeader className="border-b p-5">
-                <CardTitle className="flex items-center gap-2 text-base">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    Campaign Summary
-                </CardTitle>
-            </CardHeader>
-
-            <CardContent className="space-y-4 p-5">
-                <SummaryItem
-                    label="Product"
-                    value={
-                        form.product_name ||
-                        '—'
-                    }
-                />
-
-                <SummaryItem
-                    label="Event"
-                    value={
-                        selectedEvent?.name ||
-                        '—'
-                    }
-                />
-
-                <SummaryItem
-                    label="Price"
-                    value={
-                        form.price
-                            ? `₱${form.price}`
-                            : '—'
-                    }
-                />
-
-                <SummaryItem
-                    label="Themes"
-                    value={
-                        form.content_style
-                            .length
-                            ? form.content_style.join(
-                                ', ',
-                            )
-                            : 'None'
-                    }
-                />
-
-                <SummaryItem
-                    label="Tone"
-                    value={
-                        form.brand_tone
-                            .length
-                            ? form.brand_tone.join(
-                                ', ',
-                            )
-                            : 'None'
-                    }
-                />
-
-                <SummaryItem
-                    label="Tagline"
-                    value={
-                        form.tagline_mode ===
-                            'ai'
-                            ? 'AI'
-                            : form.tagline_mode ===
-                                'none'
-                                ? 'None'
-                                : form.tagline ||
-                                '—'
-                    }
-                />
-
-                <SummaryItem
-                    label="Reference"
-                    value={
-                        form.reference_image
-                            ? 'Added'
-                            : 'None'
-                    }
-                />
-            </CardContent>
-        </Card>
-    );
-
-    /* ==========================================================================
-       GENERATION MOCKUP & MODALS
-    ========================================================================== */
-
-    const eventSelectionModal = eventModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
-                {/* MODAL HEADER */}
-                <div className="flex items-center justify-between border-b border-border bg-muted/30 px-5 py-4">
-                    <div className="flex items-center gap-2.5">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                            <Calendar className="h-5 w-5" />
-                        </div>
-                        <div>
-                            <h2 className="text-base font-semibold text-foreground">
-                                Select Holiday or Marketing Event
-                            </h2>
-                            <p className="text-xs text-muted-foreground">
-                                Choose an event to tailor your creative visual and marketing dates
-                            </p>
-                        </div>
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={() => setEventModalOpen(false)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                        aria-label="Close event selector"
-                    >
-                        <X className="h-4 w-4" />
-                    </button>
-                </div>
-
-                {/* FILTERS & YEAR TABS */}
-                <div className="space-y-3 border-b border-border bg-muted/10 p-4">
-                    {/* YEAR TABS */}
-                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                        <span className="mr-1 shrink-0 text-xs font-semibold text-muted-foreground">
-                            Year:
-                        </span>
-                        {availableYears.map((yr) => {
-                            const isCurrentYr = yr === currentYearStr;
-                            const isSelected = selectedYearTab === yr;
-                            return (
-                                <button
-                                    key={yr}
-                                    type="button"
-                                    onClick={() => setSelectedYearTab(yr)}
-                                    className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${isSelected
-                                            ? 'bg-primary text-primary-foreground shadow-sm'
-                                            : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-                                        }`}
-                                >
-                                    {isCurrentYr ? `This Year (${yr})` : yr}
-                                </button>
-                            );
-                        })}
-                        <button
-                            type="button"
-                            onClick={() => setSelectedYearTab('all')}
-                            className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${selectedYearTab === 'all'
-                                    ? 'bg-primary text-primary-foreground shadow-sm'
-                                    : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-                                }`}
-                        >
-                            All Years
-                        </button>
-                    </div>
-
-                    {/* SEARCH & CATEGORY CHIPS */}
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                                value={eventSearchQuery}
-                                onChange={(e) => setEventSearchQuery(e.target.value)}
-                                placeholder="Search holidays or events..."
-                                className="h-9 pl-9 text-xs"
-                            />
-                        </div>
-
-                        <div className="flex items-center gap-1 overflow-x-auto">
-                            {(['all', 'holidays', 'commercial', 'custom'] as const).map((cat) => (
-                                <button
-                                    key={cat}
-                                    type="button"
-                                    onClick={() => setEventCategoryFilter(cat)}
-                                    className={`rounded-md px-2.5 py-1 text-[11px] font-medium capitalize transition-colors ${eventCategoryFilter === cat
-                                            ? 'bg-accent font-semibold text-accent-foreground'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                        }`}
-                                >
-                                    {cat === 'all' ? 'All Types' : cat}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* EVENTS LIST */}
-                <div className="max-h-[380px] min-h-[220px] space-y-2 overflow-y-auto p-4">
-                    {filteredModalEvents.length > 0 ? (
-                        <div className="grid gap-2 sm:grid-cols-2">
-                            {filteredModalEvents.map((event) => {
-                                const eventYear = event.date?.slice(0, 4) ?? '';
-                                const isSelected = String(event.id) === String(form.event_id);
-
-                                return (
-                                    <button
-                                        key={event.id}
-                                        type="button"
-                                        onClick={() => {
-                                            applySelectedEvent(String(event.id));
-                                            setEventModalOpen(false);
-                                        }}
-                                        className={`group relative flex flex-col justify-between rounded-xl border p-3 text-left transition-all ${isSelected
-                                                ? 'border-primary bg-primary/10 shadow-sm ring-1 ring-primary/30'
-                                                : 'border-border bg-card hover:border-primary/40 hover:bg-muted/40'
-                                            }`}
-                                    >
-                                        <div className="flex items-start justify-between gap-2">
-                                            <p className="line-clamp-1 text-sm font-semibold text-foreground">
-                                                {event.name}
-                                            </p>
-                                            {event.type && (
-                                                <Badge
-                                                    variant="secondary"
-                                                    className="shrink-0 px-1.5 py-0 text-[9px] capitalize tracking-wider uppercase"
-                                                >
-                                                    {event.type}
-                                                </Badge>
-                                            )}
-                                        </div>
-
-                                        <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-                                            <span>
-                                                {event.date ? formatEventDateLabel(event.date) : 'Flexible date'}
-                                            </span>
-                                            {eventYear && (
-                                                <span className="font-mono text-[10px] text-muted-foreground/80">
-                                                    {eventYear}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center py-10 text-center">
-                            <Calendar className="mb-2 h-8 w-8 text-muted-foreground/40" />
-                            <p className="text-sm font-medium text-muted-foreground">
-                                No events found for this filter.
-                            </p>
-                            <p className="mt-1 text-xs text-muted-foreground/80">
-                                Try changing your year or search keywords.
-                            </p>
-                        </div>
-                    )}
-                </div>
-
-                {/* MODAL FOOTER */}
-                <div className="flex items-center justify-between border-t border-border bg-muted/20 px-5 py-3">
-                    {form.event_id ? (
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                                applySelectedEvent('');
-                                setEventModalOpen(false);
-                            }}
-                            className="text-xs text-destructive hover:bg-destructive/10"
-                        >
-                            Clear Selected Event
-                        </Button>
-                    ) : (
-                        <div />
-                    )}
-
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setEventModalOpen(false)}
-                    >
-                        Close
-                    </Button>
-                </div>
-            </div>
-        </div>
-    ) : null;
-
-    const campaignActionModal = (
-        <Dialog
-            open={isCampaignModalOpen}
-            onOpenChange={setIsCampaignModalOpen}
-        >
-            <DialogContent className="rounded-2xl sm:max-w-lg">
-                <DialogHeader>
-                    <DialogTitle className="text-lg">
-                        Connect with Campaign
-                    </DialogTitle>
-                    <DialogDescription>
-                        Attach this generated marketing design to an existing campaign or launch a new one.
-                    </DialogDescription>
-                </DialogHeader>
-
-                {/* SEGMENTED TAB SELECTOR */}
-                <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1 text-xs font-semibold">
-                    <button
-                        type="button"
-                        onClick={() => setCampaignModalTab('existing')}
-                        className={`flex items-center justify-center gap-1.5 rounded-lg py-2 transition-all ${campaignModalTab === 'existing'
-                                ? 'bg-background text-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
-                            }`}
-                    >
-                        <FolderPlus className="h-3.5 w-3.5" />
-                        Add to Existing Campaign
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setCampaignModalTab('new')}
-                        className={`flex items-center justify-center gap-1.5 rounded-lg py-2 transition-all ${campaignModalTab === 'new'
-                                ? 'bg-background text-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
-                            }`}
-                    >
-                        <Plus className="h-3.5 w-3.5" />
-                        Create New Campaign
-                    </button>
-                </div>
-
-                {campaignModalTab === 'existing' ? (
-                    /* TAB 1: ADD TO EXISTING CAMPAIGN */
-                    <form onSubmit={handleAttachToExistingCampaign} className="space-y-4 pt-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="sel-existing-campaign">
-                                Choose Campaign
-                            </Label>
-                            {pageProps.campaigns && pageProps.campaigns.length > 0 ? (
-                                <select
-                                    id="sel-existing-campaign"
-                                    value={selectedExistingCampaignId}
-                                    onChange={(e) => setSelectedExistingCampaignId(e.target.value)}
-                                    disabled={isAttachingCampaign}
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring/30"
-                                >
-                                    <option value="">Select an existing campaign...</option>
-                                    {pageProps.campaigns.map((camp) => (
-                                        <option key={camp.id} value={camp.id}>
-                                            {camp.name} ({camp.status || 'draft'}) {camp.start_date ? `• ${camp.start_date}` : ''}
-                                        </option>
-                                    ))}
-                                </select>
-                            ) : (
-                                <div className="rounded-xl border border-dashed border-border bg-muted/20 p-4 text-center">
-                                    <p className="text-sm font-medium text-muted-foreground">
-                                        No active campaigns found.
-                                    </p>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setCampaignModalTab('new')}
-                                        className="mt-2 text-xs"
-                                    >
-                                        <Plus className="mr-1.5 h-3.5 w-3.5" />
-                                        Create your first campaign
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
-
-                        {selectedExistingCampaignId && (
-                            <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
-                                <p className="font-medium text-foreground">
-                                    Campaign Connection:
-                                </p>
-                                <p className="mt-0.5">
-                                    This visual asset will be linked to the selected campaign and will appear directly in its gallery and dashboard.
-                                </p>
-                            </div>
-                        )}
-
-                        <DialogFooter className="mt-6">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setIsCampaignModalOpen(false)}
-                                disabled={isAttachingCampaign}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                type="submit"
-                                disabled={isAttachingCampaign || !selectedExistingCampaignId}
-                                className="gap-2"
-                            >
-                                {isAttachingCampaign ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        Attaching...
-                                    </>
-                                ) : (
-                                    <>
-                                        <LinkIcon className="h-4 w-4" />
-                                        Attach to Campaign
-                                    </>
-                                )}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                ) : (
-                    /* TAB 2: CREATE NEW CAMPAIGN */
-                    <form onSubmit={handleCreateCampaignSubmit} className="space-y-4 pt-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="gen-campaign-name">
-                                Campaign Name
-                            </Label>
-                            <Input
-                                id="gen-campaign-name"
-                                value={campaignFormData.name}
-                                onChange={(e) =>
-                                    setCampaignFormData((cur) => ({
-                                        ...cur,
-                                        name: e.target.value,
-                                    }))
-                                }
-                                placeholder="e.g. Summer Launch 2026"
-                                disabled={isCreatingCampaign}
-                                className={
-                                    campaignFormErrors.name
-                                        ? 'border-destructive'
-                                        : ''
-                                }
-                            />
-                            {campaignFormErrors.name && (
-                                <p className="text-xs text-destructive">
-                                    {campaignFormErrors.name}
-                                </p>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label
-                                htmlFor="gen-campaign-event"
-                                className="flex items-center gap-1.5"
-                            >
-                                <Tag className="h-3.5 w-3.5 text-muted-foreground" />
-                                Linked Event / Holiday (Optional)
-                            </Label>
-                            <select
-                                id="gen-campaign-event"
-                                value={campaignFormData.event_id}
-                                onChange={(e) => {
-                                    const eventId = e.target.value;
-                                    const selectedEvt = events.find(
-                                        (ev) =>
-                                            String(ev.id) === String(eventId),
-                                    );
-                                    setCampaignFormData((cur) => ({
-                                        ...cur,
-                                        event_id: eventId,
-                                        start_date:
-                                            selectedEvt?.date || cur.start_date,
-                                        end_date:
-                                            selectedEvt?.date || cur.end_date,
-                                    }));
-                                }}
-                                disabled={isCreatingCampaign}
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring/30"
-                            >
-                                <option value="">
-                                    Select an event (optional)...
-                                </option>
-                                {events.map((ev) => (
-                                    <option key={ev.id} value={ev.id}>
-                                        {ev.name}{' '}
-                                        {ev.date
-                                            ? `(${formatEventDateLabel(ev.date)})`
-                                            : ''}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <div className="space-y-2">
-                                <Label htmlFor="gen-campaign-start">
-                                    Start Date
-                                </Label>
-                                <Input
-                                    id="gen-campaign-start"
-                                    type="date"
-                                    value={campaignFormData.start_date}
-                                    onChange={(e) =>
-                                        setCampaignFormData((cur) => ({
-                                            ...cur,
-                                            start_date: e.target.value,
-                                        }))
-                                    }
-                                    disabled={isCreatingCampaign}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="gen-campaign-end">
-                                    End Date
-                                </Label>
-                                <Input
-                                    id="gen-campaign-end"
-                                    type="date"
-                                    value={campaignFormData.end_date}
-                                    onChange={(e) =>
-                                        setCampaignFormData((cur) => ({
-                                            ...cur,
-                                            end_date: e.target.value,
-                                        }))
-                                    }
-                                    disabled={isCreatingCampaign}
-                                />
-                            </div>
-                        </div>
-
-                        <DialogFooter className="mt-6">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setIsCampaignModalOpen(false)}
-                                disabled={isCreatingCampaign}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                type="submit"
-                                disabled={
-                                    isCreatingCampaign ||
-                                    !campaignFormData.name.trim()
-                                }
-                                className="gap-2"
-                            >
-                                {isCreatingCampaign ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        Creating...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Plus className="h-4 w-4" />
-                                        Create & Link Campaign
-                                    </>
-                                )}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                )}
-            </DialogContent>
-        </Dialog>
-    );
-
-    const generationPanel = (
-        <Card className="mx-auto max-w-3xl overflow-hidden rounded-2xl border-border shadow-sm">
-            <CardHeader className="border-b p-5 md:p-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                            AI Generation
-                        </p>
-
-                        <h2 className="mt-1 text-lg font-semibold">
-                            {generationState === 'generating'
-                                ? 'Creating your image'
-                                : 'Generation ready'}
-                        </h2>
-                    </div>
-
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                        <Sparkles className="h-4 w-4 text-primary" />
-                    </div>
-                </div>
-            </CardHeader>
-
-            <CardContent className="p-5 md:p-7">
-                {generationState === 'generating' && (
-                    <div className="space-y-6">
-                        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-2xl border border-primary/20 bg-primary/5">
-                            <Sparkles className="h-8 w-8 animate-pulse text-primary" />
-                        </div>
-
-                        <div className="text-center">
-                            <p className="text-sm font-medium">
-                                Preparing your marketing visual
-                            </p>
-
-                            <p className="mt-1 text-xs text-muted-foreground">
-                                Creating your marketing asset design.
-                            </p>
-                        </div>
-
-                        <div className="mx-auto max-w-md">
-                            <div className="mb-2 flex justify-between text-xs text-muted-foreground">
-                                <span>Generating</span>
-                                <span>{generationProgress}%</span>
-                            </div>
-
-                            <div className="h-2 overflow-hidden rounded-full bg-muted">
-                                <div
-                                    className="h-full rounded-full bg-primary transition-all duration-500"
-                                    style={{
-                                        width: `${generationProgress}%`,
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {generationState === 'ready' && (
-                    <div className="space-y-6">
-                        {/* IMAGE PREVIEW CARD */}
-                        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-                            <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-3">
-                                <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                                <span className="text-xs font-medium">
-                                    Generated Marketing Visual
-                                </span>
-                                <div className="ml-auto flex items-center gap-2">
-                                    {form.include_logo && (
-                                        <Badge variant="outline" className="border-primary/30 bg-primary/10 text-[10px] text-primary">
-                                            Logo Embedded
-                                        </Badge>
-                                    )}
-                                    <Badge
-                                        variant="secondary"
-                                        className="text-[11px]"
-                                    >
-                                        {savedDesign
-                                            ? 'Saved in My Designs'
-                                            : 'Mockup Asset'}
-                                    </Badge>
-                                </div>
-                            </div>
-
-                            <div className="p-4 sm:p-6">
-                                {savedDesign?.image_url ? (
-                                    <div className="flex items-center justify-center overflow-hidden rounded-xl border border-border bg-slate-950">
-                                        <img
-                                            src={savedDesign.image_url}
-                                            alt={form.product_name}
-                                            className="max-h-[400px] w-full object-contain"
-                                        />
-                                    </div>
-                                ) : (
-                                    <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-slate-900 via-indigo-950/60 to-purple-950/70 p-8 text-center shadow-inner">
-                                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/20 text-primary shadow-md ring-1 ring-primary/30">
-                                            <Sparkles className="h-7 w-7 animate-pulse text-primary" />
-                                        </div>
-
-                                        <h3 className="mt-4 text-xl font-bold tracking-tight text-white md:text-2xl">
-                                            {form.product_name ||
-                                                'Marketing Visual Asset'}
-                                        </h3>
-
-                                        {form.tagline &&
-                                            form.tagline_mode !== 'none' && (
-                                                <p className="mx-auto mt-2 max-w-md text-sm font-medium text-slate-300">
-                                                    "{form.tagline}"
-                                                </p>
-                                            )}
-
-                                        {form.price && (
-                                            <p className="mt-3 text-lg font-bold text-sky-400">
-                                                ₱
-                                                {Number(form.price).toFixed(2)}
-                                            </p>
-                                        )}
-
-                                        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-                                            {selectedEvent && (
-                                                <Badge
-                                                    variant="outline"
-                                                    className="border-pink-500/40 bg-pink-500/10 text-xs text-pink-300"
-                                                >
-                                                    {selectedEvent.name}
-                                                </Badge>
-                                            )}
-                                            {form.include_logo && pageProps.business?.name && (
-                                                <Badge
-                                                    variant="outline"
-                                                    className="border-emerald-500/40 bg-emerald-500/10 text-xs text-emerald-300"
-                                                >
-                                                    Brand: {pageProps.business.name}
-                                                </Badge>
-                                            )}
-                                            {form.content_style.map((style) => (
-                                                <Badge
-                                                    key={style}
-                                                    variant="outline"
-                                                    className="border-indigo-500/40 bg-indigo-500/10 text-xs text-indigo-300"
-                                                >
-                                                    {style}
-                                                </Badge>
-                                            ))}
-                                            {form.brand_tone.map((tone) => (
-                                                <Badge
-                                                    key={tone}
-                                                    variant="outline"
-                                                    className="border-border bg-background/50 text-xs text-slate-300"
-                                                >
-                                                    {tone}
-                                                </Badge>
-                                            ))}
-                                        </div>
-
-                                        <p className="mt-6 text-xs text-muted-foreground">
-                                            Ready to save to My Designs or launch as a campaign.
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* STATUS FEEDBACK */}
-                        <div
-                            className={`rounded-xl border p-4 transition-colors ${isSavedToDesigns || isCampaignCreated
-                                    ? 'border-emerald-500/30 bg-emerald-500/5'
-                                    : 'border-primary/20 bg-primary/5'
-                                }`}
-                        >
-                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div
-                                        className={`flex h-9 w-9 items-center justify-center rounded-lg ${isSavedToDesigns || isCampaignCreated
-                                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                                                : 'bg-primary/10 text-primary'
-                                            }`}
-                                    >
-                                        <Check className="h-4 w-4" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium">
-                                            {isSavedToDesigns && isCampaignCreated
-                                                ? 'Asset saved & campaign connected!'
-                                                : isSavedToDesigns
-                                                    ? 'Saved to My Designs'
-                                                    : isCampaignCreated
-                                                        ? 'Campaign created & linked'
-                                                        : 'Generation complete'}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {isSavedToDesigns && isCampaignCreated
-                                                ? 'Your marketing asset is registered in My Designs and linked to your campaign.'
-                                                : isSavedToDesigns
-                                                    ? 'Your design is saved and accessible under My Designs.'
-                                                    : isCampaignCreated
-                                                        ? 'Your campaign is scheduled in the Campaigns hub.'
-                                                        : 'Save this asset to My Designs or link it to a campaign.'}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-2 pt-1 sm:pt-0">
-                                    {isSavedToDesigns && (
-                                        <Button
-                                            asChild
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-8 text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
-                                        >
-                                            <Link href="/designs">
-                                                View Designs
-                                                <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                    {isCampaignCreated && (
-                                        <Button
-                                            asChild
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-8 text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
-                                        >
-                                            <Link href="/campaigns">
-                                                View Campaigns
-                                                <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
-                                            </Link>
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* ACTION BUTTONS */}
-                        <div className="space-y-4">
-                            {/* PRIMARY COMBINED ACTIONS */}
-                            <div className="grid gap-3 sm:grid-cols-3">
-                                <Button
-                                    type="button"
-                                    onClick={saveToDesigns}
-                                    disabled={isSavingDesign}
-                                    variant="outline"
-                                    className={`transition-all ${isSavedToDesigns
-                                            ? 'border-emerald-500/50 bg-emerald-50 font-medium text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300'
-                                            : 'border-border hover:bg-accent'
-                                        }`}
-                                >
-                                    {isSavingDesign ? (
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <Check
-                                            className={`mr-2 h-4 w-4 ${isSavedToDesigns
-                                                    ? 'text-emerald-600 dark:text-emerald-400'
-                                                    : 'text-muted-foreground'
-                                                }`}
-                                        />
-                                    )}
-                                    {isSavedToDesigns
-                                        ? 'Saved to Designs'
-                                        : 'Save to Designs'}
-                                </Button>
-
-                                <Button
-                                    type="button"
-                                    onClick={openCampaignModal}
-                                    variant="outline"
-                                    className={`transition-all ${isCampaignCreated
-                                            ? 'border-emerald-500/50 bg-emerald-50 font-medium text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300'
-                                            : 'border-border hover:bg-accent'
-                                        }`}
-                                >
-                                    <Check
-                                        className={`mr-2 h-4 w-4 ${isCampaignCreated
-                                                ? 'text-emerald-600 dark:text-emerald-400'
-                                                : 'text-muted-foreground'
-                                            }`}
-                                    />
-                                    {isCampaignCreated
-                                        ? 'Linked to Campaign'
-                                        : 'Add to Campaign'}
-                                </Button>
-
-                                <Button
-                                    type="button"
-                                    onClick={createAnother}
-                                    className="bg-primary hover:bg-primary/90"
-                                >
-                                    <Sparkles className="mr-2 h-4 w-4" />
-                                    Create Another
-                                </Button>
-                            </div>
-
-                            {/* SECONDARY ACTIONS */}
-                            <div className="flex gap-2 pt-2">
-                                <Button
-                                    type="button"
-                                    onClick={downloadImage}
-                                    variant="ghost"
-                                    size="sm"
-                                    className="flex-1"
-                                >
-                                    <Upload className="mr-1.5 h-4 w-4" />
-                                    Download
-                                </Button>
-
-                                <Button
-                                    type="button"
-                                    onClick={handleEdit}
-                                    variant="ghost"
-                                    size="sm"
-                                    className="flex-1"
-                                >
-                                    <ArrowLeft className="mr-1.5 h-4 w-4" />
-                                    Edit
-                                </Button>
-
-                                <Button
-                                    type="button"
-                                    onClick={handleRegenerate}
-                                    variant="ghost"
-                                    size="sm"
-                                    className="flex-1"
-                                >
-                                    <RefreshCcw className="mr-1.5 h-4 w-4" />
-                                    Regenerate
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    );
-
-    /* ==========================================================================
-       RENDER
-    ========================================================================== */
+            return true;
+        });
+    }, [events, selectedYearTab, eventCategoryFilter, eventSearchQuery]);
+
+    const filteredProducts = useMemo(() => {
+        if (!productSearchQuery.trim()) return products;
+        const q = productSearchQuery.toLowerCase();
+        return products.filter((p: ProductItem) => p.name.toLowerCase().includes(q) || (p.description && p.description.toLowerCase().includes(q)));
+    }, [products, productSearchQuery]);
 
     return (
         <>
             <Head title="AI Marketing Studio" />
 
-            <div className="min-h-screen bg-background text-foreground">
-                <div className="p-4 md:p-6 lg:p-8">
-                    {/* HEADER */}
-                    <section className="mb-6">
-                        <div className="flex items-center gap-2">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                                <Sparkles className="h-4 w-4 text-primary" />
+            <div className="min-h-screen bg-background text-foreground pb-20">
+                <div className="space-y-6 p-4 md:p-6 lg:p-8">
+
+                    {/* =====================================================
+                        PAGE HEADER
+                    ====================================================== */}
+
+                    <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                    <Sparkles className="h-4 w-4" />
+                                </div>
+                                <p className="text-sm font-medium text-muted-foreground">
+                                    Creative Marketing Engine
+                                </p>
                             </div>
 
-                            <p className="text-sm font-medium text-muted-foreground">
+                            <h1 className="mt-2 text-2xl md:text-3xl font-bold tracking-tight">
                                 AI Marketing Studio
+                            </h1>
+
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                Generate campaign-ready visuals tailored to holidays, promotions, and product launches.
                             </p>
                         </div>
-
-                        <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
-                            Create your marketing
-                            image
-                        </h1>
-
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            Build your campaign in
-                            three simple steps.
-                        </p>
                     </section>
 
-                    {eventSelectionModal}
-                    {campaignActionModal}
+                    {/* Active Campaign Banner */}
+                    {activeCampaign && (
+                        <div className="flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/5 p-4 text-xs animate-in fade-in duration-200">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                    <Layers className="h-4 w-4" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-sm font-bold text-foreground">
+                                            Campaign: {activeCampaign.name}
+                                        </p>
+                                        <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20 font-semibold">
+                                            Auto-Linked
+                                        </Badge>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                        Visual creative will be automatically organized under this marketing campaign.
+                                    </p>
+                                </div>
+                            </div>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setForm((prev) => ({ ...prev, campaign_id: '' }))}
+                                className="h-8 text-xs text-muted-foreground hover:text-destructive"
+                            >
+                                Unlink
+                            </Button>
+                        </div>
+                    )}
 
-                    {/* GENERATION TAB */}
-                    {generationState !==
-                        'idle' ? (
-                        generationPanel
+                    {/* =====================================================
+                        GENERATION STATE: IDLE VS GENERATING VS READY
+                    ====================================================== */}
+
+                    {generationState !== 'idle' ? (
+                        /* READY / GENERATING RESULT VIEW */
+                        <Card className="mx-auto max-w-3xl overflow-hidden rounded-3xl border-border bg-card shadow-sm">
+                            <CardHeader className="border-b p-5 md:p-6">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                            Creative Generation
+                                        </p>
+                                        <h2 className="mt-1 text-lg font-bold">
+                                            {generationState === 'generating' ? 'Synthesizing Visual Creative...' : 'Visual Creative Ready'}
+                                        </h2>
+                                    </div>
+                                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                        <Sparkles className="h-4 w-4" />
+                                    </div>
+                                </div>
+                            </CardHeader>
+
+                            <CardContent className="p-5 md:p-7 space-y-6">
+                                {generationState === 'generating' ? (
+                                    <div className="space-y-6 py-12 text-center">
+                                        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl border border-primary/20 bg-primary/5">
+                                            <Sparkles className="h-8 w-8 animate-pulse text-primary" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold">Composing your marketing visual</p>
+                                            <p className="mt-1 text-xs text-muted-foreground">
+                                                Applying {form.aspect_ratio || '1:1'} canvas, lighting balance, and seasonal elements.
+                                            </p>
+                                        </div>
+                                        <div className="mx-auto max-w-md">
+                                            <div className="mb-2 flex justify-between text-xs text-muted-foreground font-medium">
+                                                <span>Rendering</span>
+                                                <span>{generationProgress}%</span>
+                                            </div>
+                                            <div className="h-2 overflow-hidden rounded-full bg-muted">
+                                                <div
+                                                    className="h-full rounded-full bg-primary transition-all duration-300"
+                                                    style={{ width: `${generationProgress}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6 animate-in fade-in duration-300">
+                                        {/* CLICKABLE GENERATED VISUAL */}
+                                        <div
+                                            onClick={() => {
+                                                setIsPreviewFullViewOpen(true);
+                                                setIsFullViewDetailsExpanded(false);
+                                            }}
+                                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-border bg-card shadow-sm hover:border-primary/50 transition-all"
+                                        >
+                                            <div className="flex items-center justify-between border-b bg-muted/30 px-4 py-2.5 text-xs">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                                                    <span className="font-semibold">{form.product_name}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Badge variant="outline" className="text-[10px] font-mono">
+                                                        {form.aspect_ratio || '1:1'}
+                                                    </Badge>
+                                                    {isSavedToDesigns && (
+                                                        <Badge variant="secondary" className="text-[10px]">
+                                                            Saved
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Generated Visual Canvas */}
+                                            <div className="flex items-center justify-center p-6 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white min-h-[340px]">
+                                                <div className="text-center space-y-3 max-w-md">
+                                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20 text-primary shadow-md">
+                                                        <Sparkles className="h-6 w-6 text-primary" />
+                                                    </div>
+                                                    <h3 className="text-xl font-bold">{form.product_name}</h3>
+                                                    {form.tagline && form.tagline_mode !== 'none' && (
+                                                        <p className="text-xs text-slate-300 font-medium">"{form.tagline}"</p>
+                                                    )}
+                                                    {form.price && (
+                                                        <p className="text-base font-bold text-sky-400">
+                                                            ₱{Number(form.price).toLocaleString()}
+                                                        </p>
+                                                    )}
+                                                    <div className="flex flex-wrap items-center justify-center gap-1.5 pt-2">
+                                                        {selectedEvent && (
+                                                            <Badge variant="outline" className="border-pink-500/40 bg-pink-500/10 text-[10px] text-pink-300">
+                                                                {selectedEvent.name}
+                                                            </Badge>
+                                                        )}
+                                                        {form.content_style.slice(0, 2).map((st) => (
+                                                            <Badge key={st} variant="outline" className="border-indigo-500/40 bg-indigo-500/10 text-[10px] text-indigo-300">
+                                                                {st}
+                                                            </Badge>
+                                                        ))}
+                                                    </div>
+                                                    <p className="text-[11px] text-slate-400 pt-2 group-hover:text-primary transition-colors flex items-center justify-center gap-1">
+                                                        Click visual to view full screen →
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Status Alert */}
+                                        <div className={`rounded-2xl border p-4 ${isSavedToDesigns ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-primary/20 bg-primary/5'}`}>
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="flex items-center gap-2.5">
+                                                    <Check className={`h-4 w-4 ${isSavedToDesigns ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary'}`} />
+                                                    <p className="text-xs font-semibold">
+                                                        {isSavedToDesigns ? 'Visual successfully saved to My Designs' : 'Visual ready — save to keep in your library'}
+                                                    </p>
+                                                </div>
+                                                {isSavedToDesigns && (
+                                                    <Button asChild size="sm" variant="ghost" className="h-7 text-xs text-emerald-600 dark:text-emerald-400">
+                                                        <Link href="/designs">Open Designs →</Link>
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Action Bar */}
+                                        <div className="space-y-3">
+                                            <div className="grid gap-2.5 sm:grid-cols-3">
+                                                <Button
+                                                    type="button"
+                                                    onClick={saveToDesigns}
+                                                    disabled={isSavingDesign}
+                                                    variant={isSavedToDesigns ? 'outline' : 'default'}
+                                                    className="font-semibold text-xs h-10 shadow-sm"
+                                                >
+                                                    {isSavingDesign ? (
+                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <Check className="mr-2 h-4 w-4" />
+                                                    )}
+                                                    {isSavedToDesigns ? 'Saved in Designs' : 'Save to Designs'}
+                                                </Button>
+
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            className="text-xs h-10 shadow-none font-semibold gap-1.5"
+                                                        >
+                                                            <Download className="h-4 w-4" />
+                                                            Download Visual
+                                                            <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="center" className="w-52 rounded-2xl p-1.5 shadow-lg border-border">
+                                                        <DropdownMenuItem
+                                                            onClick={() => downloadImage('png')}
+                                                            className="gap-2 text-xs font-medium cursor-pointer"
+                                                        >
+                                                            <Download className="h-3.5 w-3.5 text-primary" />
+                                                            PNG (High Quality)
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            onClick={() => downloadImage('jpeg')}
+                                                            className="gap-2 text-xs font-medium cursor-pointer"
+                                                        >
+                                                            <Download className="h-3.5 w-3.5 text-blue-500" />
+                                                            JPEG (Web-Optimized)
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            onClick={() => downloadImage('svg')}
+                                                            className="gap-2 text-xs font-medium cursor-pointer"
+                                                        >
+                                                            <Download className="h-3.5 w-3.5 text-emerald-500" />
+                                                            SVG (Vector Embed)
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    onClick={() => {
+                                                        const defaultName = selectedEvent ? `${selectedEvent.name} Campaign` : `${form.product_name} Campaign`;
+                                                        setCampaignFormData({
+                                                            name: defaultName,
+                                                            event_id: form.event_id || '',
+                                                            start_date: selectedEvent?.date || new Date().toISOString().split('T')[0],
+                                                            end_date: selectedEvent?.date || new Date().toISOString().split('T')[0],
+                                                        });
+                                                        setIsCampaignModalOpen(true);
+                                                    }}
+                                                    className="text-xs h-10 shadow-none font-semibold gap-1.5"
+                                                >
+                                                    <Layers className="h-4 w-4" />
+                                                    Link to Campaign
+                                                </Button>
+                                            </div>
+
+                                            {/* Sub actions */}
+                                            <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => setIsEditConfirmOpen(true)}
+                                                    className="text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                                                >
+                                                    <Edit3 className="h-3.5 w-3.5" />
+                                                    Edit Parameters
+                                                </Button>
+
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => setIsRegenerateConfirmOpen(true)}
+                                                    className="text-xs gap-1.5 text-primary hover:bg-primary/10"
+                                                >
+                                                    <RefreshCcw className="h-3.5 w-3.5" />
+                                                    Regenerate Variation
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
                     ) : (
+                        /* STEPPED DESIGN CREATION WORKFLOW */
                         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-                            {/* MAIN FORM */}
-                            <Card className="overflow-hidden rounded-2xl border-border shadow-sm">
+                            <Card className="overflow-hidden rounded-3xl border-border bg-card shadow-sm">
                                 {/* STEP HEADER */}
                                 <CardHeader className="border-b p-5 md:p-6">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                                Step{' '}
-                                                {
-                                                    currentStep
-                                                }{' '}
-                                                of 3
+                                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                                Step {currentStep} of 3
                                             </p>
-
-                                            <h2 className="mt-1 text-lg font-semibold">
-                                                {currentStep ===
-                                                    1
-                                                    ? 'Product & Campaign'
-                                                    : currentStep ===
-                                                        2
-                                                        ? 'Content Style'
-                                                        : 'Tagline & Reference'}
+                                            <h2 className="mt-1 text-lg font-bold">
+                                                {currentStep === 1
+                                                    ? 'Product & Campaign Brief'
+                                                    : currentStep === 2
+                                                      ? 'Content Style & Brand Tone'
+                                                      : 'Dimensions & Tagline'}
                                             </h2>
                                         </div>
 
-                                        {/* STEP INDICATORS */}
+                                        {/* Step indicator dots */}
                                         <div className="flex items-center gap-1.5">
-                                            {[1, 2, 3].map(
-                                                (
-                                                    step,
-                                                ) => (
-                                                    <button
-                                                        key={
-                                                            step
+                                            {[1, 2, 3].map((st) => (
+                                                <button
+                                                    key={st}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (st < currentStep || (st === 2 && stepOneValid) || (st === 3 && stepOneValid)) {
+                                                            setCurrentStep(st as Step);
                                                         }
-                                                        type="button"
-                                                        onClick={() => {
-                                                            if (
-                                                                step <
-                                                                currentStep
-                                                            ) {
-                                                                setCurrentStep(
-                                                                    step as Step,
-                                                                );
-                                                            }
-
-                                                            if (
-                                                                step ===
-                                                                2
-                                                            ) {
-                                                                if (
-                                                                    stepOneValid
-                                                                ) {
-                                                                    setCurrentStep(
-                                                                        2,
-                                                                    );
-                                                                }
-                                                            }
-
-                                                            if (
-                                                                step ===
-                                                                3
-                                                            ) {
-                                                                if (
-                                                                    stepOneValid
-                                                                ) {
-                                                                    setCurrentStep(
-                                                                        3,
-                                                                    );
-                                                                }
-                                                            }
-                                                        }}
-                                                        className={`
-                                                            h-1.5
-                                                            rounded-full
-                                                            transition-all
-
-                                                            ${step ===
-                                                                currentStep
-                                                                ? 'w-7 bg-primary'
-                                                                : step <
-                                                                    currentStep
-                                                                    ? 'w-4 bg-primary/40'
-                                                                    : 'w-4 bg-muted'
-                                                            }
-                                                        `}
-                                                        aria-label={`Step ${step}`}
-                                                    />
-                                                ),
-                                            )}
+                                                    }}
+                                                    className={`h-2 rounded-full transition-all ${
+                                                        st === currentStep ? 'w-8 bg-primary' : st < currentStep ? 'w-3 bg-primary/40' : 'w-3 bg-muted'
+                                                    }`}
+                                                    aria-label={`Step ${st}`}
+                                                />
+                                            ))}
                                         </div>
                                     </div>
                                 </CardHeader>
 
-                                {/* CONTENT */}
                                 <CardContent className="p-5 md:p-7">
-                                    {currentStep ===
-                                        1 &&
-                                        renderStepOne()}
+                                    {/* =====================================
+                                        STEP 1: PRODUCT, EVENT & PROMPT
+                                    ====================================== */}
+                                    {currentStep === 1 && (
+                                        <div className="space-y-5 animate-in fade-in duration-200">
+                                            {/* Product Name */}
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center gap-1">
+                                                    <Label htmlFor="product_name" className="text-xs font-semibold">
+                                                        Product / Service Name *
+                                                    </Label>
+                                                    <HelpTooltip text="Enter the name of the product, service, or offering to be showcased in your marketing visual." />
+                                                </div>
+                                                <Input
+                                                    id="product_name"
+                                                    value={form.product_name}
+                                                    onChange={(e) => setForm({ ...form, product_name: e.target.value })}
+                                                    placeholder="e.g. Artisanal Espresso Beans, Summer Silk Dress"
+                                                    className="h-10 text-xs"
+                                                    required
+                                                />
+                                            </div>
 
-                                    {currentStep ===
-                                        2 &&
-                                        renderStepTwo()}
+                                            {/* Event Selector Display */}
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center gap-1">
+                                                    <Label className="text-xs font-semibold">
+                                                        Selected Holiday or Marketing Event (Optional)
+                                                    </Label>
+                                                    <HelpTooltip text="Choose an official Philippine holiday or commercial sale date to tailor seasonal themes and promotions." />
+                                                </div>
+                                                {selectedEvent ? (
+                                                    <div className="flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/5 p-3.5">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                                                <CalendarDays className="h-5 w-5" />
+                                                            </div>
+                                                            <div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <p className="text-sm font-bold text-foreground">
+                                                                        {selectedEvent.name}
+                                                                    </p>
+                                                                    <Badge variant="outline" className={`text-[10px] uppercase tracking-wider ${eventTypeStyles[selectedEvent.type || 'holiday']?.bg} ${eventTypeStyles[selectedEvent.type || 'holiday']?.text} ${eventTypeStyles[selectedEvent.type || 'holiday']?.border}`}>
+                                                                        {eventTypeStyles[selectedEvent.type || 'holiday']?.label || 'Event'}
+                                                                    </Badge>
+                                                                </div>
+                                                                <p className="text-xs text-muted-foreground mt-0.5">
+                                                                    {formatEventDateLabel(selectedEvent.date)}
+                                                                </p>
+                                                            </div>
+                                                        </div>
 
-                                    {currentStep ===
-                                        3 &&
-                                        renderStepThree()}
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => setEventModalOpen(true)}
+                                                                className="h-8 text-xs shadow-none"
+                                                            >
+                                                                Change
+                                                            </Button>
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => setForm({ ...form, event_id: '' })}
+                                                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                                            >
+                                                                <X className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setEventModalOpen(true)}
+                                                        className="flex h-11 w-full items-center justify-between rounded-xl border border-dashed border-border bg-muted/20 px-4 text-xs font-medium text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-foreground transition-all"
+                                                    >
+                                                        <span className="flex items-center gap-2">
+                                                            <Calendar className="h-4 w-4 text-primary" />
+                                                            Choose a retail event, season, or holiday...
+                                                        </span>
+                                                        <span className="font-semibold text-primary">Browse Events →</span>
+                                                    </button>
+                                                )}
+                                            </div>
 
-                                    {/* FOOTER */}
+                                            {/* Automatic Visual Prompt Generator */}
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-1">
+                                                        <Label htmlFor="image_prompt" className="text-xs font-semibold">
+                                                            Visual Prompt & Scene Concept *
+                                                        </Label>
+                                                        <HelpTooltip text="Detailed creative prompt describing product staging, backdrop, festive accents, lighting, and textures." />
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => generateNewPrompt()}
+                                                        className="h-7 gap-1 text-[11px] font-semibold text-primary hover:bg-primary/10"
+                                                    >
+                                                        <Sparkles className="h-3 w-3" />
+                                                        {form.image_prompt.trim() ? 'Suggest Different Angle' : 'Generate Visual Prompt'}
+                                                    </Button>
+                                                </div>
+
+                                                <Textarea
+                                                    id="image_prompt"
+                                                    value={form.image_prompt}
+                                                    onChange={(e) => setForm({ ...form, image_prompt: e.target.value })}
+                                                    placeholder="Describe the product staging, scene lighting, composition, or festive props..."
+                                                    rows={4}
+                                                    className="resize-none text-xs leading-relaxed"
+                                                    required
+                                                />
+                                            </div>
+
+                                            {/* Price & Reference Box */}
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <div className="space-y-1.5">
+                                                    <div className="flex items-center gap-1">
+                                                        <Label htmlFor="price" className="text-xs font-semibold">
+                                                            Price (Optional)
+                                                        </Label>
+                                                        <HelpTooltip text="Optional retail price or discount tag (e.g. 499) to highlight promotional pricing on the visual." />
+                                                    </div>
+                                                    <div className="flex items-center rounded-xl border border-input bg-background focus-within:ring-2 focus-within:ring-primary/30">
+                                                        <span className="border-r border-input bg-muted/30 px-3 py-2 text-xs font-bold text-muted-foreground">
+                                                            ₱
+                                                        </span>
+                                                        <Input
+                                                            id="price"
+                                                            value={form.price}
+                                                            onChange={(e) => setForm({ ...form, price: e.target.value.replace(/\D/g, '') })}
+                                                            placeholder="999"
+                                                            className="border-0 shadow-none focus-visible:ring-0 text-xs"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-1.5">
+                                                    <div className="flex items-center gap-1">
+                                                        <Label className="text-xs font-semibold">
+                                                            Reference Product Photo (Optional)
+                                                        </Label>
+                                                        <HelpTooltip text="Upload an existing photo from your device or select an item from your catalog for visual reference." />
+                                                    </div>
+                                                    {referenceImagePreview ? (
+                                                        <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-2 px-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <img src={referenceImagePreview} alt="Ref" className="h-7 w-7 rounded-lg object-cover" />
+                                                                <span className="truncate text-xs font-medium">{selectedProduct?.name || 'Photo Ready'}</span>
+                                                            </div>
+                                                            <button type="button" onClick={handleClearReferenceImage} className="text-xs text-muted-foreground hover:text-destructive">
+                                                                <X className="h-3.5 w-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex gap-2">
+                                                            <input ref={desktopFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleDesktopFile} />
+                                                            <Button type="button" variant="outline" size="sm" onClick={() => desktopFileInputRef.current?.click()} className="flex-1 text-xs shadow-none">
+                                                                <Upload className="mr-1 h-3.5 w-3.5" /> Upload File
+                                                            </Button>
+                                                            <Button type="button" variant="outline" size="sm" onClick={() => setIsProductModalOpen(true)} className="flex-1 text-xs shadow-none">
+                                                                <Package className="mr-1 h-3.5 w-3.5" /> From Catalog
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* =====================================
+                                        STEP 2: CONTENT STYLE & BRAND TONE
+                                    ====================================== */}
+                                    {currentStep === 2 && (
+                                        <div className="space-y-6 animate-in fade-in duration-200">
+                                            {/* Dynamic Style Suggestions Toolbar */}
+                                            <div className="flex items-center justify-between rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                                                <div>
+                                                    <p className="text-xs font-semibold text-primary">
+                                                        Smart Style Tailoring
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                                        {selectedEvent ? `Curated presets tailored for ${selectedEvent.name}` : 'Recommended creative combinations'}
+                                                    </p>
+                                                </div>
+
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={applyDynamicSuggestions}
+                                                    className="gap-1.5 text-xs shadow-none font-semibold"
+                                                >
+                                                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                                                    {form.content_style.length > 0 ? 'Shuffle Suggestions' : 'Use Suggestions'}
+                                                </Button>
+                                            </div>
+
+                                            {/* Visual Theme Pills */}
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-1">
+                                                        <Label className="text-xs font-semibold">Visual Theme (Pick up to 3)</Label>
+                                                        <HelpTooltip text="Art direction and photography aesthetics (e.g. Lifestyle, Minimal, Storytelling, Editorial)." />
+                                                    </div>
+                                                    <span className="text-xs text-muted-foreground">{form.content_style.length} / 3</span>
+                                                </div>
+
+                                                <div className="flex flex-wrap gap-2">
+                                                    {contentStyleOptions.map((style) => {
+                                                        const active = form.content_style.includes(style);
+                                                        const disabled = !active && form.content_style.length >= 3;
+
+                                                        return (
+                                                            <button
+                                                                key={style}
+                                                                type="button"
+                                                                disabled={disabled}
+                                                                onClick={() => {
+                                                                    if (active) {
+                                                                        setForm({ ...form, content_style: form.content_style.filter((s) => s !== style) });
+                                                                    } else if (form.content_style.length < 3) {
+                                                                        setForm({ ...form, content_style: [...form.content_style, style] });
+                                                                    }
+                                                                }}
+                                                                className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
+                                                                    active
+                                                                        ? 'border-primary bg-primary text-primary-foreground font-semibold shadow-xs'
+                                                                        : disabled
+                                                                          ? 'opacity-40 cursor-not-allowed border-border bg-muted/20'
+                                                                          : 'border-border bg-background hover:border-primary/40 hover:bg-muted/40'
+                                                                }`}
+                                                            >
+                                                                {active && <Check className="mr-1 inline h-3 w-3" />}
+                                                                {style}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* Brand Tone Pills */}
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-1">
+                                                        <Label className="text-xs font-semibold">Brand Tone (Pick up to 3)</Label>
+                                                        <HelpTooltip text="Brand emotional vibe and atmosphere (e.g. Luxury, Warm, Bold, Modern) to guide lighting and tone." />
+                                                    </div>
+                                                    <span className="text-xs text-muted-foreground">{form.brand_tone.length} / 3</span>
+                                                </div>
+
+                                                <div className="flex flex-wrap gap-2">
+                                                    {toneOptions.map((tone) => {
+                                                        const active = form.brand_tone.includes(tone);
+                                                        const disabled = !active && form.brand_tone.length >= 3;
+
+                                                        return (
+                                                            <button
+                                                                key={tone}
+                                                                type="button"
+                                                                disabled={disabled}
+                                                                onClick={() => {
+                                                                    if (active) {
+                                                                        setForm({ ...form, brand_tone: form.brand_tone.filter((t) => t !== tone) });
+                                                                    } else if (form.brand_tone.length < 3) {
+                                                                        setForm({ ...form, brand_tone: [...form.brand_tone, tone] });
+                                                                    }
+                                                                }}
+                                                                className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
+                                                                    active
+                                                                        ? 'border-primary bg-primary text-primary-foreground font-semibold shadow-xs'
+                                                                        : disabled
+                                                                          ? 'opacity-40 cursor-not-allowed border-border bg-muted/20'
+                                                                          : 'border-border bg-background hover:border-primary/40 hover:bg-muted/40'
+                                                                }`}
+                                                            >
+                                                                {active && <Check className="mr-1 inline h-3 w-3" />}
+                                                                {tone}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* =====================================
+                                        STEP 3: DIMENSIONS & TAGLINE
+                                    ====================================== */}
+                                    {currentStep === 3 && (
+                                        <div className="space-y-6 animate-in fade-in duration-200">
+                                            {/* Aspect Ratio Selector */}
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-1">
+                                                    <Label className="text-xs font-semibold">Aspect Ratio & Canvas Dimensions</Label>
+                                                    <HelpTooltip text="Proportions tailored for Instagram feed posts (1:1), Stories/Reels (9:16), or Facebook covers (16:9)." />
+                                                </div>
+                                                <div className="grid gap-2.5 sm:grid-cols-3">
+                                                    {aspectRatioOptions.map((opt) => {
+                                                        const active = form.aspect_ratio === opt.value;
+                                                        return (
+                                                            <button
+                                                                key={opt.value}
+                                                                type="button"
+                                                                onClick={() => setForm({ ...form, aspect_ratio: opt.value })}
+                                                                className={`flex flex-col items-start justify-between rounded-2xl border p-3 text-left transition-all ${
+                                                                    active
+                                                                        ? 'border-primary bg-primary/10 shadow-xs ring-1 ring-primary/40'
+                                                                        : 'border-border bg-card hover:border-primary/40 hover:bg-muted/30'
+                                                                }`}
+                                                            >
+                                                                <div className="flex w-full items-center justify-between">
+                                                                    <span className="text-xs font-bold text-foreground">{opt.label}</span>
+                                                                    <span className="text-[10px] font-mono text-muted-foreground">{opt.badge}</span>
+                                                                </div>
+                                                                <p className="mt-1 text-[11px] text-muted-foreground">{opt.description}</p>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* Tagline Generator */}
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-1">
+                                                        <Label className="text-xs font-semibold">Marketing Tagline</Label>
+                                                        <HelpTooltip text="An optional campaign slogan or promotional catchphrase placed on or tailored for the visual." />
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={generateTagline}
+                                                        className="h-7 text-[11px] gap-1 text-primary hover:bg-primary/10"
+                                                    >
+                                                        <Sparkles className="h-3 w-3" />
+                                                        Generate Tagline
+                                                    </Button>
+                                                </div>
+
+                                                <Input
+                                                    value={form.tagline}
+                                                    onChange={(e) => setForm({ ...form, tagline: e.target.value, tagline_mode: 'manual' })}
+                                                    placeholder="e.g. Elevate Your Every Day with Pure Flavor"
+                                                    className="h-10 text-xs"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* FOOTER CONTROLS */}
                                     <div className="mt-8 flex items-center justify-between border-t border-border pt-5">
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            onClick={
-                                                previousStep
-                                            }
-                                            disabled={
-                                                currentStep ===
-                                                1
-                                            }
-                                            className="gap-2"
+                                            onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1) as Step)}
+                                            disabled={currentStep === 1}
+                                            className="gap-2 text-xs font-semibold shadow-none"
                                         >
                                             <ArrowLeft className="h-4 w-4" />
                                             Back
                                         </Button>
 
-                                        {currentStep <
-                                            3 ? (
+                                        {currentStep < 3 ? (
                                             <Button
                                                 type="button"
-                                                onClick={
-                                                    nextStep
-                                                }
-                                                disabled={
-                                                    currentStep ===
-                                                    1 &&
-                                                    !stepOneValid
-                                                }
-                                                className="group gap-2"
+                                                onClick={() => setCurrentStep((prev) => Math.min(3, prev + 1) as Step)}
+                                                disabled={currentStep === 1 && !stepOneValid}
+                                                className="gap-2 text-xs font-semibold shadow-sm"
                                             >
                                                 Continue
-                                                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                                <ArrowRight className="h-4 w-4" />
                                             </Button>
                                         ) : (
                                             <Button
                                                 type="button"
-                                                onClick={
-                                                    generateMarketingImage
-                                                }
-                                                disabled={
-                                                    !canGenerate
-                                                }
-                                                className="group gap-2"
+                                                onClick={generateMarketingImage}
+                                                disabled={!canGenerate}
+                                                className="gap-2 text-xs font-semibold shadow-sm"
                                             >
                                                 <Sparkles className="h-4 w-4" />
-                                                Generate
+                                                Generate Visual Creative
                                             </Button>
                                         )}
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            {/* SUMMARY */}
-                            {summary}
+                            {/* RIGHT COLUMN SUMMARY CARD */}
+                            <Card className="rounded-3xl border-border bg-card p-5 shadow-sm space-y-4 lg:sticky lg:top-24 lg:self-start">
+                                <CardHeader className="p-0 pb-3 border-b border-border/60">
+                                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                        <Sparkles className="h-4 w-4 text-primary" />
+                                        Brief Summary
+                                    </CardTitle>
+                                </CardHeader>
+
+                                <div className="space-y-3 text-xs">
+                                    <div className="flex justify-between gap-2">
+                                        <span className="text-muted-foreground">Product</span>
+                                        <span className="font-semibold text-right truncate max-w-[170px]">{form.product_name || '—'}</span>
+                                    </div>
+                                    <div className="flex justify-between gap-2">
+                                        <span className="text-muted-foreground">Event</span>
+                                        <span className="font-semibold text-right truncate max-w-[170px]">{selectedEvent?.name || 'None'}</span>
+                                    </div>
+                                    <div className="flex justify-between gap-2">
+                                        <span className="text-muted-foreground">Price</span>
+                                        <span className="font-semibold text-right">{form.price ? `₱${Number(form.price).toLocaleString()}` : '—'}</span>
+                                    </div>
+                                    <div className="flex justify-between gap-2">
+                                        <span className="text-muted-foreground">Themes</span>
+                                        <span className="font-semibold text-right truncate max-w-[170px]">{form.content_style.join(', ') || 'Default'}</span>
+                                    </div>
+                                    <div className="flex justify-between gap-2">
+                                        <span className="text-muted-foreground">Tones</span>
+                                        <span className="font-semibold text-right truncate max-w-[170px]">{form.brand_tone.join(', ') || 'Default'}</span>
+                                    </div>
+                                    <div className="flex justify-between gap-2">
+                                        <span className="text-muted-foreground">Dimensions</span>
+                                        <span className="font-semibold text-right">{form.aspect_ratio || '1:1 Square'}</span>
+                                    </div>
+                                </div>
+                            </Card>
                         </div>
                     )}
                 </div>
             </div>
+
+            {/* =============================================================
+                REDESIGNED & RESTRUCTURED EVENT SELECTION MODAL
+            ============================================================= */}
+
+            {/* =============================================================
+                REDESIGNED & RESTRUCTURED EVENT SELECTION MODAL (LARGER & CLEAN)
+            ============================================================= */}
+
+            <Dialog open={eventModalOpen} onOpenChange={setEventModalOpen}>
+                <DialogContent className="max-h-[90vh] overflow-hidden rounded-3xl p-0 sm:max-w-4xl border-border bg-card shadow-2xl">
+                    <DialogHeader className="border-b border-border p-6 pb-5 bg-muted/20">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                                <CalendarDays className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <DialogTitle className="text-xl font-bold text-foreground">
+                                    Select Marketing Event or Holiday
+                                </DialogTitle>
+                                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                                    Choose an event or holiday to tailor your visual concept, seasonal theme, and promotion.
+                                </DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+
+                    {/* Filter & Year Toolbar */}
+                    <div className="border-b border-border p-5 space-y-3.5 bg-muted/10">
+                        {/* Year Pills & Global Selector */}
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                            <span className="text-xs font-semibold text-muted-foreground mr-1">Year:</span>
+                            {availableYears.map((yr) => (
+                                <button
+                                    key={yr}
+                                    type="button"
+                                    onClick={() => setSelectedYearTab(yr)}
+                                    className={`rounded-xl px-3 py-1.5 text-xs font-medium transition-all ${
+                                        selectedYearTab === yr ? 'bg-primary text-primary-foreground shadow-xs font-semibold' : 'bg-card text-muted-foreground hover:text-foreground border border-border/70'
+                                    }`}
+                                >
+                                    {yr}
+                                </button>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={() => setSelectedYearTab('all')}
+                                className={`rounded-xl px-3 py-1.5 text-xs font-medium transition-all ${
+                                    selectedYearTab === 'all' ? 'bg-primary text-primary-foreground shadow-xs font-semibold' : 'bg-card text-muted-foreground hover:text-foreground border border-border/70'
+                                }`}
+                            >
+                                All Years
+                            </button>
+                        </div>
+
+                        {/* Search & Category Tabs */}
+                        <div className="flex flex-col md:flex-row items-center gap-3">
+                            <div className="relative flex-1 w-full">
+                                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    value={eventSearchQuery}
+                                    onChange={(e) => setEventSearchQuery(e.target.value)}
+                                    placeholder="Search events, holidays, sale dates, proclamations..."
+                                    className="h-10 pl-10 text-xs bg-card"
+                                />
+                            </div>
+
+                            <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
+                                {[
+                                    { id: 'all', label: 'All' },
+                                    { id: 'regular', label: 'Regular' },
+                                    { id: 'special_non_working', label: 'Non-Working' },
+                                    { id: 'special_working', label: 'Special Working' },
+                                    { id: 'islamic', label: 'Islamic' },
+                                    { id: 'long_weekend', label: 'Long Weekends' },
+                                    { id: 'commercial', label: 'Sales & Commercial' },
+                                    { id: 'custom', label: 'Custom' },
+                                ].map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        type="button"
+                                        onClick={() => setEventCategoryFilter(tab.id)}
+                                        className={`rounded-xl px-3 py-1.5 text-xs font-medium transition-all shrink-0 ${
+                                            eventCategoryFilter === tab.id
+                                                ? 'bg-primary text-primary-foreground shadow-xs font-semibold'
+                                                : 'bg-card text-muted-foreground hover:text-foreground border border-border/60'
+                                        }`}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Events List Grid */}
+                    <div className="max-h-[500px] min-h-[300px] overflow-y-auto p-5">
+                        {filteredEvents.length === 0 ? (
+                            <div className="py-16 text-center text-muted-foreground space-y-2">
+                                <CalendarDays className="mx-auto h-10 w-10 opacity-30" />
+                                <p className="text-sm font-semibold text-foreground">No events found matching your filter</p>
+                                <p className="text-xs text-muted-foreground">Try clearing search keywords or selecting "All" categories.</p>
+                            </div>
+                        ) : (
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                {filteredEvents.map((evt: EventItem) => {
+                                    const isSelected = String(evt.id) === String(form.event_id);
+                                    const styleKey = evt.category || evt.type || 'holiday';
+                                    const style = eventTypeStyles[styleKey] || eventTypeStyles.holiday;
+
+                                    return (
+                                        <button
+                                            key={evt.id}
+                                            type="button"
+                                            onClick={() => handleSelectEvent(evt)}
+                                            className={`group flex flex-col justify-between rounded-2xl border p-4 text-left transition-all ${
+                                                isSelected
+                                                    ? 'border-primary bg-primary/10 ring-2 ring-primary/40 shadow-sm'
+                                                    : 'border-border bg-card hover:border-primary/50 hover:bg-muted/30 hover:shadow-xs'
+                                            }`}
+                                        >
+                                            <div className="space-y-2">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                                                        {evt.name}
+                                                    </span>
+                                                    <Badge variant="outline" className={`text-[9px] uppercase tracking-wider shrink-0 font-medium ${style.bg} ${style.text} ${style.border}`}>
+                                                        {style.label}
+                                                    </Badge>
+                                                </div>
+
+                                                {evt.is_long_weekend && (
+                                                    <Badge variant="secondary" className="text-[10px] font-medium">
+                                                        Long Weekend
+                                                    </Badge>
+                                                )}
+                                            </div>
+
+                                            <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground pt-2.5 border-t border-border/50">
+                                                <span className="font-medium">{formatEventDateLabel(evt.date)}</span>
+                                                {isSelected ? (
+                                                    <span className="font-bold text-primary text-xs">Selected ✓</span>
+                                                ) : (
+                                                    <span className="text-[11px] font-medium group-hover:text-foreground transition-colors">Select →</span>
+                                                )}
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* =============================================================
+                PRODUCT CATALOG SELECTOR MODAL
+            ============================================================= */}
+
+            <Dialog open={isProductModalOpen} onOpenChange={setIsProductModalOpen}>
+                <DialogContent className="max-h-[85vh] overflow-hidden rounded-3xl p-0 sm:max-w-xl">
+                    <DialogHeader className="border-b p-5 pb-4 bg-muted/20">
+                        <DialogTitle className="text-lg font-bold flex items-center gap-2">
+                            <Package className="h-5 w-5 text-primary" />
+                            Select Catalog Product
+                        </DialogTitle>
+                        <DialogDescription className="text-xs">
+                            Use this product photo and pricing for your marketing design.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="border-b p-4 bg-muted/10">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                value={productSearchQuery}
+                                onChange={(e) => setProductSearchQuery(e.target.value)}
+                                placeholder="Search products..."
+                                className="h-9 pl-9 text-xs"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="max-h-[380px] min-h-[200px] overflow-y-auto p-4">
+                        {filteredProducts.length === 0 ? (
+                            <div className="py-12 text-center text-muted-foreground">
+                                <Package className="mx-auto h-8 w-8 opacity-40" />
+                                <p className="mt-2 text-xs font-medium">No products found</p>
+                            </div>
+                        ) : (
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                {filteredProducts.map((prod: ProductItem) => (
+                                    <button
+                                        key={prod.id}
+                                        type="button"
+                                        onClick={() => handleSelectProduct(prod)}
+                                        className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card text-left hover:border-primary/40 transition-all"
+                                    >
+                                        <div className="h-28 w-full bg-muted/40 flex items-center justify-center overflow-hidden border-b border-border/40">
+                                            {prod.image_url ? (
+                                                <img src={prod.image_url} alt={prod.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                            ) : (
+                                                <Package className="h-8 w-8 opacity-40" />
+                                            )}
+                                        </div>
+                                        <div className="p-3">
+                                            <p className="text-xs font-bold text-foreground truncate">{prod.name}</p>
+                                            {prod.price && <p className="text-[11px] font-bold text-emerald-500 mt-0.5">₱{Number(prod.price).toLocaleString()}</p>}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* =============================================================
+                PURE FULL SCREEN IMAGE VIEWER FOR GENERATED VISUAL
+            ============================================================= */}
+
+            {isPreviewFullViewOpen && (
+                <div
+                    className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-black/95 backdrop-blur-md animate-in fade-in duration-200 select-none overflow-hidden"
+                    onClick={() => {
+                        setIsPreviewFullViewOpen(false);
+                        setIsFullViewDetailsExpanded(false);
+                    }}
+                >
+                    {/* Top Floating Control Bar */}
+                    <div
+                        className="relative z-50 flex w-full items-center justify-between bg-gradient-to-b from-black/90 via-black/50 to-transparent px-5 py-4 sm:px-8"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center gap-3">
+                            <h2 className="max-w-[240px] sm:max-w-md truncate text-sm sm:text-base font-semibold text-white">
+                                {form.product_name || 'Marketing Visual'}
+                            </h2>
+                            <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-mono text-white">
+                                {form.aspect_ratio || '1:1'}
+                            </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button
+                                        type="button"
+                                        className="flex h-9 items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white px-3 text-xs font-semibold transition-all backdrop-blur-md"
+                                        title="Download Image"
+                                    >
+                                        <Download className="h-4 w-4" />
+                                        Download
+                                        <ChevronDown className="h-3 w-3 opacity-70" />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48 rounded-xl p-1.5 shadow-xl border-white/20 bg-black/90 text-white backdrop-blur-xl">
+                                    <DropdownMenuItem
+                                        onClick={() => downloadImage('png')}
+                                        className="gap-2 text-xs font-medium cursor-pointer text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
+                                    >
+                                        <Download className="h-3.5 w-3.5 text-primary" />
+                                        PNG (High Quality)
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => downloadImage('jpeg')}
+                                        className="gap-2 text-xs font-medium cursor-pointer text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
+                                    >
+                                        <Download className="h-3.5 w-3.5 text-blue-400" />
+                                        JPEG (Web-Optimized)
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => downloadImage('svg')}
+                                        className="gap-2 text-xs font-medium cursor-pointer text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
+                                    >
+                                        <Download className="h-3.5 w-3.5 text-emerald-400" />
+                                        SVG (Vector Embed)
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsPreviewFullViewOpen(false);
+                                    setIsFullViewDetailsExpanded(false);
+                                }}
+                                className="ml-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 hover:bg-white/30 text-white transition-all backdrop-blur-md"
+                                title="Close (Esc)"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Main Full View Canvas */}
+                    <div
+                        className="relative flex h-full w-full flex-1 items-center justify-center p-4 sm:p-8 overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div
+                            className={`flex flex-col items-center justify-center rounded-3xl border border-white/20 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-8 text-center text-white drop-shadow-2xl transition-all duration-300 ${
+                                isFullViewDetailsExpanded ? 'scale-90 -translate-y-8' : 'scale-100'
+                            } ${
+                                form.aspect_ratio === '9:16'
+                                    ? 'w-[320px] h-[570px]'
+                                    : form.aspect_ratio === '16:9'
+                                      ? 'w-[680px] h-[380px]'
+                                      : form.aspect_ratio === '4:5'
+                                        ? 'w-[400px] h-[500px]'
+                                        : 'w-[480px] h-[480px]'
+                            }`}
+                        >
+                            <Sparkles className="h-10 w-10 text-primary mb-3" />
+                            <h3 className="text-2xl font-bold">{form.product_name}</h3>
+                            {form.tagline && <p className="text-sm text-slate-300 mt-2">"{form.tagline}"</p>}
+                            {form.price && <p className="text-xl font-bold text-sky-400 mt-3">₱{Number(form.price).toLocaleString()}</p>}
+                        </div>
+                    </div>
+
+                    {/* Bottom Fade-out Section with Toggle & Expandable Details */}
+                    <div
+                        className="relative z-50 flex w-full flex-col items-center justify-end bg-gradient-to-t from-black/95 via-black/75 to-transparent pt-12 pb-5 px-4"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => setIsFullViewDetailsExpanded(!isFullViewDetailsExpanded)}
+                            className="group flex items-center gap-2 rounded-full border border-white/20 bg-black/60 px-5 py-2 text-xs font-medium text-white/90 backdrop-blur-xl shadow-2xl transition-all hover:bg-black/80 hover:border-white/40 hover:text-white active:scale-95"
+                            aria-expanded={isFullViewDetailsExpanded}
+                        >
+                            <span>{isFullViewDetailsExpanded ? 'Hide details' : 'View prompt & creative details'}</span>
+                            <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${isFullViewDetailsExpanded ? 'rotate-180 text-primary' : 'text-white/70 animate-bounce'}`} />
+                        </button>
+
+                        {isFullViewDetailsExpanded && (
+                            <div className="mt-4 w-full max-w-xl max-h-[38vh] overflow-y-auto space-y-4 rounded-2xl border border-white/15 bg-black/80 p-5 backdrop-blur-2xl shadow-2xl text-white animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                <div>
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-white/60">Creative Prompt</h4>
+                                    <p className="mt-1 text-xs leading-relaxed text-white/90">{form.image_prompt}</p>
+                                </div>
+                                <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3 border-t border-white/10">
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        onClick={saveToDesigns}
+                                        disabled={isSavedToDesigns}
+                                        className="gap-1.5 text-xs shadow-none"
+                                    >
+                                        <Check className="h-3.5 w-3.5" />
+                                        {isSavedToDesigns ? 'Saved to Library' : 'Save to Library'}
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => downloadImage()}
+                                        className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 shadow-none"
+                                    >
+                                        <Download className="h-3.5 w-3.5" />
+                                        Download Visual
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* =============================================================
+                UNSAVED NAVIGATION WARNING MODAL
+            ============================================================= */}
+
+            <Dialog open={isUnsavedExitModalOpen} onOpenChange={setIsUnsavedExitModalOpen}>
+                <DialogContent className="rounded-3xl sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold text-foreground">
+                            Leave Without Saving?
+                        </DialogTitle>
+                        <DialogDescription className="text-xs leading-relaxed">
+                            Your freshly generated visual asset is currently unsaved. If you navigate to another page now, this generated mockup will be lost.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <DialogFooter className="mt-6 flex-col sm:flex-row gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setIsUnsavedExitModalOpen(false)}
+                            className="w-full sm:w-auto"
+                        >
+                            Stay Here
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={() => {
+                                setNavigatingConfirmed(true);
+                                setIsUnsavedExitModalOpen(false);
+                                if (pendingNavigationUrl) {
+                                    router.visit(pendingNavigationUrl);
+                                }
+                            }}
+                            className="w-full sm:w-auto"
+                        >
+                            Discard & Leave
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={async () => {
+                                await saveToDesigns();
+                                setNavigatingConfirmed(true);
+                                setIsUnsavedExitModalOpen(false);
+                                if (pendingNavigationUrl) {
+                                    router.visit(pendingNavigationUrl);
+                                }
+                            }}
+                            className="w-full sm:w-auto"
+                        >
+                            Save & Leave
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* =============================================================
+                EDIT CONFIRMATION MODAL
+            ============================================================= */}
+
+            <Dialog open={isEditConfirmOpen} onOpenChange={setIsEditConfirmOpen}>
+                <DialogContent className="rounded-3xl sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold">
+                            Edit Creative Parameters?
+                        </DialogTitle>
+                        <DialogDescription className="text-xs leading-relaxed">
+                            Returning to the design brief allows you to change prompts, events, and styling. Make sure you have saved your visual if you wish to keep it.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <DialogFooter className="mt-6 gap-2">
+                        <Button type="button" variant="outline" onClick={() => setIsEditConfirmOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={() => {
+                                setIsEditConfirmOpen(false);
+                                setGenerationState('idle');
+                                setCurrentStep(1);
+                            }}
+                        >
+                            Continue Editing
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* =============================================================
+                REGENERATE CONFIRMATION MODAL
+            ============================================================= */}
+
+            <Dialog open={isRegenerateConfirmOpen} onOpenChange={setIsRegenerateConfirmOpen}>
+                <DialogContent className="rounded-3xl sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold">
+                            Regenerate Visual Creative?
+                        </DialogTitle>
+                        <DialogDescription className="text-xs leading-relaxed">
+                            This will create a brand new creative variation based on your current prompt.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <DialogFooter className="mt-6 gap-2">
+                        <Button type="button" variant="outline" onClick={() => setIsRegenerateConfirmOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={() => {
+                                setIsRegenerateConfirmOpen(false);
+                                setIsSavedToDesigns(false);
+                                setSavedDesign(null);
+                                generateMarketingImage();
+                            }}
+                        >
+                            Yes, Regenerate
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
-
-/* ==========================================================================
-   SUMMARY ITEM
-========================================================================== */
-
-function SummaryItem({
-    label,
-    value,
-}: {
-    label: string;
-    value: string;
-}) {
-    return (
-        <div className="flex items-start justify-between gap-4">
-            <span className="shrink-0 text-xs text-muted-foreground">
-                {label}
-            </span>
-
-            <span className="max-w-[190px] text-right text-xs font-medium">
-                {value}
-            </span>
-        </div>
-    );
-}
-
-/* ==========================================================================
-   LAYOUT
-========================================================================== */
-
-GeneratorPage.layout = {
-    breadcrumbs: [
-        {
-            title: 'AI Marketing Studio',
-            href: '/generator',
-        },
-    ],
-};

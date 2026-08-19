@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Models\Product;
+use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -34,6 +36,8 @@ class ProductController extends Controller
                 'name' => $product->name,
                 'description' => $product->description,
                 'price' => $product->price,
+                'image_path' => $product->image_path,
+                'image_url' => $product->image_path ? asset('storage/'.$product->image_path) : null,
                 'created_at' => $product->created_at?->format('M j, Y'),
                 'edit_url' => route('products.edit', $product),
                 'show_url' => route('products.show', $product),
@@ -59,11 +63,25 @@ class ProductController extends Controller
         $user = $request->user();
         $business = $user->business()->firstOrFail();
 
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('products/images', 'public');
+        }
+
         $product = $business->products()->create([
             'name' => $request->input('name'),
             'description' => $request->input('description'),
             'price' => $request->input('price'),
+            'image_path' => $imagePath,
         ]);
+
+        NotificationService::notify(
+            $user,
+            'product_created',
+            "Product Created: {$product->name}",
+            "New product \"{$product->name}\" was successfully added to your catalog.",
+            route('products.show', $product)
+        );
 
         return redirect()->route('products.index')->with('success', 'Product created successfully.');
     }
@@ -80,6 +98,8 @@ class ProductController extends Controller
                 'name' => $product->name,
                 'description' => $product->description,
                 'price' => $product->price,
+                'image_path' => $product->image_path,
+                'image_url' => $product->image_path ? asset('storage/'.$product->image_path) : null,
                 'business_name' => $product->business?->name,
                 'created_at' => $product->created_at?->format('M j, Y'),
                 'designs' => $product->designs->map(fn ($design) => [
@@ -102,6 +122,8 @@ class ProductController extends Controller
                 'name' => $product->name,
                 'description' => $product->description,
                 'price' => $product->price,
+                'image_path' => $product->image_path,
+                'image_url' => $product->image_path ? asset('storage/'.$product->image_path) : null,
             ],
         ]);
     }
@@ -110,11 +132,36 @@ class ProductController extends Controller
     {
         $this->authorize('update', $product);
 
+        $imagePath = $product->image_path;
+
+        if ($request->hasFile('image')) {
+            if ($product->image_path && Storage::disk('public')->exists($product->image_path)) {
+                Storage::disk('public')->delete($product->image_path);
+            }
+            $imagePath = $request->file('image')->store('products/images', 'public');
+        } elseif ($request->boolean('remove_image')) {
+            if ($product->image_path && Storage::disk('public')->exists($product->image_path)) {
+                Storage::disk('public')->delete($product->image_path);
+            }
+            $imagePath = null;
+        }
+
         $product->update([
             'name' => $request->input('name', $product->name),
             'description' => $request->input('description', $product->description),
             'price' => $request->input('price', $product->price),
+            'image_path' => $imagePath,
         ]);
+
+        if ($user = $request->user()) {
+            NotificationService::notify(
+                $user,
+                'product_updated',
+                "Product Updated: {$product->name}",
+                "Product details for \"{$product->name}\" were updated.",
+                route('products.show', $product)
+            );
+        }
 
         return redirect()->route('products.index')->with('success', 'Product updated successfully.');
     }
@@ -123,8 +170,59 @@ class ProductController extends Controller
     {
         $this->authorize('delete', $product);
 
+        $user = auth()->user();
+        $productName = $product->name;
+
+        if ($product->image_path && Storage::disk('public')->exists($product->image_path)) {
+            Storage::disk('public')->delete($product->image_path);
+        }
+
         $product->delete();
 
+        if ($user) {
+            NotificationService::notify(
+                $user,
+                'product_deleted',
+                "Product Deleted: {$productName}",
+                "Product \"{$productName}\" was removed from your catalog.",
+                route('products.index')
+            );
+        }
+
         return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
+    }
+
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $user = $request->user();
+        $business = $user->business()->firstOrFail();
+        $products = $business->products()->whereIn('id', $request->input('ids'))->get();
+        $count = $products->count();
+
+        if ($count === 0) {
+            return redirect()->route('products.index')->with('info', 'No products were selected for deletion.');
+        }
+
+        foreach ($products as $product) {
+            if ($product->image_path && Storage::disk('public')->exists($product->image_path)) {
+                Storage::disk('public')->delete($product->image_path);
+            }
+            $product->delete();
+        }
+
+        NotificationService::notify(
+            $user,
+            'product_deleted',
+            "Bulk Delete: {$count} Products",
+            "Successfully removed {$count} products from your catalog.",
+            route('products.index')
+        );
+
+        return redirect()->route('products.index')->with('success', "{$count} products deleted successfully.");
     }
 }

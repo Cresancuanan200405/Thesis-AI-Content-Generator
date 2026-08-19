@@ -2,6 +2,7 @@
 
 use App\Models\Event;
 use App\Models\User;
+use App\Services\PhilippineHolidayService;
 
 it('guest cannot access the marketing calendar', function () {
     $this->get('/calendar')
@@ -292,4 +293,48 @@ it('calendar filters events by type', function () {
     $this->actingAs($user)
         ->get('/calendar?filter=holidays')
         ->assertOk();
+});
+
+it('syncs all 5 classifications of Philippine holidays including islamic movable and long weekend metadata', function () {
+    $holidayService = app(PhilippineHolidayService::class);
+    $holidays = $holidayService->generateOfficialPhilippineHolidays(2026);
+
+    $categories = array_unique(array_column($holidays, 'category'));
+
+    expect($categories)->toContain('regular')
+        ->and($categories)->toContain('special_non_working')
+        ->and($categories)->toContain('special_working')
+        ->and($categories)->toContain('islamic')
+        ->and($categories)->toContain('commercial');
+
+    // Verify Regular Holidays
+    $regularNames = array_column(array_filter($holidays, fn ($h) => $h['category'] === 'regular'), 'name');
+    expect($regularNames)->toContain("New Year's Day (Araw ng Bagong Taon)")
+        ->and($regularNames)->toContain('Araw ng Kagitingan (Day of Valor)')
+        ->and($regularNames)->toContain('Labor Day (Araw ng Paggawa)')
+        ->and($regularNames)->toContain('Independence Day (Araw ng Kasarinlan)')
+        ->and($regularNames)->toContain('Christmas Day (Araw ng Pasko)');
+
+    // Verify Islamic movable holidays
+    $islamicNames = array_column(array_filter($holidays, fn ($h) => $h['category'] === 'islamic'), 'name');
+    expect($islamicNames)->toContain("Eid'l Fitr (Feast of Ramadhan)")
+        ->and($islamicNames)->toContain("Eid'l Adha (Feast of the Sacrifice)");
+
+    // Verify Special Non-Working
+    $snwNames = array_column(array_filter($holidays, fn ($h) => $h['category'] === 'special_non_working'), 'name');
+    expect($snwNames)->toContain("All Saints' Day (Undas)")
+        ->and($snwNames)->toContain("All Souls' Day (Additional Special Non-Working Day)")
+        ->and($snwNames)->toContain('Chinese New Year (Spring Festival)');
+
+    // Verify Special Working
+    $swNames = array_column(array_filter($holidays, fn ($h) => $h['category'] === 'special_working'), 'name');
+    expect($swNames)->toContain('EDSA People Power Revolution Anniversary');
+
+    // Verify Long Weekend Metadata
+    $longWeekends = array_filter($holidays, fn ($h) => ! empty($h['is_long_weekend']));
+    expect(count($longWeekends))->toBeGreaterThan(0);
+
+    $maundyThursday = array_values(array_filter($holidays, fn ($h) => str_contains($h['name'], 'Maundy Thursday')))[0];
+    expect($maundyThursday['is_long_weekend'])->toBeTrue()
+        ->and($maundyThursday['long_weekend_details'])->toContain('Long Weekend');
 });

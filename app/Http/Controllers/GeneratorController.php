@@ -34,8 +34,9 @@ class GeneratorController extends Controller
         /** @var Campaign|null $campaign */
         $campaign = null;
 
-        if ($request->filled('campaign')) {
-            $campaign = $user?->campaigns()->with(['product', 'event', 'business'])->whereKey($request->input('campaign'))->first();
+        $campaignId = $request->input('campaign_id') ?: $request->input('campaign');
+        if ($campaignId) {
+            $campaign = $user?->campaigns()->with(['product', 'event', 'business'])->whereKey($campaignId)->first();
         }
 
         // Sync holidays for current year and upcoming 2 years
@@ -74,10 +75,13 @@ class GeneratorController extends Controller
                 'objective' => $campaign->objective,
                 'target_audience' => $campaign->target_audience,
                 'product_id' => $campaign->product_id,
+                'product_name' => $campaign->product?->name,
                 'event_id' => $campaign->event_id,
+                'event_name' => $campaign->event?->name,
             ] : null,
-            'initial_event_id' => $request->input('event_id') ?: $request->input('event'),
-            'initial_product_name' => $request->input('product_name') ?: $request->input('product'),
+            'initial_campaign_id' => $campaign?->id ? (string) $campaign->id : ($request->input('campaign_id') ?: $request->input('campaign')),
+            'initial_event_id' => $request->input('event_id') ?: $request->input('event') ?: ($campaign?->event_id ? (string) $campaign->event_id : null),
+            'initial_product_name' => $request->input('product_name') ?: $request->input('product') ?: $campaign?->product?->name,
             'campaigns' => $campaigns->map(fn (Campaign $c): array => [
                 'id' => $c->id,
                 'name' => $c->name,
@@ -90,12 +94,18 @@ class GeneratorController extends Controller
                 'name' => $product->name,
                 'description' => $product->description,
                 'price' => $product->price,
+                'image_path' => $product->image_path,
+                'image_url' => $product->image_path ? asset('storage/'.$product->image_path) : null,
             ])->values()->all(),
             'events' => $events->map(fn (Event $event): array => [
                 'id' => $event->id,
                 'name' => $event->name,
                 'date' => $event->date->format('Y-m-d'),
                 'type' => $event->type,
+                'category' => $event->category ?? $event->type,
+                'is_long_weekend' => (bool) $event->is_long_weekend,
+                'long_weekend_details' => $event->long_weekend_details,
+                'proclamation_no' => $event->proclamation_no,
             ])->values()->all(),
         ]);
     }

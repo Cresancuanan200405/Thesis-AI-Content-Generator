@@ -8,6 +8,8 @@ import {
     FolderOpen,
     ImageIcon,
     Layers,
+    LayoutGrid,
+    List,
     Loader2,
     MoreVertical,
     Pencil,
@@ -198,6 +200,8 @@ export default function CampaignsPage({
         start_date: '',
         end_date: '',
     });
+
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
     const openEditDialog = (campaign: any) => {
         setEditingCampaign(campaign);
@@ -612,10 +616,38 @@ export default function CampaignsPage({
                             })}
                         </div>
 
-                        <p className="text-xs font-medium text-muted-foreground">
-                            Showing {sortedCampaigns.length}{' '}
-                            {sortedCampaigns.length === 1 ? 'campaign' : 'campaigns'}
-                        </p>
+                        <div className="flex items-center gap-3">
+                            <p className="text-xs font-medium text-muted-foreground">
+                                Showing {sortedCampaigns.length}{' '}
+                                {sortedCampaigns.length === 1 ? 'campaign' : 'campaigns'}
+                            </p>
+                            <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5">
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode('grid')}
+                                    className={`flex h-7 w-7 items-center justify-center rounded-md transition-all ${
+                                        viewMode === 'grid'
+                                            ? 'bg-card text-foreground shadow-sm'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                    aria-label="Grid view"
+                                >
+                                    <LayoutGrid className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode('list')}
+                                    className={`flex h-7 w-7 items-center justify-center rounded-md transition-all ${
+                                        viewMode === 'list'
+                                            ? 'bg-card text-foreground shadow-sm'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                    aria-label="List view"
+                                >
+                                    <List className="h-3.5 w-3.5" />
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     {/* =====================================================
@@ -648,7 +680,7 @@ export default function CampaignsPage({
                                 Create Campaign
                             </Button>
                         </div>
-                    ) : (
+                    ) : viewMode === 'grid' ? (
                         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                             {sortedCampaigns.map((campaign: any) => {
                                 const status = campaign.status ?? 'draft';
@@ -838,6 +870,92 @@ export default function CampaignsPage({
                                                 </div>
 
                                             </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        /* LIST VIEW */
+                        <div className="space-y-2">
+                            {sortedCampaigns.map((campaign: any) => {
+                                const status = campaign.status ?? 'draft';
+                                const eventName = campaign.event_name ?? 'No event selected';
+                                const designCount = Number(campaign.design_count || (campaign.designs?.length ?? 0));
+                                const currentIcon = statusIconColor[status] ?? statusIconColor.draft;
+
+                                return (
+                                    <div
+                                        key={campaign.id}
+                                        onClick={() => router.visit(campaign.show_url ?? `/campaigns/${campaign.id}`)}
+                                        role="button"
+                                        tabIndex={0}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                router.visit(campaign.show_url ?? `/campaigns/${campaign.id}`);
+                                            }
+                                        }}
+                                        className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-3.5 shadow-sm transition-all duration-200 cursor-pointer hover:shadow-md hover:border-primary/40"
+                                    >
+                                        {/* Status Icon */}
+                                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${currentIcon.bg} ${currentIcon.text}`}>
+                                            <Layers className="h-4 w-4" />
+                                        </div>
+
+                                        {/* Info */}
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                                                {campaign.name}
+                                            </p>
+                                            <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                                                <span className={`h-1.5 w-1.5 rounded-full ${currentIcon.dot}`} />
+                                                <span className="capitalize font-medium">{currentIcon.label}</span>
+                                                {eventName && eventName !== 'No event selected' && (
+                                                    <>
+                                                        <span className="text-muted-foreground/40">•</span>
+                                                        <span className="truncate">{eventName}</span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Date */}
+                                        <span className="shrink-0 text-xs text-muted-foreground hidden md:block">
+                                            {formatDateRange(campaign.start_date, campaign.end_date)}
+                                        </span>
+
+                                        {/* Design Count */}
+                                        <div className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground hidden sm:flex">
+                                            <ImageIcon className="h-3 w-3 text-primary/70" />
+                                            <span>{designCount}</span>
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div onClick={(e) => e.stopPropagation()}>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                                        className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none"
+                                                        aria-label="Campaign actions"
+                                                    >
+                                                        <MoreVertical className="h-4 w-4" />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-48 rounded-xl p-1.5 shadow-lg border-border">
+                                                    <DropdownMenuItem onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditDialog(campaign); }} className="gap-2 text-xs font-medium cursor-pointer">
+                                                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" /> Edit Campaign
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDownloadCampaign(campaign); }} className="gap-2 text-xs font-medium cursor-pointer">
+                                                        <Download className="h-3.5 w-3.5 text-muted-foreground" /> Download Assets
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator className="my-1 border-border/60" />
+                                                    <DropdownMenuItem onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCampaignToDelete(campaign); }} className="gap-2 text-xs font-medium text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer">
+                                                        <Trash2 className="h-3.5 w-3.5" /> Delete Campaign
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
                                     </div>
                                 );
@@ -1285,18 +1403,3 @@ export default function CampaignsPage({
         </>
     );
 }
-
-/*
-|--------------------------------------------------------------------------
-| LAYOUT
-|--------------------------------------------------------------------------
-*/
-
-CampaignsPage.layout = {
-    breadcrumbs: [
-        {
-            title: 'Campaigns',
-            href: '/campaigns',
-        },
-    ],
-};

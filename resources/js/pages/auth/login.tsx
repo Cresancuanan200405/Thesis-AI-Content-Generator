@@ -2,6 +2,7 @@ import { Form, Head } from '@inertiajs/react';
 import { ArrowRight, CheckCircle2, Mail } from 'lucide-react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
+import { SocialAuthButtons } from '@/components/social-auth-buttons';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -17,26 +18,14 @@ type Props = {
     canResetPassword: boolean;
 };
 
-/*
-|--------------------------------------------------------------------------
-| System Blue Theme
-|--------------------------------------------------------------------------
-|
-| Primary Blue  : #2563EB
-| Hover Blue    : #3B82F6
-| Dark Blue     : #1D4ED8
-| Deep Blue     : #172554
-|
-*/
-
 const fieldGlow =
-    'group relative rounded-lg transition-all duration-300 ' +
+    'group relative rounded-xl transition-all duration-300 ' +
     'focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.18)] ' +
     'hover:shadow-[0_0_0_3px_rgba(59,130,246,0.08)]';
 
 export default function Login({ status, canResetPassword }: Props) {
     return (
-        <>
+        <div className="space-y-6">
             <Head title="Welcome back" />
 
             <Form
@@ -46,14 +35,10 @@ export default function Login({ status, canResetPassword }: Props) {
             >
                 {({ processing, errors }) => (
                     <>
-                        <div className="grid gap-6">
-
-                            {/* ------------------------------------------------ */}
-                            {/* Email Address                                   */}
-                            {/* ------------------------------------------------ */}
-
+                        <div className="grid gap-5">
+                            {/* Email Address */}
                             <div className="grid gap-2">
-                                <Label htmlFor="email">
+                                <Label htmlFor="email" className="text-sm font-medium text-foreground">
                                     Email address
                                 </Label>
 
@@ -63,15 +48,14 @@ export default function Login({ status, canResetPassword }: Props) {
                                             pointer-events-none
                                             absolute
                                             top-1/2
-                                            left-3
+                                            left-3.5
                                             h-4
                                             w-4
                                             -translate-y-1/2
-                                            text-slate-400
+                                            text-muted-foreground
                                             transition-colors
                                             duration-300
                                             group-focus-within:text-[#2563EB]
-                                            dark:text-slate-500
                                         "
                                     />
 
@@ -85,13 +69,17 @@ export default function Login({ status, canResetPassword }: Props) {
                                         autoComplete="email"
                                         placeholder="email@example.com"
                                         className="
-                                            border-slate-200 bg-white text-slate-900
-                                            pl-9
-                                            transition-colors duration-300
-                                            placeholder:text-slate-400
+                                            h-11
+                                            rounded-xl
+                                            border-border
+                                            bg-background
+                                            pl-10
+                                            text-foreground
+                                            transition-colors
+                                            duration-300
+                                            placeholder:text-muted-foreground/60
                                             focus-visible:border-[#2563EB]
                                             focus-visible:ring-[#2563EB]/30
-                                            dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500
                                         "
                                     />
                                 </div>
@@ -99,36 +87,19 @@ export default function Login({ status, canResetPassword }: Props) {
                                 <InputError message={errors.email} />
                             </div>
 
-                            {/* ------------------------------------------------ */}
-                            {/* Password                                        */}
-                            {/* ------------------------------------------------ */}
-
+                            {/* Password */}
                             <div className="grid gap-2">
-                                <Label htmlFor="password">
-                                    Password
-                                </Label>
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="password" className="text-sm font-medium text-foreground">
+                                        Password
+                                    </Label>
 
-                                <div className={fieldGlow}>
-                                    <PasswordInput
-                                        id="password"
-                                        name="password"
-                                        required
-                                        tabIndex={2}
-                                        autoComplete="current-password"
-                                        placeholder="Password"
-                                    />
-                                </div>
-
-                                <InputError message={errors.password} />
-
-                                {/* Forgot Password */}
-
-                                {canResetPassword && (
-                                    <div className="flex justify-end">
+                                    {canResetPassword && (
                                         <TextLink
                                             href={request()}
                                             className="
-                                                text-sm
+                                                text-xs
+                                                font-medium
                                                 text-[#2563EB]
                                                 transition-colors
                                                 duration-300
@@ -138,30 +109,38 @@ export default function Login({ status, canResetPassword }: Props) {
                                             "
                                             tabIndex={5}
                                         >
-                                            Forgot your password?
+                                            Forgot password?
                                         </TextLink>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
+
+                                <div className={fieldGlow}>
+                                    <PasswordInput
+                                        id="password"
+                                        name="password"
+                                        required
+                                        tabIndex={2}
+                                        autoComplete="current-password"
+                                        placeholder="Enter your password"
+                                        className="h-11 rounded-xl border-border bg-background text-foreground placeholder:text-muted-foreground/60"
+                                    />
+                                </div>
+
+                                <InputError message={errors.password} />
                             </div>
 
-                            {/* ------------------------------------------------ */}
-                            {/* Remember Me                                     */}
-                            {/* ------------------------------------------------ */}
-
+                            {/* Remember Me */}
                             <label
                                 htmlFor="remember"
                                 className="
-                                    -mx-2
                                     flex
                                     cursor-pointer
                                     items-center
                                     space-x-3
                                     rounded-lg
-                                    px-2
-                                    py-1.5
+                                    py-1
                                     transition-colors
                                     duration-300
-                                    hover:bg-[#2563EB]/5
                                 "
                             >
                                 <Checkbox
@@ -169,6 +148,8 @@ export default function Login({ status, canResetPassword }: Props) {
                                     name="remember"
                                     tabIndex={3}
                                     className="
+                                        rounded-md
+                                        border-border
                                         transition-colors
                                         duration-300
                                         focus-visible:ring-[#2563EB]/40
@@ -178,31 +159,30 @@ export default function Login({ status, canResetPassword }: Props) {
                                     "
                                 />
 
-                                <Label
-                                    htmlFor="remember"
-                                    className="cursor-pointer"
-                                >
+                                <span className="cursor-pointer text-sm text-muted-foreground">
                                     Remember me
-                                </Label>
+                                </span>
                             </label>
 
-                            {/* ------------------------------------------------ */}
-                            {/* Login Button                                    */}
-                            {/* ------------------------------------------------ */}
+                            {/* Social Auth Platforms */}
+                            <SocialAuthButtons dividerText="Or continue with" />
 
+                            {/* Login Button */}
                             <Button
                                 type="submit"
                                 className="
                                     group
-                                    mt-4
+                                    mt-2
+                                    h-11
                                     w-full
-                                    rounded-full
+                                    rounded-xl
                                     bg-[#2563EB]
+                                    font-semibold
                                     text-white
                                     shadow-[0_15px_35px_-12px_rgba(37,99,235,0.6)]
                                     transition-all
                                     duration-300
-                                    hover:scale-[1.02]
+                                    hover:scale-[1.01]
                                     hover:bg-[#1D4ED8]
                                     hover:shadow-[0_20px_45px_-12px_rgba(37,99,235,0.7)]
                                     disabled:opacity-70
@@ -215,35 +195,31 @@ export default function Login({ status, canResetPassword }: Props) {
                                 {processing ? (
                                     <Spinner />
                                 ) : (
-                                    <ArrowRight
-                                        className="
-                                            h-4
-                                            w-4
-                                            -translate-x-1
-                                            opacity-0
-                                            transition-all
-                                            duration-300
-                                            group-hover:translate-x-0
-                                            group-hover:opacity-100
-                                        "
-                                    />
+                                    <>
+                                        <span>Log in</span>
+                                        <ArrowRight
+                                            className="
+                                                ml-2
+                                                h-4
+                                                w-4
+                                                transition-transform
+                                                duration-300
+                                                group-hover:translate-x-1
+                                            "
+                                        />
+                                    </>
                                 )}
-
-                                Log in
                             </Button>
                         </div>
 
-                        {/* ---------------------------------------------------- */}
-                        {/* Sign Up                                             */}
-                        {/* ---------------------------------------------------- */}
-
+                        {/* Sign Up */}
                         <div className="text-center text-sm text-muted-foreground">
                             Don't have an account?{' '}
-
                             <TextLink
                                 href={register()}
                                 tabIndex={6}
                                 className="
+                                    font-semibold
                                     text-[#2563EB]
                                     transition-colors
                                     duration-300
@@ -259,10 +235,7 @@ export default function Login({ status, canResetPassword }: Props) {
                 )}
             </Form>
 
-            {/* -------------------------------------------------------------- */}
-            {/* Status Message                                                 */}
-            {/* -------------------------------------------------------------- */}
-
+            {/* Status Message */}
             {status && (
                 <div
                     className="
@@ -271,12 +244,12 @@ export default function Login({ status, canResetPassword }: Props) {
                         items-center
                         justify-center
                         gap-2
-                        rounded-lg
+                        rounded-xl
                         border
                         border-blue-500/30
                         bg-blue-500/10
                         px-4
-                        py-2
+                        py-2.5
                         text-center
                         text-sm
                         font-medium
@@ -292,7 +265,7 @@ export default function Login({ status, canResetPassword }: Props) {
                     {status}
                 </div>
             )}
-        </>
+        </div>
     );
 }
 

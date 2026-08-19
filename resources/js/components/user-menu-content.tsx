@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { Bell, CreditCard, LogOut, Settings, User } from 'lucide-react';
 import {
     DropdownMenuGroup,
@@ -18,6 +18,10 @@ type Props = {
 
 export function UserMenuContent({ user }: Props) {
     const cleanup = useMobileNavigation();
+    const { unread_notifications_count } = usePage<{
+        unread_notifications_count?: number;
+    }>().props;
+    const unreadCount = Number(unread_notifications_count || 0);
 
     const handleLogout = () => {
         cleanup();
@@ -36,7 +40,7 @@ export function UserMenuContent({ user }: Props) {
                 <DropdownMenuItem asChild>
                     <Link
                         className="block w-full cursor-pointer"
-                        href={edit()}
+                        href="/profile"
                         prefetch
                         onClick={cleanup}
                     >
@@ -47,7 +51,7 @@ export function UserMenuContent({ user }: Props) {
                 <DropdownMenuItem asChild>
                     <Link
                         className="block w-full cursor-pointer"
-                        href={edit()}
+                        href="/settings/profile"
                         prefetch
                         onClick={cleanup}
                     >
@@ -56,14 +60,22 @@ export function UserMenuContent({ user }: Props) {
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                    <button
-                        type="button"
-                        className="flex w-full items-center"
+                    <Link
+                        className="flex w-full cursor-pointer items-center justify-between"
+                        href="/notifications"
+                        prefetch
                         onClick={cleanup}
                     >
-                        <Bell className="mr-2 h-4 w-4" />
-                        Notifications
-                    </button>
+                        <span className="flex items-center">
+                            <Bell className="mr-2 h-4 w-4" />
+                            Notifications
+                        </span>
+                        {unreadCount > 0 && (
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                        )}
+                    </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                     <button

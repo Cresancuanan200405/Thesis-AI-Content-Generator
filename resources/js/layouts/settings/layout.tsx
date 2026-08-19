@@ -31,6 +31,11 @@ const sidebarNavItems: NavItem[] = [
         href: '/settings/logo',
         icon: null,
     },
+    {
+        title: 'Notifications',
+        href: '/notifications',
+        icon: null,
+    },
 ];
 
 export default function SettingsLayout({ children }: PropsWithChildren) {

@@ -262,3 +262,18 @@ it('campaign product relationship stays scoped to the users business', function 
     expect($campaign->product->id)->toBe($product->id)
         ->and($campaign->product->business_id)->toBe($business->id);
 });
+
+it('user can bulk delete multiple products', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+    $products = Product::factory()->count(3)->create(['business_id' => $business->id]);
+
+    $idsToDelete = $products->take(2)->pluck('id')->all();
+
+    $this->actingAs($user)
+        ->post('/products/bulk-delete', ['ids' => $idsToDelete])
+        ->assertRedirect('/products');
+
+    expect(Product::whereIn('id', $idsToDelete)->count())->toBe(0)
+        ->and(Product::where('id', $products->last()->id)->exists())->toBeTrue();
+});

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\TwoFactorAuthenticationRequest;
+use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -42,8 +43,16 @@ class SecurityController extends Controller
             'password' => $request->password,
         ]);
 
+        NotificationService::notify(
+            $request->user(),
+            'security_updated',
+            'Password Changed',
+            'Your account password was successfully updated.',
+            route('security.edit')
+        );
+
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Password updated.')]);
 
-        return back();
+        return back()->with('success', 'Password updated successfully.');
     }
 }

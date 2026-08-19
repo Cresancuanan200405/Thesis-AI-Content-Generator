@@ -37,6 +37,7 @@ class StoreDesignRequest extends FormRequest
             'tagline' => ['nullable', 'string', 'max:255'],
             'tagline_mode' => ['nullable', 'string', 'max:50'],
             'include_logo' => ['nullable', 'boolean'],
+            'aspect_ratio' => ['nullable', 'string', 'in:1:1,9:16,16:9,4:5,4:3'],
             'reference_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
         ];
     }

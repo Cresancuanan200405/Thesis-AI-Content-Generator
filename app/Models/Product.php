@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string|null $description
  * @property string|null $price
+ * @property string|null $image_path
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Business|null $business
@@ -31,6 +32,7 @@ class Product extends Model
         'name',
         'description',
         'price',
+        'image_path',
     ];
 
     protected $casts = [

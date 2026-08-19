@@ -233,25 +233,26 @@ const industryIcons: Record<string, LucideIcon> = {
     Other: Layers,
 };
 
-const marketingPreferenceOptions = [
-    'Social Media',
-    'Promotions',
-    'Product Marketing',
-    'Advertisements',
-    'Seasonal Marketing',
-    'Email Campaigns',
-    'Event Marketing',
+const visualStyleOptions = [
+    'Studio Pedestal',
+    'Lifestyle & In-Situ',
+    'Editorial & Vogue',
+    'Minimalist Commercial',
+    'Cinematic Atmosphere',
+    'Modern Flat Lay',
+    '3D Clean Render',
+    'Vibrant Pop Commercial',
 ];
 
-// Purely visual — one icon per marketing preference.
-const preferenceIcons: Record<string, LucideIcon> = {
-    'Social Media': Share2,
-    Promotions: Tag,
-    'Product Marketing': Package,
-    Advertisements: Megaphone,
-    'Seasonal Marketing': Package,
-    'Email Campaigns': Mail,
-    'Event Marketing': PartyPopper,
+const visualStyleDescriptions: Record<string, string> = {
+    'Studio Pedestal': 'Clean studio lighting on a minimal pedestal backdrop',
+    'Lifestyle & In-Situ': 'Realistic everyday environment with authentic lighting',
+    'Editorial & Vogue': 'High-fashion dramatic lighting and elegant staging',
+    'Minimalist Commercial': 'Clean background focusing entirely on the product silhouette',
+    'Cinematic Atmosphere': 'Warm golden hour lighting and rich depth of field',
+    'Modern Flat Lay': 'Top-down knolled arrangement with complementary accessories',
+    '3D Clean Render': 'Hyper-crisp modern digital 3D aesthetic',
+    'Vibrant Pop Commercial': 'Bold saturated colors and high-energy commercial mood',
 };
 
 const steps = [
@@ -264,8 +265,8 @@ const steps = [
         description: 'Describe your business',
     },
     {
-        title: 'Marketing',
-        description: 'Choose your preferences',
+        title: 'Visual Aesthetics',
+        description: 'Image generation styles',
     },
     {
         title: 'Logo',
@@ -1098,7 +1099,7 @@ export default function OnboardingIndex({
 
     /*
     |--------------------------------------------------------------------------
-    | Marketing Preferences
+    | Visual Aesthetics & Style Preferences (for Image Generation)
     |--------------------------------------------------------------------------
     */
 
@@ -1110,18 +1111,17 @@ export default function OnboardingIndex({
                 </p>
 
                 <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
-                    Tell us how you want to market
+                    Visual Style & Aesthetics
                 </h1>
 
                 <p className="mt-1.5 text-sm leading-5 text-muted-foreground">
-                    Select the marketing areas you are interested in. This step is optional.
+                    Select your preferred visual art direction and photography styles for generating marketing images.
                 </p>
 
-                <div className="mt-6 grid grid-cols-2 gap-2.5">
-                    {marketingPreferenceOptions.map((option) => {
+                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {visualStyleOptions.map((option) => {
                         const selected =
                             preferencesForm.marketing_preferences.includes(option);
-                        const Icon = preferenceIcons[option] ?? Tag;
 
                         return (
                             <button
@@ -1129,37 +1129,31 @@ export default function OnboardingIndex({
                                 type="button"
                                 onClick={() => togglePreference(option)}
                                 className={cn(
-                                    'flex min-h-[52px] items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all duration-200',
+                                    'flex flex-col justify-between p-3.5 rounded-xl border text-left transition-all duration-200',
                                     'hover:border-primary/40 hover:bg-primary/5',
-                                    selected &&
-                                        'border-primary bg-primary/5 ring-2 ring-primary/10',
+                                    selected
+                                        ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                                        : 'bg-card border-border',
                                 )}
                             >
-                                <div
-                                    className={cn(
-                                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors duration-200',
-                                        selected
-                                            ? 'bg-primary text-primary-foreground'
-                                            : 'bg-muted text-muted-foreground',
-                                    )}
-                                >
-                                    <Icon className="h-4 w-4" />
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="text-sm font-semibold text-foreground">{option}</span>
+                                    <Checkbox
+                                        checked={selected}
+                                        onCheckedChange={() => togglePreference(option)}
+                                        onClick={(event) => event.stopPropagation()}
+                                    />
                                 </div>
-
-                                <span className="flex-1 text-sm font-medium">{option}</span>
-
-                                <Checkbox
-                                    checked={selected}
-                                    onCheckedChange={() => togglePreference(option)}
-                                    onClick={(event) => event.stopPropagation()}
-                                />
+                                <p className="text-xs text-muted-foreground mt-1 leading-snug">
+                                    {visualStyleDescriptions[option] || 'Creative aesthetic for visuals'}
+                                </p>
                             </button>
                         );
                     })}
                 </div>
 
                 <p className="mt-4 text-center text-xs text-muted-foreground">
-                    You can change these preferences later.
+                    You can customize or shuffle these styles at any time in the AI Marketing Studio.
                 </p>
             </div>
         </div>

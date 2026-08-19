@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Services\DesignRegenerationService;
 use App\Services\MockupImageService;
+use App\Services\NotificationService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -39,11 +40,33 @@ class DesignController extends Controller
         $productId = $request->input('product_id');
         $campaignId = $request->input('campaign_id');
         $eventId = $request->input('event_id');
+        $category = $request->input('category');
+        $period = $request->input('period', 'all');
         $sort = $request->input('sort', 'newest');
         $favorites = $request->boolean('favorites') || $request->input('favorite') === '1' || $request->input('favorite') === 'true';
 
+        if ($category) {
+            if (str_starts_with($category, 'product:')) {
+                $productId = (int) substr($category, 8);
+            } elseif (str_starts_with($category, 'campaign:')) {
+                $campaignId = (int) substr($category, 9);
+            } elseif (str_starts_with($category, 'event:')) {
+                $eventId = (int) substr($category, 6);
+            }
+        }
+
         if ($favorites) {
             $query->where('is_favorite', true);
+        }
+
+        if ($period === 'today') {
+            $query->whereDate('created_at', today());
+        } elseif ($period === 'week' || $period === '7days') {
+            $query->where('created_at', '>=', now()->subDays(7));
+        } elseif ($period === 'month') {
+            $query->where('created_at', '>=', now()->startOfMonth());
+        } elseif ($period === '30days') {
+            $query->where('created_at', '>=', now()->subDays(30));
         }
 
         if ($search !== '') {
@@ -119,9 +142,11 @@ class DesignController extends Controller
             ])->values()->all(),
             'filters' => [
                 'search' => $search,
+                'category' => (string) ($category ?? ($productId ? "product:{$productId}" : ($campaignId ? "campaign:{$campaignId}" : ($eventId ? "event:{$eventId}" : '')))),
                 'product_id' => (string) ($productId ?? ''),
                 'campaign_id' => (string) ($campaignId ?? ''),
                 'event_id' => (string) ($eventId ?? ''),
+                'period' => $period,
                 'sort' => $sort,
                 'favorites' => $favorites,
             ],
@@ -161,6 +186,11 @@ class DesignController extends Controller
         $referenceImagePath = null;
         if ($request->hasFile('reference_image')) {
             $referenceImagePath = $request->file('reference_image')->store('generation-requests', 'public');
+        } elseif ($request->filled('product_id')) {
+            $product = Product::query()->find($request->input('product_id'));
+            if ($product && $product->image_path) {
+                $referenceImagePath = $product->image_path;
+            }
         }
 
         $event = null;
@@ -170,6 +200,7 @@ class DesignController extends Controller
 
         $business = $user->business;
         $includeLogo = (bool) $request->boolean('include_logo', false);
+        $aspectRatio = (string) ($request->input('aspect_ratio') ?? '1:1');
 
         $generatedImagePath = $this->mockupImageService->generate([
             'product_name' => (string) $request->input('product_name'),
@@ -180,6 +211,7 @@ class DesignController extends Controller
             'price' => $request->input('price'),
             'include_logo' => $includeLogo,
             'business_name' => $business?->name,
+            'aspect_ratio' => $aspectRatio,
         ]);
 
         $design = $user->designs()->create([
@@ -202,9 +234,18 @@ class DesignController extends Controller
                 'model' => 'mockup-generator-v1',
                 'format' => 'svg',
                 'include_logo' => $includeLogo,
+                'aspect_ratio' => $aspectRatio,
             ],
             'status' => 'completed',
         ]);
+
+        NotificationService::notify(
+            $user,
+            'design_created',
+            "Design Created: {$design->product_name}",
+            "Marketing visual for \"{$design->product_name}\" was generated and saved to your designs.",
+            route('designs.show', $design)
+        );
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -241,6 +282,14 @@ class DesignController extends Controller
             'event_id' => $design->event_id ?: $campaign->event_id,
         ]);
 
+        NotificationService::notify(
+            $user,
+            'campaign_updated',
+            'Design Linked to Campaign',
+            "Design \"{$design->product_name}\" was attached to campaign \"{$campaign->name}\".",
+            route('campaigns.show', $campaign)
+        );
+
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
@@ -266,6 +315,16 @@ class DesignController extends Controller
         $design->update([
             'is_favorite' => ! $design->is_favorite,
         ]);
+
+        if ($user = $request->user()) {
+            NotificationService::notify(
+                $user,
+                'design_favorited',
+                $design->is_favorite ? 'Added to Favorites' : 'Removed from Favorites',
+                "Design \"{$design->product_name}\" ".($design->is_favorite ? 'was added to your favorites.' : 'was removed from your favorites.'),
+                route('designs.show', $design)
+            );
+        }
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -336,13 +395,60 @@ class DesignController extends Controller
     {
         $this->authorize('delete', $design);
 
+        $user = auth()->user();
+        $productName = $design->product_name;
+
         if ($design->generated_image_path && Storage::disk('public')->exists($design->generated_image_path)) {
             Storage::disk('public')->delete($design->generated_image_path);
         }
 
         $design->delete();
 
+        if ($user) {
+            NotificationService::notify(
+                $user,
+                'design_deleted',
+                "Design Deleted: {$productName}",
+                "Design \"{$productName}\" was deleted from your designs.",
+                route('designs.index')
+            );
+        }
+
         return redirect()->route('designs.index')->with('success', 'Design deleted successfully.');
+    }
+
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer', 'exists:designs,id'],
+        ]);
+
+        /** @var User $user */
+        $user = $request->user();
+        $designs = $user->designs()->whereIn('id', $request->input('ids'))->get();
+        $count = $designs->count();
+
+        if ($count === 0) {
+            return redirect()->route('designs.index')->with('info', 'No designs were selected for deletion.');
+        }
+
+        foreach ($designs as $design) {
+            if ($design->generated_image_path && Storage::disk('public')->exists($design->generated_image_path)) {
+                Storage::disk('public')->delete($design->generated_image_path);
+            }
+            $design->delete();
+        }
+
+        NotificationService::notify(
+            $user,
+            'design_deleted',
+            "Bulk Delete: {$count} Designs",
+            "Successfully deleted {$count} design visuals from your workspace.",
+            route('designs.index')
+        );
+
+        return redirect()->route('designs.index')->with('success', "{$count} designs deleted successfully.");
     }
 
     protected function imageUrl(Design $design): ?string

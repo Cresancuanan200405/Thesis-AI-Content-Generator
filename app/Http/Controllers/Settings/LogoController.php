@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Models\Business;
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -57,6 +58,14 @@ class LogoController extends Controller
         $path = $request->file('logo')->store('business-logos', 'public');
         $business->update(['logo_path' => $path]);
 
+        NotificationService::notify(
+            $user,
+            'logo_updated',
+            'Brand Logo Updated',
+            'Your business brand logo was uploaded and is now active for marketing designs.',
+            route('logo.edit')
+        );
+
         return to_route('logo.edit')->with('success', 'Brand logo updated successfully.');
     }
 
@@ -72,6 +81,14 @@ class LogoController extends Controller
                 Storage::disk('public')->delete($business->logo_path);
             }
             $business->update(['logo_path' => null]);
+
+            NotificationService::notify(
+                $user,
+                'logo_deleted',
+                'Brand Logo Removed',
+                'Your business brand logo was removed.',
+                route('logo.edit')
+            );
         }
 
         return to_route('logo.edit')->with('success', 'Brand logo removed successfully.');

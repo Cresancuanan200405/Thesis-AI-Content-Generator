@@ -27,4 +27,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('settings/logo', [LogoController::class, 'edit'])->name('logo.edit');
     Route::post('settings/logo', [LogoController::class, 'update'])->name('logo.update');
     Route::delete('settings/logo', [LogoController::class, 'destroy'])->name('logo.destroy');
+
+    Route::redirect('settings/notifications', '/notifications')->name('notifications.settings');
 });

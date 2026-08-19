@@ -240,3 +240,28 @@ it('failed generation does not produce a completed design record', function () {
 
     expect(Design::query()->where('user_id', $user->id)->where('status', 'completed')->exists())->toBeFalse();
 });
+
+it('user can bulk delete multiple designs', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    $designs = Design::factory()->count(3)->create([
+        'user_id' => $user->id,
+        'status' => 'completed',
+    ]);
+
+    $otherUserDesign = Design::factory()->create([
+        'status' => 'completed',
+    ]);
+
+    $idsToDelete = $designs->pluck('id')->toArray();
+
+    $this->actingAs($user)
+        ->post('/designs/bulk-delete', ['ids' => $idsToDelete])
+        ->assertRedirect('/designs');
+
+    foreach ($idsToDelete as $id) {
+        $this->assertSoftDeleted('designs', ['id' => $id]);
+    }
+
+    expect(Design::query()->where('id', $otherUserDesign->id)->exists())->toBeTrue();
+});

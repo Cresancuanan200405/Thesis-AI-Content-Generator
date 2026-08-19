@@ -1,14 +1,24 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowRight,
-    CalendarClock,
-    ChevronRight,
+    ArrowUpRight,
+    Calendar,
+    CalendarDays,
+    ChevronDown,
+    Download,
+    Eye,
+    Heart,
     ImageIcon,
-    LayoutDashboard,
+    Layers,
+    Package,
+    Plus,
     Sparkles,
-    Target,
+    Tag,
     TrendingUp,
+    X,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,184 +28,150 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 
-const blueGlow =
-    'transition-all duration-300 ease-out hover:-translate-y-1 hover:border-[#2563EB]/30 hover:shadow-[0_20px_50px_-20px_rgba(37,99,235,0.25)] dark:hover:border-[#3B82F6]/30 dark:hover:shadow-[0_20px_50px_-20px_rgba(37,99,235,0.22)]';
-
-const softCard =
-    'border-border/70 bg-card/80 backdrop-blur-xl';
-
-export default function Dashboard() {
-    const {
-        auth,
-        campaigns = [],
-        upcoming_events = [],
-        recent_designs = [],
-    } = usePage().props as any;
-
+export default function Dashboard({
+    auth,
+    campaigns = [],
+    upcoming_events = [],
+    recent_designs = [],
+    stats = {},
+    monthly_activity = [],
+    business = {},
+}: any) {
+    const user = auth?.user;
     const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
-    const greeting =
-        hour < 12
-            ? 'Good morning'
-            : hour < 18
-              ? 'Good afternoon'
-              : 'Good evening';
+    // Full-screen image viewer state for recent designs
+    const [previewDesign, setPreviewDesign] = useState<any>(null);
+    const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
+    const [hoveredMonthIndex, setHoveredMonthIndex] = useState<number | null>(null);
 
-    const totalCampaigns = campaigns.length ?? 0;
+    const totalDesigns = stats.total_designs ?? recent_designs.length ?? 0;
+    const activeCampaigns = stats.active_campaigns ?? campaigns.filter((c: any) => c.status === 'active').length ?? 0;
+    const totalProducts = stats.total_products ?? 0;
+    const upcomingEventsCount = stats.upcoming_events ?? upcoming_events.length ?? 0;
 
-    const activeCampaigns = campaigns.filter(
-        (campaign: any) => campaign.status === 'active',
-    ).length;
-
-    const upcomingEvents = upcoming_events.length ?? 0;
-
-    const generatedDesigns = campaigns.reduce(
-        (total: number, campaign: any) =>
-            total + Number(campaign.design_count || 0),
-        0,
-    );
-
-    const summaryCards = [
+    const summaryMetrics = [
         {
-            label: 'Total Campaigns',
-            value: String(totalCampaigns),
-            description: 'Campaigns in your workspace',
-            icon: Target,
+            label: 'AI Visuals Generated',
+            value: totalDesigns,
+            trend: '+14% output',
+            icon: ImageIcon,
+            color: 'text-blue-500',
+            bgColor: 'bg-blue-500/10',
+            href: '/designs',
         },
         {
             label: 'Active Campaigns',
-            value: String(activeCampaigns),
-            description: 'Currently driving work',
-            icon: TrendingUp,
+            value: activeCampaigns,
+            trend: 'Live & Scheduled',
+            icon: Layers,
+            color: 'text-emerald-500',
+            bgColor: 'bg-emerald-500/10',
+            href: '/campaigns',
         },
         {
-            label: 'Upcoming Events',
-            value: String(upcomingEvents),
-            description: 'Marketing opportunities',
-            icon: CalendarClock,
+            label: 'Upcoming Key Dates',
+            value: upcomingEventsCount,
+            trend: 'Next 30 Days',
+            icon: CalendarDays,
+            color: 'text-amber-500',
+            bgColor: 'bg-amber-500/10',
+            href: '/calendar',
         },
         {
-            label: 'Generated Designs',
-            value: String(generatedDesigns),
-            description: 'Creative output',
-            icon: Sparkles,
+            label: 'Catalog Products',
+            value: totalProducts,
+            trend: 'Marketing Ready',
+            icon: Package,
+            color: 'text-purple-500',
+            bgColor: 'bg-purple-500/10',
+            href: '/products',
         },
     ];
+
+    // Chart calculations
+    const chartData = monthly_activity.length > 0
+        ? monthly_activity
+        : [
+            { month: 'Mar', designs: 4, campaigns: 1 },
+            { month: 'Apr', designs: 8, campaigns: 2 },
+            { month: 'May', designs: 14, campaigns: 3 },
+            { month: 'Jun', designs: 19, campaigns: 4 },
+            { month: 'Jul', designs: 26, campaigns: 5 },
+            { month: 'Aug', designs: totalDesigns || 12, campaigns: activeCampaigns || 2 },
+        ];
+
+    const maxChartValue = Math.max(...chartData.map((d: any) => Math.max(d.designs, d.campaigns, 5))) + 2;
+
+    const handleDownload = (design: any) => {
+        if (!design.image_url) {
+            toast.info('No image available to download.');
+            return;
+        }
+
+        const link = document.createElement('a');
+        link.href = design.image_url;
+        link.download = `${design.product_name || 'design'}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Downloading visual!');
+    };
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && previewDesign) {
+                setPreviewDesign(null);
+                setIsDetailsExpanded(false);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [previewDesign]);
 
     return (
         <>
             <Head title="Dashboard" />
 
-            <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
-                {/* =========================================================
-                    AMBIENT BACKGROUND
-                ========================================================== */}
-
-                <div
-                    aria-hidden
-                    className="
-                        pointer-events-none
-                        absolute
-                        inset-x-0
-                        top-0
-                        -z-10
-                        h-[520px]
-                        bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.10),transparent_62%)]
-                        dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.12),transparent_62%)]
-                    "
-                />
-
-                <div
-                    aria-hidden
-                    className="
-                        pointer-events-none
-                        absolute
-                        top-40
-                        right-[-160px]
-                        -z-10
-                        h-[320px]
-                        w-[320px]
-                        rounded-full
-                        bg-[#2563EB]/5
-                        blur-3xl
-                        dark:bg-[#3B82F6]/5
-                    "
-                />
-
-                <div className="space-y-8 p-4 md:p-6 lg:p-8">
+            <div className="min-h-screen bg-background text-foreground pb-20">
+                <div className="space-y-6 p-4 md:p-6 lg:p-8">
 
                     {/* =====================================================
-                        HEADER
+                        WELCOME & QUICK ACTION HERO
                     ====================================================== */}
 
-                    <section className="relative overflow-hidden rounded-3xl border border-border/70 bg-card/75 p-6 shadow-[0_15px_50px_-30px_rgba(0,0,0,0.25)] backdrop-blur-xl md:p-8">
-
-                        {/* Header glow */}
-
-                        <div
-                            aria-hidden
-                            className="
-                                pointer-events-none
-                                absolute
-                                -right-24
-                                -top-24
-                                h-56
-                                w-56
-                                rounded-full
-                                bg-[#2563EB]/10
-                                blur-3xl
-                                dark:bg-[#3B82F6]/10
-                            "
-                        />
-
-                        <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-
-                            <div className="max-w-2xl">
-
-                                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#2563EB]/20 bg-[#2563EB]/5 px-3 py-1.5 text-xs font-medium text-[#2563EB] dark:border-[#3B82F6]/20 dark:bg-[#3B82F6]/10 dark:text-[#60A5FA]">
-                                    <LayoutDashboard className="h-3.5 w-3.5" />
-                                    Marketing workspace
+                    <section className="relative overflow-hidden rounded-3xl border border-border/80 bg-card p-6 md:p-8 shadow-sm">
+                        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+                            <div className="space-y-1.5">
+                                <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                                    <Sparkles className="h-3.5 w-3.5" />
+                                    {business?.name || 'AI Marketing Studio'}
                                 </div>
 
-                                <p className="text-sm font-medium text-muted-foreground">
-                                    {greeting},{' '}
-                                    {auth.user?.name || 'there'}
-                                </p>
-
-                                <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
-                                    Your campaign command center.
+                                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+                                    {greeting}, {user?.name?.split(' ')[0] || 'Marketer'}!
                                 </h1>
 
-                                <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground md:text-base">
-                                    Manage campaigns, discover upcoming
-                                    opportunities, and keep your creative work
-                                    moving from one place.
+                                <p className="text-sm text-muted-foreground max-w-xl leading-relaxed">
+                                    Here is your campaign pulse and automated marketing pipeline for today.
                                 </p>
                             </div>
 
-                            <div className="relative shrink-0">
-                                <Button
-                                    asChild
-                                    size="lg"
-                                    className="
-                                        group
-                                        w-full
-                                        rounded-full
-                                        bg-[#2563EB]
-                                        text-white
-                                        shadow-[0_15px_35px_-12px_rgba(37,99,235,0.55)]
-                                        transition-all
-                                        duration-300
-                                        hover:scale-[1.02]
-                                        hover:bg-[#3B82F6]
-                                        hover:shadow-[0_20px_45px_-12px_rgba(37,99,235,0.65)]
-                                        md:w-auto
-                                    "
-                                >
-                                    <Link href="/generator">
-                                        Create New Design
+                            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                                <Button asChild variant="outline" className="shadow-none gap-1.5 text-xs font-semibold">
+                                    <Link href="/campaigns/create">
+                                        <Plus className="h-4 w-4" />
+                                        New Campaign
+                                    </Link>
+                                </Button>
 
-                                        <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                                <Button asChild className="gap-2 shadow-sm text-xs font-semibold">
+                                    <Link href="/generator">
+                                        <Sparkles className="h-4 w-4" />
+                                        Generate AI Design
+                                        <ArrowRight className="h-4 w-4" />
                                     </Link>
                                 </Button>
                             </div>
@@ -203,690 +179,401 @@ export default function Dashboard() {
                     </section>
 
                     {/* =====================================================
-                        SUMMARY METRICS
+                        4 KEY METRIC CARDS
                     ====================================================== */}
 
-                    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-
-                        {summaryCards.map((card, index) => {
-                            const Icon = card.icon;
+                    <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        {summaryMetrics.map((metric) => {
+                            const IconComponent = metric.icon;
 
                             return (
-                                <Card
-                                    key={card.label}
-                                    className={`
-                                        group
-                                        relative
-                                        overflow-hidden
-                                        rounded-2xl
-                                        ${softCard}
-                                        ${blueGlow}
-                                        shadow-[0_8px_30px_-20px_rgba(0,0,0,0.35)]
-                                    `}
+                                <Link
+                                    key={metric.label}
+                                    href={metric.href}
+                                    className="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md cursor-pointer block"
                                 >
-                                    {/* Blue ambient glow */}
-
-                                    <div
-                                        aria-hidden
-                                        className="
-                                            pointer-events-none
-                                            absolute
-                                            -right-8
-                                            -top-8
-                                            h-24
-                                            w-24
-                                            rounded-full
-                                            bg-[#2563EB]/5
-                                            blur-2xl
-                                            transition-opacity
-                                            duration-300
-                                            group-hover:opacity-100
-                                            dark:bg-[#3B82F6]/8
-                                        "
-                                    />
-
-                                    <CardHeader className="relative pb-2">
-
-                                        <div className="flex items-center justify-between">
-
-                                            <div className="
-                                                flex
-                                                h-10
-                                                w-10
-                                                items-center
-                                                justify-center
-                                                rounded-xl
-                                                border
-                                                border-[#2563EB]/15
-                                                bg-[#2563EB]/5
-                                                text-[#2563EB]
-                                                transition-transform
-                                                duration-300
-                                                group-hover:scale-110
-                                                dark:border-[#3B82F6]/20
-                                                dark:bg-[#3B82F6]/10
-                                                dark:text-[#60A5FA]
-                                            ">
-                                                <Icon className="h-5 w-5" />
-                                            </div>
-
-                                            <span className="text-xs font-medium text-muted-foreground">
-                                                0{index + 1}
-                                            </span>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-medium text-muted-foreground">
+                                            {metric.label}
+                                        </span>
+                                        <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${metric.bgColor} ${metric.color}`}>
+                                            <IconComponent className="h-4 w-4" />
                                         </div>
+                                    </div>
 
-                                        <p className="pt-2 text-sm font-medium text-muted-foreground">
-                                            {card.label}
-                                        </p>
-                                    </CardHeader>
+                                    <div className="mt-3 flex items-baseline gap-2">
+                                        <span className="text-3xl font-bold tracking-tight text-foreground">
+                                            {metric.value}
+                                        </span>
+                                    </div>
 
-                                    <CardContent className="relative">
-
-                                        <div className="text-3xl font-semibold tracking-tight">
-                                            {card.value}
-                                        </div>
-
-                                        <p className="mt-2 text-xs text-muted-foreground">
-                                            {card.description}
-                                        </p>
-
-                                        <div className="mt-4 h-px bg-border/70" />
-
-                                        <div className="mt-3 flex items-center gap-1 text-xs font-medium text-[#2563EB] dark:text-[#60A5FA]">
-                                            View activity
-
-                                            <ChevronRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                    <div className="mt-2 flex items-center justify-between border-t border-border/50 pt-2 text-[11px] text-muted-foreground">
+                                        <span>{metric.trend}</span>
+                                        <span className="font-semibold text-primary group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                                            View <ArrowRight className="h-3 w-3" />
+                                        </span>
+                                    </div>
+                                </Link>
                             );
                         })}
                     </section>
 
                     {/* =====================================================
-                        MAIN CONTENT
+                        MARKETING ACTIVITY & GENERATION PERFORMANCE CHART
                     ====================================================== */}
 
-                    <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+                    <Card className="rounded-2xl border-border bg-card shadow-sm p-6">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-border/60 pb-4">
+                            <div>
+                                <h2 className="text-base font-bold tracking-tight text-foreground flex items-center gap-2">
+                                    <TrendingUp className="h-4 w-4 text-primary" />
+                                    Creative Output & Campaign Activity
+                                </h2>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    Monthly volume of AI designs generated vs marketing campaigns launched.
+                                </p>
+                            </div>
 
-                        {/* =================================================
-                            UPCOMING EVENTS
-                        ================================================== */}
-
-                        <Card
-                            className={`
-                                rounded-2xl
-                                ${softCard}
-                                shadow-[0_8px_30px_-20px_rgba(0,0,0,0.35)]
-                            `}
-                        >
-                            <CardHeader className="border-b border-border/70 pb-5">
-
-                                <div className="flex items-start justify-between gap-4">
-
-                                    <div>
-
-                                        <div className="flex items-center gap-3">
-
-                                            <div className="
-                                                flex
-                                                h-10
-                                                w-10
-                                                items-center
-                                                justify-center
-                                                rounded-xl
-                                                border
-                                                border-[#2563EB]/15
-                                                bg-[#2563EB]/5
-                                                text-[#2563EB]
-                                                dark:border-[#3B82F6]/20
-                                                dark:bg-[#3B82F6]/10
-                                                dark:text-[#60A5FA]
-                                            ">
-                                                <CalendarClock className="h-5 w-5" />
-                                            </div>
-
-                                            <div>
-                                                <CardTitle className="text-lg">
-                                                    Upcoming Opportunities
-                                                </CardTitle>
-
-                                                <p className="mt-1 text-sm text-muted-foreground">
-                                                    Events you can turn into
-                                                    marketing content.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {upcoming_events.length > 0 && (
-                                        <Badge
-                                            variant="secondary"
-                                            className="shrink-0"
-                                        >
-                                            {upcoming_events.length} upcoming
-                                        </Badge>
-                                    )}
+                            <div className="flex items-center gap-4 text-xs font-medium">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="h-2.5 w-2.5 rounded-full bg-primary" />
+                                    <span className="text-muted-foreground">AI Designs</span>
                                 </div>
-                            </CardHeader>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                                    <span className="text-muted-foreground">Campaigns</span>
+                                </div>
+                            </div>
+                        </div>
 
-                            <CardContent className="pt-5">
+                        {/* Interactive Bar/Trend Chart Canvas */}
+                        <div className="pt-6">
+                            <div className="grid grid-cols-6 gap-2 sm:gap-6 h-48 items-end px-2">
+                                {chartData.map((item: any, idx: number) => {
+                                    const designsHeightPercent = Math.max(12, Math.round((item.designs / maxChartValue) * 100));
+                                    const campaignsHeightPercent = Math.max(8, Math.round((item.campaigns / maxChartValue) * 100));
+                                    const isHovered = hoveredMonthIndex === idx;
 
-                                {upcoming_events.length === 0 ? (
-                                    <div
-                                        className="
-                                            rounded-2xl
-                                            border
-                                            border-dashed
-                                            border-border
-                                            bg-muted/30
-                                            px-6
-                                            py-12
-                                            text-center
-                                        "
-                                    >
-                                        <div className="
-                                            mx-auto
-                                            flex
-                                            h-12
-                                            w-12
-                                            items-center
-                                            justify-center
-                                            rounded-full
-                                            bg-muted
-                                            text-muted-foreground
-                                        ">
-                                            <CalendarClock className="h-6 w-6" />
-                                        </div>
-
-                                        <p className="mt-4 text-sm font-semibold">
-                                            No upcoming events
-                                        </p>
-
-                                        <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-muted-foreground">
-                                            New marketing opportunities will
-                                            appear here when they become
-                                            available.
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
-
-                                        {upcoming_events.map(
-                                            (event: any) => (
-                                                <div
-                                                    key={event.name}
-                                                    className="
-                                                        group
-                                                        rounded-2xl
-                                                        border
-                                                        border-border/70
-                                                        bg-background/70
-                                                        p-4
-                                                        transition-all
-                                                        duration-300
-                                                        hover:-translate-y-0.5
-                                                        hover:border-[#2563EB]/25
-                                                        hover:bg-muted/30
-                                                        hover:shadow-[0_12px_30px_-20px_rgba(37,99,235,0.35)]
-                                                    "
-                                                >
-                                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-
-                                                        <div className="min-w-0">
-
-                                                            <div className="flex items-center gap-2">
-
-                                                                <span className="
-                                                                    h-2
-                                                                    w-2
-                                                                    shrink-0
-                                                                    rounded-full
-                                                                    bg-[#2563EB]
-                                                                    shadow-[0_0_10px_rgba(37,99,235,0.5)]
-                                                                    dark:bg-[#3B82F6]
-                                                                " />
-
-                                                                <p className="truncate font-medium">
-                                                                    {event.name}
-                                                                </p>
-                                                            </div>
-
-                                                            <p className="mt-1 pl-4 text-sm text-muted-foreground">
-                                                                {event.date}
-                                                            </p>
-
-                                                            <div className="mt-2 flex flex-wrap items-center gap-2 pl-4 text-xs text-muted-foreground">
-
-                                                                <span>
-                                                                    {event.category}
-                                                                </span>
-
-                                                                <span>
-                                                                    •
-                                                                </span>
-
-                                                                <span>
-                                                                    {event.days}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            asChild
-                                                            className="
-                                                                shrink-0
-                                                                rounded-full
-                                                                border-border
-                                                                shadow-none
-                                                                transition-all
-                                                                duration-300
-                                                                hover:border-[#2563EB]/40
-                                                                hover:bg-[#2563EB]/5
-                                                                hover:text-[#2563EB]
-                                                                dark:hover:bg-[#3B82F6]/10
-                                                                dark:hover:text-[#60A5FA]
-                                                            "
-                                                        >
-                                                            <Link href="/generator">
-                                                                Create Image
-                                                                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                                                            </Link>
-                                                        </Button>
-                                                    </div>
+                                    return (
+                                        <div
+                                            key={item.month}
+                                            className="group flex flex-col items-center h-full justify-end relative cursor-pointer"
+                                            onMouseEnter={() => setHoveredMonthIndex(idx)}
+                                            onMouseLeave={() => setHoveredMonthIndex(null)}
+                                        >
+                                            {/* Tooltip Hover Bubble */}
+                                            {isHovered && (
+                                                <div className="absolute -top-12 z-20 rounded-xl border border-border bg-popover px-3 py-1.5 text-[11px] font-semibold text-popover-foreground shadow-xl animate-in fade-in zoom-in-95 duration-150 whitespace-nowrap">
+                                                    <span className="text-primary font-bold">{item.designs} designs</span>
+                                                    {' • '}
+                                                    <span className="text-emerald-500 font-bold">{item.campaigns} campaigns</span>
                                                 </div>
-                                            ),
-                                        )}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                                            )}
 
-                        {/* =================================================
-                            RECENT DESIGNS
-                        ================================================== */}
+                                            {/* Bars Container */}
+                                            <div className="flex items-end gap-1.5 w-full max-w-[48px] justify-center h-36">
+                                                {/* Designs Bar */}
+                                                <div
+                                                    style={{ height: `${designsHeightPercent}%` }}
+                                                    className="w-1/2 rounded-t-lg bg-primary/80 group-hover:bg-primary transition-all duration-300 shadow-sm"
+                                                />
+                                                {/* Campaigns Bar */}
+                                                <div
+                                                    style={{ height: `${campaignsHeightPercent}%` }}
+                                                    className="w-1/2 rounded-t-lg bg-emerald-500/80 group-hover:bg-emerald-500 transition-all duration-300 shadow-sm"
+                                                />
+                                            </div>
 
-                        <Card
-                            className={`
-                                rounded-2xl
-                                ${softCard}
-                                shadow-[0_8px_30px_-20px_rgba(0,0,0,0.35)]
-                            `}
-                        >
-                            <CardHeader className="border-b border-border/70 pb-5">
-
-                                <div className="flex items-start gap-3">
-
-                                    <div className="
-                                        flex
-                                        h-10
-                                        w-10
-                                        shrink-0
-                                        items-center
-                                        justify-center
-                                        rounded-xl
-                                        border
-                                        border-[#2563EB]/15
-                                        bg-[#2563EB]/5
-                                        text-[#2563EB]
-                                        dark:border-[#3B82F6]/20
-                                        dark:bg-[#3B82F6]/10
-                                        dark:text-[#60A5FA]
-                                    ">
-                                        <Sparkles className="h-5 w-5" />
-                                    </div>
-
-                                    <div>
-                                        <CardTitle className="text-lg">
-                                            Recent Designs
-                                        </CardTitle>
-
-                                        <p className="mt-1 text-sm text-muted-foreground">
-                                            Your latest generated marketing
-                                            creatives.
-                                        </p>
-                                    </div>
-                                </div>
-                            </CardHeader>
-
-                            <CardContent className="pt-5">
-
-                                {recent_designs.length === 0 ? (
-                                    <div
-                                        className="
-                                            rounded-2xl
-                                            border
-                                            border-dashed
-                                            border-border
-                                            bg-muted/30
-                                            px-6
-                                            py-12
-                                            text-center
-                                        "
-                                    >
-                                        <div className="
-                                            mx-auto
-                                            flex
-                                            h-12
-                                            w-12
-                                            items-center
-                                            justify-center
-                                            rounded-full
-                                            bg-muted
-                                            text-muted-foreground
-                                        ">
-                                            <ImageIcon className="h-6 w-6" />
+                                            {/* Month Label */}
+                                            <span className="mt-2 text-xs font-medium text-muted-foreground group-hover:text-foreground group-hover:font-semibold transition-colors">
+                                                {item.month}
+                                            </span>
                                         </div>
-
-                                        <p className="mt-4 text-sm font-semibold">
-                                            No designs yet
-                                        </p>
-
-                                        <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-muted-foreground">
-                                            Your generated marketing designs
-                                            will appear here.
-                                        </p>
-
-                                        <Button
-                                            asChild
-                                            size="sm"
-                                            className="
-                                                mt-5
-                                                rounded-full
-                                                bg-[#2563EB]
-                                                text-white
-                                                shadow-[0_10px_25px_-10px_rgba(37,99,235,0.55)]
-                                                hover:bg-[#3B82F6]
-                                            "
-                                        >
-                                            <Link href="/generator">
-                                                Create your first design
-                                                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                                            </Link>
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
-
-                                        {recent_designs.map(
-                                            (design: any) => (
-                                                <Link
-                                                    key={design.id}
-                                                    href={
-                                                        design.url ||
-                                                        `/designs/${design.id}`
-                                                    }
-                                                    className="group block"
-                                                >
-                                                    <div
-                                                        className="
-                                                            flex
-                                                            items-center
-                                                            gap-3
-                                                            rounded-2xl
-                                                            border
-                                                            border-border/70
-                                                            bg-background/70
-                                                            p-3
-                                                            transition-all
-                                                            duration-300
-                                                            group-hover:-translate-y-0.5
-                                                            group-hover:border-[#2563EB]/25
-                                                            group-hover:bg-muted/30
-                                                            group-hover:shadow-[0_12px_30px_-20px_rgba(37,99,235,0.35)]
-                                                        "
-                                                    >
-
-                                                        {/* Thumbnail */}
-
-                                                        <div
-                                                            className="
-                                                                flex
-                                                                h-16
-                                                                w-16
-                                                                shrink-0
-                                                                items-center
-                                                                justify-center
-                                                                overflow-hidden
-                                                                rounded-xl
-                                                                border
-                                                                border-border
-                                                                bg-muted
-                                                                text-muted-foreground
-                                                            "
-                                                        >
-                                                            {design.image_url ? (
-                                                                <img
-                                                                    src={
-                                                                        design.image_url
-                                                                    }
-                                                                    alt={
-                                                                        design.product_name ||
-                                                                        'Design'
-                                                                    }
-                                                                    className="
-                                                                        h-full
-                                                                        w-full
-                                                                        object-cover
-                                                                        transition-transform
-                                                                        duration-500
-                                                                        group-hover:scale-105
-                                                                    "
-                                                                />
-                                                            ) : (
-                                                                <ImageIcon className="h-6 w-6" />
-                                                            )}
-                                                        </div>
-
-                                                        {/* Design details */}
-
-                                                        <div className="min-w-0 flex-1">
-
-                                                            <div className="flex items-center justify-between gap-2">
-
-                                                                <p className="truncate text-sm font-semibold">
-                                                                    {design.product_name ||
-                                                                        'Untitled design'}
-                                                                </p>
-
-                                                                {design.status && (
-                                                                    <Badge
-                                                                        variant="outline"
-                                                                        className="
-                                                                            shrink-0
-                                                                            rounded-full
-                                                                            text-[10px]
-                                                                            font-medium
-                                                                        "
-                                                                    >
-                                                                        {
-                                                                            design.status
-                                                                        }
-                                                                    </Badge>
-                                                                )}
-                                                            </div>
-
-                                                            <p className="mt-1 truncate text-sm text-muted-foreground">
-                                                                {design.campaign_name ||
-                                                                    design.event_name ||
-                                                                    'General creative'}
-                                                            </p>
-
-                                                            <p className="mt-1 text-xs text-muted-foreground">
-                                                                {design.created_at ||
-                                                                    'Recently created'}
-                                                            </p>
-                                                        </div>
-
-                                                        <div className="
-                                                            hidden
-                                                            h-8
-                                                            w-8
-                                                            shrink-0
-                                                            items-center
-                                                            justify-center
-                                                            rounded-full
-                                                            bg-muted
-                                                            text-muted-foreground
-                                                            transition-all
-                                                            duration-300
-                                                            group-hover:bg-[#2563EB]/10
-                                                            group-hover:text-[#2563EB]
-                                                            sm:flex
-                                                            dark:group-hover:bg-[#3B82F6]/10
-                                                            dark:group-hover:text-[#60A5FA]
-                                                        ">
-                                                            <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
-                                                        </div>
-                                                    </div>
-                                                </Link>
-                                            ),
-                                        )}
-                                    </div>
-                                )}
-
-                                {recent_designs.length > 0 && (
-                                    <div className="mt-5">
-                                        <Button
-                                            asChild
-                                            variant="outline"
-                                            className="
-                                                w-full
-                                                rounded-full
-                                                border-border
-                                                shadow-none
-                                                transition-all
-                                                duration-300
-                                                hover:border-[#2563EB]/30
-                                                hover:bg-[#2563EB]/5
-                                                hover:text-[#2563EB]
-                                                dark:hover:bg-[#3B82F6]/10
-                                                dark:hover:text-[#60A5FA]
-                                            "
-                                        >
-                                            <Link href="/designs">
-                                                View All Designs
-                                                <ArrowRight className="ml-2 h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </section>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </Card>
 
                     {/* =====================================================
-                        BOTTOM QUICK ACTION
+                        CORE PANELS: RECENT DESIGNS & UPCOMING DATES
                     ====================================================== */}
 
-                    <section>
-                        <div
-                            className="
-                                group
-                                relative
-                                overflow-hidden
-                                rounded-3xl
-                                border
-                                border-[#2563EB]/15
-                                bg-[#2563EB]/5
-                                p-6
-                                transition-all
-                                duration-300
-                                hover:border-[#2563EB]/25
-                                hover:shadow-[0_20px_50px_-25px_rgba(37,99,235,0.35)]
-                                dark:border-[#3B82F6]/20
-                                dark:bg-[#3B82F6]/5
-                            "
-                        >
-                            <div
-                                aria-hidden
-                                className="
-                                    pointer-events-none
-                                    absolute
-                                    -right-20
-                                    -top-24
-                                    h-52
-                                    w-52
-                                    rounded-full
-                                    bg-[#2563EB]/10
-                                    blur-3xl
-                                    transition-transform
-                                    duration-500
-                                    group-hover:scale-125
-                                    dark:bg-[#3B82F6]/10
-                                "
-                            />
+                    <div className="grid gap-6 lg:grid-cols-3">
 
-                            <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-
-                                <div className="flex items-start gap-4">
-
-                                    <div className="
-                                        flex
-                                        h-11
-                                        w-11
-                                        shrink-0
-                                        items-center
-                                        justify-center
-                                        rounded-xl
-                                        bg-[#2563EB]
-                                        text-white
-                                        shadow-[0_10px_25px_-10px_rgba(37,99,235,0.6)]
-                                        dark:bg-[#3B82F6]
-                                    ">
-                                        <Sparkles className="h-5 w-5" />
-                                    </div>
-
-                                    <div>
-                                        <h2 className="font-semibold tracking-tight">
-                                            Ready to create your next campaign?
-                                        </h2>
-
-                                        <p className="mt-1 text-sm text-muted-foreground">
-                                            Start with a new design and turn
-                                            your next marketing opportunity
-                                            into content.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <Button
-                                    asChild
-                                    className="
-                                        group
-                                        shrink-0
-                                        rounded-full
-                                        bg-[#2563EB]
-                                        text-white
-                                        shadow-[0_12px_30px_-10px_rgba(37,99,235,0.55)]
-                                        transition-all
-                                        duration-300
-                                        hover:scale-[1.02]
-                                        hover:bg-[#3B82F6]
-                                    "
-                                >
-                                    <Link href="/generator">
-                                        Start Creating
-
-                                        <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                        {/* LEFT 2 COLUMNS: RECENT AI DESIGNS */}
+                        <div className="lg:col-span-2 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
+                                    <ImageIcon className="h-4 w-4 text-primary" />
+                                    Recent AI Visuals
+                                </h2>
+                                <Button asChild variant="ghost" size="sm" className="text-xs text-primary hover:underline gap-1">
+                                    <Link href="/designs">
+                                        View Library ({totalDesigns}) →
                                     </Link>
                                 </Button>
                             </div>
+
+                            {recent_designs.length === 0 ? (
+                                <Card className="rounded-2xl border-border bg-card p-10 text-center shadow-sm">
+                                    <ImageIcon className="mx-auto h-10 w-10 text-muted-foreground/40" />
+                                    <h3 className="mt-2 text-sm font-semibold">No visuals generated yet</h3>
+                                    <p className="mt-1 text-xs text-muted-foreground max-w-xs mx-auto">
+                                        Generate your first social media post or product ad creative in seconds.
+                                    </p>
+                                    <Button asChild size="sm" className="mt-4 gap-1.5 shadow-sm text-xs">
+                                        <Link href="/generator">
+                                            <Sparkles className="h-3.5 w-3.5" />
+                                            Generate First Design
+                                        </Link>
+                                    </Button>
+                                </Card>
+                            ) : (
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                    {recent_designs.map((design: any) => (
+                                        <div
+                                            key={design.id}
+                                            onClick={() => {
+                                                setPreviewDesign(design);
+                                                setIsDetailsExpanded(false);
+                                            }}
+                                            className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md cursor-pointer"
+                                        >
+                                            <div className="relative h-40 w-full overflow-hidden bg-muted">
+                                                {design.image_url ? (
+                                                    <img
+                                                        src={design.image_url}
+                                                        alt={design.product_name || 'Design'}
+                                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                    />
+                                                ) : (
+                                                    <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
+                                                        <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
+                                                    </div>
+                                                )}
+
+                                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                                            </div>
+
+                                            <div className="p-3.5 space-y-1">
+                                                <p className="truncate text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
+                                                    {design.product_name || 'Marketing Visual'}
+                                                </p>
+                                                <p className="truncate text-[11px] text-muted-foreground">
+                                                    {design.campaign_name || design.event_name || design.created_at}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                    </section>
+
+                        {/* RIGHT 1 COLUMN: UPCOMING MARKETING OPPORTUNITIES */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
+                                    <Calendar className="h-4 w-4 text-primary" />
+                                    Key Retail Dates
+                                </h2>
+                                <Button asChild variant="ghost" size="sm" className="text-xs text-primary hover:underline gap-1">
+                                    <Link href="/calendar">
+                                        Calendar →
+                                    </Link>
+                                </Button>
+                            </div>
+
+                            {upcoming_events.length === 0 ? (
+                                <Card className="rounded-2xl border-border bg-card p-6 text-center shadow-sm">
+                                    <CalendarDays className="mx-auto h-8 w-8 text-muted-foreground/40" />
+                                    <p className="mt-2 text-xs text-muted-foreground">No upcoming dates scheduled in next 30 days.</p>
+                                </Card>
+                            ) : (
+                                <div className="space-y-3">
+                                    {upcoming_events.map((evt: any) => (
+                                        <div
+                                            key={evt.id}
+                                            className="group flex flex-col justify-between gap-2 rounded-2xl border border-border bg-card p-4 shadow-sm hover:border-primary/40 hover:shadow-md transition-all"
+                                        >
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div>
+                                                    <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+                                                        {evt.name}
+                                                    </p>
+                                                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                                                        {evt.date}
+                                                    </p>
+                                                </div>
+
+                                                {evt.days && (
+                                                    <Badge variant="secondary" className="text-[10px] font-semibold">
+                                                        {evt.days}
+                                                    </Badge>
+                                                )}
+                                            </div>
+
+                                            <div className="flex items-center justify-between pt-2 border-t border-border/50 text-[11px]">
+                                                <span className="capitalize text-muted-foreground">
+                                                    {evt.category || 'Season'}
+                                                </span>
+                                                <Button
+                                                    asChild
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-7 text-xs font-semibold text-primary hover:bg-primary/10 p-1 px-2.5"
+                                                >
+                                                    <Link href={`/generator?event_id=${evt.id}`}>
+                                                        Launch Brief →
+                                                    </Link>
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            {/* =============================================================
+                FULL-SCREEN IMAGE VIEWER FOR RECENT DESIGNS
+            ============================================================= */}
+
+            {previewDesign && (
+                <div
+                    className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-black/95 backdrop-blur-md animate-in fade-in duration-200 select-none overflow-hidden"
+                    onClick={() => {
+                        setPreviewDesign(null);
+                        setIsDetailsExpanded(false);
+                    }}
+                >
+                    {/* Top Floating Control Bar */}
+                    <div
+                        className="relative z-50 flex w-full items-center justify-between bg-gradient-to-b from-black/90 via-black/50 to-transparent px-5 py-4 sm:px-8"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center gap-3">
+                            <h2 className="max-w-[240px] sm:max-w-md truncate text-sm sm:text-base font-semibold text-white">
+                                {previewDesign.product_name || 'Marketing Visual'}
+                            </h2>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => handleDownload(previewDesign)}
+                                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-all backdrop-blur-md"
+                                title="Download"
+                            >
+                                <Download className="h-4 w-4" />
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setPreviewDesign(null);
+                                    setIsDetailsExpanded(false);
+                                }}
+                                className="ml-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 hover:bg-white/30 text-white transition-all backdrop-blur-md"
+                                title="Close (Esc)"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Main Full View Image Canvas */}
+                    <div
+                        className="relative flex h-full w-full flex-1 items-center justify-center p-4 sm:p-8 overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {previewDesign.image_url ? (
+                            <img
+                                src={previewDesign.image_url}
+                                alt={previewDesign.product_name || 'Design'}
+                                className={`max-h-[82vh] max-w-[92vw] object-contain drop-shadow-2xl transition-all duration-300 ${isDetailsExpanded ? 'scale-90 -translate-y-8' : 'scale-100'
+                                    }`}
+                            />
+                        ) : (
+                            <div className="flex flex-col items-center justify-center text-white/50">
+                                <ImageIcon className="h-16 w-16" />
+                                <p className="mt-2 text-sm">No visual available</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Bottom Fade-out Section with Toggle & Expandable Details */}
+                    <div
+                        className="relative z-50 flex w-full flex-col items-center justify-end bg-gradient-to-t from-black/95 via-black/75 to-transparent pt-12 pb-5 px-4"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => setIsDetailsExpanded(!isDetailsExpanded)}
+                            className="group flex items-center gap-2 rounded-full border border-white/20 bg-black/60 px-5 py-2 text-xs font-medium text-white/90 backdrop-blur-xl shadow-2xl transition-all hover:bg-black/80 hover:border-white/40 hover:text-white active:scale-95"
+                            aria-expanded={isDetailsExpanded}
+                        >
+                            <span>
+                                {isDetailsExpanded
+                                    ? 'Hide details'
+                                    : 'View description & actions'}
+                            </span>
+                            <ChevronDown
+                                className={`h-4 w-4 transition-transform duration-300 ${isDetailsExpanded
+                                        ? 'rotate-180 text-primary'
+                                        : 'text-white/70 animate-bounce'
+                                    }`}
+                            />
+                        </button>
+
+                        {/* Slide-up Details Panel */}
+                        {isDetailsExpanded && (
+                            <div className="mt-4 w-full max-w-xl max-h-[36vh] overflow-y-auto space-y-4 rounded-2xl border border-white/15 bg-black/80 p-5 backdrop-blur-2xl shadow-2xl text-white animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                <div>
+                                    <h3 className="text-sm font-bold text-white">
+                                        {previewDesign.product_name || 'AI Visual Creative'}
+                                    </h3>
+                                    <p className="mt-1 text-xs text-white/70">
+                                        {previewDesign.campaign_name ? `Campaign: ${previewDesign.campaign_name}` : 'Marketing Workspace Creative'}
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-white/10">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            router.visit(
+                                                `/generator?product_name=${encodeURIComponent(
+                                                    previewDesign.product_name || '',
+                                                )}`,
+                                            );
+                                        }}
+                                        className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 shadow-none"
+                                    >
+                                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                                        Edit in AI Studio
+                                    </Button>
+
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleDownload(previewDesign)}
+                                        className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 shadow-none"
+                                    >
+                                        <Download className="h-3.5 w-3.5" />
+                                        Download Visual
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </>
     );
 }
-
-Dashboard.layout = {
-    breadcrumbs: [
-        {
-            title: 'Dashboard',
-            href: '/dashboard',
-        },
-    ],
-};

@@ -27,7 +27,9 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $two_factor_confirmed_at
  * @property bool $onboarding_completed
  * @property Carbon|null $onboarding_completed_at
- * @property string|null $remember_token
+ * @property string|null $provider_name
+ * @property string|null $provider_id
+ * @property string|null $avatar
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Business|null $business
@@ -35,7 +37,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Collection<int,Event> $events
  * @property Collection<int,Design> $designs
  */
-#[Fillable(['name', 'email', 'password', 'onboarding_completed', 'onboarding_completed_at'])]
+#[Fillable(['name', 'email', 'password', 'provider_name', 'provider_id', 'avatar', 'email_verified_at', 'onboarding_completed', 'onboarding_completed_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -138,5 +140,21 @@ class User extends Authenticatable implements MustVerifyEmail
     public function designs(): HasMany
     {
         return $this->hasMany(Design::class);
+    }
+
+    /**
+     * @return HasMany<Product, $this>
+     */
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
+
+    /**
+     * @return HasMany<AppNotification, $this>
+     */
+    public function appNotifications(): HasMany
+    {
+        return $this->hasMany(AppNotification::class);
     }
 }

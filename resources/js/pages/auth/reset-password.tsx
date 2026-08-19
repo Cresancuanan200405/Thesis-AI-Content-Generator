@@ -1,4 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
+import { ArrowRight } from 'lucide-react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,9 @@ type Props = {
     passwordRules: string;
 };
 
+const fieldGlow =
+    'group relative rounded-xl transition-all duration-300 focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.18)] hover:shadow-[0_0_0_3px_rgba(59,130,246,0.08)]';
+
 export default function ResetPassword({ token, email, passwordRules }: Props) {
     return (
         <>
@@ -22,66 +26,79 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
                 {...update.form()}
                 transform={(data) => ({ ...data, token, email })}
                 resetOnSuccess={['password', 'password_confirmation']}
+                className="animate-in fade-in slide-in-from-bottom-2 duration-500"
             >
                 {({ processing, errors }) => (
-                    <div className="grid gap-6">
+                    <div className="grid gap-5">
                         <div className="grid gap-2">
-                            <Label htmlFor="email">Email</Label>
+                            <Label htmlFor="email" className="text-sm font-medium text-foreground">
+                                Email
+                            </Label>
                             <Input
                                 id="email"
                                 type="email"
                                 name="email"
                                 autoComplete="email"
                                 value={email}
-                                className="mt-1 block w-full"
+                                className="h-11 rounded-xl border-border bg-muted/40 text-muted-foreground"
                                 readOnly
                             />
                             <InputError
                                 message={errors.email}
-                                className="mt-2"
                             />
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="password">Password</Label>
-                            <PasswordInput
-                                id="password"
-                                name="password"
-                                autoComplete="new-password"
-                                className="mt-1 block w-full"
-                                autoFocus
-                                placeholder="Password"
-                                passwordrules={passwordRules}
-                            />
+                            <Label htmlFor="password" className="text-sm font-medium text-foreground">
+                                New password
+                            </Label>
+                            <div className={fieldGlow}>
+                                <PasswordInput
+                                    id="password"
+                                    name="password"
+                                    autoComplete="new-password"
+                                    className="h-11 rounded-xl border-border bg-background text-foreground placeholder:text-muted-foreground/60"
+                                    autoFocus
+                                    placeholder="Enter new password"
+                                    passwordrules={passwordRules}
+                                />
+                            </div>
                             <InputError message={errors.password} />
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="password_confirmation">
+                            <Label htmlFor="password_confirmation" className="text-sm font-medium text-foreground">
                                 Confirm password
                             </Label>
-                            <PasswordInput
-                                id="password_confirmation"
-                                name="password_confirmation"
-                                autoComplete="new-password"
-                                className="mt-1 block w-full"
-                                placeholder="Confirm password"
-                                passwordrules={passwordRules}
-                            />
+                            <div className={fieldGlow}>
+                                <PasswordInput
+                                    id="password_confirmation"
+                                    name="password_confirmation"
+                                    autoComplete="new-password"
+                                    className="h-11 rounded-xl border-border bg-background text-foreground placeholder:text-muted-foreground/60"
+                                    placeholder="Confirm new password"
+                                    passwordrules={passwordRules}
+                                />
+                            </div>
                             <InputError
                                 message={errors.password_confirmation}
-                                className="mt-2"
                             />
                         </div>
 
                         <Button
                             type="submit"
-                            className="mt-4 w-full"
+                            className="group mt-2 h-11 w-full rounded-xl bg-[#2563EB] font-semibold text-white shadow-[0_15px_35px_-12px_rgba(37,99,235,0.6)] transition-all duration-300 hover:scale-[1.01] hover:bg-[#1D4ED8] hover:shadow-[0_20px_45px_-12px_rgba(37,99,235,0.7)] disabled:opacity-70 disabled:hover:scale-100"
                             disabled={processing}
                             data-test="reset-password-button"
                         >
-                            {processing && <Spinner />}
-                            Reset password
+                            {processing ? (
+                                <Spinner />
+                            ) : (
+                                <>
+                                    <span>Reset password</span>
+                                    <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                                </>
+                            )}
                         </Button>
                     </div>
                 )}

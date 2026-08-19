@@ -17,6 +17,9 @@ class MockupImageService
      *     visual_theme?: string|array<int, string>|null,
      *     event_name?: string|null,
      *     price?: string|float|int|null,
+     *     include_logo?: bool|null,
+     *     business_name?: string|null,
+     *     aspect_ratio?: string|null,
      * } $data
      * @return string Relative path in public storage disk
      */
@@ -25,7 +28,7 @@ class MockupImageService
         $productName = htmlspecialchars((string) ($data['product_name'] ?? 'Marketing Asset'), ENT_QUOTES, 'UTF-8');
         $tagline = htmlspecialchars((string) ($data['tagline'] ?? ''), ENT_QUOTES, 'UTF-8');
         $eventName = htmlspecialchars((string) ($data['event_name'] ?? ''), ENT_QUOTES, 'UTF-8');
-        $price = ! empty($data['price']) ? '$'.number_format((float) $data['price'], 2) : '';
+        $price = ! empty($data['price']) ? '₱'.number_format((float) $data['price'], 2) : '';
 
         $tones = is_array($data['brand_tone'] ?? null)
             ? implode(' • ', $data['brand_tone'])
@@ -39,11 +42,40 @@ class MockupImageService
         $businessName = htmlspecialchars((string) ($data['business_name'] ?? 'AI MARKETING AUTOMATION'), ENT_QUOTES, 'UTF-8');
         $brandWatermark = $includeLogo ? 'BRAND: '.$businessName : 'AI MARKETING AUTOMATION';
 
+        $aspectRatio = (string) ($data['aspect_ratio'] ?? '1:1');
+
+        [$width, $height, $cardX, $cardY, $cardW, $cardH, $boxX, $boxY, $boxW, $boxH, $boxCx, $bottomY] = match ($aspectRatio) {
+            '9:16' => [1080, 1920, 72, 96, 936, 1728, 120, 360, 840, 1180, 420, 1620],
+            '16:9' => [1920, 1080, 96, 72, 1728, 936, 180, 190, 1560, 580, 780, 840],
+            '4:5' => [1080, 1350, 72, 80, 936, 1190, 120, 240, 840, 780, 420, 1100],
+            '4:3' => [1200, 900, 72, 60, 1056, 780, 132, 170, 936, 490, 468, 710],
+            default => [1024, 1024, 72, 72, 880, 880, 132, 210, 760, 520, 380, 790],
+        };
+
         $uniqueId = Str::uuid()->toString();
         $filename = 'designs/mockup_'.$uniqueId.'.svg';
 
+        $eventBadgeMarkup = $eventName !== '' ? <<<EVENT
+        <g transform="translate({$cardW} - 220, {$cardY} + 36)">
+            <rect x="0" y="0" width="200" height="36" rx="18" fill="rgba(236, 72, 153, 0.15)" stroke="rgba(236, 72, 153, 0.3)" stroke-width="1"/>
+            <text x="100" y="23" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="600" fill="#fbcfe8">{$eventName}</text>
+        </g>
+EVENT : '';
+
+        $taglineMarkup = $tagline !== '' ? <<<TAGLINE
+        <text x="{$boxCx}" y="280" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="500" fill="#94a3b8">
+            "{$tagline}"
+        </text>
+TAGLINE : '';
+
+        $priceMarkup = $price !== '' ? <<<PRICE
+        <text x="{$boxCx}" y="350" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="32" font-weight="700" fill="#38bdf8">
+            {$price}
+        </text>
+PRICE : '';
+
         $svg = <<<SVG
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {$width} {$height}" width="{$width}" height="{$height}">
     <defs>
         <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stop-color="#0f172a"/>
@@ -76,74 +108,64 @@ class MockupImageService
     </defs>
 
     <!-- Background -->
-    <rect width="1024" height="1024" fill="url(#bgGrad)"/>
-    <rect width="1024" height="1024" fill="url(#glow1)"/>
-    <rect width="1024" height="1024" fill="url(#glow2)"/>
-    <rect width="1024" height="1024" fill="url(#grid)"/>
+    <rect width="{$width}" height="{$height}" fill="url(#bgGrad)"/>
+    <rect width="{$width}" height="{$height}" fill="url(#glow1)"/>
+    <rect width="{$width}" height="{$height}" fill="url(#glow2)"/>
+    <rect width="{$width}" height="{$height}" fill="url(#grid)"/>
 
     <!-- Decorative Top Bar -->
-    <rect x="0" y="0" width="1024" height="8" fill="url(#accentGrad)"/>
+    <rect x="0" y="0" width="{$width}" height="8" fill="url(#accentGrad)"/>
 
     <!-- Main Content Container -->
-    <rect x="72" y="72" width="880" height="880" rx="32" fill="url(#cardGrad)" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1.5" filter="url(#shadow)"/>
+    <rect x="{$cardX}" y="{$cardY}" width="{$cardW}" height="{$cardH}" rx="32" fill="url(#cardGrad)" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1.5" filter="url(#shadow)"/>
 
     <!-- Top Badge -->
-    <g transform="translate(112, 116)">
+    <g transform="translate({$cardX} + 40, {$cardY} + 36)">
         <rect x="0" y="0" width="220" height="36" rx="18" fill="rgba(99, 102, 241, 0.2)" stroke="rgba(99, 102, 241, 0.4)" stroke-width="1"/>
         <circle cx="18" cy="18" r="4" fill="#a855f7"/>
         <text x="32" y="23" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#c7d2fe" letter-spacing="1.5">MARKETING DESIGN</text>
     </g>
 
-    <!-- Event Badge if provided -->
-    <g transform="translate(712, 116)">
-        <rect x="0" y="0" width="200" height="36" rx="18" fill="rgba(236, 72, 153, 0.15)" stroke="rgba(236, 72, 153, 0.3)" stroke-width="1"/>
-        <text x="100" y="23" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="600" fill="#fbcfe8">{$eventName}</text>
-    </g>
+    {$eventBadgeMarkup}
 
     <!-- Center Product Visual Card -->
-    <g transform="translate(132, 210)">
+    <g transform="translate({$boxX}, {$boxY})">
         <!-- Inner Graphic Box -->
-        <rect x="0" y="0" width="760" height="520" rx="24" fill="rgba(15, 23, 42, 0.6)" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1"/>
+        <rect x="0" y="0" width="{$boxW}" height="{$boxH}" rx="24" fill="rgba(15, 23, 42, 0.6)" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1"/>
 
         <!-- Abstract Decorative Shapes inside Card -->
-        <circle cx="620" cy="120" r="160" fill="url(#glow2)"/>
-        <circle cx="140" cy="400" r="140" fill="url(#glow1)"/>
+        <circle cx="{$boxW} - 140" cy="120" r="160" fill="url(#glow2)"/>
+        <circle cx="140" cy="{$boxH} - 120" r="140" fill="url(#glow1)"/>
 
         <!-- Center Icon / Sparkle -->
-        <g transform="translate(355, 110)">
+        <g transform="translate({$boxCx} - 25, 110)">
             <rect x="0" y="0" width="50" height="50" rx="14" fill="url(#accentGrad)"/>
             <path d="M 25 14 L 27 22 L 35 25 L 27 28 L 25 36 L 23 28 L 15 25 L 23 22 Z" fill="#ffffff"/>
         </g>
 
         <!-- Product Name -->
-        <text x="380" y="220" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="44" font-weight="800" fill="#ffffff" letter-spacing="-0.5">
+        <text x="{$boxCx}" y="220" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="44" font-weight="800" fill="#ffffff" letter-spacing="-0.5">
             {$productName}
         </text>
 
-        <!-- Tagline -->
-        <text x="380" y="280" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="500" fill="#94a3b8">
-            {$tagline}
-        </text>
+        {$taglineMarkup}
 
-        <!-- Price if available -->
-        <text x="380" y="350" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="32" font-weight="700" fill="#38bdf8">
-            {$price}
-        </text>
+        {$priceMarkup}
 
         <!-- Theme & Style Badges -->
-        <g transform="translate(380, 420)">
+        <g transform="translate({$boxCx}, {$boxH} - 70)">
             <text x="0" y="0" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="600" fill="#a5b4fc" letter-spacing="1">
-                STYLE: {$themes}
+                STYLE: {$themes} • RATIO: {$aspectRatio}
             </text>
         </g>
     </g>
 
     <!-- Bottom Footer Meta -->
-    <g transform="translate(132, 790)">
+    <g transform="translate({$cardX} + 40, {$bottomY})">
         <text x="0" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="500" fill="#64748b">
             BRAND TONE: <tspan fill="#cbd5e1" font-weight="600">{$tones}</tspan>
         </text>
-        <text x="760" y="40" text-anchor="end" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" fill="#a855f7">
+        <text x="{$cardW} - 80" y="40" text-anchor="end" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" fill="#a855f7">
             {$brandWatermark}
         </text>
     </g>

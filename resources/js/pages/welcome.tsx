@@ -106,7 +106,7 @@ const getInitialTheme = (): Theme => {
 */
 
 const glass =
-    'border border-black/5 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]';
+    'card-elevated rounded-2xl bg-card/85 backdrop-blur-xl border border-border/80';
 
 const glassHover =
     'transition-all duration-300 ease-out hover:-translate-y-1 hover:border-[#3B82F6]/40 hover:shadow-[0_25px_60px_-20px_rgba(59,130,246,0.25)] dark:hover:border-[#60A5FA]/40 dark:hover:shadow-[0_25px_60px_-20px_rgba(96,165,250,0.2)]';
@@ -118,7 +118,7 @@ const glassHover =
 */
 
 export default function Welcome() {
-    const { auth } = usePage().props;
+    const { auth } = usePage<{ auth?: { user?: any } }>().props;
 
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -175,14 +175,12 @@ export default function Welcome() {
             <div
                 className="
                     min-h-screen
-                    bg-[#F5F9FF]
+                    bg-background
                     font-[Manrope,sans-serif]
-                    text-[#0F172A]
+                    text-foreground
                     antialiased
                     transition-colors
                     duration-300
-                    dark:bg-[#07111F]
-                    dark:text-slate-100
                 "
             >
                 {/* Ambient background glow */}
@@ -347,7 +345,7 @@ export default function Welcome() {
                                     )}
                                 </Button>
 
-                                {auth.user ? (
+                                {auth?.user ? (
                                     <Button
                                         asChild
                                         size="sm"
@@ -499,7 +497,7 @@ export default function Welcome() {
                                 ))}
 
                                 <div className="flex gap-3 pt-2">
-                                    {auth.user ? (
+                                    {auth?.user ? (
                                         <Button
                                             asChild
                                             className="
@@ -710,18 +708,16 @@ export default function Welcome() {
 
                             <div
                                 className="
+                                    card-elevated
                                     relative
                                     overflow-hidden
-                                    rounded-[2rem]
-                                    border
-                                    border-white/10
-                                    bg-[#0B1628]/95
+                                    rounded-3xl
+                                    bg-card
                                     p-6
-                                    shadow-[0_40px_100px_-25px_rgba(0,0,0,0.6)]
+                                    shadow-2xl
                                     backdrop-blur-xl
                                     transition-shadow
                                     duration-500
-                                    group-hover:shadow-[0_50px_120px_-25px_rgba(37,99,235,0.25)]
                                     sm:p-8
                                 "
                             >
@@ -732,7 +728,7 @@ export default function Welcome() {
                                                 font-['IBM_Plex_Mono',monospace]
                                                 text-[10px]
                                                 tracking-[0.2em]
-                                                text-[#7C8CA6]
+                                                text-muted-foreground
                                                 uppercase
                                             "
                                         >
@@ -745,7 +741,7 @@ export default function Welcome() {
                                                 font-['Space_Grotesk',sans-serif]
                                                 text-lg
                                                 font-semibold
-                                                text-white
+                                                text-foreground
                                             "
                                         >
                                             Q3 launch sprint
@@ -755,14 +751,17 @@ export default function Welcome() {
                                     <div
                                         className="
                                             rounded-full
+                                            border
+                                            border-[#06B6D4]/30
                                             bg-[#06B6D4]/15
                                             px-2.5
                                             py-1
                                             font-['IBM_Plex_Mono',monospace]
                                             text-[10px]
                                             tracking-[0.08em]
-                                            text-[#22D3EE]
+                                            text-[#06B6D4]
                                             uppercase
+                                            dark:text-[#22D3EE]
                                         "
                                     >
                                         On course
@@ -790,6 +789,7 @@ export default function Welcome() {
                                     >
                                         <div
                                             className="
+                                                card-elevated
                                                 flex
                                                 h-36
                                                 w-36
@@ -797,9 +797,7 @@ export default function Welcome() {
                                                 items-center
                                                 justify-center
                                                 rounded-full
-                                                border
-                                                border-white/10
-                                                bg-[#101B30]
+                                                bg-card
                                             "
                                             style={{
                                                 boxShadow:
@@ -811,7 +809,8 @@ export default function Welcome() {
                                                     font-['Space_Grotesk',sans-serif]
                                                     text-3xl
                                                     font-semibold
-                                                    text-[#60A5FA]
+                                                    text-[#2563EB]
+                                                    dark:text-[#60A5FA]
                                                 "
                                             >
                                                 247°
@@ -823,7 +822,7 @@ export default function Welcome() {
                                                     font-['IBM_Plex_Mono',monospace]
                                                     text-[9px]
                                                     tracking-[0.16em]
-                                                    text-[#7C8CA6]
+                                                    text-muted-foreground
                                                     uppercase
                                                 "
                                             >
@@ -836,14 +835,12 @@ export default function Welcome() {
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     <div
                                         className="
+                                            card-elevated
                                             rounded-2xl
-                                            border
-                                            border-white/10
-                                            bg-[#101B30]
+                                            bg-card/80
                                             p-4
                                             transition-colors
                                             duration-300
-                                            hover:border-[#06B6D4]/40
                                         "
                                     >
                                         <div
@@ -854,17 +851,17 @@ export default function Welcome() {
                                                 font-['IBM_Plex_Mono',monospace]
                                                 text-[10px]
                                                 tracking-[0.1em]
-                                                text-[#7C8CA6]
+                                                text-muted-foreground
                                                 uppercase
                                             "
                                         >
                                             <span>Brand alignment</span>
-                                            <span className="text-[#22D3EE]">
+                                            <span className="font-semibold text-[#06B6D4] dark:text-[#22D3EE]">
                                                 92%
                                             </span>
                                         </div>
 
-                                        <div className="mt-3 h-1.5 rounded-full bg-white/5">
+                                        <div className="mt-3 h-1.5 rounded-full bg-muted">
                                             <div
                                                 className="
                                                     h-1.5
@@ -879,14 +876,12 @@ export default function Welcome() {
 
                                     <div
                                         className="
+                                            card-elevated
                                             rounded-2xl
-                                            border
-                                            border-white/10
-                                            bg-[#101B30]
+                                            bg-card/80
                                             p-4
                                             transition-colors
                                             duration-300
-                                            hover:border-[#3B82F6]/40
                                         "
                                     >
                                         <div
@@ -897,12 +892,12 @@ export default function Welcome() {
                                                 font-['IBM_Plex_Mono',monospace]
                                                 text-[10px]
                                                 tracking-[0.1em]
-                                                text-[#7C8CA6]
+                                                text-muted-foreground
                                                 uppercase
                                             "
                                         >
                                             <span>Assets ready</span>
-                                            <span className="text-[#60A5FA]">
+                                            <span className="font-semibold text-[#2563EB] dark:text-[#60A5FA]">
                                                 12
                                             </span>
                                         </div>
@@ -916,7 +911,8 @@ export default function Welcome() {
                                                         rounded-t-md
                                                         bg-gradient-to-t
                                                         from-[#2563EB]/40
-                                                        to-[#60A5FA]
+                                                        to-[#2563EB]
+                                                        dark:to-[#60A5FA]
                                                     "
                                                     style={{
                                                         height: `${height / 3.2}px`,
@@ -929,26 +925,25 @@ export default function Welcome() {
 
                                 <div
                                     className="
+                                        card-elevated
                                         mt-3
                                         flex
                                         items-center
                                         justify-between
                                         rounded-2xl
-                                        border
-                                        border-white/10
-                                        bg-[#101B30]
+                                        bg-card/80
                                         px-4
                                         py-3
                                         font-['IBM_Plex_Mono',monospace]
                                         text-[11px]
                                         tracking-[0.08em]
-                                        text-[#7C8CA6]
+                                        text-muted-foreground
                                         uppercase
                                     "
                                 >
                                     <span>Next launch</span>
 
-                                    <span className="text-slate-200">
+                                    <span className="font-medium text-foreground">
                                         Jun 18 · Paid social + email
                                     </span>
                                 </div>

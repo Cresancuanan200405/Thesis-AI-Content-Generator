@@ -400,24 +400,9 @@ export default function CampaignShowPage({
                                             </p>
                                         </div>
 
-                                        <div className="flex items-center gap-2">
-                                            {designs.length > 0 && (
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => openPreview(designs[0])}
-                                                    className="gap-1.5 text-xs shadow-none"
-                                                >
-                                                    <Eye className="h-3.5 w-3.5" />
-                                                    See Generated Images
-                                                </Button>
-                                            )}
-
-                                            <Badge variant="secondary" className="rounded-full px-2.5 text-xs">
-                                                {designs.length}
-                                            </Badge>
-                                        </div>
+                                        <Badge variant="secondary" className="rounded-full px-2.5 text-xs">
+                                            {designs.length}
+                                        </Badge>
                                     </div>
                                 </CardHeader>
 
@@ -581,199 +566,206 @@ export default function CampaignShowPage({
             </div>
 
             {/* =============================================================
-                VISUAL PREVIEW MODAL WITH FADED ARROW DOWN EXPANDER
+                IMMERSIVE FULL SCREEN CAMPAIGN VISUAL VIEWER (NO MODAL BOX)
             ============================================================= */}
 
-            <Dialog
-                open={!!previewDesign}
-                onOpenChange={(open) => {
-                    if (!open) {
+            {previewDesign && (
+                <div
+                    className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-black/95 backdrop-blur-md animate-in fade-in duration-200 select-none overflow-hidden"
+                    onClick={() => {
                         setPreviewDesign(null);
                         setIsDetailsExpanded(false);
-                    }
-                }}
-            >
-                <DialogContent className="max-h-[92vh] overflow-y-auto rounded-3xl sm:max-w-2xl border-border bg-card p-5 md:p-6 shadow-2xl">
-                    {previewDesign && (
-                        <div className="space-y-4">
-                            {/* Modal Header */}
-                            <DialogHeader className="space-y-1">
-                                <div className="flex items-center justify-between gap-3 pr-6">
-                                    <div>
-                                        <DialogTitle className="text-xl font-semibold text-foreground">
-                                            {previewDesign.product_name || 'Campaign Visual'}
-                                        </DialogTitle>
-                                        <DialogDescription className="text-xs text-muted-foreground">
-                                            Campaign: {campaign.name} {designs.length > 1 && `(${currentPreviewIndex + 1} of ${designs.length})`}
-                                        </DialogDescription>
-                                    </div>
+                    }}
+                >
+                    {/* Top Floating Control Bar */}
+                    <div
+                        className="relative z-50 flex w-full items-center justify-between bg-gradient-to-b from-black/90 via-black/50 to-transparent px-5 py-4 sm:px-8"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center gap-3">
+                            <h2 className="max-w-[240px] sm:max-w-md truncate text-sm sm:text-base font-semibold text-white">
+                                {previewDesign.product_name || 'Campaign Visual'}
+                            </h2>
+                            <Badge variant="outline" className="border-white/20 text-white/90 text-[10px] hidden sm:inline-flex bg-white/5">
+                                {campaign.name} {designs.length > 1 && `(${currentPreviewIndex + 1}/${designs.length})`}
+                            </Badge>
+                        </div>
 
-                                    <div className="flex items-center gap-2">
-                                        {designs.length > 1 && (
-                                            <div className="flex items-center gap-1 mr-1">
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="icon"
-                                                    onClick={handlePrevDesign}
-                                                    disabled={currentPreviewIndex <= 0}
-                                                    className="h-8 w-8 rounded-lg shadow-none"
-                                                    aria-label="Previous image"
-                                                >
-                                                    <ChevronLeft className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="icon"
-                                                    onClick={handleNextDesign}
-                                                    disabled={currentPreviewIndex >= designs.length - 1}
-                                                    className="h-8 w-8 rounded-lg shadow-none"
-                                                    aria-label="Next image"
-                                                >
-                                                    <ChevronRight className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        )}
-
-                                        {previewDesign.image_url && (
-                                            <a
-                                                href={previewDesign.download_url || previewDesign.image_url}
-                                                download={`${campaign.name}-${previewDesign.product_name || 'design'}.svg`}
-                                                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
-                                            >
-                                                <Download className="h-3.5 w-3.5" />
-                                                Download
-                                            </a>
-                                        )}
-                                    </div>
-                                </div>
-                            </DialogHeader>
-
-                            {/* Main Image Display */}
-                            <div className="relative overflow-hidden rounded-2xl border border-border bg-muted/40 flex items-center justify-center min-h-[300px] max-h-[460px]">
-                                {previewDesign.image_url ? (
-                                    <img
-                                        src={previewDesign.image_url}
-                                        alt={previewDesign.product_name || 'Campaign visual'}
-                                        className="h-full w-full object-contain max-h-[460px]"
-                                    />
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                                        <ImageIcon className="h-12 w-12 text-muted-foreground/50" />
-                                        <p className="mt-2 text-xs">No visual preview available</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* SLIGHT FADED ARROW DOWN TOGGLE */}
-                            <div className="flex justify-center pt-1">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsDetailsExpanded(!isDetailsExpanded)}
-                                    className="group flex items-center gap-2 rounded-full border border-border/70 bg-muted/40 px-4 py-1.5 text-xs font-medium text-muted-foreground/80 transition-all hover:bg-muted hover:text-foreground hover:border-border shadow-sm"
-                                    aria-expanded={isDetailsExpanded}
-                                >
-                                    <span>
-                                        {isDetailsExpanded
-                                            ? 'Hide details'
-                                            : 'View description & details'}
-                                    </span>
-                                    <ChevronDown
-                                        className={`h-4 w-4 transition-transform duration-300 ${
-                                            isDetailsExpanded
-                                                ? 'rotate-180 text-primary'
-                                                : 'text-muted-foreground/60 animate-bounce'
-                                        }`}
-                                    />
-                                </button>
-                            </div>
-
-                            {/* EXPANDED DETAILS & FUNCTIONS */}
-                            {isDetailsExpanded && (
-                                <div className="space-y-4 pt-3 border-t border-border/70 transition-all duration-300 animate-in fade-in-50 slide-in-from-top-2">
-                                    {/* Tagline */}
-                                    {previewDesign.tagline && (
-                                        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3.5">
-                                            <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
-                                                Tagline
-                                            </p>
-                                            <p className="mt-1 text-sm font-medium text-foreground italic">
-                                                "{previewDesign.tagline}"
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    {/* Description / Prompt */}
-                                    <div className="rounded-xl border border-border bg-muted/20 p-3.5">
-                                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                            Prompt & Visual Concept
-                                        </p>
-                                        <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-                                            {previewDesign.prompt ||
-                                                'AI marketing creative tailored for this campaign, generated for maximum brand consistency and visual impact.'}
-                                        </p>
-                                    </div>
-
-                                    {/* Metadata Grid */}
-                                    <div className="grid gap-2.5 sm:grid-cols-2">
-                                        <div className="rounded-xl border border-border bg-card p-3">
-                                            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                                <Layers className="h-3 w-3" />
-                                                Campaign
-                                            </div>
-                                            <p className="mt-1 truncate text-xs font-semibold text-foreground">
-                                                {campaign.name}
-                                            </p>
-                                        </div>
-
-                                        <div className="rounded-xl border border-border bg-card p-3">
-                                            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                                <Tag className="h-3 w-3" />
-                                                Event
-                                            </div>
-                                            <p className="mt-1 truncate text-xs font-semibold text-foreground">
-                                                {campaign?.event_name || 'General marketing'}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Action Buttons Strip */}
-                                    <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-border/50">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                                router.visit(
-                                                    `/generator?product_name=${encodeURIComponent(
-                                                        previewDesign.product_name || '',
-                                                    )}&campaign=${campaign.id}`,
-                                                );
-                                            }}
-                                            className="gap-1.5 text-xs shadow-none"
-                                        >
-                                            <Sparkles className="h-3.5 w-3.5 text-primary" />
-                                            Edit in AI Studio
-                                        </Button>
-
-                                        {previewDesign.image_url && (
-                                            <a
-                                                href={previewDesign.download_url || previewDesign.image_url}
-                                                download={`${campaign.name}-${previewDesign.product_name || 'design'}.svg`}
-                                                className="inline-flex items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent transition-colors"
-                                            >
-                                                <Download className="h-3.5 w-3.5" />
-                                                Download Visual
-                                            </a>
-                                        )}
-                                    </div>
+                        <div className="flex items-center gap-2">
+                            {designs.length > 1 && (
+                                <div className="flex items-center gap-1 mr-1">
+                                    <button
+                                        type="button"
+                                        onClick={handlePrevDesign}
+                                        disabled={currentPreviewIndex <= 0}
+                                        className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white disabled:opacity-30 disabled:pointer-events-none hover:bg-white/20 transition-all"
+                                        title="Previous Visual"
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleNextDesign}
+                                        disabled={currentPreviewIndex >= designs.length - 1}
+                                        className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white disabled:opacity-30 disabled:pointer-events-none hover:bg-white/20 transition-all"
+                                        title="Next Visual"
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </button>
                                 </div>
                             )}
+
+                            {previewDesign.image_url && (
+                                <a
+                                    href={previewDesign.download_url || previewDesign.image_url}
+                                    download={`${campaign.name}-${previewDesign.product_name || 'design'}.png`}
+                                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-all backdrop-blur-md"
+                                    title="Download Visual"
+                                >
+                                    <Download className="h-4 w-4" />
+                                </a>
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setPreviewDesign(null);
+                                    setIsDetailsExpanded(false);
+                                }}
+                                className="ml-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 hover:bg-white/30 text-white transition-all backdrop-blur-md"
+                                title="Close (Esc)"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
                         </div>
-                    )}
-                </DialogContent>
-            </Dialog>
+                    </div>
+
+                    {/* Main Full View Image Canvas */}
+                    <div
+                        className="relative flex h-full w-full flex-1 items-center justify-center p-4 sm:p-8 overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {previewDesign.image_url ? (
+                            <img
+                                src={previewDesign.image_url}
+                                alt={previewDesign.product_name || 'Campaign visual'}
+                                className={`max-h-[82vh] max-w-[92vw] object-contain drop-shadow-2xl transition-all duration-300 ${
+                                    isDetailsExpanded ? 'scale-90 -translate-y-8' : 'scale-100'
+                                }`}
+                            />
+                        ) : (
+                            <div className="flex flex-col items-center justify-center text-white/50">
+                                <ImageIcon className="h-16 w-16" />
+                                <p className="mt-2 text-sm">No visual available</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Bottom Fade-out Section with Toggle & Expandable Details */}
+                    <div
+                        className="relative z-50 flex w-full flex-col items-center justify-end bg-gradient-to-t from-black/95 via-black/75 to-transparent pt-12 pb-5 px-4"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => setIsDetailsExpanded(!isDetailsExpanded)}
+                            className="group flex items-center gap-2 rounded-full border border-white/20 bg-black/60 px-5 py-2 text-xs font-medium text-white/90 backdrop-blur-xl shadow-2xl transition-all hover:bg-black/80 hover:border-white/40 hover:text-white active:scale-95"
+                            aria-expanded={isDetailsExpanded}
+                        >
+                            <span>
+                                {isDetailsExpanded
+                                    ? 'Hide details'
+                                    : 'View description & details'}
+                            </span>
+                            <ChevronDown
+                                className={`h-4 w-4 transition-transform duration-300 ${
+                                    isDetailsExpanded
+                                        ? 'rotate-180 text-primary'
+                                        : 'text-white/70 animate-bounce'
+                                }`}
+                            />
+                        </button>
+
+                        {/* Slide-up Details Panel */}
+                        {isDetailsExpanded && (
+                            <div className="mt-4 w-full max-w-xl max-h-[36vh] overflow-y-auto space-y-4 rounded-2xl border border-white/15 bg-black/80 p-5 backdrop-blur-2xl shadow-2xl text-white animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                {previewDesign.tagline && (
+                                    <div className="rounded-xl border border-primary/30 bg-primary/10 p-3.5">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                                            Tagline
+                                        </p>
+                                        <p className="mt-1 text-sm font-medium italic text-white/90">
+                                            "{previewDesign.tagline}"
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="rounded-xl border border-white/10 bg-white/5 p-3.5">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-white/60">
+                                        Prompt & Visual Concept
+                                    </p>
+                                    <p className="mt-1.5 text-xs leading-relaxed text-white/80">
+                                        {previewDesign.prompt ||
+                                            'AI marketing creative tailored for this campaign, generated for maximum brand consistency and visual impact.'}
+                                    </p>
+                                </div>
+
+                                <div className="grid gap-2.5 sm:grid-cols-2">
+                                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                                        <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-white/60">
+                                            <Layers className="h-3 w-3" />
+                                            Campaign
+                                        </div>
+                                        <p className="mt-1 truncate text-xs font-semibold text-white">
+                                            {campaign.name}
+                                        </p>
+                                    </div>
+
+                                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                                        <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-white/60">
+                                            <Tag className="h-3 w-3" />
+                                            Event
+                                        </div>
+                                        <p className="mt-1 truncate text-xs font-semibold text-white">
+                                            {campaign?.event_name || 'General marketing'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-white/10">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            router.visit(
+                                                `/generator?product_name=${encodeURIComponent(
+                                                    previewDesign.product_name || '',
+                                                )}&campaign=${campaign.id}`,
+                                            );
+                                        }}
+                                        className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 shadow-none"
+                                    >
+                                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                                        Edit in AI Studio
+                                    </Button>
+
+                                    {previewDesign.image_url && (
+                                        <a
+                                            href={previewDesign.download_url || previewDesign.image_url}
+                                            download={`${campaign.name}-${previewDesign.product_name || 'design'}.png`}
+                                            className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 text-xs font-medium transition-colors"
+                                        >
+                                            <Download className="h-3.5 w-3.5" />
+                                            Download Visual
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* =============================================================
                 EDIT CAMPAIGN MODAL

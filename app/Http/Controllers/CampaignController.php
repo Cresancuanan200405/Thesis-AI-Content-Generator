@@ -8,6 +8,7 @@ use App\Models\Campaign;
 use App\Models\Design;
 use App\Models\Event;
 use App\Models\User;
+use App\Services\NotificationService;
 use Carbon\CarbonInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -72,13 +73,15 @@ class CampaignController extends Controller
                     'description' => $campaign->description,
                     'status' => $campaign->status,
                     'objective' => $campaign->objective,
-                    'target_audience' => $campaign->target_audience,
+                    'product_id' => $campaign->product_id,
+                    'event_id' => $campaign->event_id,
                     'product_name' => $campaign->product?->name,
                     'event_name' => $campaign->event?->name,
                     'start_date' => $startDate instanceof CarbonInterface ? $startDate->format('Y-m-d') : null,
                     'end_date' => $endDate instanceof CarbonInterface ? $endDate->format('Y-m-d') : null,
                     'design_count' => $campaign->designs()->count(),
                     'show_url' => route('campaigns.show', $campaign),
+                    'generator_url' => route('generator.index', ['campaign_id' => $campaign->id]),
                 ];
             })->values()->all(),
             'events' => $events,
@@ -192,6 +195,14 @@ class CampaignController extends Controller
             }
         }
 
+        NotificationService::notify(
+            $user,
+            'campaign_created',
+            "Campaign Created: {$campaign->name}",
+            "New campaign \"{$campaign->name}\" was successfully created.",
+            route('campaigns.show', $campaign)
+        );
+
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
@@ -229,6 +240,16 @@ class CampaignController extends Controller
             'status' => $request->input('status', $campaign->status),
         ]);
 
+        if ($user = $request->user()) {
+            NotificationService::notify(
+                $user,
+                'campaign_updated',
+                "Campaign Updated: {$campaign->name}",
+                "Campaign \"{$campaign->name}\" details have been updated.",
+                route('campaigns.show', $campaign)
+            );
+        }
+
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
@@ -253,7 +274,20 @@ class CampaignController extends Controller
     {
         $this->authorize('delete', $campaign);
 
+        $user = auth()->user();
+        $campaignName = $campaign->name;
+
         $campaign->delete();
+
+        if ($user) {
+            NotificationService::notify(
+                $user,
+                'campaign_deleted',
+                "Campaign Deleted: {$campaignName}",
+                "Campaign \"{$campaignName}\" was deleted.",
+                route('campaigns.index')
+            );
+        }
 
         return redirect()->route('campaigns.index')->with('success', 'Campaign deleted successfully.');
     }

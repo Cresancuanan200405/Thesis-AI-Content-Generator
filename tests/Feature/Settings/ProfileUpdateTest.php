@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\Business;
 use App\Models\User;
+use Inertia\Testing\AssertableInertia;
 
 test('profile page is displayed', function () {
     $user = User::factory()->create();
@@ -82,4 +84,28 @@ test('correct password must be provided to delete account', function () {
         ->assertRedirect(route('profile.edit'));
 
     expect($user->fresh())->not->toBeNull();
+});
+
+test('my profile page is displayed with onboarding and business setup info', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Acme Creative Studio',
+        'industry' => 'Fashion & Apparel',
+        'content_style' => json_encode(['Lifestyle', 'Seasonal']),
+    ]);
+
+    $response = $this
+        ->actingAs($user)
+        ->get(route('profile.show'));
+
+    $response->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('profile/show')
+            ->has('profile')
+            ->has('business')
+            ->where('business.name', 'Acme Creative Studio')
+            ->where('business.industry', 'Fashion & Apparel')
+            ->has('stats')
+        );
 });
