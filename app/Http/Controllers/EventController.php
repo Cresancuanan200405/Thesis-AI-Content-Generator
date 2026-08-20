@@ -25,7 +25,7 @@ class EventController extends Controller
         $user = $request->user();
         $filter = $request->input('filter', 'all');
 
-        foreach ([now()->year, now()->year + 1] as $year) {
+        foreach ([now()->year - 1, now()->year, now()->year + 1, now()->year + 2] as $year) {
             try {
                 $holidayService->ensureYearSynced((int) $year);
             } catch (\Exception $e) {

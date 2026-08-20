@@ -489,7 +489,7 @@ export default function GeneratorPage() {
             ...prev,
             product_id: String(prod.id),
             product_name: prev.product_name.trim() === '' ? prod.name : prev.product_name,
-            price: prod.price ? String(prod.price).replace(/\D/g, '') : prev.price,
+            price: prod.price ? String(prod.price).replace(/[^0-9.]/g, '').replace(/\.0+$/, '').replace(/(\.[0-9]*[1-9])0+$/, '$1') : prev.price,
             reference_image: null,
         }));
         setReferenceImageSource('product');

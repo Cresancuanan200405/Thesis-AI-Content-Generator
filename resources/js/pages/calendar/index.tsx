@@ -126,7 +126,7 @@ export default function MarketingCalendarPage({
     const today = new Date();
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
     const [activeFilter, setActiveFilter] = useState<string>(filter || 'all');
-    const [viewMode, setViewMode] = useState<'grid' | 'agenda'>('grid');
+    const [viewMode, setViewMode] = useState<'grid' | 'agenda' | 'year'>('grid');
 
     // Dialog States
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -493,7 +493,7 @@ export default function MarketingCalendarPage({
                                 ))}
                             </div>
 
-                            {/* Grid vs Agenda Toggle */}
+                            {/* Grid vs Agenda vs Year Toggle */}
                             <div className="flex items-center rounded-xl border border-border bg-muted/30 p-1 text-xs">
                                 <button
                                     type="button"
@@ -518,6 +518,18 @@ export default function MarketingCalendarPage({
                                 >
                                     <List className="h-3.5 w-3.5" />
                                     Agenda
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode('year')}
+                                    className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-medium transition-all ${
+                                        viewMode === 'year'
+                                            ? 'bg-card text-foreground shadow-xs font-semibold'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                >
+                                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                                    Full Year ({currentYear})
                                 </button>
                             </div>
                         </div>
@@ -605,7 +617,7 @@ export default function MarketingCalendarPage({
                                         })}
                                     </div>
                                 </Card>
-                            ) : (
+                            ) : viewMode === 'agenda' ? (
                                 /* Agenda View */
                                 <Card className="rounded-3xl border-border bg-card shadow-xs p-6 space-y-4">
                                     <div className="flex items-center justify-between border-b border-border pb-3">
@@ -685,6 +697,154 @@ export default function MarketingCalendarPage({
                                         </div>
                                     )}
                                 </Card>
+                            ) : (
+                                /* Full Year Overview (12 Months) */
+                                <div className="space-y-6">
+                                    {/* Year Summary Metric Cards */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                        {[
+                                            {
+                                                label: 'Total in ' + currentYear,
+                                                count: filteredEvents.filter((evt) => new Date(evt.date).getFullYear() === currentYear).length,
+                                                bg: 'bg-primary/10',
+                                                text: 'text-primary',
+                                                border: 'border-primary/20',
+                                            },
+                                            {
+                                                label: 'Regular Holidays',
+                                                count: filteredEvents.filter((evt) => new Date(evt.date).getFullYear() === currentYear && (evt.category === 'regular' || evt.type === 'holiday')).length,
+                                                bg: 'bg-rose-500/10',
+                                                text: 'text-rose-600 dark:text-rose-400',
+                                                border: 'border-rose-500/20',
+                                            },
+                                            {
+                                                label: 'Special Non-Working',
+                                                count: filteredEvents.filter((evt) => new Date(evt.date).getFullYear() === currentYear && evt.category === 'special_non_working').length,
+                                                bg: 'bg-amber-500/10',
+                                                text: 'text-amber-600 dark:text-amber-400',
+                                                border: 'border-amber-500/20',
+                                            },
+                                            {
+                                                label: 'Long Weekends',
+                                                count: filteredEvents.filter((evt) => new Date(evt.date).getFullYear() === currentYear && evt.is_long_weekend).length,
+                                                bg: 'bg-emerald-500/10',
+                                                text: 'text-emerald-600 dark:text-emerald-400',
+                                                border: 'border-emerald-500/20',
+                                            },
+                                        ].map((stat) => (
+                                            <div
+                                                key={stat.label}
+                                                className={`rounded-2xl border ${stat.border} ${stat.bg} p-4 space-y-1`}
+                                            >
+                                                <div className={`text-2xl font-extrabold ${stat.text}`}>
+                                                    {stat.count}
+                                                </div>
+                                                <div className="text-[11px] font-semibold text-muted-foreground">
+                                                    {stat.label}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* 12 Months Grid */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                        {monthNames.map((mName, mIdx) => {
+                                            const monthEvts = filteredEvents.filter((evt) => {
+                                                const dt = new Date(evt.date);
+                                                return dt.getFullYear() === currentYear && dt.getMonth() === mIdx;
+                                            });
+
+                                            return (
+                                                <Card
+                                                    key={mName}
+                                                    className="overflow-hidden rounded-3xl border-border bg-card shadow-xs flex flex-col justify-between"
+                                                >
+                                                    <div className="p-4 space-y-3">
+                                                        {/* Month Header */}
+                                                        <div className="flex items-center justify-between border-b border-border/80 pb-2.5">
+                                                            <div className="flex items-center gap-2">
+                                                                <h4 className="text-sm font-bold text-foreground">
+                                                                    {mName}
+                                                                </h4>
+                                                                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                                                                    {monthEvts.length}
+                                                                </span>
+                                                            </div>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setCurrentDate(new Date(currentYear, mIdx, 1));
+                                                                    setViewMode('grid');
+                                                                }}
+                                                                className="text-[11px] font-semibold text-primary hover:underline"
+                                                            >
+                                                                Open Grid →
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Month Events List */}
+                                                        {monthEvts.length === 0 ? (
+                                                            <div className="py-6 text-center text-xs text-muted-foreground/60">
+                                                                No holidays or events
+                                                            </div>
+                                                        ) : (
+                                                            <div className="space-y-2">
+                                                                {monthEvts.map((evt) => {
+                                                                    const styleKey = evt.category || evt.type || 'holiday';
+                                                                    const style = categoryStyles[styleKey] || categoryStyles.holiday;
+                                                                    const dayNumber = new Date(evt.date).getDate();
+
+                                                                    return (
+                                                                        <div
+                                                                            key={evt.id}
+                                                                            onClick={() => setSelectedEvent(evt)}
+                                                                            className="flex items-center justify-between gap-2.5 rounded-xl border border-border/70 bg-card/60 p-2.5 transition-all hover:bg-muted/40 cursor-pointer shadow-2xs group"
+                                                                        >
+                                                                            <div className="flex items-center gap-2 min-w-0">
+                                                                                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg font-bold text-[11px] ${style.bg} ${style.text}`}>
+                                                                                    {dayNumber}
+                                                                                </div>
+                                                                                <div className="min-w-0">
+                                                                                    <p className="text-xs font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                                                                                        {evt.name}
+                                                                                    </p>
+                                                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                                                        <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${style.dot}`} />
+                                                                                        <span className="text-[10px] text-muted-foreground truncate">
+                                                                                            {style.label}
+                                                                                        </span>
+                                                                                        {evt.is_long_weekend && (
+                                                                                            <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded-sm">
+                                                                                                Long Weekend
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    router.visit(`/generator?event_id=${evt.id}`);
+                                                                                }}
+                                                                                className="shrink-0 p-1.5 rounded-lg border border-primary/20 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all"
+                                                                                title="Generate Visuals"
+                                                                            >
+                                                                                <Sparkles className="h-3.5 w-3.5" />
+                                                                            </button>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </Card>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
                             )}
 
                             {/* Indicator Color Legend */}

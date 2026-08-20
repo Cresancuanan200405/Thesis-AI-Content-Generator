@@ -104,7 +104,7 @@ it('authenticated user can create a generator request', function () {
         ->and(Storage::disk('public')->exists($design->generated_image_path))->toBeTrue();
 });
 
-it('shows a helpful error when the OpenAI API key is missing', function () {
+it('generates fallback visual when Gemini API key is missing', function () {
     $user = User::factory()->create([
         'onboarding_completed' => true,
     ]);
@@ -124,7 +124,7 @@ it('shows a helpful error when the OpenAI API key is missing', function () {
         'name' => 'Spring Launch',
     ]);
 
-    config()->set('services.openai.api_key', null);
+    config()->set('services.gemini.api_key', null);
 
     $this->actingAs($user)
         ->post('/generator', [
@@ -135,5 +135,10 @@ it('shows a helpful error when the OpenAI API key is missing', function () {
             'brand_tone' => ['Professional'],
         ])
         ->assertRedirect('/generator')
-        ->assertSessionHas('error', 'Your design could not be generated right now. Please try again.');
+        ->assertSessionHas('success', 'Your marketing asset has been generated.');
+
+    $this->assertDatabaseHas('generation_requests', [
+        'user_id' => $user->id,
+        'status' => 'completed',
+    ]);
 });

@@ -89,15 +89,30 @@ export default function Login({ status, canResetPassword }: Props) {
 
                             {/* Password */}
                             <div className="grid gap-2">
+                                <Label htmlFor="password" className="text-sm font-medium text-foreground">
+                                    Password
+                                </Label>
+
+                                <div className={fieldGlow}>
+                                    <PasswordInput
+                                        id="password"
+                                        name="password"
+                                        required
+                                        tabIndex={2}
+                                        autoComplete="current-password"
+                                        placeholder="Enter your password"
+                                        className="h-11 rounded-xl border-border bg-background text-foreground placeholder:text-muted-foreground/60"
+                                    />
+                                </div>
+
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="password" className="text-sm font-medium text-foreground">
-                                        Password
-                                    </Label>
+                                    <InputError message={errors.password} />
 
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
                                             className="
+                                                ml-auto
                                                 text-xs
                                                 font-medium
                                                 text-[#2563EB]
@@ -113,20 +128,6 @@ export default function Login({ status, canResetPassword }: Props) {
                                         </TextLink>
                                     )}
                                 </div>
-
-                                <div className={fieldGlow}>
-                                    <PasswordInput
-                                        id="password"
-                                        name="password"
-                                        required
-                                        tabIndex={2}
-                                        autoComplete="current-password"
-                                        placeholder="Enter your password"
-                                        className="h-11 rounded-xl border-border bg-background text-foreground placeholder:text-muted-foreground/60"
-                                    />
-                                </div>
-
-                                <InputError message={errors.password} />
                             </div>
 
                             {/* Remember Me */}
