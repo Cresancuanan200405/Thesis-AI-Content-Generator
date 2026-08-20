@@ -14,6 +14,26 @@ class UpdateCampaignRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $merge = [];
+        if ($this->has('product_id')) {
+            $merge['product_id'] = $this->filled('product_id') ? (int) $this->input('product_id') : null;
+        }
+        if ($this->has('event_id')) {
+            $merge['event_id'] = $this->filled('event_id') ? (int) $this->input('event_id') : null;
+        }
+        if ($this->has('start_date')) {
+            $merge['start_date'] = $this->filled('start_date') ? $this->input('start_date') : null;
+        }
+        if ($this->has('end_date')) {
+            $merge['end_date'] = $this->filled('end_date') ? $this->input('end_date') : null;
+        }
+        if (! empty($merge)) {
+            $this->merge($merge);
+        }
+    }
+
     /**
      * @return array<string, array<int, string>>
      */

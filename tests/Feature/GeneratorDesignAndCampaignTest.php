@@ -151,8 +151,9 @@ it('user can save a design with include_logo enabled', function () {
 
     $design = Design::where('product_name', 'Rose Hydrating Mist')->first();
     expect($design)->not->toBeNull();
-    $svgContent = Storage::disk('public')->get($design->generated_image_path);
-    expect($svgContent)->toContain('BRAND: Aura Cosmetics');
+    expect($design->generated_image_path)->not->toBeNull();
+    Storage::disk('public')->assertExists($design->generated_image_path);
+    expect($design->generation_metadata['include_logo'] ?? false)->toBeTrue();
 });
 
 it('user can attach an existing design to an existing campaign', function () {

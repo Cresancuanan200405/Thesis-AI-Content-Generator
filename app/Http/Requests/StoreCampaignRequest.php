@@ -15,6 +15,18 @@ class StoreCampaignRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'product_id' => $this->filled('product_id') ? (int) $this->input('product_id') : null,
+            'event_id' => $this->filled('event_id') ? (int) $this->input('event_id') : null,
+            'design_id' => $this->filled('design_id') ? (int) $this->input('design_id') : null,
+            'start_date' => $this->filled('start_date') ? $this->input('start_date') : null,
+            'end_date' => $this->filled('end_date') ? $this->input('end_date') : null,
+            'status' => $this->filled('status') ? $this->input('status') : 'draft',
+        ]);
+    }
+
     /**
      * @return array<string, array<int, string>>
      */

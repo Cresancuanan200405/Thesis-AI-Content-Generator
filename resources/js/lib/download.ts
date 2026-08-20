@@ -17,6 +17,28 @@ export async function downloadVisualAsFormat(
 
     try {
         if (format === 'svg') {
+            if (imageUrl.includes('.svg')) {
+                try {
+                    const res = await fetch(imageUrl);
+                    if (res.ok) {
+                        const svgText = await res.text();
+                        const blob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${cleanName}.svg`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        toast.success(`Downloaded ${cleanName}.svg`);
+                        return;
+                    }
+                } catch {
+                    // fallback to canvas/img below
+                }
+            }
+
             const img = new Image();
             img.crossOrigin = 'anonymous';
             img.onload = () => {

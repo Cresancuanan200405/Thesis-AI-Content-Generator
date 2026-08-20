@@ -15,6 +15,23 @@ class StoreDesignRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $cleanPrice = null;
+        if ($this->filled('price')) {
+            $rawPrice = (string) $this->input('price');
+            $numeric = preg_replace('/[^0-9.]/', '', $rawPrice);
+            $cleanPrice = $numeric !== '' ? (float) $numeric : null;
+        }
+
+        $this->merge([
+            'price' => $cleanPrice,
+            'event_id' => $this->filled('event_id') ? (int) $this->input('event_id') : null,
+            'product_id' => $this->filled('product_id') ? (int) $this->input('product_id') : null,
+            'campaign_id' => $this->filled('campaign_id') ? (int) $this->input('campaign_id') : null,
+        ]);
+    }
+
     /**
      * @return array<string, array<int, string>>
      */

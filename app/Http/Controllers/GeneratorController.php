@@ -10,8 +10,8 @@ use App\Models\Event;
 use App\Models\GenerationRequest;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\GeminiImageService;
 use App\Services\MarketingPromptBuilder;
-use App\Services\OpenAIImageService;
 use App\Services\PhilippineHolidayService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -112,6 +112,9 @@ class GeneratorController extends Controller
 
     public function store(StoreGeneratorRequest $request): RedirectResponse
     {
+        @set_time_limit(120);
+        @ini_set('max_execution_time', '120');
+
         /** @var User $user */
         $user = $request->user();
         /** @var Business $business */
@@ -122,6 +125,21 @@ class GeneratorController extends Controller
         if ($request->hasFile('reference_image')) {
             $referenceImagePath = $request->file('reference_image')->store('generation-requests', 'public');
         }
+
+        // Resolve product details for context
+        $product = ! empty($payload['product_id']) ? Product::find($payload['product_id']) : null;
+        $campaign = ! empty($payload['campaign_id']) ? Campaign::find($payload['campaign_id']) : null;
+        $event = ! empty($payload['event_id']) ? Event::find($payload['event_id']) : null;
+
+        // Resolve product image as reference (catalog selection)
+        if (! $referenceImagePath && $product?->image_path) {
+            $referenceImagePath = $product->image_path;
+        }
+
+        // Resolve logo if opted in
+        $includeLogo = ! empty($payload['include_logo']);
+        $logoPath = ($includeLogo && $business->logo_path) ? $business->logo_path : null;
+        $productImageUrl = $product?->image_path ? asset('storage/'.$product->image_path) : null;
 
         $prompt = app(MarketingPromptBuilder::class)->build($payload, $business);
 
@@ -146,9 +164,42 @@ class GeneratorController extends Controller
         ]);
 
         try {
-            $generatedImagePath = app(OpenAIImageService::class)->generate($prompt);
+            $generatedImagePath = app(GeminiImageService::class)->generate($prompt, [
+                // Step 1 — Product & Campaign
+                'product_name' => $payload['product_name'],
+                'product_description' => $product?->description,
+                'product_category' => $product?->category ?? $business->category,
+                'product_image_url' => $productImageUrl,
+                'campaign_name' => $campaign?->name,
+                'campaign_objective' => $campaign?->objective,
+                'event_name' => $event?->name,
+                'price' => $payload['price'] ?? null,
+
+                // Step 2 — Style & Tone
+                'brand_tone' => $payload['brand_tone'] ?? [],
+                'visual_theme' => $payload['content_style'] ?? [],
+
+                // Step 3 — Canvas
+                'tagline' => $payload['tagline'] ?? null,
+                'tagline_mode' => $payload['tagline_mode'] ?? 'ai',
+                'include_logo' => $includeLogo,
+                'aspect_ratio' => $payload['aspect_ratio'] ?? '1:1',
+
+                // Onboarding / Business Context
+                'business_name' => $business->name,
+                'business_industry' => $business->industry,
+                'business_description' => $business->description,
+                'business_target_audience' => $business->target_audience,
+                'business_usp' => $business->unique_selling_point,
+                'business_content_style' => $business->content_style,
+                'business_marketing_prefs' => $business->marketing_preferences,
+
+                // Reference image (uploaded file or catalog product image)
+                'reference_image_path' => $referenceImagePath,
+                'logo_path' => $logoPath,
+            ]);
         } catch (RuntimeException $exception) {
-            Log::error('OpenAI image generation failed.', [
+            Log::error('Gemini image generation failed.', [
                 'user_id' => $user->id,
                 'business_id' => $business->id,
                 'generation_request_id' => $generationRequest->id,
@@ -182,10 +233,8 @@ class GeneratorController extends Controller
             'reference_image_path' => $referenceImagePath,
             'generated_image_path' => $generatedImagePath,
             'generation_metadata' => [
-                'source' => 'openai',
-                'model' => config('services.openai.model', 'gpt-image-1'),
-                'size' => config('services.openai.size', '1024x1024'),
-                'quality' => config('services.openai.quality', 'high'),
+                'source' => 'gemini',
+                'model' => config('services.gemini.model', 'gemini-2.5-flash-image'),
                 'generation_request_id' => $generationRequest->id,
             ],
             'status' => 'completed',

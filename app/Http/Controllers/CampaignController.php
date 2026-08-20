@@ -160,7 +160,11 @@ class CampaignController extends Controller
         if (! $businessId) {
             $business = $user->business()->firstOrCreate(
                 ['user_id' => $user->id],
-                ['name' => ($user->name ?: 'My').' Business']
+                [
+                    'name' => ($user->name ?: 'My').' Business',
+                    'industry' => 'Retail',
+                    'category' => 'Retail & E-commerce',
+                ]
             );
             $businessId = $business->id;
         }
@@ -170,12 +174,12 @@ class CampaignController extends Controller
 
         $campaign = $user->campaigns()->create([
             'business_id' => $businessId,
-            'product_id' => $request->input('product_id'),
-            'event_id' => $request->input('event_id'),
+            'product_id' => $request->input('product_id') ?: null,
+            'event_id' => $request->input('event_id') ?: null,
             'name' => $request->input('name'),
-            'description' => $request->input('description'),
+            'description' => $request->input('description') ?: null,
             'objective' => $request->input('objective') ?: ('Campaign for '.$request->input('name')),
-            'target_audience' => $request->input('target_audience'),
+            'target_audience' => $request->input('target_audience') ?: null,
             'start_date' => $startDate,
             'end_date' => $endDate,
             'status' => $request->input('status', 'draft') ?: 'draft',

@@ -145,7 +145,7 @@ export default function Dashboard({
                     <section className="relative overflow-hidden rounded-3xl border border-border/80 bg-card p-6 md:p-8 shadow-sm">
                         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
                             <div className="space-y-1.5">
-                                <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                                <div className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
                                     <Sparkles className="h-3.5 w-3.5" />
                                     {business?.name || 'AI Marketing Studio'}
                                 </div>
@@ -160,18 +160,17 @@ export default function Dashboard({
                             </div>
 
                             <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-                                <Button asChild variant="outline" className="shadow-none gap-1.5 text-xs font-semibold">
+                                <Button asChild variant="outline" className="rounded-xl shadow-none gap-1.5 text-xs font-semibold h-10 px-4">
                                     <Link href="/campaigns/create">
                                         <Plus className="h-4 w-4" />
                                         New Campaign
                                     </Link>
                                 </Button>
 
-                                <Button asChild className="gap-2 shadow-sm text-xs font-semibold">
+                                <Button asChild className="rounded-xl gap-2 shadow-sm text-xs font-semibold h-10 px-4">
                                     <Link href="/generator">
                                         <Sparkles className="h-4 w-4" />
                                         Generate AI Design
-                                        <ArrowRight className="h-4 w-4" />
                                     </Link>
                                 </Button>
                             </div>
@@ -209,8 +208,8 @@ export default function Dashboard({
 
                                     <div className="mt-2 flex items-center justify-between border-t border-border/50 pt-2 text-[11px] text-muted-foreground">
                                         <span>{metric.trend}</span>
-                                        <span className="font-semibold text-primary group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
-                                            View <ArrowRight className="h-3 w-3" />
+                                        <span className="font-semibold text-primary group-hover:underline transition-colors">
+                                            View Details
                                         </span>
                                     </div>
                                 </Link>
@@ -308,9 +307,9 @@ export default function Dashboard({
                                     <ImageIcon className="h-4 w-4 text-primary" />
                                     Recent AI Visuals
                                 </h2>
-                                <Button asChild variant="ghost" size="sm" className="text-xs text-primary hover:underline gap-1">
+                                <Button asChild variant="ghost" size="sm" className="text-xs text-primary font-semibold hover:underline">
                                     <Link href="/designs">
-                                        View Library ({totalDesigns}) →
+                                        View Library ({totalDesigns})
                                     </Link>
                                 </Button>
                             </div>
@@ -377,9 +376,9 @@ export default function Dashboard({
                                     <Calendar className="h-4 w-4 text-primary" />
                                     Key Retail Dates
                                 </h2>
-                                <Button asChild variant="ghost" size="sm" className="text-xs text-primary hover:underline gap-1">
+                                <Button asChild variant="ghost" size="sm" className="text-xs text-primary font-semibold hover:underline">
                                     <Link href="/calendar">
-                                        Calendar →
+                                        View Calendar
                                     </Link>
                                 </Button>
                             </div>
@@ -424,7 +423,7 @@ export default function Dashboard({
                                                     className="h-7 text-xs font-semibold text-primary hover:bg-primary/10 p-1 px-2.5"
                                                 >
                                                     <Link href={`/generator?event_id=${evt.id}`}>
-                                                        Launch Brief →
+                                                        Launch Brief
                                                     </Link>
                                                 </Button>
                                             </div>

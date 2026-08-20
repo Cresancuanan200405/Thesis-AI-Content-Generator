@@ -9,7 +9,7 @@ use App\Models\Event;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\DesignRegenerationService;
-use App\Services\MockupImageService;
+use App\Services\GeminiImageService;
 use App\Services\NotificationService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -25,7 +25,7 @@ class DesignController extends Controller
 {
     public function __construct(
         protected DesignRegenerationService $designRegenerationService,
-        protected MockupImageService $mockupImageService
+        protected GeminiImageService $geminiImageService
     ) {}
 
     public function index(Request $request): Response
@@ -161,6 +161,9 @@ class DesignController extends Controller
 
     public function store(StoreDesignRequest $request): \Symfony\Component\HttpFoundation\Response
     {
+        @set_time_limit(120);
+        @ini_set('max_execution_time', '120');
+
         /** @var User $user */
         $user = $request->user();
 
@@ -168,7 +171,11 @@ class DesignController extends Controller
         if (! $businessId) {
             $business = $user->business()->firstOrCreate(
                 ['user_id' => $user->id],
-                ['name' => ($user->name ?: 'My').' Business']
+                [
+                    'name' => ($user->name ?: 'My').' Business',
+                    'industry' => 'Retail',
+                    'category' => 'Retail & E-commerce',
+                ]
             );
             $businessId = $business->id;
         }
@@ -186,11 +193,19 @@ class DesignController extends Controller
         $referenceImagePath = null;
         if ($request->hasFile('reference_image')) {
             $referenceImagePath = $request->file('reference_image')->store('generation-requests', 'public');
-        } elseif ($request->filled('product_id')) {
+        }
+
+        $product = null;
+        if ($request->filled('product_id')) {
             $product = Product::query()->find($request->input('product_id'));
             if ($product && $product->image_path) {
-                $referenceImagePath = $product->image_path;
+                $referenceImagePath = $referenceImagePath ?: $product->image_path;
             }
+        }
+
+        $campaign = null;
+        if ($request->filled('campaign_id')) {
+            $campaign = Campaign::query()->find($request->input('campaign_id'));
         }
 
         $event = null;
@@ -202,16 +217,47 @@ class DesignController extends Controller
         $includeLogo = (bool) $request->boolean('include_logo', false);
         $aspectRatio = (string) ($request->input('aspect_ratio') ?? '1:1');
 
-        $generatedImagePath = $this->mockupImageService->generate([
+        // Resolve logo path for brand badge (if user opted in)
+        $logoPath = ($includeLogo && $business?->logo_path) ? $business->logo_path : null;
+
+        // Resolve product image URL (for reference when product chosen from catalog)
+        $productImageUrl = $product?->image_path ? asset('storage/'.$product->image_path) : null;
+
+        $prompt = (string) ($request->input('prompt') ?? $request->input('image_prompt') ?? ('Marketing visual for '.$request->input('product_name')));
+
+        $generatedImagePath = $this->geminiImageService->generate($prompt, [
+            // Step 1 — Product & Campaign
             'product_name' => (string) $request->input('product_name'),
-            'tagline' => $request->input('tagline'),
-            'brand_tone' => $brandTone,
-            'visual_theme' => $visualTheme,
+            'product_description' => $product?->description,
+            'product_category' => $product?->category ?? $business?->category,
+            'product_image_url' => $productImageUrl,
+            'campaign_name' => $campaign?->name,
+            'campaign_objective' => $campaign?->objective,
             'event_name' => $event?->name,
             'price' => $request->input('price'),
+
+            // Step 2 — Style & Tone
+            'brand_tone' => $brandTone,
+            'visual_theme' => $visualTheme,
+
+            // Step 3 — Canvas
+            'tagline' => $request->input('tagline'),
+            'tagline_mode' => $request->input('tagline_mode', 'ai'),
             'include_logo' => $includeLogo,
-            'business_name' => $business?->name,
             'aspect_ratio' => $aspectRatio,
+
+            // Onboarding / Business Context
+            'business_name' => $business?->name,
+            'business_industry' => $business?->industry,
+            'business_description' => $business?->description,
+            'business_target_audience' => $business?->target_audience,
+            'business_usp' => $business?->unique_selling_point,
+            'business_content_style' => $business?->content_style,
+            'business_marketing_prefs' => $business?->marketing_preferences,
+
+            // Reference image (uploaded file or catalog product image)
+            'reference_image_path' => $referenceImagePath,
+            'logo_path' => $logoPath,
         ]);
 
         $design = $user->designs()->create([
@@ -220,7 +266,7 @@ class DesignController extends Controller
             'event_id' => $request->input('event_id'),
             'product_id' => $request->input('product_id'),
             'product_name' => $request->input('product_name'),
-            'prompt' => $request->input('prompt') ?? $request->input('image_prompt') ?? ('Design for '.$request->input('product_name')),
+            'prompt' => $prompt,
             'price' => $request->input('price'),
             'brand_tone' => $brandTone,
             'visual_theme' => $visualTheme,
@@ -229,10 +275,8 @@ class DesignController extends Controller
             'reference_image_path' => $referenceImagePath,
             'generated_image_path' => $generatedImagePath,
             'generation_metadata' => [
-                'source' => 'mockup',
-                'is_mockup' => true,
-                'model' => 'mockup-generator-v1',
-                'format' => 'svg',
+                'source' => 'gemini',
+                'model' => config('services.gemini.model', 'gemini-2.5-flash-image'),
                 'include_logo' => $includeLogo,
                 'aspect_ratio' => $aspectRatio,
             ],

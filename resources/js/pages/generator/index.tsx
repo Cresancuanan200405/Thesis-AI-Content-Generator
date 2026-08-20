@@ -512,50 +512,37 @@ export default function GeneratorPage() {
         }
     };
 
-    // Generation Flow
-    const generateMarketingImage = () => {
+    // Generation Flow - Real Gemini Generator
+    const generateMarketingImage = async () => {
         if (!form.product_name.trim() || !form.image_prompt.trim()) {
             toast.error('Please provide a product name and image prompt.');
             return;
         }
 
         setGenerationState('generating');
-        setGenerationProgress(0);
+        setGenerationProgress(20);
 
-        let progress = 0;
-        const interval = window.setInterval(() => {
-            progress += 25;
-            setGenerationProgress(Math.min(progress, 100));
+        const progressTimer = window.setInterval(() => {
+            setGenerationProgress((prev) => (prev < 90 ? prev + 15 : prev));
+        }, 800);
 
-            if (progress >= 100) {
-                window.clearInterval(interval);
-                window.setTimeout(() => {
-                    setGenerationState('ready');
-                }, 400);
-            }
-        }, 400);
-    };
-
-    // Save to designs backend
-    const saveToDesigns = async () => {
-        if (isSavingDesign) return;
-        if (isSavedToDesigns && savedDesign) {
-            toast.info('Design is already saved in My Designs.');
-            return savedDesign;
-        }
-
-        setIsSavingDesign(true);
         try {
             const formData = new FormData();
             formData.append('product_name', form.product_name);
             formData.append('image_prompt', form.image_prompt);
             formData.append('prompt', form.image_prompt);
-            if (form.price) formData.append('price', form.price);
-            if (form.event_id) formData.append('event_id', form.event_id);
-            if (form.product_id) formData.append('product_id', form.product_id);
-            if (form.campaign_id) formData.append('campaign_id', form.campaign_id);
+
+            if (form.price) {
+                const cleanPrice = String(form.price).replace(/[^0-9.]/g, '');
+                if (cleanPrice) {
+                    formData.append('price', cleanPrice);
+                }
+            }
+            if (form.event_id) formData.append('event_id', String(form.event_id));
+            if (form.product_id) formData.append('product_id', String(form.product_id));
+            if (form.campaign_id) formData.append('campaign_id', String(form.campaign_id));
             if (form.aspect_ratio) formData.append('aspect_ratio', form.aspect_ratio);
-            formData.append('tagline_mode', form.tagline_mode);
+            formData.append('tagline_mode', form.tagline_mode || 'ai');
             if (form.tagline_mode !== 'none' && form.tagline) {
                 formData.append('tagline', form.tagline);
             }
@@ -576,17 +563,195 @@ export default function GeneratorPage() {
                 body: formData,
             });
 
-            if (!response.ok) throw new Error('Failed to save design');
-            const data = await response.json();
+            const data = await response.json().catch(() => null);
+
+            window.clearInterval(progressTimer);
+            setGenerationProgress(100);
+
+            if (!response.ok) {
+                const errorMsg = data?.message || (data?.errors ? Object.values(data.errors).flat().join(', ') : 'Failed to generate visual');
+                throw new Error(errorMsg);
+            }
+
+            setSavedDesign(data.design);
+            setIsSavedToDesigns(true);
+            window.setTimeout(() => {
+                setGenerationState('ready');
+            }, 300);
+            toast.success('Generated marketing visual with Gemini AI!');
+        } catch (err: any) {
+            window.clearInterval(progressTimer);
+            setGenerationState('idle');
+            console.error(err);
+            toast.error(err.message || 'Generation failed. Please try again.');
+        }
+    };
+
+    // Save to designs backend
+    const saveToDesigns = async (targetCampaignId?: string) => {
+        if (isSavingDesign) return;
+        if (isSavedToDesigns && savedDesign) {
+            toast.info('Design is already saved in My Designs.');
+            return savedDesign;
+        }
+
+        setIsSavingDesign(true);
+        try {
+            const formData = new FormData();
+            formData.append('product_name', form.product_name);
+            formData.append('image_prompt', form.image_prompt);
+            formData.append('prompt', form.image_prompt);
+
+            if (form.price) {
+                const cleanPrice = String(form.price).replace(/[^0-9.]/g, '');
+                if (cleanPrice) {
+                    formData.append('price', cleanPrice);
+                }
+            }
+            if (form.event_id) formData.append('event_id', String(form.event_id));
+            if (form.product_id) formData.append('product_id', String(form.product_id));
+            if (targetCampaignId) formData.append('campaign_id', String(targetCampaignId));
+            if (form.aspect_ratio) formData.append('aspect_ratio', form.aspect_ratio);
+            formData.append('tagline_mode', form.tagline_mode || 'ai');
+            if (form.tagline_mode !== 'none' && form.tagline) {
+                formData.append('tagline', form.tagline);
+            }
+            if (form.include_logo) formData.append('include_logo', '1');
+            if (form.reference_image) {
+                formData.append('reference_image', form.reference_image);
+            }
+            form.content_style.forEach((style) => formData.append('content_style[]', style));
+            form.brand_tone.forEach((tone) => formData.append('brand_tone[]', tone));
+
+            const response = await fetch('/designs', {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '',
+                },
+                body: formData,
+            });
+
+            const data = await response.json().catch(() => null);
+
+            if (!response.ok) {
+                const errorMsg = data?.message || (data?.errors ? Object.values(data.errors).flat().join(', ') : 'Failed to save design');
+                throw new Error(errorMsg);
+            }
+
             setSavedDesign(data.design);
             setIsSavedToDesigns(true);
             toast.success('Design saved to My Designs!');
             return data.design;
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            toast.error('Unable to save design. Please try again.');
+            toast.error(err.message || 'Unable to save design. Please try again.');
         } finally {
             setIsSavingDesign(false);
+        }
+    };
+
+    // Attach to existing campaign
+    const handleAttachExistingCampaign = async () => {
+        if (!selectedExistingCampaignId) {
+            toast.error('Please select a campaign.');
+            return;
+        }
+
+        setIsAttachingCampaign(true);
+        try {
+            const targetCampaign = campaigns.find((c: any) => String(c.id) === String(selectedExistingCampaignId));
+            setForm((prev) => ({ ...prev, campaign_id: String(selectedExistingCampaignId) }));
+
+            if (isSavedToDesigns && savedDesign?.id) {
+                const res = await fetch(`/designs/${savedDesign.id}/attach-campaign`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '',
+                    },
+                    body: JSON.stringify({ campaign_id: selectedExistingCampaignId }),
+                });
+
+                if (!res.ok) {
+                    const data = await res.json().catch(() => null);
+                    throw new Error(data?.message || 'Failed to attach to campaign');
+                }
+            } else if (generationState === 'ready') {
+                await saveToDesigns(selectedExistingCampaignId);
+            }
+
+            setIsCampaignModalOpen(false);
+            toast.success(`Linked to campaign "${targetCampaign?.name || 'Campaign'}"!`);
+        } catch (err: any) {
+            console.error(err);
+            toast.error(err.message || 'Failed to link to campaign.');
+        } finally {
+            setIsAttachingCampaign(false);
+        }
+    };
+
+    // Create new campaign & link visual
+    const handleCreateAndLinkCampaign = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const name = campaignFormData.name.trim();
+        if (!name) {
+            setCampaignFormErrors({ name: 'Campaign name is required.' });
+            return;
+        }
+
+        setIsCreatingCampaign(true);
+        setCampaignFormErrors({});
+
+        try {
+            const payload: any = {
+                name,
+                event_id: campaignFormData.event_id || form.event_id || null,
+                start_date: campaignFormData.start_date || new Date().toISOString().split('T')[0],
+                end_date: campaignFormData.end_date || campaignFormData.start_date || new Date().toISOString().split('T')[0],
+                status: 'draft',
+                objective: `Campaign for ${name}`,
+            };
+
+            if (isSavedToDesigns && savedDesign?.id) {
+                payload.design_id = savedDesign.id;
+            }
+
+            const response = await fetch('/campaigns', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await response.json().catch(() => null);
+
+            if (!response.ok) {
+                const errorMsg = data?.message || (data?.errors ? Object.values(data.errors).flat().join(', ') : 'Failed to create campaign');
+                throw new Error(errorMsg);
+            }
+
+            const newCampaignId = String(data.campaign.id);
+            setForm((prev) => ({ ...prev, campaign_id: newCampaignId }));
+
+            if (!isSavedToDesigns && generationState === 'ready') {
+                await saveToDesigns(newCampaignId);
+            }
+
+            setIsCampaignModalOpen(false);
+            toast.success(`Created and linked to campaign "${name}"!`);
+        } catch (err: any) {
+            console.error(err);
+            toast.error(err.message || 'Failed to create campaign.');
+        } finally {
+            setIsCreatingCampaign(false);
         }
     };
 
@@ -797,37 +962,37 @@ export default function GeneratorPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Generated Visual Canvas */}
-                                            <div className="flex items-center justify-center p-6 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white min-h-[340px]">
-                                                <div className="text-center space-y-3 max-w-md">
-                                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20 text-primary shadow-md">
-                                                        <Sparkles className="h-6 w-6 text-primary" />
+                                            {/* Generated Visual Canvas - Real Gemini Image */}
+                                            <div className="flex items-center justify-center p-3 sm:p-4 bg-muted/20 min-h-[360px] overflow-hidden rounded-2xl">
+                                                {savedDesign?.image_url ? (
+                                                    <div className="relative flex items-center justify-center max-h-[520px] w-full overflow-hidden rounded-2xl shadow-lg border border-border/50 bg-background/50">
+                                                        <img
+                                                            src={savedDesign.image_url}
+                                                            alt={form.product_name}
+                                                            className="max-h-[500px] w-auto max-w-full object-contain rounded-xl transition-transform duration-300 group-hover:scale-[1.01]"
+                                                        />
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-3">
+                                                            <span className="text-xs font-semibold text-white bg-black/70 px-3.5 py-1.5 rounded-xl backdrop-blur-md shadow-md">
+                                                                Click to view full size
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                    <h3 className="text-xl font-bold">{form.product_name}</h3>
-                                                    {form.tagline && form.tagline_mode !== 'none' && (
-                                                        <p className="text-xs text-slate-300 font-medium">"{form.tagline}"</p>
-                                                    )}
-                                                    {form.price && (
-                                                        <p className="text-base font-bold text-sky-400">
-                                                            ₱{Number(form.price).toLocaleString()}
-                                                        </p>
-                                                    )}
-                                                    <div className="flex flex-wrap items-center justify-center gap-1.5 pt-2">
-                                                        {selectedEvent && (
-                                                            <Badge variant="outline" className="border-pink-500/40 bg-pink-500/10 text-[10px] text-pink-300">
-                                                                {selectedEvent.name}
-                                                            </Badge>
+                                                ) : (
+                                                    <div className="text-center space-y-3 max-w-md p-6 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white rounded-2xl w-full">
+                                                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20 text-primary shadow-md">
+                                                            <Sparkles className="h-6 w-6 text-primary" />
+                                                        </div>
+                                                        <h3 className="text-xl font-bold">{form.product_name}</h3>
+                                                        {form.tagline && form.tagline_mode !== 'none' && (
+                                                            <p className="text-xs text-slate-300 font-medium">"{form.tagline}"</p>
                                                         )}
-                                                        {form.content_style.slice(0, 2).map((st) => (
-                                                            <Badge key={st} variant="outline" className="border-indigo-500/40 bg-indigo-500/10 text-[10px] text-indigo-300">
-                                                                {st}
-                                                            </Badge>
-                                                        ))}
+                                                        {form.price && (
+                                                            <p className="text-base font-bold text-sky-400">
+                                                                ₱{Number(form.price).toLocaleString()}
+                                                            </p>
+                                                        )}
                                                     </div>
-                                                    <p className="text-[11px] text-slate-400 pt-2 group-hover:text-primary transition-colors flex items-center justify-center gap-1">
-                                                        Click visual to view full screen →
-                                                    </p>
-                                                </div>
+                                                )}
                                             </div>
                                         </div>
 
@@ -853,7 +1018,7 @@ export default function GeneratorPage() {
                                             <div className="grid gap-2.5 sm:grid-cols-3">
                                                 <Button
                                                     type="button"
-                                                    onClick={saveToDesigns}
+                                                    onClick={() => saveToDesigns()}
                                                     disabled={isSavingDesign}
                                                     variant={isSavedToDesigns ? 'outline' : 'default'}
                                                     className="font-semibold text-xs h-10 shadow-sm"
@@ -1439,14 +1604,14 @@ export default function GeneratorPage() {
             ============================================================= */}
 
             <Dialog open={eventModalOpen} onOpenChange={setEventModalOpen}>
-                <DialogContent className="max-h-[90vh] overflow-hidden rounded-3xl p-0 sm:max-w-4xl border-border bg-card shadow-2xl">
-                    <DialogHeader className="border-b border-border p-6 pb-5 bg-muted/20">
+                <DialogContent className="max-h-[85vh] flex flex-col overflow-hidden rounded-3xl p-0 sm:max-w-4xl border-border bg-card shadow-2xl">
+                    <DialogHeader className="border-b border-border p-4 sm:p-5 bg-muted/20 shrink-0">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
                                 <CalendarDays className="h-5 w-5" />
                             </div>
                             <div>
-                                <DialogTitle className="text-xl font-bold text-foreground">
+                                <DialogTitle className="text-lg sm:text-xl font-bold text-foreground">
                                     Select Marketing Event or Holiday
                                 </DialogTitle>
                                 <DialogDescription className="text-xs text-muted-foreground mt-0.5">
@@ -1457,16 +1622,16 @@ export default function GeneratorPage() {
                     </DialogHeader>
 
                     {/* Filter & Year Toolbar */}
-                    <div className="border-b border-border p-5 space-y-3.5 bg-muted/10">
+                    <div className="border-b border-border p-4 space-y-3 bg-muted/10 shrink-0">
                         {/* Year Pills & Global Selector */}
-                        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                            <span className="text-xs font-semibold text-muted-foreground mr-1">Year:</span>
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                            <span className="text-xs font-semibold text-muted-foreground mr-1 shrink-0">Year:</span>
                             {availableYears.map((yr) => (
                                 <button
                                     key={yr}
                                     type="button"
                                     onClick={() => setSelectedYearTab(yr)}
-                                    className={`rounded-xl px-3 py-1.5 text-xs font-medium transition-all ${
+                                    className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-all shrink-0 ${
                                         selectedYearTab === yr ? 'bg-primary text-primary-foreground shadow-xs font-semibold' : 'bg-card text-muted-foreground hover:text-foreground border border-border/70'
                                     }`}
                                 >
@@ -1476,7 +1641,7 @@ export default function GeneratorPage() {
                             <button
                                 type="button"
                                 onClick={() => setSelectedYearTab('all')}
-                                className={`rounded-xl px-3 py-1.5 text-xs font-medium transition-all ${
+                                className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-all shrink-0 ${
                                     selectedYearTab === 'all' ? 'bg-primary text-primary-foreground shadow-xs font-semibold' : 'bg-card text-muted-foreground hover:text-foreground border border-border/70'
                                 }`}
                             >
@@ -1485,33 +1650,33 @@ export default function GeneratorPage() {
                         </div>
 
                         {/* Search & Category Tabs */}
-                        <div className="flex flex-col md:flex-row items-center gap-3">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
                             <div className="relative flex-1 w-full">
-                                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                                 <Input
                                     value={eventSearchQuery}
                                     onChange={(e) => setEventSearchQuery(e.target.value)}
                                     placeholder="Search events, holidays, sale dates, proclamations..."
-                                    className="h-10 pl-10 text-xs bg-card"
+                                    className="h-9 pl-9 text-xs bg-card"
                                 />
                             </div>
 
-                            <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
+                            <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
                                 {[
                                     { id: 'all', label: 'All' },
                                     { id: 'regular', label: 'Regular' },
                                     { id: 'special_non_working', label: 'Non-Working' },
-                                    { id: 'special_working', label: 'Special Working' },
+                                    { id: 'special_working', label: 'Working' },
                                     { id: 'islamic', label: 'Islamic' },
                                     { id: 'long_weekend', label: 'Long Weekends' },
-                                    { id: 'commercial', label: 'Sales & Commercial' },
+                                    { id: 'commercial', label: 'Sales' },
                                     { id: 'custom', label: 'Custom' },
                                 ].map((tab) => (
                                     <button
                                         key={tab.id}
                                         type="button"
                                         onClick={() => setEventCategoryFilter(tab.id)}
-                                        className={`rounded-xl px-3 py-1.5 text-xs font-medium transition-all shrink-0 ${
+                                        className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all shrink-0 ${
                                             eventCategoryFilter === tab.id
                                                 ? 'bg-primary text-primary-foreground shadow-xs font-semibold'
                                                 : 'bg-card text-muted-foreground hover:text-foreground border border-border/60'
@@ -1525,15 +1690,15 @@ export default function GeneratorPage() {
                     </div>
 
                     {/* Events List Grid */}
-                    <div className="max-h-[500px] min-h-[300px] overflow-y-auto p-5">
+                    <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-5">
                         {filteredEvents.length === 0 ? (
-                            <div className="py-16 text-center text-muted-foreground space-y-2">
-                                <CalendarDays className="mx-auto h-10 w-10 opacity-30" />
+                            <div className="py-12 text-center text-muted-foreground space-y-2">
+                                <CalendarDays className="mx-auto h-8 w-8 opacity-30" />
                                 <p className="text-sm font-semibold text-foreground">No events found matching your filter</p>
                                 <p className="text-xs text-muted-foreground">Try clearing search keywords or selecting "All" categories.</p>
                             </div>
                         ) : (
-                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="grid gap-2.5 sm:grid-cols-2 md:grid-cols-3">
                                 {filteredEvents.map((evt: EventItem) => {
                                     const isSelected = String(evt.id) === String(form.event_id);
                                     const styleKey = evt.category || evt.type || 'holiday';
@@ -1544,14 +1709,14 @@ export default function GeneratorPage() {
                                             key={evt.id}
                                             type="button"
                                             onClick={() => handleSelectEvent(evt)}
-                                            className={`group flex flex-col justify-between rounded-2xl border p-4 text-left transition-all ${
+                                            className={`group flex flex-col justify-between rounded-xl border p-3 text-left transition-all ${
                                                 isSelected
-                                                    ? 'border-primary bg-primary/10 ring-2 ring-primary/40 shadow-sm'
-                                                    : 'border-border bg-card hover:border-primary/50 hover:bg-muted/30 hover:shadow-xs'
+                                                    ? 'border-primary bg-primary/10 ring-2 ring-primary/40 shadow-xs'
+                                                    : 'border-border bg-card hover:border-primary/50 hover:bg-muted/30'
                                             }`}
                                         >
-                                            <div className="space-y-2">
-                                                <div className="flex items-start justify-between gap-2">
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-start justify-between gap-1.5">
                                                     <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">
                                                         {evt.name}
                                                     </span>
@@ -1561,18 +1726,18 @@ export default function GeneratorPage() {
                                                 </div>
 
                                                 {evt.is_long_weekend && (
-                                                    <Badge variant="secondary" className="text-[10px] font-medium">
+                                                    <Badge variant="secondary" className="text-[9px] font-medium py-0">
                                                         Long Weekend
                                                     </Badge>
                                                 )}
                                             </div>
 
-                                            <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground pt-2.5 border-t border-border/50">
-                                                <span className="font-medium">{formatEventDateLabel(evt.date)}</span>
+                                            <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
+                                                <span className="font-medium text-[11px]">{formatEventDateLabel(evt.date)}</span>
                                                 {isSelected ? (
                                                     <span className="font-bold text-primary text-xs">Selected ✓</span>
                                                 ) : (
-                                                    <span className="text-[11px] font-medium group-hover:text-foreground transition-colors">Select →</span>
+                                                    <span className="text-[11px] font-medium group-hover:text-foreground transition-colors">Select</span>
                                                 )}
                                             </div>
                                         </button>
@@ -1724,29 +1889,39 @@ export default function GeneratorPage() {
                         </div>
                     </div>
 
-                    {/* Main Full View Canvas */}
+                    {/* Main Full View Canvas - Real Image */}
                     <div
                         className="relative flex h-full w-full flex-1 items-center justify-center p-4 sm:p-8 overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div
-                            className={`flex flex-col items-center justify-center rounded-3xl border border-white/20 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-8 text-center text-white drop-shadow-2xl transition-all duration-300 ${
-                                isFullViewDetailsExpanded ? 'scale-90 -translate-y-8' : 'scale-100'
-                            } ${
-                                form.aspect_ratio === '9:16'
-                                    ? 'w-[320px] h-[570px]'
-                                    : form.aspect_ratio === '16:9'
-                                      ? 'w-[680px] h-[380px]'
-                                      : form.aspect_ratio === '4:5'
-                                        ? 'w-[400px] h-[500px]'
-                                        : 'w-[480px] h-[480px]'
-                            }`}
-                        >
-                            <Sparkles className="h-10 w-10 text-primary mb-3" />
-                            <h3 className="text-2xl font-bold">{form.product_name}</h3>
-                            {form.tagline && <p className="text-sm text-slate-300 mt-2">"{form.tagline}"</p>}
-                            {form.price && <p className="text-xl font-bold text-sky-400 mt-3">₱{Number(form.price).toLocaleString()}</p>}
-                        </div>
+                        {savedDesign?.image_url ? (
+                            <img
+                                src={savedDesign.image_url}
+                                alt={form.product_name}
+                                className={`max-h-[82vh] max-w-[90vw] object-contain rounded-2xl shadow-2xl drop-shadow-2xl transition-all duration-300 ${
+                                    isFullViewDetailsExpanded ? 'scale-90 -translate-y-6' : 'scale-100'
+                                }`}
+                            />
+                        ) : (
+                            <div
+                                className={`flex flex-col items-center justify-center rounded-3xl border border-white/20 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-8 text-center text-white drop-shadow-2xl transition-all duration-300 ${
+                                    isFullViewDetailsExpanded ? 'scale-90 -translate-y-8' : 'scale-100'
+                                } ${
+                                    form.aspect_ratio === '9:16'
+                                        ? 'w-[320px] h-[570px]'
+                                        : form.aspect_ratio === '16:9'
+                                          ? 'w-[680px] h-[380px]'
+                                          : form.aspect_ratio === '4:5'
+                                            ? 'w-[400px] h-[500px]'
+                                            : 'w-[480px] h-[480px]'
+                                }`}
+                            >
+                                <Sparkles className="h-10 w-10 text-primary mb-3" />
+                                <h3 className="text-2xl font-bold">{form.product_name}</h3>
+                                {form.tagline && <p className="text-sm text-slate-300 mt-2">"{form.tagline}"</p>}
+                                {form.price && <p className="text-xl font-bold text-sky-400 mt-3">₱{Number(form.price).toLocaleString()}</p>}
+                            </div>
+                        )}
                     </div>
 
                     {/* Bottom Fade-out Section with Toggle & Expandable Details */}
@@ -1774,7 +1949,7 @@ export default function GeneratorPage() {
                                     <Button
                                         type="button"
                                         size="sm"
-                                        onClick={saveToDesigns}
+                                        onClick={() => saveToDesigns()}
                                         disabled={isSavedToDesigns}
                                         className="gap-1.5 text-xs shadow-none"
                                     >
@@ -1918,6 +2093,164 @@ export default function GeneratorPage() {
                             Yes, Regenerate
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            {/* =============================================================
+                LINK TO CAMPAIGN MODAL
+            ============================================================= */}
+
+            <Dialog open={isCampaignModalOpen} onOpenChange={setIsCampaignModalOpen}>
+                <DialogContent className="rounded-3xl sm:max-w-md border-border bg-card shadow-2xl p-0 overflow-hidden">
+                    <DialogHeader className="p-5 pb-4 bg-muted/20 border-b border-border">
+                        <div className="flex items-center gap-2.5">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                <Layers className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <DialogTitle className="text-base font-bold text-foreground">
+                                    Link Design to Campaign
+                                </DialogTitle>
+                                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                                    Attach this creative visual to an active or scheduled campaign.
+                                </DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+
+                    {/* Tabs: Existing Campaign vs New Campaign */}
+                    <div className="p-5 space-y-4">
+                        <div className="flex items-center rounded-xl border border-border bg-muted/40 p-1 text-xs font-semibold">
+                            <button
+                                type="button"
+                                onClick={() => setCampaignModalTab('existing')}
+                                className={`flex-1 py-1.5 rounded-lg transition-all text-center ${
+                                    campaignModalTab === 'existing'
+                                        ? 'bg-card text-foreground shadow-xs'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                Existing Campaign
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setCampaignModalTab('new')}
+                                className={`flex-1 py-1.5 rounded-lg transition-all text-center ${
+                                    campaignModalTab === 'new'
+                                        ? 'bg-card text-foreground shadow-xs'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                + Create New Campaign
+                            </button>
+                        </div>
+
+                        {campaignModalTab === 'existing' ? (
+                            <div className="space-y-4">
+                                {campaigns.length === 0 ? (
+                                    <div className="p-6 text-center text-muted-foreground rounded-2xl border border-dashed border-border bg-muted/20 space-y-2">
+                                        <Layers className="mx-auto h-8 w-8 opacity-40" />
+                                        <p className="text-xs font-semibold text-foreground">No campaigns created yet</p>
+                                        <p className="text-[11px] text-muted-foreground">Switch to "Create New Campaign" to start one.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
+                                        {campaigns.map((c: any) => {
+                                            const isSelected = String(c.id) === String(selectedExistingCampaignId);
+                                            return (
+                                                <button
+                                                    key={c.id}
+                                                    type="button"
+                                                    onClick={() => setSelectedExistingCampaignId(String(c.id))}
+                                                    className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all ${
+                                                        isSelected
+                                                            ? 'border-primary bg-primary/10 ring-2 ring-primary/40 font-semibold'
+                                                            : 'border-border bg-card hover:border-primary/40 hover:bg-muted/20'
+                                                    }`}
+                                                >
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-xs font-bold text-foreground truncate">{c.name}</p>
+                                                        <p className="text-[10px] text-muted-foreground capitalize mt-0.5">Status: {c.status || 'draft'}</p>
+                                                    </div>
+                                                    {isSelected && <Check className="h-4 w-4 text-primary shrink-0 ml-2" />}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                <DialogFooter className="pt-2 border-t border-border gap-2">
+                                    <Button type="button" variant="outline" size="sm" onClick={() => setIsCampaignModalOpen(false)}>
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        disabled={!selectedExistingCampaignId || isAttachingCampaign || campaigns.length === 0}
+                                        onClick={handleAttachExistingCampaign}
+                                        className="gap-1.5"
+                                    >
+                                        {isAttachingCampaign ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                                        Link to Selected Campaign
+                                    </Button>
+                                </DialogFooter>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleCreateAndLinkCampaign} className="space-y-3.5">
+                                <div className="space-y-1">
+                                    <Label htmlFor="campaign_name" className="text-xs font-semibold">Campaign Name *</Label>
+                                    <Input
+                                        id="campaign_name"
+                                        value={campaignFormData.name}
+                                        onChange={(e) => setCampaignFormData({ ...campaignFormData, name: e.target.value })}
+                                        placeholder="e.g. Mid-Year Mega Sale Campaign"
+                                        className="h-9 text-xs"
+                                        required
+                                    />
+                                    {campaignFormErrors.name && (
+                                        <p className="text-[11px] text-destructive font-medium">{campaignFormErrors.name}</p>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-1">
+                                        <Label htmlFor="start_date" className="text-[11px] font-semibold">Start Date</Label>
+                                        <Input
+                                            id="start_date"
+                                            type="date"
+                                            value={campaignFormData.start_date}
+                                            onChange={(e) => setCampaignFormData({ ...campaignFormData, start_date: e.target.value })}
+                                            className="h-9 text-xs"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label htmlFor="end_date" className="text-[11px] font-semibold">End Date</Label>
+                                        <Input
+                                            id="end_date"
+                                            type="date"
+                                            value={campaignFormData.end_date}
+                                            onChange={(e) => setCampaignFormData({ ...campaignFormData, end_date: e.target.value })}
+                                            className="h-9 text-xs"
+                                        />
+                                    </div>
+                                </div>
+
+                                <DialogFooter className="pt-3 border-t border-border gap-2">
+                                    <Button type="button" variant="outline" size="sm" onClick={() => setIsCampaignModalOpen(false)}>
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        size="sm"
+                                        disabled={isCreatingCampaign || !campaignFormData.name.trim()}
+                                        className="gap-1.5"
+                                    >
+                                        {isCreatingCampaign ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                                        Create & Link Campaign
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        )}
+                    </div>
                 </DialogContent>
             </Dialog>
         </>

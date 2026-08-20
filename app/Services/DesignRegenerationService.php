@@ -11,7 +11,7 @@ class DesignRegenerationService
 {
     public function __construct(
         protected MarketingPromptBuilder $marketingPromptBuilder,
-        protected OpenAIImageService $openAIImageService,
+        protected GeminiImageService $geminiImageService,
     ) {}
 
     public function regenerate(Design $design): Design
@@ -60,7 +60,15 @@ class DesignRegenerationService
         ]);
 
         try {
-            $generatedImagePath = $this->openAIImageService->generate($prompt);
+            $generatedImagePath = $this->geminiImageService->generate($prompt, [
+                'product_name' => $design->product_name,
+                'tagline' => $design->tagline,
+                'brand_tone' => $brandTone,
+                'visual_theme' => $contentStyle,
+                'event_name' => $design->event?->name,
+                'price' => $design->price,
+                'aspect_ratio' => '1:1',
+            ]);
         } catch (RuntimeException $exception) {
             Log::error('Design regeneration failed.', [
                 'user_id' => $user->id,
@@ -96,7 +104,8 @@ class DesignRegenerationService
             'reference_image_path' => $design->reference_image_path,
             'generated_image_path' => $generatedImagePath,
             'generation_metadata' => [
-                'source' => 'openai',
+                'source' => 'gemini',
+                'model' => config('services.gemini.model', 'gemini-2.5-flash-image'),
                 'regenerated_from_design_id' => $design->id,
                 'generation_request_id' => $generationRequest->id,
             ],
