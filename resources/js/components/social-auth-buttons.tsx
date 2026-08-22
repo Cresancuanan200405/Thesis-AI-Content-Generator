@@ -56,40 +56,40 @@ export function SocialAuthButtons({
     };
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-2.5">
             {showDivider && (
                 <div className="relative flex items-center justify-center">
                     <div className="w-full border-t border-border" />
-                    <span className="absolute bg-card px-3 text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
+                    <span className="absolute bg-card px-2.5 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
                         {dividerText}
                     </span>
                 </div>
             )}
 
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-2">
                 <Button
                     type="button"
                     variant="outline"
                     onClick={() => handleSocialLogin('google')}
                     className="
                         card-elevated
-                        h-11
+                        h-9.5
                         w-full
-                        gap-2.5
+                        gap-2
                         rounded-xl
                         border-border
                         bg-card
-                        text-sm
+                        text-xs
                         font-medium
                         text-foreground
-                        shadow-sm
+                        shadow-xs
                         transition-all
                         duration-200
                         hover:bg-muted/60
                         active:scale-[0.98]
                     "
                 >
-                    <GoogleIcon className="h-4 w-4 shrink-0" />
+                    <GoogleIcon className="h-3.5 w-3.5 shrink-0" />
                     <span>Google</span>
                 </Button>
 
@@ -99,23 +99,23 @@ export function SocialAuthButtons({
                     onClick={() => handleSocialLogin('facebook')}
                     className="
                         card-elevated
-                        h-11
+                        h-9.5
                         w-full
-                        gap-2.5
+                        gap-2
                         rounded-xl
                         border-border
                         bg-card
-                        text-sm
+                        text-xs
                         font-medium
                         text-foreground
-                        shadow-sm
+                        shadow-xs
                         transition-all
                         duration-200
                         hover:bg-muted/60
                         active:scale-[0.98]
                     "
                 >
-                    <FacebookIcon className="h-4 w-4 shrink-0" />
+                    <FacebookIcon className="h-3.5 w-3.5 shrink-0" />
                     <span>Facebook</span>
                 </Button>
             </div>

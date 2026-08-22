@@ -19,44 +19,30 @@ type Props = {
 };
 
 const fieldGlow =
-    'group relative rounded-xl transition-all duration-300 ' +
-    'focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.18)] ' +
-    'hover:shadow-[0_0_0_3px_rgba(59,130,246,0.08)]';
+    'group relative rounded-xl transition-all duration-300 focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.18)] hover:shadow-[0_0_0_3px_rgba(59,130,246,0.08)]';
 
 export default function Login({ status, canResetPassword }: Props) {
     return (
-        <div className="space-y-6">
+        <div className="space-y-3.5">
             <Head title="Welcome back" />
 
             <Form
                 {...store.form()}
                 resetOnSuccess={['password']}
-                className="flex flex-col gap-6 duration-500 animate-in fade-in slide-in-from-bottom-2"
+                className="flex flex-col gap-3.5 duration-300 animate-in fade-in slide-in-from-bottom-2"
             >
                 {({ processing, errors }) => (
                     <>
-                        <div className="grid gap-5">
+                        <div className="grid gap-3">
                             {/* Email Address */}
-                            <div className="grid gap-2">
-                                <Label htmlFor="email" className="text-sm font-medium text-foreground">
+                            <div className="grid gap-1">
+                                <Label htmlFor="email" className="text-xs font-semibold text-foreground">
                                     Email address
                                 </Label>
 
                                 <div className={fieldGlow}>
                                     <Mail
-                                        className="
-                                            pointer-events-none
-                                            absolute
-                                            top-1/2
-                                            left-3.5
-                                            h-4
-                                            w-4
-                                            -translate-y-1/2
-                                            text-muted-foreground
-                                            transition-colors
-                                            duration-300
-                                            group-focus-within:text-[#2563EB]
-                                        "
+                                        className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground transition-colors duration-300 group-focus-within:text-[#2563EB]"
                                     />
 
                                     <Input
@@ -68,19 +54,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                         tabIndex={1}
                                         autoComplete="email"
                                         placeholder="email@example.com"
-                                        className="
-                                            h-11
-                                            rounded-xl
-                                            border-border
-                                            bg-background
-                                            pl-10
-                                            text-foreground
-                                            transition-colors
-                                            duration-300
-                                            placeholder:text-muted-foreground/60
-                                            focus-visible:border-[#2563EB]
-                                            focus-visible:ring-[#2563EB]/30
-                                        "
+                                        className="h-9.5 rounded-xl border-border bg-background pl-9 text-xs text-foreground placeholder:text-muted-foreground/60 focus-visible:border-[#2563EB] focus-visible:ring-[#2563EB]/30"
                                     />
                                 </div>
 
@@ -88,8 +62,8 @@ export default function Login({ status, canResetPassword }: Props) {
                             </div>
 
                             {/* Password */}
-                            <div className="grid gap-2">
-                                <Label htmlFor="password" className="text-sm font-medium text-foreground">
+                            <div className="grid gap-1">
+                                <Label htmlFor="password" className="text-xs font-semibold text-foreground">
                                     Password
                                 </Label>
 
@@ -101,7 +75,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                         tabIndex={2}
                                         autoComplete="current-password"
                                         placeholder="Enter your password"
-                                        className="h-11 rounded-xl border-border bg-background text-foreground placeholder:text-muted-foreground/60"
+                                        className="h-9.5 rounded-xl border-border bg-background text-xs text-foreground placeholder:text-muted-foreground/60"
                                     />
                                 </div>
 
@@ -111,17 +85,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
-                                            className="
-                                                ml-auto
-                                                text-xs
-                                                font-medium
-                                                text-[#2563EB]
-                                                transition-colors
-                                                duration-300
-                                                hover:text-[#1D4ED8]
-                                                dark:text-[#60A5FA]
-                                                dark:hover:text-[#93C5FD]
-                                            "
+                                            className="ml-auto text-[11px] font-medium text-[#2563EB] transition-colors duration-300 hover:text-[#1D4ED8] dark:text-[#60A5FA] dark:hover:text-[#93C5FD]"
                                             tabIndex={5}
                                         >
                                             Forgot password?
@@ -133,34 +97,16 @@ export default function Login({ status, canResetPassword }: Props) {
                             {/* Remember Me */}
                             <label
                                 htmlFor="remember"
-                                className="
-                                    flex
-                                    cursor-pointer
-                                    items-center
-                                    space-x-3
-                                    rounded-lg
-                                    py-1
-                                    transition-colors
-                                    duration-300
-                                "
+                                className="flex cursor-pointer items-center space-x-2.5 rounded-lg py-0.5 transition-colors duration-300"
                             >
                                 <Checkbox
                                     id="remember"
                                     name="remember"
                                     tabIndex={3}
-                                    className="
-                                        rounded-md
-                                        border-border
-                                        transition-colors
-                                        duration-300
-                                        focus-visible:ring-[#2563EB]/40
-                                        data-[state=checked]:border-[#2563EB]
-                                        data-[state=checked]:bg-[#2563EB]
-                                        data-[state=checked]:text-white
-                                    "
+                                    className="rounded-md border-border transition-colors duration-300 focus-visible:ring-[#2563EB]/40 data-[state=checked]:border-[#2563EB] data-[state=checked]:bg-[#2563EB] data-[state=checked]:text-white"
                                 />
 
-                                <span className="cursor-pointer text-sm text-muted-foreground">
+                                <span className="cursor-pointer text-xs text-muted-foreground">
                                     Remember me
                                 </span>
                             </label>
@@ -171,24 +117,7 @@ export default function Login({ status, canResetPassword }: Props) {
                             {/* Login Button */}
                             <Button
                                 type="submit"
-                                className="
-                                    group
-                                    mt-2
-                                    h-11
-                                    w-full
-                                    rounded-xl
-                                    bg-[#2563EB]
-                                    font-semibold
-                                    text-white
-                                    shadow-[0_15px_35px_-12px_rgba(37,99,235,0.6)]
-                                    transition-all
-                                    duration-300
-                                    hover:scale-[1.01]
-                                    hover:bg-[#1D4ED8]
-                                    hover:shadow-[0_20px_45px_-12px_rgba(37,99,235,0.7)]
-                                    disabled:opacity-70
-                                    disabled:hover:scale-100
-                                "
+                                className="group mt-1 h-10 w-full rounded-xl bg-[#2563EB] text-xs font-semibold text-white shadow-[0_12px_28px_-10px_rgba(37,99,235,0.6)] transition-all duration-300 hover:scale-[1.01] hover:bg-[#1D4ED8] hover:shadow-[0_16px_36px_-10px_rgba(37,99,235,0.7)] disabled:opacity-70 disabled:hover:scale-100"
                                 tabIndex={4}
                                 disabled={processing}
                                 data-test="login-button"
@@ -198,36 +127,19 @@ export default function Login({ status, canResetPassword }: Props) {
                                 ) : (
                                     <>
                                         <span>Log in</span>
-                                        <ArrowRight
-                                            className="
-                                                ml-2
-                                                h-4
-                                                w-4
-                                                transition-transform
-                                                duration-300
-                                                group-hover:translate-x-1
-                                            "
-                                        />
+                                        <ArrowRight className="ml-1.5 h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
                                     </>
                                 )}
                             </Button>
                         </div>
 
                         {/* Sign Up */}
-                        <div className="text-center text-sm text-muted-foreground">
+                        <div className="text-center text-xs text-muted-foreground">
                             Don't have an account?{' '}
                             <TextLink
                                 href={register()}
                                 tabIndex={6}
-                                className="
-                                    font-semibold
-                                    text-[#2563EB]
-                                    transition-colors
-                                    duration-300
-                                    hover:text-[#1D4ED8]
-                                    dark:text-[#60A5FA]
-                                    dark:hover:text-[#93C5FD]
-                                "
+                                className="font-semibold text-[#2563EB] transition-colors duration-300 hover:text-[#1D4ED8] dark:text-[#60A5FA] dark:hover:text-[#93C5FD]"
                             >
                                 Sign up
                             </TextLink>
@@ -238,31 +150,8 @@ export default function Login({ status, canResetPassword }: Props) {
 
             {/* Status Message */}
             {status && (
-                <div
-                    className="
-                        mt-4
-                        flex
-                        items-center
-                        justify-center
-                        gap-2
-                        rounded-xl
-                        border
-                        border-blue-500/30
-                        bg-blue-500/10
-                        px-4
-                        py-2.5
-                        text-center
-                        text-sm
-                        font-medium
-                        text-blue-700
-                        duration-300
-                        animate-in
-                        fade-in
-                        slide-in-from-top-1
-                        dark:text-blue-400
-                    "
-                >
-                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                <div className="flex items-center justify-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-3.5 py-2 text-center text-xs font-medium text-blue-700 dark:text-blue-400">
+                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
                     {status}
                 </div>
             )}
@@ -272,6 +161,5 @@ export default function Login({ status, canResetPassword }: Props) {
 
 Login.layout = {
     title: 'Welcome back',
-    description:
-        'Sign in to keep your campaigns, brand guidance, and content calendar moving.',
+    description: 'Sign in to keep your campaigns, brand guidance, and content calendar moving.',
 };

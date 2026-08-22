@@ -196,12 +196,15 @@ class GeminiImageService
         $audienceText = $targetAudience ? " Target audience: {$targetAudience}." : '';
         $refNote = $productImageUrl ? ' Use the provided reference product image to understand the product packaging, colors, and branding.' : '';
 
+        $includeLogo = (bool) ($options['include_logo'] ?? false);
+
         return "Professional commercial advertising photograph: {$productName}{$brandText}{$industryText}{$eventText}{$taglineText}{$priceText}. "
             ."Product category: {$productCat}. {$productDesc}. {$uspText}{$audienceText}"
             ."{$userPrompt}. "
             ."Brand tone: {$brandTone}. Visual style: {$visualTheme}. Campaign: {$campaignName} - {$campaignObj}. "
             ."Business context: {$businessDesc}."
             .$refNote
+            .($includeLogo ? ' Include the brand logo subtly in the top-left corner of the image, well-balanced with generous padding, like a professional print advertisement watermark. The logo must not obstruct the main product or typography.' : '')
             .' Ultra-realistic studio product photography, dramatic cinematic lighting, floating particles or product elements,'
             .' premium advertising composition, sharp detail, 8K resolution, award-winning commercial photography quality,'
             .' dark moody background with vibrant accent lighting.'
@@ -369,6 +372,21 @@ Background mood: {$colorPalette['background']}
    - The visual MUST fill the entire {$viewWidth}x{$viewHeight} canvas completely
    - No blank/empty space — every area should have visual interest
 SYSTEM_PROMPT;
+
+        // Add logo placement instructions when the user has opted in
+        if ($includeLogo) {
+            $systemPrompt .= <<<'LOGO_PROMPT'
+
+=== BRAND LOGO PLACEMENT (MANDATORY — user enabled "Include Brand Logo") ===
+A brand logo image has been provided as a reference. You MUST incorporate the brand logo into the visual:
+   - POSITION: Place the logo in the TOP-LEFT corner of the design, with generous padding (5-8% from edges).
+   - SIZE: The logo should be proportional — roughly 8-12% of the canvas width. Never make it too large or obtrusive.
+   - STYLE: Render it as a small, elegant brand mark. If the logo is text-based, use the brand name in a refined typeface.
+   - CONTRAST: Ensure the logo contrasts clearly against the background. Add a subtle drop shadow or a semi-transparent backdrop pill (rounded rect) behind it if needed.
+   - BALANCE: The logo must feel naturally integrated — like a professional print ad watermark, not a pasted sticker.
+   - DO NOT place the logo over the main product illustration or key typography.
+LOGO_PROMPT;
+        }
 
         // Build parts — inject reference images (product catalog or uploaded) + logo
         $parts = [];

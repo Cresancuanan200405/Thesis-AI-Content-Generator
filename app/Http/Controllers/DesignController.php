@@ -40,19 +40,39 @@ class DesignController extends Controller
         $productId = $request->input('product_id');
         $campaignId = $request->input('campaign_id');
         $eventId = $request->input('event_id');
-        $category = $request->input('category');
         $period = $request->input('period', 'all');
         $sort = $request->input('sort', 'newest');
         $favorites = $request->boolean('favorites') || $request->input('favorite') === '1' || $request->input('favorite') === 'true';
 
-        if ($category) {
-            if (str_starts_with($category, 'product:')) {
-                $productId = (int) substr($category, 8);
-            } elseif (str_starts_with($category, 'campaign:')) {
-                $campaignId = (int) substr($category, 9);
-            } elseif (str_starts_with($category, 'event:')) {
-                $eventId = (int) substr($category, 6);
-            }
+        $rawCategories = $request->input('categories') ?? $request->input('category');
+        $selectedCategories = [];
+        if (is_array($rawCategories)) {
+            $selectedCategories = array_values(array_filter(array_map('trim', $rawCategories)));
+        } elseif (is_string($rawCategories) && trim($rawCategories) !== '') {
+            $selectedCategories = array_values(array_filter(array_map('trim', explode(',', $rawCategories))));
+        }
+
+        if (! empty($selectedCategories)) {
+            $query->where(function ($q) use ($selectedCategories) {
+                foreach ($selectedCategories as $cat) {
+                    if ($cat === 'has_campaign' || $cat === 'with_campaign') {
+                        $q->orWhereNotNull('campaign_id');
+                    } elseif ($cat === 'no_campaign' || $cat === 'standalone') {
+                        $q->orWhereNull('campaign_id');
+                    } elseif ($cat === 'events_only' || $cat === 'has_event') {
+                        $q->orWhereNotNull('event_id');
+                    } elseif (str_starts_with($cat, 'campaign:')) {
+                        $cId = (int) substr($cat, 9);
+                        $q->orWhere('campaign_id', $cId);
+                    } elseif (str_starts_with($cat, 'event:')) {
+                        $eId = (int) substr($cat, 6);
+                        $q->orWhere('event_id', $eId);
+                    } elseif (str_starts_with($cat, 'product:')) {
+                        $pId = (int) substr($cat, 8);
+                        $q->orWhere('product_id', $pId);
+                    }
+                }
+            });
         }
 
         if ($favorites) {
@@ -119,6 +139,7 @@ class DesignController extends Controller
                 'tagline' => $design->tagline,
                 'prompt' => $design->prompt,
                 'price' => $design->price,
+                'aspect_ratio' => $design->aspect_ratio ?? '1:1',
                 'content_style' => $design->content_style,
                 'brand_tone' => $design->brand_tone,
                 'status' => $design->status,
@@ -139,16 +160,15 @@ class DesignController extends Controller
             'campaigns' => $campaigns->map(fn ($campaign): array => [
                 'id' => $campaign->id,
                 'name' => $campaign->name,
+                'event_id' => $campaign->event_id,
             ])->values()->all(),
             'filters' => [
                 'search' => $search,
-                'category' => (string) ($category ?? ($productId ? "product:{$productId}" : ($campaignId ? "campaign:{$campaignId}" : ($eventId ? "event:{$eventId}" : '')))),
-                'product_id' => (string) ($productId ?? ''),
-                'campaign_id' => (string) ($campaignId ?? ''),
-                'event_id' => (string) ($eventId ?? ''),
+                'categories' => $selectedCategories,
+                'category' => implode(',', $selectedCategories),
                 'period' => $period,
-                'sort' => $sort,
                 'favorites' => $favorites,
+                'sort' => $sort,
             ],
             'pagination' => [
                 'current_page' => $designs->currentPage(),
@@ -225,40 +245,44 @@ class DesignController extends Controller
 
         $prompt = (string) ($request->input('prompt') ?? $request->input('image_prompt') ?? ('Marketing visual for '.$request->input('product_name')));
 
-        $generatedImagePath = $this->geminiImageService->generate($prompt, [
-            // Step 1 — Product & Campaign
-            'product_name' => (string) $request->input('product_name'),
-            'product_description' => $product?->description,
-            'product_category' => $product?->category ?? $business?->category,
-            'product_image_url' => $productImageUrl,
-            'campaign_name' => $campaign?->name,
-            'campaign_objective' => $campaign?->objective,
-            'event_name' => $event?->name,
-            'price' => $request->input('price'),
+        if ($request->filled('generated_image_path')) {
+            $generatedImagePath = (string) $request->input('generated_image_path');
+        } else {
+            $generatedImagePath = $this->geminiImageService->generate($prompt, [
+                // Step 1 — Product & Campaign
+                'product_name' => (string) $request->input('product_name'),
+                'product_description' => $product?->description,
+                'product_category' => $product?->category ?? $business?->category,
+                'product_image_url' => $productImageUrl,
+                'campaign_name' => $campaign?->name,
+                'campaign_objective' => $campaign?->objective,
+                'event_name' => $event?->name,
+                'price' => $request->input('price'),
 
-            // Step 2 — Style & Tone
-            'brand_tone' => $brandTone,
-            'visual_theme' => $visualTheme,
+                // Step 2 — Style & Tone
+                'brand_tone' => $brandTone,
+                'visual_theme' => $visualTheme,
 
-            // Step 3 — Canvas
-            'tagline' => $request->input('tagline'),
-            'tagline_mode' => $request->input('tagline_mode', 'ai'),
-            'include_logo' => $includeLogo,
-            'aspect_ratio' => $aspectRatio,
+                // Step 3 — Canvas
+                'tagline' => $request->input('tagline'),
+                'tagline_mode' => $request->input('tagline_mode', 'ai'),
+                'include_logo' => $includeLogo,
+                'aspect_ratio' => $aspectRatio,
 
-            // Onboarding / Business Context
-            'business_name' => $business?->name,
-            'business_industry' => $business?->industry,
-            'business_description' => $business?->description,
-            'business_target_audience' => $business?->target_audience,
-            'business_usp' => $business?->unique_selling_point,
-            'business_content_style' => $business?->content_style,
-            'business_marketing_prefs' => $business?->marketing_preferences,
+                // Onboarding / Business Context
+                'business_name' => $business?->name,
+                'business_industry' => $business?->industry,
+                'business_description' => $business?->description,
+                'business_target_audience' => $business?->target_audience,
+                'business_usp' => $business?->unique_selling_point,
+                'business_content_style' => $business?->content_style,
+                'business_marketing_prefs' => $business?->marketing_preferences,
 
-            // Reference image (uploaded file or catalog product image)
-            'reference_image_path' => $referenceImagePath,
-            'logo_path' => $logoPath,
-        ]);
+                // Reference image (uploaded file or catalog product image)
+                'reference_image_path' => $referenceImagePath,
+                'logo_path' => $logoPath,
+            ]);
+        }
 
         $design = $user->designs()->create([
             'business_id' => $businessId,
@@ -321,9 +345,20 @@ class DesignController extends Controller
         $user = $request->user();
         $campaign = $user->campaigns()->findOrFail($request->input('campaign_id'));
 
+        if (empty($design->event_id) || empty($campaign->event_id) || (int) $design->event_id !== (int) $campaign->event_id) {
+            $errorMessage = 'Visuals can only be added to a campaign specifically created for the same event/holiday.';
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMessage,
+                ], 422);
+            }
+
+            return back()->withErrors(['campaign_id' => $errorMessage]);
+        }
+
         $design->update([
             'campaign_id' => $campaign->id,
-            'event_id' => $design->event_id ?: $campaign->event_id,
         ]);
 
         NotificationService::notify(

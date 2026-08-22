@@ -21,8 +21,10 @@ class GeneratorRequest extends FormRequest
     {
         return [
             'product_id' => ['nullable', 'exists:products,id'],
+            'campaign_id' => ['nullable', 'exists:campaigns,id'],
             'event_id' => ['nullable', 'exists:events,id'],
             'product_name' => ['required', 'string', 'max:255'],
+            'price' => ['nullable', 'numeric', 'min:0'],
             'marketing_goal' => ['required', 'string', 'max:2000'],
             'content_style' => ['nullable', 'array'],
             'content_style.*' => ['string', 'max:255'],
@@ -33,6 +35,8 @@ class GeneratorRequest extends FormRequest
             'target_audience' => ['nullable', 'string', 'max:255'],
             'unique_selling_point' => ['nullable', 'string', 'max:2000'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'aspect_ratio' => ['nullable', 'string', 'max:20'],
+            'include_logo' => ['nullable', 'boolean'],
             'reference_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
     }

@@ -6,8 +6,10 @@ import {
     Check,
     CheckSquare,
     ChevronDown,
+    ChevronLeft,
+    ChevronRight,
     Download,
-    Eye,
+    FolderPlus,
     Filter,
     Heart,
     ImageIcon,
@@ -22,8 +24,10 @@ import {
     Tag,
     Trash2,
     X,
+    ZoomIn,
+    ZoomOut,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { downloadVisualAsFormat } from '@/lib/download';
 import { Badge } from '@/components/ui/badge';
@@ -42,12 +46,15 @@ import {
 } from '@/components/ui/dialog';
 import {
     DropdownMenu,
+    DropdownMenuCheckboxItem,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -223,24 +230,76 @@ export default function DesignsPage({
     */
 
     const [previewDesign, setPreviewDesign] = useState<any>(null);
-    const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
+    const [isZoomed, setIsZoomed] = useState(false);
+
+    const currentPreviewIndex = previewDesign
+        ? designList.findIndex((d: any) => d.id === previewDesign.id)
+        : -1;
+    const hasPrevDesign = currentPreviewIndex > 0;
+    const hasNextDesign =
+        currentPreviewIndex !== -1 && currentPreviewIndex < designList.length - 1;
+
+    const goToPrevDesign = (e?: React.MouseEvent) => {
+        if (e) {
+            e.stopPropagation();
+        }
+        if (hasPrevDesign) {
+            setPreviewDesign(designList[currentPreviewIndex - 1]);
+            setIsZoomed(false);
+        }
+    };
+
+    const goToNextDesign = (e?: React.MouseEvent) => {
+        if (e) {
+            e.stopPropagation();
+        }
+        if (hasNextDesign) {
+            setPreviewDesign(designList[currentPreviewIndex + 1]);
+            setIsZoomed(false);
+        }
+    };
 
     const openPreview = (design: any) => {
         setPreviewDesign(design);
-        setIsDetailsExpanded(false);
+        setIsZoomed(false);
     };
 
     useEffect(() => {
+        if (previewDesign) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [previewDesign]);
+
+    useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && previewDesign) {
+            if (!previewDesign) return;
+
+            if (e.key === 'Escape') {
                 setPreviewDesign(null);
-                setIsDetailsExpanded(false);
+                setIsZoomed(false);
+            } else if (e.key === 'ArrowLeft') {
+                const idx = designList.findIndex((d: any) => d.id === previewDesign.id);
+                if (idx > 0) {
+                    setPreviewDesign(designList[idx - 1]);
+                    setIsZoomed(false);
+                }
+            } else if (e.key === 'ArrowRight') {
+                const idx = designList.findIndex((d: any) => d.id === previewDesign.id);
+                if (idx !== -1 && idx < designList.length - 1) {
+                    setPreviewDesign(designList[idx + 1]);
+                    setIsZoomed(false);
+                }
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [previewDesign]);
+    }, [previewDesign, designList]);
 
     /*
     |--------------------------------------------------------------------------
@@ -273,6 +332,41 @@ export default function DesignsPage({
                 setIsDeleting(false);
             },
         });
+    };
+
+    /*
+    |--------------------------------------------------------------------------
+    | ATTACH TO CAMPAIGN STATE & HANDLER
+    |--------------------------------------------------------------------------
+    */
+
+    const [designToAttachCampaign, setDesignToAttachCampaign] = useState<any>(null);
+    const [selectedCampaignId, setSelectedCampaignId] = useState<string>('');
+    const [isAttachingCampaign, setIsAttachingCampaign] = useState(false);
+
+    const confirmAttachCampaign = () => {
+        if (!designToAttachCampaign || !selectedCampaignId) return;
+        setIsAttachingCampaign(true);
+
+        router.post(
+            `/designs/${designToAttachCampaign.id}/attach-campaign`,
+            { campaign_id: selectedCampaignId },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    const linkedCampName = campaigns.find((c: any) => String(c.id) === String(selectedCampaignId))?.name || 'Campaign';
+                    setDesignToAttachCampaign(null);
+                    setSelectedCampaignId('');
+                    toast.success(`Visual linked to campaign "${linkedCampName}".`);
+                },
+                onError: () => {
+                    toast.error('Failed to attach visual to campaign.');
+                },
+                onFinish: () => {
+                    setIsAttachingCampaign(false);
+                },
+            },
+        );
     };
 
     /*
@@ -327,22 +421,40 @@ export default function DesignsPage({
         });
     };
 
-    const handleCategoryChange = (val: string) => {
-        if (val === 'all' || !val) {
-            updateFilters({
-                category: '',
-                product_id: '',
-                campaign_id: '',
-                event_id: '',
-            });
+    const selectedCategoryList: string[] = useMemo(() => {
+        if (Array.isArray(filters.categories)) return filters.categories;
+        if (filters.category) return String(filters.category).split(',').map((s) => s.trim()).filter(Boolean);
+        const list: string[] = [];
+        if (filters.campaign_id) list.push(`campaign:${filters.campaign_id}`);
+        if (filters.event_id) list.push(`event:${filters.event_id}`);
+        if (filters.product_id) list.push(`product:${filters.product_id}`);
+        return list;
+    }, [filters]);
+
+    const toggleCategoryFilter = (val: string) => {
+        let next: string[];
+        if (selectedCategoryList.includes(val)) {
+            next = selectedCategoryList.filter((item) => item !== val);
         } else {
-            updateFilters({
-                category: val,
-                product_id: '',
-                campaign_id: '',
-                event_id: '',
-            });
+            next = [...selectedCategoryList, val];
         }
+        updateFilters({
+            category: next.join(','),
+            categories: next,
+            product_id: '',
+            campaign_id: '',
+            event_id: '',
+        });
+    };
+
+    const clearCategoryFilters = () => {
+        updateFilters({
+            category: '',
+            categories: [],
+            product_id: '',
+            campaign_id: '',
+            event_id: '',
+        });
     };
 
     const clearFilters = () => {
@@ -357,14 +469,9 @@ export default function DesignsPage({
         );
     };
 
-    const currentCategoryValue =
-        filters.category ||
-        (filters.product_id ? `product:${filters.product_id}` :
-        (filters.campaign_id ? `campaign:${filters.campaign_id}` :
-        (filters.event_id ? `event:${filters.event_id}` : 'all')));
-
     const hasFilters = Boolean(
         filters.search ||
+            selectedCategoryList.length > 0 ||
             filters.category ||
             filters.product_id ||
             filters.campaign_id ||
@@ -398,51 +505,45 @@ export default function DesignsPage({
                 <div className="space-y-6 p-4 md:p-6 lg:p-8">
 
                     {/* =====================================================
-                        HEADER
+                        PAGE HEADER & CREATE ACTION
                     ====================================================== */}
 
-                    <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                    <ImageIcon className="h-4 w-4" />
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-border/60">
+                        <div className="flex items-center gap-2.5">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+                                <ImageIcon className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h1 className="text-base sm:text-lg font-bold text-foreground tracking-tight">
+                                        My Designs
+                                    </h1>
                                 </div>
-
-                                <p className="text-sm font-medium text-muted-foreground">
-                                    Creative Library
+                                <p className="text-xs text-muted-foreground">
+                                    Manage, preview, and download your marketing visuals.
                                 </p>
                             </div>
-
-                            <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
-                                My Designs
-                            </h1>
-
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                Browse, preview in full view, and multi-select to download or delete your marketing visuals.
-                            </p>
                         </div>
 
-                        <div className="flex items-center gap-2.5">
-                            <Button asChild className="group gap-2 shadow-sm">
+                        <div className="flex items-center gap-2 self-start sm:self-auto">
+                            <Button asChild size="sm" className="h-8 gap-1.5 font-semibold text-xs shadow-2xs">
                                 <Link href="/generator">
-                                    <Plus className="h-4 w-4" />
+                                    <Plus className="h-3.5 w-3.5" />
                                     Create Design
-                                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                                 </Link>
                             </Button>
                         </div>
-                    </section>
+                    </div>
 
                     {/* =====================================================
-                        FILTER TOOLBAR (WITH CATEGORIZED DROPDOWN & SELECT ALL)
+                        STICKY FILTER TOOLBAR (SYSTEM DESIGN COMPATIBLE)
                     ====================================================== */}
 
-                    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-3">
-                        {/* TOP ROW: SEARCH BAR + TIME PERIOD + FAVORITES + SORT + CLEAR */}
-                        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+                    <div className="sticky top-14 z-30 bg-card/95 backdrop-blur-xl border border-border/80 rounded-2xl p-3 shadow-sm mb-6 transition-all">
+                        <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
                             {/* Search */}
-                            <div className="relative flex-1">
-                                <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <div className="relative flex-1 min-w-0">
+                                <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                                 <Input
                                     value={filters.search ?? ''}
                                     onChange={(event) =>
@@ -450,14 +551,14 @@ export default function DesignsPage({
                                             search: event.target.value,
                                         })
                                     }
-                                    placeholder="Search by product, tagline, or visual ideas..."
-                                    className="h-10 border-input bg-background pl-9 pr-8 shadow-none focus-visible:ring-primary/30"
+                                    placeholder="Search by product, tagline, or event..."
+                                    className="h-9 border-input bg-background pl-8.5 pr-8 text-xs shadow-none focus-visible:ring-primary/30"
                                 />
                                 {filters.search && (
                                     <button
                                         type="button"
                                         onClick={() => updateFilters({ search: '' })}
-                                        className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground/60 transition-colors hover:text-foreground"
+                                        className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground/60 transition-colors hover:text-foreground cursor-pointer"
                                         aria-label="Clear search"
                                     >
                                         <X className="h-3.5 w-3.5" />
@@ -465,9 +566,150 @@ export default function DesignsPage({
                                 )}
                             </div>
 
+                            {/* Filter Controls Row */}
                             <div className="flex flex-wrap items-center gap-2">
-                                {/* Time Period Filter (Days / Week / Month) */}
-                                <div className="w-36 shrink-0">
+                                {/* Classification Filter Dropdown */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className={`h-9 min-w-36 justify-between text-xs shadow-none gap-2 ${
+                                                selectedCategoryList.length > 0
+                                                    ? 'border-primary/50 bg-primary/10 text-primary font-semibold'
+                                                    : 'text-muted-foreground'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-1.5 truncate">
+                                                <Filter className="h-3.5 w-3.5 shrink-0" />
+                                                <span className="truncate">
+                                                    {selectedCategoryList.length === 0
+                                                        ? 'Filter'
+                                                        : selectedCategoryList.length === 1
+                                                        ? (selectedCategoryList[0] === 'has_campaign'
+                                                            ? 'Campaign Visuals'
+                                                            : selectedCategoryList[0] === 'no_campaign'
+                                                            ? 'Standalone'
+                                                            : selectedCategoryList[0] === 'events_only'
+                                                            ? 'Event Visuals'
+                                                            : (campaigns.find((c: any) => `campaign:${c.id}` === selectedCategoryList[0])?.name ||
+                                                               events.find((e: any) => `event:${e.id}` === selectedCategoryList[0])?.name ||
+                                                               products.find((p: any) => `product:${p.id}` === selectedCategoryList[0])?.name ||
+                                                               '1 Filter'))
+                                                        : `${selectedCategoryList.length} Filters`}
+                                                </span>
+                                            </div>
+                                            {selectedCategoryList.length > 0 ? (
+                                                <Badge variant="default" className="h-4.5 px-1.5 text-[10px] font-bold rounded-full shrink-0">
+                                                    {selectedCategoryList.length}
+                                                </Badge>
+                                            ) : (
+                                                <ChevronDown className="h-3.5 w-3.5 opacity-50 shrink-0" />
+                                            )}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start" className="w-64 max-h-80 overflow-y-auto p-1.5 rounded-2xl shadow-xl">
+                                        <DropdownMenuLabel className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground px-2 py-1">
+                                            Quick Filters
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuCheckboxItem
+                                            checked={selectedCategoryList.includes('has_campaign')}
+                                            onCheckedChange={() => toggleCategoryFilter('has_campaign')}
+                                            className="text-xs py-1.5 cursor-pointer rounded-xl font-medium"
+                                        >
+                                            <Layers className="h-3.5 w-3.5 mr-1.5 text-primary" />
+                                            Campaign Visuals
+                                        </DropdownMenuCheckboxItem>
+                                        <DropdownMenuCheckboxItem
+                                            checked={selectedCategoryList.includes('events_only')}
+                                            onCheckedChange={() => toggleCategoryFilter('events_only')}
+                                            className="text-xs py-1.5 cursor-pointer rounded-xl font-medium"
+                                        >
+                                            <CalendarDays className="h-3.5 w-3.5 mr-1.5 text-emerald-500" />
+                                            Event & Holiday Visuals
+                                        </DropdownMenuCheckboxItem>
+                                        <DropdownMenuCheckboxItem
+                                            checked={selectedCategoryList.includes('no_campaign')}
+                                            onCheckedChange={() => toggleCategoryFilter('no_campaign')}
+                                            className="text-xs py-1.5 cursor-pointer rounded-xl font-medium"
+                                        >
+                                            <Sparkles className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
+                                            Standalone Visuals
+                                        </DropdownMenuCheckboxItem>
+
+                                        {campaigns.length > 0 && (
+                                            <>
+                                                <DropdownMenuSeparator className="my-1" />
+                                                <DropdownMenuLabel className="text-[10px] font-extrabold uppercase tracking-wider text-primary px-2 py-1 flex items-center gap-1.5">
+                                                    <Layers className="h-3 w-3" /> By Campaign
+                                                </DropdownMenuLabel>
+                                                {campaigns.map((campaign: any) => (
+                                                    <DropdownMenuCheckboxItem
+                                                        key={`camp-${campaign.id}`}
+                                                        checked={selectedCategoryList.includes(`campaign:${campaign.id}`)}
+                                                        onCheckedChange={() => toggleCategoryFilter(`campaign:${campaign.id}`)}
+                                                        className="text-xs py-1.5 cursor-pointer rounded-xl"
+                                                    >
+                                                        <span className="truncate">{campaign.name}</span>
+                                                    </DropdownMenuCheckboxItem>
+                                                ))}
+                                            </>
+                                        )}
+
+                                        {events.length > 0 && (
+                                            <>
+                                                <DropdownMenuSeparator className="my-1" />
+                                                <DropdownMenuLabel className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-500 px-2 py-1 flex items-center gap-1.5">
+                                                    <CalendarDays className="h-3 w-3" /> By Event
+                                                </DropdownMenuLabel>
+                                                {events.map((event: any) => (
+                                                    <DropdownMenuCheckboxItem
+                                                        key={`evt-${event.id}`}
+                                                        checked={selectedCategoryList.includes(`event:${event.id}`)}
+                                                        onCheckedChange={() => toggleCategoryFilter(`event:${event.id}`)}
+                                                        className="text-xs py-1.5 cursor-pointer rounded-xl"
+                                                    >
+                                                        <span className="truncate">{event.name}</span>
+                                                    </DropdownMenuCheckboxItem>
+                                                ))}
+                                            </>
+                                        )}
+
+                                        {products.length > 0 && (
+                                            <>
+                                                <DropdownMenuSeparator className="my-1" />
+                                                <DropdownMenuLabel className="text-[10px] font-extrabold uppercase tracking-wider text-blue-500 px-2 py-1 flex items-center gap-1.5">
+                                                    <Tag className="h-3 w-3" /> By Product
+                                                </DropdownMenuLabel>
+                                                {products.map((prod: any) => (
+                                                    <DropdownMenuCheckboxItem
+                                                        key={`prod-${prod.id}`}
+                                                        checked={selectedCategoryList.includes(`product:${prod.id}`)}
+                                                        onCheckedChange={() => toggleCategoryFilter(`product:${prod.id}`)}
+                                                        className="text-xs py-1.5 cursor-pointer rounded-xl"
+                                                    >
+                                                        <span className="truncate">{prod.name}</span>
+                                                    </DropdownMenuCheckboxItem>
+                                                ))}
+                                            </>
+                                        )}
+
+                                        {selectedCategoryList.length > 0 && (
+                                            <>
+                                                <DropdownMenuSeparator className="my-1" />
+                                                <DropdownMenuItem
+                                                    onClick={clearCategoryFilters}
+                                                    className="text-xs text-destructive hover:bg-destructive/10 font-semibold justify-center py-1.5 rounded-xl cursor-pointer"
+                                                >
+                                                    Clear All Filters
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+
+                                {/* Time Period */}
+                                <div className="w-28 shrink-0">
                                     <Select
                                         value={filters.period || 'all'}
                                         onValueChange={(value) =>
@@ -476,22 +718,21 @@ export default function DesignsPage({
                                             })
                                         }
                                     >
-                                        <SelectTrigger className="h-10 text-xs shadow-none gap-1.5">
+                                        <SelectTrigger className="h-9 text-xs shadow-none gap-1.5">
                                             <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                                             <SelectValue placeholder="All Time" />
                                         </SelectTrigger>
-
                                         <SelectContent>
                                             <SelectItem value="all">All Time</SelectItem>
                                             <SelectItem value="today">Today</SelectItem>
-                                            <SelectItem value="week">This Week (7d)</SelectItem>
+                                            <SelectItem value="week">This Week</SelectItem>
                                             <SelectItem value="month">This Month</SelectItem>
                                             <SelectItem value="30days">Last 30 Days</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
 
-                                {/* Favorites Toggle Button */}
+                                {/* Favorites Toggle */}
                                 <Button
                                     type="button"
                                     variant={filters.favorites ? 'default' : 'outline'}
@@ -501,177 +742,66 @@ export default function DesignsPage({
                                             favorites: filters.favorites ? '' : '1',
                                         })
                                     }
-                                    className={`h-10 gap-1.5 px-3.5 text-xs font-medium transition-all shadow-none ${
+                                    title={filters.favorites ? 'Show all designs' : 'Show favorites'}
+                                    aria-label="Filter by favorites"
+                                    className={`h-9 w-9 p-0 flex items-center justify-center rounded-xl transition-all shadow-none cursor-pointer ${
                                         filters.favorites
                                             ? 'border-rose-500 bg-rose-500 text-white hover:bg-rose-600 shadow-[0_0_12px_rgba(244,63,94,0.3)]'
-                                            : 'text-muted-foreground hover:text-foreground'
+                                            : 'text-muted-foreground hover:text-foreground hover:border-rose-300 dark:hover:border-rose-800'
                                     }`}
                                 >
                                     <Heart
-                                        className={`h-3.5 w-3.5 ${
+                                        className={`h-4 w-4 ${
                                             filters.favorites
                                                 ? 'fill-white text-white'
                                                 : 'text-rose-500'
                                         }`}
                                     />
-                                    Favorites
                                 </Button>
 
-                                {/* Sort Selector */}
-                                <div className="w-36 shrink-0">
+                                {/* Sort */}
+                                <div className="w-28 shrink-0">
                                     <Select
                                         value={filters.sort || 'newest'}
                                         onValueChange={(value) =>
-                                            updateFilters({
-                                                sort: value,
-                                            })
+                                            updateFilters({ sort: value })
                                         }
                                     >
-                                        <SelectTrigger className="h-10 text-xs shadow-none">
+                                        <SelectTrigger className="h-9 text-xs shadow-none">
                                             <SelectValue placeholder="Sort" />
                                         </SelectTrigger>
-
                                         <SelectContent>
-                                            <SelectItem value="newest">
-                                                Newest First
-                                            </SelectItem>
-                                            <SelectItem value="oldest">
-                                                Oldest First
-                                            </SelectItem>
+                                            <SelectItem value="newest">Newest</SelectItem>
+                                            <SelectItem value="oldest">Oldest</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
 
-                                {/* Clear Filters */}
+                                {/* Clear All */}
                                 {hasFilters && (
                                     <Button
                                         variant="ghost"
                                         size="sm"
                                         onClick={clearFilters}
-                                        className="h-10 px-3 text-xs text-muted-foreground hover:text-destructive transition-colors shadow-none"
+                                        className="h-9 px-2.5 text-xs text-muted-foreground hover:text-destructive transition-colors shadow-none cursor-pointer"
                                     >
                                         Clear
                                     </Button>
                                 )}
-                            </div>
-                        </div>
 
-                        {/* BOTTOM ROW: CATEGORIZED DROPDOWN + SELECT ALL RIGHT BESIDE FILTERS */}
-                        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-border/50">
-                            <div className="flex flex-wrap items-center gap-2.5">
-                                <span className="text-xs font-medium text-muted-foreground hidden sm:inline mr-0.5">
-                                    Source:
-                                </span>
-
-                                {/* Categorized Combined Dropdown: Products, Campaigns, and Events */}
-                                <div className="w-full sm:w-64">
-                                    <Select
-                                        value={currentCategoryValue}
-                                        onValueChange={handleCategoryChange}
-                                    >
-                                        <SelectTrigger className="h-9 text-xs shadow-none">
-                                            <SelectValue placeholder="All Categories & Sources" />
-                                        </SelectTrigger>
-
-                                        <SelectContent className="max-h-72">
-                                            <SelectItem value="all">
-                                                All Categories (Everything)
-                                            </SelectItem>
-
-                                            {products.length > 0 && (
-                                                <SelectGroup>
-                                                    <SelectLabel className="flex items-center gap-1.5 font-bold text-[11px] uppercase tracking-wider text-primary">
-                                                        <Tag className="h-3 w-3" /> Products
-                                                    </SelectLabel>
-                                                    {products.map((product: any) => (
-                                                        <SelectItem
-                                                            key={`prod-${product.id}`}
-                                                            value={`product:${product.id}`}
-                                                        >
-                                                            {product.name}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectGroup>
-                                            )}
-
-                                            {campaigns.length > 0 && (
-                                                <>
-                                                    <SelectSeparator />
-                                                    <SelectGroup>
-                                                        <SelectLabel className="flex items-center gap-1.5 font-bold text-[11px] uppercase tracking-wider text-primary">
-                                                            <Layers className="h-3 w-3" /> Campaigns
-                                                        </SelectLabel>
-                                                        {campaigns.map((campaign: any) => (
-                                                            <SelectItem
-                                                                key={`camp-${campaign.id}`}
-                                                                value={`campaign:${campaign.id}`}
-                                                            >
-                                                                {campaign.name}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectGroup>
-                                                </>
-                                            )}
-
-                                            {events.length > 0 && (
-                                                <>
-                                                    <SelectSeparator />
-                                                    <SelectGroup>
-                                                        <SelectLabel className="flex items-center gap-1.5 font-bold text-[11px] uppercase tracking-wider text-primary">
-                                                            <CalendarDays className="h-3 w-3" /> Events
-                                                        </SelectLabel>
-                                                        {events.map((event: any) => (
-                                                            <SelectItem
-                                                                key={`evt-${event.id}`}
-                                                                value={`event:${event.id}`}
-                                                            >
-                                                                {event.name}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectGroup>
-                                                </>
-                                            )}
-                                        </SelectContent>
-                                    </Select>
+                                {/* Visual Count */}
+                                <div className="text-xs font-medium text-muted-foreground hidden sm:inline-flex items-center px-1">
+                                    {designList.length} {designList.length === 1 ? 'visual' : 'visuals'}
                                 </div>
 
-                                {/* SELECT ALL BUTTON BESIDE FILTERS */}
-                                {designList.length > 0 && (
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={toggleSelectAll}
-                                        className="h-9 gap-1.5 shadow-none text-xs font-medium"
-                                    >
-                                        {isAllSelected ? (
-                                            <>
-                                                <CheckSquare className="h-3.5 w-3.5 text-primary" />
-                                                Deselect All
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Square className="h-3.5 w-3.5 text-muted-foreground" />
-                                                Select All ({designList.length})
-                                            </>
-                                        )}
-                                    </Button>
-                                )}
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <div className="text-xs font-medium text-muted-foreground">
-                                    {designList.length}{' '}
-                                    {designList.length === 1 ? 'visual' : 'visuals'}
-                                </div>
-
-                                <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5">
+                                {/* View Switcher */}
+                                <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5 ml-auto">
                                     <button
                                         type="button"
                                         onClick={() => setViewMode('grid')}
-                                        className={`flex h-7 w-7 items-center justify-center rounded-md transition-all ${
+                                        className={`flex h-7 w-7 items-center justify-center rounded-md transition-all cursor-pointer ${
                                             viewMode === 'grid'
-                                                ? 'bg-card text-foreground shadow-sm'
+                                                ? 'bg-card text-foreground shadow-xs font-medium'
                                                 : 'text-muted-foreground hover:text-foreground'
                                         }`}
                                         aria-label="Grid view"
@@ -681,9 +811,9 @@ export default function DesignsPage({
                                     <button
                                         type="button"
                                         onClick={() => setViewMode('list')}
-                                        className={`flex h-7 w-7 items-center justify-center rounded-md transition-all ${
+                                        className={`flex h-7 w-7 items-center justify-center rounded-md transition-all cursor-pointer ${
                                             viewMode === 'list'
-                                                ? 'bg-card text-foreground shadow-sm'
+                                                ? 'bg-card text-foreground shadow-xs font-medium'
                                                 : 'text-muted-foreground hover:text-foreground'
                                         }`}
                                         aria-label="List view"
@@ -742,12 +872,22 @@ export default function DesignsPage({
                                     return (
                                         <div
                                             key={design.id}
-                                            onClick={() => openPreview(design)}
+                                            onClick={() => {
+                                                if (selectedIds.length > 0) {
+                                                    toggleSelectDesign(design.id);
+                                                } else {
+                                                    openPreview(design);
+                                                }
+                                            }}
                                             role="button"
                                             tabIndex={0}
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter' || e.key === ' ') {
-                                                    openPreview(design);
+                                                    if (selectedIds.length > 0) {
+                                                        toggleSelectDesign(design.id);
+                                                    } else {
+                                                        openPreview(design);
+                                                    }
                                                 }
                                             }}
                                             className={`
@@ -792,39 +932,12 @@ export default function DesignsPage({
                                                 {/* Image Overlay */}
                                                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 
-                                                {/* TOP LEFT: SELECT CHECKBOX */}
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => toggleSelectDesign(design.id, e)}
-                                                    aria-label={isSelected ? 'Deselect design' : 'Select design'}
-                                                    className={`
-                                                        absolute
-                                                        top-2.5
-                                                        left-2.5
-                                                        z-20
-                                                        flex
-                                                        h-8
-                                                        w-8
-                                                        items-center
-                                                        justify-center
-                                                        rounded-full
-                                                        backdrop-blur-md
-                                                        transition-all
-                                                        duration-200
-                                                        ${
-                                                            isSelected
-                                                                ? 'bg-primary text-primary-foreground shadow-md scale-105'
-                                                                : 'bg-black/40 text-white/70 hover:bg-black/70 hover:text-white opacity-0 group-hover:opacity-100'
-                                                        }
-                                                        ${selectedIds.length > 0 ? 'opacity-100' : ''}
-                                                    `}
-                                                >
-                                                    {isSelected ? (
-                                                        <Check className="h-4 w-4 stroke-[3]" />
-                                                    ) : (
-                                                        <div className="h-3.5 w-3.5 rounded-full border-2 border-white/80" />
-                                                    )}
-                                                </button>
+                                                {/* SELECTED CHECKMARK BADGE (SHOWN ONLY WHEN SELECTED) */}
+                                                {isSelected && (
+                                                    <div className="absolute top-2.5 left-2.5 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md">
+                                                        <Check className="h-3.5 w-3.5 stroke-[3]" />
+                                                    </div>
+                                                )}
 
                                                 {/* TOP RIGHT: HEART FAVORITE */}
                                                 <button
@@ -839,7 +952,7 @@ export default function DesignsPage({
                                                             ? 'Remove from favorites'
                                                             : 'Add to favorites'
                                                     }
-                                                    className={`absolute top-2.5 right-2.5 z-20 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md shadow-sm transition-transform duration-200 hover:scale-110 ${
+                                                    className={`absolute top-2.5 right-2.5 z-20 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md shadow-sm transition-transform duration-200 hover:scale-110 cursor-pointer ${
                                                         isDesignFavorite(design)
                                                             ? 'bg-white/90 text-rose-500 hover:bg-white dark:bg-slate-900/90'
                                                             : 'bg-black/40 text-white/90 hover:bg-black/60 hover:text-rose-400'
@@ -856,37 +969,18 @@ export default function DesignsPage({
                                             </div>
 
                                             {/* Card Content */}
-                                            <div className="flex flex-1 flex-col justify-between p-4 space-y-3">
+                                            <div className="flex flex-1 flex-col justify-between p-4 space-y-2">
                                                 <div>
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <p className="truncate text-base font-semibold text-foreground group-hover:text-primary transition-colors">
-                                                            {design.product_name || 'Untitled design'}
-                                                        </p>
-
-                                                        <Badge
-                                                            variant={
-                                                                design.status === 'completed'
-                                                                    ? 'default'
-                                                                    : 'secondary'
-                                                                }
-                                                            className="shrink-0 text-[10px] capitalize"
-                                                        >
-                                                            {design.status ?? 'ready'}
-                                                        </Badge>
-                                                    </div>
-
-                                                    <p className="mt-1 truncate text-xs text-muted-foreground">
-                                                        {design.event_name || design.campaign_name || 'General marketing'}
+                                                    <p className="truncate text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                                                        {design.product_name || 'Untitled design'}
                                                     </p>
 
-                                                    {design.tagline && (
-                                                        <p className="mt-2 line-clamp-2 text-xs italic text-muted-foreground">
-                                                            "{design.tagline}"
-                                                        </p>
-                                                    )}
+                                                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                                                        {design.event_name || design.campaign_name || 'General marketing'}
+                                                    </p>
                                                 </div>
 
-                                                 {/* Card Footer */}
+                                                {/* Card Footer */}
                                                 <div className="flex items-center justify-between border-t border-border/60 pt-3">
                                                     <span className="text-xs text-muted-foreground">
                                                         {design.created_at}
@@ -904,7 +998,7 @@ export default function DesignsPage({
                                                                         e.preventDefault();
                                                                         e.stopPropagation();
                                                                     }}
-                                                                    className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none"
+                                                                    className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none cursor-pointer"
                                                                     aria-label="Design options"
                                                                 >
                                                                     <MoreVertical className="h-4 w-4" />
@@ -912,16 +1006,26 @@ export default function DesignsPage({
                                                             </DropdownMenuTrigger>
 
                                                             <DropdownMenuContent align="end" className="w-52 rounded-xl p-1.5 shadow-lg border-border">
+                                                                {/* SELECT / DESELECT OPTION */}
                                                                 <DropdownMenuItem
                                                                     onClick={(e) => {
                                                                         e.preventDefault();
                                                                         e.stopPropagation();
-                                                                        openPreview(design);
+                                                                        toggleSelectDesign(design.id, e);
                                                                     }}
                                                                     className="gap-2 text-xs font-medium cursor-pointer"
                                                                 >
-                                                                    <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-                                                                    View Full Screen
+                                                                    {isSelected ? (
+                                                                        <>
+                                                                            <CheckSquare className="h-3.5 w-3.5 text-primary" />
+                                                                            Deselect Item
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <Square className="h-3.5 w-3.5 text-muted-foreground" />
+                                                                            Select Item
+                                                                        </>
+                                                                    )}
                                                                 </DropdownMenuItem>
 
                                                                 <DropdownMenuSeparator className="my-1 border-border/60" />
@@ -980,6 +1084,23 @@ export default function DesignsPage({
                                                                     Edit in AI Studio
                                                                 </DropdownMenuItem>
 
+                                                                {!design.campaign_id && design.event_id && (
+                                                                    <>
+                                                                        <DropdownMenuSeparator className="my-1 border-border/60" />
+                                                                        <DropdownMenuItem
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                setDesignToAttachCampaign(design);
+                                                                            }}
+                                                                            className="gap-2 text-xs font-medium cursor-pointer"
+                                                                        >
+                                                                            <FolderPlus className="h-3.5 w-3.5 text-amber-500" />
+                                                                            Add to Campaign
+                                                                        </DropdownMenuItem>
+                                                                    </>
+                                                                )}
+
                                                                 <DropdownMenuSeparator className="my-1 border-border/60" />
 
                                                                 <DropdownMenuItem
@@ -1011,12 +1132,22 @@ export default function DesignsPage({
                                     return (
                                         <div
                                             key={design.id}
-                                            onClick={() => openPreview(design)}
+                                            onClick={() => {
+                                                if (selectedIds.length > 0) {
+                                                    toggleSelectDesign(design.id);
+                                                } else {
+                                                    openPreview(design);
+                                                }
+                                            }}
                                             role="button"
                                             tabIndex={0}
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter' || e.key === ' ') {
-                                                    openPreview(design);
+                                                    if (selectedIds.length > 0) {
+                                                        toggleSelectDesign(design.id);
+                                                    } else {
+                                                        openPreview(design);
+                                                    }
                                                 }
                                             }}
                                             className={`group flex items-center gap-4 rounded-2xl border bg-card p-3 shadow-sm transition-all duration-200 cursor-pointer hover:shadow-md hover:border-primary/40 ${
@@ -1025,26 +1156,8 @@ export default function DesignsPage({
                                                     : 'border-border'
                                             }`}
                                         >
-                                            {/* Select */}
-                                            <button
-                                                type="button"
-                                                onClick={(e) => toggleSelectDesign(design.id, e)}
-                                                aria-label={isSelected ? 'Deselect' : 'Select'}
-                                                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all ${
-                                                    isSelected
-                                                        ? 'bg-primary text-primary-foreground'
-                                                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                                                }`}
-                                            >
-                                                {isSelected ? (
-                                                    <Check className="h-3.5 w-3.5 stroke-[3]" />
-                                                ) : (
-                                                    <div className="h-3 w-3 rounded border border-muted-foreground/40" />
-                                                )}
-                                            </button>
-
-                                            {/* Thumbnail */}
-                                            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-muted">
+                                            {/* Thumbnail with selection check */}
+                                            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-muted">
                                                 {design.image_url ? (
                                                     <img
                                                         src={design.image_url}
@@ -1054,6 +1167,14 @@ export default function DesignsPage({
                                                 ) : (
                                                     <div className="flex h-full w-full items-center justify-center text-muted-foreground">
                                                         <ImageIcon className="h-5 w-5" />
+                                                    </div>
+                                                )}
+
+                                                {isSelected && (
+                                                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                                        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xs">
+                                                            <Check className="h-3 w-3 stroke-[3]" />
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
@@ -1068,14 +1189,6 @@ export default function DesignsPage({
                                                 </p>
                                             </div>
 
-                                            {/* Status */}
-                                            <Badge
-                                                variant={design.status === 'completed' ? 'default' : 'secondary'}
-                                                className="shrink-0 text-[10px] capitalize hidden sm:inline-flex"
-                                            >
-                                                {design.status ?? 'ready'}
-                                            </Badge>
-
                                             {/* Date */}
                                             <span className="shrink-0 text-xs text-muted-foreground hidden md:block">
                                                 {design.created_at}
@@ -1089,7 +1202,7 @@ export default function DesignsPage({
                                                     e.stopPropagation();
                                                     toggleFavorite(design.id);
                                                 }}
-                                                className="shrink-0"
+                                                className="shrink-0 cursor-pointer"
                                                 aria-label="Toggle favorite"
                                             >
                                                 <Heart
@@ -1108,17 +1221,37 @@ export default function DesignsPage({
                                                         <button
                                                             type="button"
                                                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                                                            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none"
+                                                            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none cursor-pointer"
                                                             aria-label="Design options"
                                                         >
                                                             <MoreVertical className="h-4 w-4" />
                                                         </button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end" className="w-52 rounded-xl p-1.5 shadow-lg border-border">
-                                                        <DropdownMenuItem onClick={(e) => { e.preventDefault(); e.stopPropagation(); openPreview(design); }} className="gap-2 text-xs font-medium cursor-pointer">
-                                                            <Eye className="h-3.5 w-3.5 text-muted-foreground" /> View Full Screen
+                                                        {/* SELECT / DESELECT OPTION */}
+                                                        <DropdownMenuItem
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                toggleSelectDesign(design.id, e);
+                                                            }}
+                                                            className="gap-2 text-xs font-medium cursor-pointer"
+                                                        >
+                                                            {isSelected ? (
+                                                                <>
+                                                                    <CheckSquare className="h-3.5 w-3.5 text-primary" />
+                                                                    Deselect Item
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Square className="h-3.5 w-3.5 text-muted-foreground" />
+                                                                    Select Item
+                                                                </>
+                                                            )}
                                                         </DropdownMenuItem>
+
                                                         <DropdownMenuSeparator className="my-1 border-border/60" />
+
                                                         <DropdownMenuItem onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDownload(design, 'png'); }} className="gap-2 text-xs font-medium cursor-pointer">
                                                             <Download className="h-3.5 w-3.5 text-primary" /> Download as PNG
                                                         </DropdownMenuItem>
@@ -1132,6 +1265,14 @@ export default function DesignsPage({
                                                         <DropdownMenuItem onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.visit(`/generator?product_name=${encodeURIComponent(design.product_name || '')}`); }} className="gap-2 text-xs font-medium cursor-pointer">
                                                             <Sparkles className="h-3.5 w-3.5 text-muted-foreground" /> Edit in AI Studio
                                                         </DropdownMenuItem>
+                                                        {!design.campaign_id && design.event_id && (
+                                                            <>
+                                                                <DropdownMenuSeparator className="my-1 border-border/60" />
+                                                                <DropdownMenuItem onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDesignToAttachCampaign(design); }} className="gap-2 text-xs font-medium cursor-pointer">
+                                                                    <FolderPlus className="h-3.5 w-3.5 text-amber-500" /> Add to Campaign
+                                                                </DropdownMenuItem>
+                                                            </>
+                                                        )}
                                                         <DropdownMenuSeparator className="my-1 border-border/60" />
                                                         <DropdownMenuItem onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDesignToDelete(design); }} className="gap-2 text-xs font-medium text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer">
                                                             <Trash2 className="h-3.5 w-3.5" /> Delete Design
@@ -1253,24 +1394,19 @@ export default function DesignsPage({
             )}
 
             {/* =============================================================
-                IMMERSIVE FULL SCREEN IMAGE VIEWER (NO MODAL BOX)
+                IMMERSIVE FULL SCREEN IMAGE VIEWER WITH SCROLL DETAILS & ZOOM
             ============================================================= */}
 
             {previewDesign && (
                 <div
-                    className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-black/95 backdrop-blur-md animate-in fade-in duration-200 select-none overflow-hidden"
-                    onClick={() => {
-                        setPreviewDesign(null);
-                        setIsDetailsExpanded(false);
-                    }}
+                    className="fixed inset-0 z-[150] overflow-y-auto overflow-x-hidden bg-black/95 backdrop-blur-2xl text-white dark select-none scroll-smooth animate-in fade-in duration-200"
                 >
-                    {/* Top Floating Control Bar */}
+                    {/* Top Floating Control Bar (Sticky) */}
                     <div
-                        className="relative z-50 flex w-full items-center justify-between bg-gradient-to-b from-black/90 via-black/50 to-transparent px-5 py-4 sm:px-8"
-                        onClick={(e) => e.stopPropagation()}
+                        className="sticky top-0 z-[160] flex w-full items-center justify-between bg-gradient-to-b from-black/95 via-black/85 to-transparent px-5 py-3.5 sm:px-8 border-b border-white/10 backdrop-blur-md"
                     >
                         <div className="flex items-center gap-3">
-                            <h2 className="max-w-[240px] sm:max-w-md truncate text-sm sm:text-base font-semibold text-white">
+                            <h2 className="max-w-[200px] sm:max-w-md truncate text-sm sm:text-base font-semibold text-white">
                                 {previewDesign.product_name || 'Design Visual'}
                             </h2>
 
@@ -1279,14 +1415,38 @@ export default function DesignsPage({
                                     {previewDesign.campaign_name}
                                 </Badge>
                             )}
+
+                            <span className="text-[11px] font-medium text-white/50 hidden md:inline">
+                                {currentPreviewIndex + 1} of {designList.length}
+                            </span>
                         </div>
 
                         <div className="flex items-center gap-2">
+                            {/* Zoom Status Hint */}
+                            <button
+                                type="button"
+                                onClick={() => setIsZoomed(!isZoomed)}
+                                className="hidden sm:flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white px-3 py-1.5 text-xs font-medium backdrop-blur-md transition-all cursor-pointer"
+                                title="Click image or button to zoom"
+                            >
+                                {isZoomed ? (
+                                    <>
+                                        <ZoomOut className="h-3.5 w-3.5 text-primary" />
+                                        <span>Zoomed (175%)</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <ZoomIn className="h-3.5 w-3.5" />
+                                        <span>Click to Zoom</span>
+                                    </>
+                                )}
+                            </button>
+
                             {/* Favorite Button */}
                             <button
                                 type="button"
                                 onClick={() => toggleFavorite(previewDesign.id)}
-                                className={`flex h-9 w-9 items-center justify-center rounded-full backdrop-blur-md transition-all ${
+                                className={`flex h-9 w-9 items-center justify-center rounded-full backdrop-blur-md transition-all cursor-pointer ${
                                     isDesignFavorite(previewDesign)
                                         ? 'bg-rose-500/20 border border-rose-500/40 text-rose-400'
                                         : 'bg-white/10 hover:bg-white/20 text-white'
@@ -1307,7 +1467,7 @@ export default function DesignsPage({
                                 <DropdownMenuTrigger asChild>
                                     <button
                                         type="button"
-                                        className="flex h-9 items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white px-3 text-xs font-semibold transition-all backdrop-blur-md"
+                                        className="flex h-9 items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white px-3 text-xs font-semibold transition-all backdrop-blur-md cursor-pointer"
                                         title="Download Visual"
                                     >
                                         <Download className="h-4 w-4" />
@@ -1315,7 +1475,7 @@ export default function DesignsPage({
                                         <ChevronDown className="h-3 w-3 opacity-70" />
                                     </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-48 rounded-xl p-1.5 shadow-xl border-white/20 bg-black/90 text-white backdrop-blur-xl">
+                                <DropdownMenuContent align="end" className="w-48 rounded-xl p-1.5 shadow-xl border-white/20 bg-black/90 text-white backdrop-blur-xl z-[180]">
                                     <DropdownMenuItem
                                         onClick={() => handleDownload(previewDesign, 'png')}
                                         className="gap-2 text-xs font-medium cursor-pointer text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
@@ -1345,9 +1505,9 @@ export default function DesignsPage({
                                 type="button"
                                 onClick={() => {
                                     setPreviewDesign(null);
-                                    setIsDetailsExpanded(false);
+                                    setIsZoomed(false);
                                 }}
-                                className="ml-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 hover:bg-white/30 text-white transition-all backdrop-blur-md"
+                                className="ml-1 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 hover:bg-white/30 text-white transition-all backdrop-blur-md cursor-pointer"
                                 title="Close (Esc)"
                             >
                                 <X className="h-5 w-5" />
@@ -1355,189 +1515,223 @@ export default function DesignsPage({
                         </div>
                     </div>
 
-                    {/* Main Full View Image Canvas */}
+                    {/* Floating Previous Image Button (Left) */}
+                    {hasPrevDesign && (
+                        <button
+                            type="button"
+                            onClick={goToPrevDesign}
+                            className="fixed left-3 sm:left-6 top-1/2 -translate-y-1/2 z-[170] flex h-11 w-11 sm:h-13 sm:w-13 items-center justify-center rounded-full bg-black/60 text-white/85 backdrop-blur-md border border-white/20 hover:bg-black/90 hover:text-white hover:border-white/40 hover:scale-110 active:scale-95 transition-all duration-200 shadow-2xl cursor-pointer"
+                            title="Previous visual (←)"
+                            aria-label="Previous image"
+                        >
+                            <ChevronLeft className="h-6 w-6 sm:h-7 sm:w-7" />
+                        </button>
+                    )}
+
+                    {/* Floating Next Image Button (Right) */}
+                    {hasNextDesign && (
+                        <button
+                            type="button"
+                            onClick={goToNextDesign}
+                            className="fixed right-3 sm:right-6 top-1/2 -translate-y-1/2 z-[170] flex h-11 w-11 sm:h-13 sm:w-13 items-center justify-center rounded-full bg-black/60 text-white/85 backdrop-blur-md border border-white/20 hover:bg-black/90 hover:text-white hover:border-white/40 hover:scale-110 active:scale-95 transition-all duration-200 shadow-2xl cursor-pointer"
+                            title="Next visual (→)"
+                            aria-label="Next image"
+                        >
+                            <ChevronRight className="h-6 w-6 sm:h-7 sm:w-7" />
+                        </button>
+                    )}
+
+                    {/* Section 1: Full-view Image Canvas (Fits viewport, click to zoom) */}
                     <div
-                        className="relative flex h-full w-full flex-1 items-center justify-center p-4 sm:p-8 overflow-hidden"
-                        onClick={(e) => e.stopPropagation()}
+                        className="group/canvas relative flex min-h-[calc(100vh-4.5rem)] w-full flex-col items-center justify-center p-4 sm:p-8"
                     >
+                        {/* Ambient Glow */}
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                            <div className="h-[450px] w-[450px] rounded-full bg-gradient-to-tr from-primary/20 via-blue-500/10 to-transparent blur-3xl opacity-40" />
+                        </div>
+
                         {previewDesign.image_url ? (
                             <img
                                 src={previewDesign.image_url}
                                 alt={previewDesign.product_name || 'Design visual'}
-                                className={`max-h-[82vh] max-w-[92vw] object-contain drop-shadow-2xl transition-all duration-300 ${
-                                    isDetailsExpanded ? 'scale-90 -translate-y-8' : 'scale-100'
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsZoomed(!isZoomed);
+                                }}
+                                className={`block max-h-[75vh] max-w-[88vw] object-contain rounded-2xl drop-shadow-2xl transition-transform duration-300 ease-out select-none cursor-pointer z-20 ${
+                                    isZoomed
+                                        ? 'scale-[1.7] cursor-zoom-out'
+                                        : 'scale-100 cursor-zoom-in hover:brightness-105'
                                 }`}
                             />
                         ) : (
-                            <div className="flex flex-col items-center justify-center text-white/50">
+                            <div className="flex flex-col items-center justify-center text-white/50 z-20">
                                 <ImageIcon className="h-16 w-16" />
                                 <p className="mt-2 text-sm">No visual available</p>
                             </div>
                         )}
-                    </div>
 
-                    {/* Bottom Fade-out Section with Toggle & Expandable Details */}
-                    <div
-                        className="relative z-50 flex w-full flex-col items-center justify-end bg-gradient-to-t from-black/95 via-black/75 to-transparent pt-12 pb-5 px-4"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* Fade-Out Toggle Button */}
+                        {/* Floating Scroll Down Indicator (No text, sleek modern glassmorphism & hover glow) */}
                         <button
                             type="button"
-                            onClick={() => setIsDetailsExpanded(!isDetailsExpanded)}
-                            className="group flex items-center gap-2 rounded-full border border-white/20 bg-black/60 px-5 py-2 text-xs font-medium text-white/90 backdrop-blur-xl shadow-2xl transition-all hover:bg-black/80 hover:border-white/40 hover:text-white active:scale-95"
-                            aria-expanded={isDetailsExpanded}
+                            onClick={() => {
+                                const el = document.getElementById('design-modal-details');
+                                if (el) {
+                                    el.scrollIntoView({ behavior: 'smooth' });
+                                }
+                            }}
+                            className="group/scroll absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 backdrop-blur-xl border border-white/20 text-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-all duration-300 hover:scale-115 hover:border-primary/60 hover:text-white hover:bg-black/90 hover:shadow-[0_0_20px_rgba(var(--primary),0.5)] active:scale-95 cursor-pointer animate-bounce"
+                            title="Scroll down for details"
+                            aria-label="Scroll down for details"
                         >
-                            <span>
-                                {isDetailsExpanded
-                                    ? 'Hide details'
-                                    : 'View description & more functions'}
-                            </span>
-                            <ChevronDown
-                                className={`h-4 w-4 transition-transform duration-300 ${
-                                    isDetailsExpanded
-                                        ? 'rotate-180 text-primary'
-                                        : 'text-white/70 animate-bounce'
-                                }`}
-                            />
+                            <ChevronDown className="h-5 w-5 transition-transform duration-300 group-hover/scroll:translate-y-0.5 group-hover/scroll:text-primary" />
                         </button>
+                    </div>
 
-                        {/* Slide-up Details Panel */}
-                        {isDetailsExpanded && (
-                            <div className="mt-4 w-full max-w-2xl max-h-[36vh] overflow-y-auto space-y-4 rounded-2xl border border-white/15 bg-black/80 p-5 backdrop-blur-2xl shadow-2xl text-white animate-in fade-in slide-in-from-bottom-4 duration-300">
-                                {/* Tagline */}
-                                {previewDesign.tagline && (
-                                    <div className="rounded-xl border border-primary/30 bg-primary/10 p-3.5">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-primary">
-                                            Tagline
-                                        </p>
-                                        <p className="mt-1 text-sm font-medium italic text-white/90">
-                                            "{previewDesign.tagline}"
-                                        </p>
+                    {/* Section 2: Recreated, Classy Details & Functions Section (Scroll down) */}
+                    <div
+                        id="design-modal-details"
+                        className="relative z-30 w-full bg-slate-950/98 backdrop-blur-3xl px-4 pb-16 pt-8 sm:px-8 border-t border-white/20"
+                    >
+                        <div className="mx-auto max-w-3xl space-y-6">
+                            {/* Header / Title block */}
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-white/15 pb-4">
+                                <div>
+                                    <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary text-primary-foreground font-black text-xs shadow-lg shadow-primary/30 tracking-wider uppercase">
+                                        <Sparkles className="h-4 w-4" />
+                                        Visual Creative Details
                                     </div>
-                                )}
-
-                                {/* Prompt & Visual Concept */}
-                                <div className="rounded-xl border border-white/10 bg-white/5 p-3.5">
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-white/60">
-                                        Prompt & Visual Concept
-                                    </p>
-                                    <p className="mt-1.5 text-xs leading-relaxed text-white/80">
-                                        {previewDesign.prompt ||
-                                            'AI marketing creative designed for high engagement, curated around custom brand style and tone.'}
-                                    </p>
+                                    <h3 className="mt-2 text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-md">
+                                        {previewDesign.product_name || 'Design Visual'}
+                                    </h3>
                                 </div>
 
-                                {/* Metadata Grid */}
-                                <div className="grid gap-2.5 sm:grid-cols-3">
-                                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                                        <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-white/60">
-                                            <Tag className="h-3 w-3" />
-                                            Product
-                                        </div>
-                                        <p className="mt-1 truncate text-xs font-semibold text-white">
-                                            {previewDesign.product_name || 'Standard Offering'}
-                                        </p>
-                                        {previewDesign.price && (
-                                            <p className="mt-0.5 text-[11px] text-white/60">
-                                                ₱{previewDesign.price}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                                        <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-white/60">
-                                            <Layers className="h-3 w-3" />
-                                            Campaign
-                                        </div>
-                                        <p className="mt-1 truncate text-xs font-semibold text-white">
-                                            {previewDesign.campaign_name || 'Direct Design'}
-                                        </p>
-                                    </div>
-
-                                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                                        <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-white/60">
-                                            <CalendarDays className="h-3 w-3" />
-                                            Created
-                                        </div>
-                                        <p className="mt-1 truncate text-xs font-semibold text-white">
-                                            {previewDesign.event_name || previewDesign.created_at}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Actions */}
-                                <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-white/10">
-                                    <div className="flex flex-wrap gap-2">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                                router.visit(
-                                                    `/generator?product_name=${encodeURIComponent(
-                                                        previewDesign.product_name || '',
-                                                    )}`,
-                                                );
-                                            }}
-                                            className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 shadow-none"
-                                        >
-                                            <Sparkles className="h-3.5 w-3.5 text-primary" />
-                                            Edit in AI Studio
-                                        </Button>
-
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 shadow-none font-semibold"
-                                                >
-                                                    <Download className="h-3.5 w-3.5" />
-                                                    Download Visual
-                                                    <ChevronDown className="h-3 w-3 opacity-70" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="start" className="w-48 rounded-xl p-1.5 shadow-xl border-white/20 bg-black/90 text-white backdrop-blur-xl">
-                                                <DropdownMenuItem
-                                                    onClick={() => handleDownload(previewDesign, 'png')}
-                                                    className="gap-2 text-xs font-medium cursor-pointer text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
-                                                >
-                                                    <Download className="h-3.5 w-3.5 text-primary" />
-                                                    PNG (High Quality)
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() => handleDownload(previewDesign, 'jpeg')}
-                                                    className="gap-2 text-xs font-medium cursor-pointer text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
-                                                >
-                                                    <Download className="h-3.5 w-3.5 text-blue-400" />
-                                                    JPEG (Web-Optimized)
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() => handleDownload(previewDesign, 'svg')}
-                                                    className="gap-2 text-xs font-medium cursor-pointer text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
-                                                >
-                                                    <Download className="h-3.5 w-3.5 text-emerald-400" />
-                                                    SVG (Vector Embed)
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-
+                                <div className="flex items-center gap-2">
                                     <Button
-                                        type="button"
-                                        variant="destructive"
+                                        asChild
                                         size="sm"
-                                        onClick={() => setDesignToDelete(previewDesign)}
-                                        className="gap-1.5 text-xs shadow-none"
+                                        className="h-9 px-4 gap-2 text-xs font-bold shadow-lg shadow-primary/30 hover:scale-105 transition-all bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
                                     >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                        Delete
+                                        <Link
+                                            href={`/generator?product_name=${encodeURIComponent(previewDesign.product_name || '')}&price=${encodeURIComponent(previewDesign.price || '')}&campaign_id=${encodeURIComponent(previewDesign.campaign_id || '')}&event_id=${encodeURIComponent(previewDesign.event_id || '')}&tagline=${encodeURIComponent(previewDesign.tagline || '')}&prompt=${encodeURIComponent(previewDesign.prompt || '')}&aspect_ratio=${encodeURIComponent(previewDesign.aspect_ratio || '1:1')}`}
+                                        >
+                                            <Sparkles className="h-4 w-4" />
+                                            Edit in AI Studio
+                                        </Link>
                                     </Button>
                                 </div>
                             </div>
-                        )}
+
+                            {/* Tagline Card (Ultra-visible, high-contrast primary card) */}
+                            {previewDesign.tagline && (
+                                <div className="group relative overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-r from-primary/30 via-slate-900/95 to-primary/20 p-5 sm:p-6 backdrop-blur-2xl shadow-xl shadow-primary/10 transition-all hover:border-primary">
+                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary text-primary-foreground font-extrabold text-[11px] uppercase tracking-wider shadow-sm">
+                                        <Tag className="h-3.5 w-3.5" />
+                                        Catchy Tagline & Hook
+                                    </div>
+                                    <p className="mt-3 text-lg sm:text-xl font-bold italic text-white leading-snug drop-shadow-md">
+                                        "{previewDesign.tagline}"
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Prompt & Visual Concept (with hover effect) */}
+                            <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-5 backdrop-blur-2xl shadow-lg transition-all duration-300 hover:border-white/30">
+                                <div className="inline-block px-2.5 py-0.5 rounded bg-white/15 text-[11px] font-extrabold uppercase tracking-wider text-white">
+                                    AI Prompt & Concept
+                                </div>
+                                <p className="mt-2.5 text-sm sm:text-base leading-relaxed text-white/95 font-medium">
+                                    {previewDesign.prompt ||
+                                        'AI marketing creative tailored for maximum visual impact, tuned to your brand theme and offering.'}
+                                </p>
+                            </div>
+
+                            {/* Metadata Grid (3 columns with hover cards) */}
+                            <div className="grid gap-3 sm:grid-cols-3">
+                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 sm:p-5 backdrop-blur-2xl shadow-md transition-all duration-300 hover:border-white/30 hover:-translate-y-0.5">
+                                    <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-white/70">
+                                        <Tag className="h-3.5 w-3.5 text-primary" />
+                                        Product
+                                    </div>
+                                    <p className="mt-2 truncate text-base font-bold text-white">
+                                        {previewDesign.product_name || 'Standard Offering'}
+                                    </p>
+                                    {previewDesign.price && (
+                                        <p className="mt-0.5 text-xs font-extrabold text-emerald-400">
+                                            ₱{previewDesign.price}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 sm:p-5 backdrop-blur-2xl shadow-md transition-all duration-300 hover:border-white/30 hover:-translate-y-0.5">
+                                    <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-white/70">
+                                        <Layers className="h-3.5 w-3.5 text-primary" />
+                                        Campaign
+                                    </div>
+                                    <p className="mt-2 truncate text-base font-bold text-white">
+                                        {previewDesign.campaign_name || 'Direct Creative'}
+                                    </p>
+                                </div>
+
+                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 sm:p-5 backdrop-blur-2xl shadow-md transition-all duration-300 hover:border-white/30 hover:-translate-y-0.5">
+                                    <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-white/70">
+                                        <CalendarDays className="h-3.5 w-3.5 text-primary" />
+                                        Created / Event
+                                    </div>
+                                    <p className="mt-2 truncate text-base font-bold text-white">
+                                        {previewDesign.event_name || previewDesign.created_at}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Actions Bar (Download formats + Delete) */}
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-white/15">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-xs font-bold text-white/80 mr-1">Download as:</span>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleDownload(previewDesign, 'png')}
+                                        className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 hover:scale-105 transition-all shadow-none cursor-pointer"
+                                    >
+                                        <Download className="h-3.5 w-3.5 text-primary" />
+                                        PNG
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleDownload(previewDesign, 'jpeg')}
+                                        className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 hover:scale-105 transition-all shadow-none cursor-pointer"
+                                    >
+                                        <Download className="h-3.5 w-3.5 text-blue-400" />
+                                        JPEG
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleDownload(previewDesign, 'svg')}
+                                        className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 hover:scale-105 transition-all shadow-none cursor-pointer"
+                                    >
+                                        <Download className="h-3.5 w-3.5 text-emerald-400" />
+                                        SVG
+                                    </Button>
+                                </div>
+
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => setDesignToDelete(previewDesign)}
+                                    className="gap-1.5 text-xs shadow-none cursor-pointer hover:scale-105 transition-all"
+                                >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                    Delete Visual
+                                </Button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
@@ -1635,6 +1829,132 @@ export default function DesignsPage({
                         >
                             <Trash2 className="h-4 w-4" />
                             {isDeleting ? 'Deleting...' : 'Delete Design'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* =============================================================
+                ADD TO CAMPAIGN MODAL
+            ============================================================= */}
+
+            <Dialog
+                open={!!designToAttachCampaign}
+                onOpenChange={(open) => {
+                    if (!open && !isAttachingCampaign) {
+                        setDesignToAttachCampaign(null);
+                        setSelectedCampaignId('');
+                    }
+                }}
+            >
+                <DialogContent className="rounded-2xl sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg flex items-center gap-2">
+                            <FolderPlus className="h-5 w-5 text-amber-500" />
+                            Add to Campaign
+                        </DialogTitle>
+                        <DialogDescription>
+                            Link{' '}
+                            <span className="font-semibold text-foreground">
+                                "{designToAttachCampaign?.product_name || 'this visual'}"
+                            </span>{' '}
+                            to one of your campaigns.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="mt-2 space-y-3">
+                        {(() => {
+                            if (!designToAttachCampaign?.event_id) {
+                                return (
+                                    <div className="rounded-xl border border-dashed border-border p-4 text-center space-y-1.5">
+                                        <p className="text-xs font-medium text-foreground">
+                                            No Event Associated
+                                        </p>
+                                        <p className="text-[11px] text-muted-foreground">
+                                            Designs can only be added to a campaign created specifically for the same event or holiday.
+                                        </p>
+                                    </div>
+                                );
+                            }
+
+                            const matchingCampaigns = campaigns.filter(
+                                (c: any) =>
+                                    c.event_id &&
+                                    String(c.event_id) === String(designToAttachCampaign.event_id),
+                            );
+
+                            if (matchingCampaigns.length === 0) {
+                                return (
+                                    <div className="rounded-xl border border-dashed border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20 p-4 text-center space-y-3">
+                                        <p className="text-xs font-medium text-foreground">
+                                            No Campaign Found for <span className="font-bold text-amber-600 dark:text-amber-400">{designToAttachCampaign.event_name || 'this event'}</span>
+                                        </p>
+                                        <p className="text-[11px] text-muted-foreground leading-relaxed max-w-xs mx-auto">
+                                            You can only link this visual to a campaign created specifically for this holiday/event.
+                                        </p>
+                                        <Button asChild size="sm" variant="outline" className="text-xs h-8 gap-1.5 rounded-xl shadow-xs">
+                                            <Link href={`/campaigns?create=true&event_id=${designToAttachCampaign.event_id}&product_name=${encodeURIComponent(designToAttachCampaign.product_name || '')}`}>
+                                                <Plus className="h-3.5 w-3.5" />
+                                                Create Campaign for this Event
+                                            </Link>
+                                        </Button>
+                                    </div>
+                                );
+                            }
+
+                            return (
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-semibold text-foreground">
+                                        Campaigns for {designToAttachCampaign.event_name}
+                                    </Label>
+                                    <Select
+                                        value={selectedCampaignId}
+                                        onValueChange={setSelectedCampaignId}
+                                    >
+                                        <SelectTrigger className="w-full rounded-xl">
+                                            <SelectValue placeholder="Choose matching campaign..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="max-h-60">
+                                            <SelectGroup>
+                                                <SelectLabel className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                                                    Matching Event: {designToAttachCampaign.event_name}
+                                                </SelectLabel>
+                                                {matchingCampaigns.map((c: any) => (
+                                                    <SelectItem key={c.id} value={String(c.id)}>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />
+                                                            {c.name}
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            );
+                        })()}
+                    </div>
+
+                    <DialogFooter className="mt-6 gap-2 sm:gap-0">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                setDesignToAttachCampaign(null);
+                                setSelectedCampaignId('');
+                            }}
+                            disabled={isAttachingCampaign}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={confirmAttachCampaign}
+                            disabled={isAttachingCampaign || !selectedCampaignId}
+                            className="gap-2"
+                        >
+                            <FolderPlus className="h-4 w-4" />
+                            {isAttachingCampaign ? 'Linking...' : 'Add to Campaign'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

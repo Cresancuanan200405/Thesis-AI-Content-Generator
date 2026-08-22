@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 /**
@@ -65,7 +66,11 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $this->generateEmailVerificationCode();
 
-        $this->notify(new VerifyEmailNotification($this->email_verification_code));
+        try {
+            $this->notify(new VerifyEmailNotification($this->email_verification_code));
+        } catch (\Throwable $e) {
+            Log::warning('Email verification notification could not be sent: '.$e->getMessage());
+        }
     }
 
     public function generateEmailVerificationCode(): string

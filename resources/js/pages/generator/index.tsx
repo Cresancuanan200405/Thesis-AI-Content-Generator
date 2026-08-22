@@ -16,7 +16,11 @@ import {
     Laptop,
     Layers,
     Loader2,
+    Maximize2,
     Package,
+    Palette,
+    PanelRightClose,
+    PanelRightOpen,
     Plus,
     RefreshCcw,
     Search,
@@ -53,7 +57,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { HelpTooltip } from '@/components/help-tooltip';
 import { downloadVisualAsFormat } from '@/lib/download';
 
@@ -289,7 +301,15 @@ export default function GeneratorPage() {
         tagline_mode: 'ai',
         tagline: '',
         reference_image: null,
-        include_logo: Boolean(business?.logo_url),
+        include_logo: (() => {
+            if (typeof window !== 'undefined') {
+                const saved = localStorage.getItem('ai_studio_include_logo');
+                if (saved !== null) {
+                    return saved === 'true';
+                }
+            }
+            return Boolean(business?.logo_url);
+        })(),
         aspect_ratio: '1:1',
     });
 
@@ -310,6 +330,28 @@ export default function GeneratorPage() {
     const [eventCategoryFilter, setEventCategoryFilter] = useState('all');
     const [selectedYearTab, setSelectedYearTab] = useState(String(new Date().getFullYear()));
     const [productSearchQuery, setProductSearchQuery] = useState('');
+    const [isSummaryCollapsed, setIsSummaryCollapsed] = useState<boolean>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('generator_summary_collapsed');
+            if (saved !== null) {
+                return saved === 'true';
+            }
+        }
+        return false;
+    });
+
+    const handleSetSummaryCollapsed = (collapsed: boolean) => {
+        setIsSummaryCollapsed(collapsed);
+        if (typeof window !== 'undefined') {
+            try {
+                localStorage.setItem('generator_summary_collapsed', String(collapsed));
+            } catch { }
+        }
+    };
+
+    // Interactive Generation Progress states
+    const [generationStage, setGenerationStage] = useState(0);
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
     // Save & Campaign Link states
     const [isSavedToDesigns, setIsSavedToDesigns] = useState(false);
@@ -349,25 +391,49 @@ export default function GeneratorPage() {
         return campaigns.find((c: any) => String(c.id) === String(form.campaign_id)) || initialCampaign || null;
     }, [campaigns, form.campaign_id, initialCampaign]);
 
-    // Set URL query params on load
+    // Set URL query params on load (e.g. from My Designs "Edit in AI Studio" or Campaign Visuals)
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
             const campaignIdParam = params.get('campaign_id') || params.get('campaign');
             const eventIdParam = params.get('event_id') || params.get('event');
             const productParam = params.get('product_name') || params.get('product');
+            const priceParam = params.get('price');
+            const taglineParam = params.get('tagline');
+            const promptParam = params.get('prompt') || params.get('image_prompt');
+            const aspectRatioParam = params.get('aspect_ratio');
+            const includeLogoParam = params.get('include_logo');
 
-            if (campaignIdParam && !form.campaign_id) {
-                setForm((prev) => ({ ...prev, campaign_id: campaignIdParam }));
+            let matchedEventId = eventIdParam ? String(eventIdParam) : undefined;
+            let matchedProductName = productParam ? String(productParam) : undefined;
+
+            if (campaignIdParam) {
+                const foundCamp = campaigns.find((c: any) => String(c.id) === String(campaignIdParam)) || initialCampaign;
+                if (foundCamp) {
+                    if (!matchedEventId && foundCamp.event_id) {
+                        matchedEventId = String(foundCamp.event_id);
+                    }
+                    if (!matchedProductName && foundCamp.product_name) {
+                        matchedProductName = String(foundCamp.product_name);
+                    }
+                }
             }
-            if (eventIdParam && !form.event_id) {
-                setForm((prev) => ({ ...prev, event_id: eventIdParam }));
-            }
-            if (productParam && !form.product_name) {
-                setForm((prev) => ({ ...prev, product_name: productParam }));
-            }
+
+            setForm((prev) => ({
+                ...prev,
+                ...(campaignIdParam ? { campaign_id: String(campaignIdParam) } : {}),
+                ...(matchedEventId ? { event_id: matchedEventId } : {}),
+                ...(matchedProductName ? { product_name: matchedProductName } : {}),
+                ...(priceParam ? { price: String(priceParam) } : {}),
+                ...(taglineParam ? { tagline: String(taglineParam), tagline_mode: 'manual' as TaglineMode } : {}),
+                ...(promptParam ? { image_prompt: String(promptParam) } : {}),
+                ...(aspectRatioParam ? { aspect_ratio: String(aspectRatioParam) } : {}),
+                ...(includeLogoParam !== null && includeLogoParam !== undefined
+                    ? { include_logo: includeLogoParam === '1' || includeLogoParam === 'true' }
+                    : {}),
+            }));
         }
-    }, []);
+    }, [campaigns, initialCampaign]);
 
     // Unsaved navigation blocker
     useEffect(() => {
@@ -512,7 +578,7 @@ export default function GeneratorPage() {
         }
     };
 
-    // Generation Flow - Real Gemini Generator
+    // Generation Flow - Real Gemini Generator Preview
     const generateMarketingImage = async () => {
         if (!form.product_name.trim() || !form.image_prompt.trim()) {
             toast.error('Please provide a product name and image prompt.');
@@ -520,11 +586,32 @@ export default function GeneratorPage() {
         }
 
         setGenerationState('generating');
-        setGenerationProgress(20);
+        setGenerationProgress(15);
+        setGenerationStage(0);
+        setElapsedSeconds(0);
 
+        const startTime = Date.now();
         const progressTimer = window.setInterval(() => {
-            setGenerationProgress((prev) => (prev < 90 ? prev + 15 : prev));
-        }, 800);
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            setElapsedSeconds(elapsed);
+
+            setGenerationProgress((prev) => {
+                if (prev < 30) {
+                    setGenerationStage(0);
+                    return prev + 5;
+                } else if (prev < 60) {
+                    setGenerationStage(1);
+                    return prev + 3;
+                } else if (prev < 85) {
+                    setGenerationStage(2);
+                    return prev + 2;
+                } else if (prev < 95) {
+                    setGenerationStage(3);
+                    return prev + 1;
+                }
+                return prev;
+            });
+        }, 500);
 
         try {
             const formData = new FormData();
@@ -553,7 +640,7 @@ export default function GeneratorPage() {
             form.content_style.forEach((style) => formData.append('content_style[]', style));
             form.brand_tone.forEach((tone) => formData.append('brand_tone[]', tone));
 
-            const response = await fetch('/designs', {
+            const response = await fetch('/generator/preview', {
                 method: 'POST',
                 headers: {
                     Accept: 'application/json',
@@ -567,18 +654,27 @@ export default function GeneratorPage() {
 
             window.clearInterval(progressTimer);
             setGenerationProgress(100);
+            setGenerationStage(3);
 
-            if (!response.ok) {
+            if (!response.ok || !data?.success) {
                 const errorMsg = data?.message || (data?.errors ? Object.values(data.errors).flat().join(', ') : 'Failed to generate visual');
                 throw new Error(errorMsg);
             }
 
-            setSavedDesign(data.design);
-            setIsSavedToDesigns(true);
+            setSavedDesign({
+                id: null,
+                image_url: data.image_url,
+                generated_image_path: data.generated_image_path,
+                product_name: data.product_name,
+                tagline: data.tagline,
+                price: data.price,
+                aspect_ratio: data.aspect_ratio,
+            });
+            setIsSavedToDesigns(false);
             window.setTimeout(() => {
                 setGenerationState('ready');
             }, 300);
-            toast.success('Generated marketing visual with Gemini AI!');
+            toast.success('Generated visual creative with Gemini AI!');
         } catch (err: any) {
             window.clearInterval(progressTimer);
             setGenerationState('idle');
@@ -590,7 +686,7 @@ export default function GeneratorPage() {
     // Save to designs backend
     const saveToDesigns = async (targetCampaignId?: string) => {
         if (isSavingDesign) return;
-        if (isSavedToDesigns && savedDesign) {
+        if (isSavedToDesigns && savedDesign?.id) {
             toast.info('Design is already saved in My Designs.');
             return savedDesign;
         }
@@ -601,6 +697,10 @@ export default function GeneratorPage() {
             formData.append('product_name', form.product_name);
             formData.append('image_prompt', form.image_prompt);
             formData.append('prompt', form.image_prompt);
+
+            if (savedDesign?.generated_image_path) {
+                formData.append('generated_image_path', savedDesign.generated_image_path);
+            }
 
             if (form.price) {
                 const cleanPrice = String(form.price).replace(/[^0-9.]/g, '');
@@ -826,33 +926,44 @@ export default function GeneratorPage() {
         <>
             <Head title="AI Marketing Studio" />
 
-            <div className="min-h-screen bg-background text-foreground pb-20">
-                <div className="space-y-6 p-4 md:p-6 lg:p-8">
-
-                    {/* =====================================================
-                        PAGE HEADER
-                    ====================================================== */}
-
-                    <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                    <Sparkles className="h-4 w-4" />
+            <div className="flex min-h-[calc(100vh-3.5rem)] w-full bg-background text-foreground">
+                {/* =====================================================
+                    MAIN STUDIO WORKSPACE (LEFT/CENTER)
+                ====================================================== */}
+                <div className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 space-y-5">
+                    {/* COMPACT & PROFESSIONAL STICKY STUDIO HEADER */}
+                    <div className="sticky top-14 z-20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 bg-background/95 backdrop-blur-md border-b border-border/60 transition-all">
+                        <div className="flex items-center gap-2.5">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+                                <Sparkles className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h1 className="text-base sm:text-lg font-bold text-foreground tracking-tight">
+                                        AI Marketing Studio
+                                    </h1>
                                 </div>
-                                <p className="text-sm font-medium text-muted-foreground">
-                                    Creative Marketing Engine
+                                <p className="text-xs text-muted-foreground">
+                                    Create campaign-ready marketing visuals tailored to holidays and product launches.
                                 </p>
                             </div>
-
-                            <h1 className="mt-2 text-2xl md:text-3xl font-bold tracking-tight">
-                                AI Marketing Studio
-                            </h1>
-
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                Generate campaign-ready visuals tailored to holidays, promotions, and product launches.
-                            </p>
                         </div>
-                    </section>
+
+                        {/* Top Right Actions */}
+                        <div className="flex items-center gap-2 self-start sm:self-auto">
+                            <Button
+                                asChild
+                                variant="outline"
+                                size="sm"
+                                className="h-8 text-xs font-semibold gap-1.5 shadow-2xs"
+                            >
+                                <Link href="/designs">
+                                    <ImageIcon className="h-3.5 w-3.5 text-primary" />
+                                    Saved Designs
+                                </Link>
+                            </Button>
+                        </div>
+                    </div>
 
                     {/* Active Campaign Banner */}
                     {activeCampaign && (
@@ -912,24 +1023,115 @@ export default function GeneratorPage() {
 
                             <CardContent className="p-5 md:p-7 space-y-6">
                                 {generationState === 'generating' ? (
-                                    <div className="space-y-6 py-12 text-center">
-                                        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl border border-primary/20 bg-primary/5">
-                                            <Sparkles className="h-8 w-8 animate-pulse text-primary" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-semibold">Composing your marketing visual</p>
-                                            <p className="mt-1 text-xs text-muted-foreground">
-                                                Applying {form.aspect_ratio || '1:1'} canvas, lighting balance, and seasonal elements.
-                                            </p>
-                                        </div>
-                                        <div className="mx-auto max-w-md">
-                                            <div className="mb-2 flex justify-between text-xs text-muted-foreground font-medium">
-                                                <span>Rendering</span>
-                                                <span>{generationProgress}%</span>
+                                    <div className="space-y-7 py-6 sm:py-8 animate-in fade-in duration-300">
+                                        {/* Status Header with Timer & Active State */}
+                                        <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="relative flex h-2.5 w-2.5">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
+                                                </span>
+                                                <span className="text-xs font-bold text-foreground">
+                                                    Synthesizing Visual Asset
+                                                </span>
+                                                <Badge variant="outline" className="text-[10px] font-mono bg-primary/10 text-primary border-primary/20">
+                                                    Gemini AI Core
+                                                </Badge>
                                             </div>
-                                            <div className="h-2 overflow-hidden rounded-full bg-muted">
+
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant="secondary" className="text-[11px] font-mono font-medium gap-1 px-2.5 py-1">
+                                                    <Clock className="h-3 w-3 text-muted-foreground" />
+                                                    {String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:{String(elapsedSeconds % 60).padStart(2, '0')}s
+                                                </Badge>
+                                                <Badge variant="outline" className="text-[11px] font-mono font-bold text-primary">
+                                                    {generationProgress}%
+                                                </Badge>
+                                            </div>
+                                        </div>
+
+                                        {/* Glowing Central Synthesis Visualizer */}
+                                        <div className="relative mx-auto flex h-36 w-36 sm:h-44 sm:w-44 items-center justify-center rounded-3xl border border-primary/20 bg-gradient-to-b from-primary/10 via-background to-muted/40 shadow-inner overflow-hidden">
+                                            {/* Concentric pulsing rings */}
+                                            <div className="absolute inset-2 rounded-2xl border border-primary/20 animate-ping opacity-25" />
+                                            <div className="absolute inset-6 rounded-2xl border border-primary/30 animate-pulse" />
+
+                                            {/* Center icon & glow */}
+                                            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 animate-bounce">
+                                                <Sparkles className="h-8 w-8" />
+                                            </div>
+
+                                            {/* Canvas specs tag */}
+                                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
+                                                <span className="text-[10px] font-mono font-bold text-muted-foreground bg-background/90 px-2 py-0.5 rounded-full border border-border/60">
+                                                    {form.aspect_ratio || '1:1'} Canvas
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Dynamic Stage Tracker (4 Milestones) */}
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
+                                            {[
+                                                { label: 'Prompt Analysis', desc: 'Campaign context', stageIdx: 0 },
+                                                { label: 'Layout & Hierarchy', desc: 'Typography & vibe', stageIdx: 1 },
+                                                { label: 'Asset Synthesis', desc: 'AI visual generation', stageIdx: 2 },
+                                                { label: 'Canvas Render', desc: 'High-res polish', stageIdx: 3 },
+                                            ].map(({ label, desc, stageIdx }) => {
+                                                const isDone = generationProgress > (stageIdx + 1) * 24;
+                                                const isCurrent = generationStage === stageIdx && !isDone;
+                                                return (
+                                                    <div
+                                                        key={label}
+                                                        className={`p-3 rounded-2xl border text-left transition-all duration-300 ${isDone
+                                                                ? 'border-emerald-500/30 bg-emerald-500/5'
+                                                                : isCurrent
+                                                                    ? 'border-primary/50 bg-primary/10 shadow-xs ring-1 ring-primary/30'
+                                                                    : 'border-border/60 bg-muted/20 opacity-50'
+                                                            }`}
+                                                    >
+                                                        <div className="flex items-center justify-between mb-1.5">
+                                                            <span className="text-[10px] font-mono font-bold text-muted-foreground">
+                                                                0{stageIdx + 1}
+                                                            </span>
+                                                            {isDone ? (
+                                                                <Check className="h-3.5 w-3.5 text-emerald-500 font-bold" />
+                                                            ) : isCurrent ? (
+                                                                <Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />
+                                                            ) : (
+                                                                <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+                                                            )}
+                                                        </div>
+                                                        <p className={`text-xs font-bold truncate ${isCurrent ? 'text-primary' : 'text-foreground'}`}>
+                                                            {label}
+                                                        </p>
+                                                        <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                                                            {desc}
+                                                        </p>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* High-Accuracy Animated Progress Bar */}
+                                        <div className="space-y-2 max-w-xl mx-auto">
+                                            <div className="flex justify-between text-xs text-muted-foreground font-medium px-0.5">
+                                                <span className="text-foreground font-semibold flex items-center gap-1.5">
+                                                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                                                    {generationStage === 0
+                                                        ? 'Analyzing product & campaign objectives...'
+                                                        : generationStage === 1
+                                                            ? 'Composing typography, brand tone & layout...'
+                                                            : generationStage === 2
+                                                                ? 'Synthesizing visual assets with Gemini AI...'
+                                                                : 'Rendering high-resolution marketing visual...'}
+                                                </span>
+                                                <span className="font-mono font-bold text-foreground">
+                                                    {generationProgress}%
+                                                </span>
+                                            </div>
+                                            <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted p-0.5 border border-border/50">
                                                 <div
-                                                    className="h-full rounded-full bg-primary transition-all duration-300"
+                                                    className="h-full rounded-full bg-gradient-to-r from-primary/80 via-primary to-primary/90 transition-all duration-300 shadow-sm"
                                                     style={{ width: `${generationProgress}%` }}
                                                 />
                                             </div>
@@ -1119,42 +1321,93 @@ export default function GeneratorPage() {
                         </Card>
                     ) : (
                         /* STEPPED DESIGN CREATION WORKFLOW */
-                        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-                            <Card className="overflow-hidden rounded-3xl border-border bg-card shadow-sm">
-                                {/* STEP HEADER */}
-                                <CardHeader className="border-b p-5 md:p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                                Step {currentStep} of 3
-                                            </p>
-                                            <h2 className="mt-1 text-lg font-bold">
-                                                {currentStep === 1
-                                                    ? 'Product & Campaign Brief'
-                                                    : currentStep === 2
-                                                      ? 'Content Style & Brand Tone'
-                                                      : 'Dimensions & Tagline'}
-                                            </h2>
-                                        </div>
-
-                                        {/* Step indicator dots */}
-                                        <div className="flex items-center gap-1.5">
-                                            {[1, 2, 3].map((st) => (
-                                                <button
-                                                    key={st}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        if (st < currentStep || (st === 2 && stepOneValid) || (st === 3 && stepOneValid)) {
-                                                            setCurrentStep(st as Step);
-                                                        }
-                                                    }}
-                                                    className={`h-2 rounded-full transition-all ${
-                                                        st === currentStep ? 'w-8 bg-primary' : st < currentStep ? 'w-3 bg-primary/40' : 'w-3 bg-muted'
+                        <div className="space-y-4">
+                            {/* REDESIGNED INTERACTIVE STEP WIZARD NAVIGATION */}
+                            <div className="grid grid-cols-3 gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-2xl border border-border/80 bg-card/80 backdrop-blur-sm shadow-2xs">
+                                {[
+                                    {
+                                        step: 1 as Step,
+                                        title: 'Product & Brief',
+                                        subtitle: 'Details & Event',
+                                        icon: Package,
+                                        isCompleted: stepOneValid && currentStep > 1,
+                                        isAccessible: true,
+                                    },
+                                    {
+                                        step: 2 as Step,
+                                        title: 'Style & Tone',
+                                        subtitle: 'Theme & Vibes',
+                                        icon: Palette,
+                                        isCompleted: currentStep > 2,
+                                        isAccessible: stepOneValid,
+                                    },
+                                    {
+                                        step: 3 as Step,
+                                        title: 'Canvas & Copy',
+                                        subtitle: 'Ratio & Tagline',
+                                        icon: Maximize2,
+                                        isCompleted: false,
+                                        isAccessible: stepOneValid,
+                                    },
+                                ].map(({ step, title, subtitle, icon: Icon, isCompleted, isAccessible }) => {
+                                    const isActive = currentStep === step;
+                                    return (
+                                        <button
+                                            key={step}
+                                            type="button"
+                                            disabled={!isAccessible}
+                                            onClick={() => {
+                                                if (isAccessible) setCurrentStep(step);
+                                            }}
+                                            className={`relative flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-xl text-left transition-all duration-200 ${isActive
+                                                    ? 'bg-primary/10 border border-primary/40 shadow-xs ring-1 ring-primary/30'
+                                                    : isCompleted
+                                                        ? 'bg-emerald-500/5 border border-emerald-500/20 hover:bg-muted/40 cursor-pointer'
+                                                        : isAccessible
+                                                            ? 'border border-transparent hover:bg-muted/30 cursor-pointer'
+                                                            : 'opacity-40 cursor-not-allowed border border-transparent'
+                                                }`}
+                                        >
+                                            {/* Step Icon / Number Badge */}
+                                            <div
+                                                className={`flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg text-xs font-bold shrink-0 transition-all ${isActive
+                                                        ? 'bg-primary text-primary-foreground shadow-xs'
+                                                        : isCompleted
+                                                            ? 'bg-emerald-500 text-white shadow-xs'
+                                                            : 'bg-muted text-muted-foreground'
                                                     }`}
-                                                    aria-label={`Step ${st}`}
-                                                />
-                                            ))}
-                                        </div>
+                                            >
+                                                {isCompleted ? <Check className="h-3.5 w-3.5" /> : step}
+                                            </div>
+
+                                            {/* Step Text */}
+                                            <div className="min-w-0 flex-1">
+                                                <p className={`text-xs font-bold truncate ${isActive ? 'text-primary' : 'text-foreground'}`}>
+                                                    {title}
+                                                </p>
+                                                <p className="text-[10px] text-muted-foreground hidden sm:block truncate">
+                                                    {subtitle}
+                                                </p>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* STEPPED CREATION FORM CARD */}
+                            <Card className="overflow-hidden rounded-3xl border-border bg-card shadow-sm">
+                                <CardHeader className="border-b p-4 sm:p-5 bg-muted/10">
+                                    <div>
+                                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                            Step {currentStep} of 3
+                                        </p>
+                                        <h2 className="mt-0.5 text-base sm:text-lg font-bold text-foreground">
+                                            {currentStep === 1
+                                                ? 'Product & Campaign Brief'
+                                                : currentStep === 2
+                                                    ? 'Content Style & Brand Tone'
+                                                    : 'Dimensions & Tagline'}
+                                        </h2>
                                     </div>
                                 </CardHeader>
 
@@ -1332,6 +1585,42 @@ export default function GeneratorPage() {
                                                     )}
                                                 </div>
                                             </div>
+
+                                            {/* Include Brand Logo Option Card */}
+                                            <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-border/80 bg-card/60 backdrop-blur-sm transition-all hover:border-primary/40 hover:bg-card shadow-xs">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary">
+                                                        {business?.logo_url ? (
+                                                            <img src={business.logo_url} alt="Logo" className="h-7 w-7 rounded-lg object-contain" />
+                                                        ) : (
+                                                            <Building2 className="h-5 w-5 text-primary" />
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Label htmlFor="include_logo_toggle" className="text-xs font-bold text-foreground cursor-pointer">
+                                                                Include Brand Logo in Visual
+                                                            </Label>
+                                                            <HelpTooltip text="When enabled, your business logo will be embedded and composed seamlessly into the generated visual." />
+                                                        </div>
+                                                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                                                            {business?.logo_url
+                                                                ? `Branded with "${business.name || 'Your Business'}" logo`
+                                                                : 'Seamlessly embeds your official brand logo on the creative corner'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <Checkbox
+                                                    id="include_logo_toggle"
+                                                    checked={form.include_logo}
+                                                    onCheckedChange={(checked) => {
+                                                        const val = Boolean(checked);
+                                                        setForm({ ...form, include_logo: val });
+                                                        localStorage.setItem('ai_studio_include_logo', String(val));
+                                                    }}
+                                                    className="h-5 w-5 rounded-md cursor-pointer"
+                                                />
+                                            </div>
                                         </div>
                                     )}
 
@@ -1390,13 +1679,12 @@ export default function GeneratorPage() {
                                                                         setForm({ ...form, content_style: [...form.content_style, style] });
                                                                     }
                                                                 }}
-                                                                className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
-                                                                    active
+                                                                className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${active
                                                                         ? 'border-primary bg-primary text-primary-foreground font-semibold shadow-xs'
                                                                         : disabled
-                                                                          ? 'opacity-40 cursor-not-allowed border-border bg-muted/20'
-                                                                          : 'border-border bg-background hover:border-primary/40 hover:bg-muted/40'
-                                                                }`}
+                                                                            ? 'opacity-40 cursor-not-allowed border-border bg-muted/20'
+                                                                            : 'border-border bg-background hover:border-primary/40 hover:bg-muted/40'
+                                                                    }`}
                                                             >
                                                                 {active && <Check className="mr-1 inline h-3 w-3" />}
                                                                 {style}
@@ -1433,13 +1721,12 @@ export default function GeneratorPage() {
                                                                         setForm({ ...form, brand_tone: [...form.brand_tone, tone] });
                                                                     }
                                                                 }}
-                                                                className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
-                                                                    active
+                                                                className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${active
                                                                         ? 'border-primary bg-primary text-primary-foreground font-semibold shadow-xs'
                                                                         : disabled
-                                                                          ? 'opacity-40 cursor-not-allowed border-border bg-muted/20'
-                                                                          : 'border-border bg-background hover:border-primary/40 hover:bg-muted/40'
-                                                                }`}
+                                                                            ? 'opacity-40 cursor-not-allowed border-border bg-muted/20'
+                                                                            : 'border-border bg-background hover:border-primary/40 hover:bg-muted/40'
+                                                                    }`}
                                                             >
                                                                 {active && <Check className="mr-1 inline h-3 w-3" />}
                                                                 {tone}
@@ -1456,35 +1743,63 @@ export default function GeneratorPage() {
                                     ====================================== */}
                                     {currentStep === 3 && (
                                         <div className="space-y-6 animate-in fade-in duration-200">
-                                            {/* Aspect Ratio Selector */}
-                                            <div className="space-y-2">
-                                                <div className="flex items-center gap-1">
-                                                    <Label className="text-xs font-semibold">Aspect Ratio & Canvas Dimensions</Label>
-                                                    <HelpTooltip text="Proportions tailored for Instagram feed posts (1:1), Stories/Reels (9:16), or Facebook covers (16:9)." />
+                                            {/* Aspect Ratio Selector (Dropdown) */}
+                                            <div className="space-y-2.5">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-1">
+                                                        <Label className="text-xs font-semibold">Aspect Ratio & Canvas Dimensions</Label>
+                                                        <HelpTooltip text="Proportions tailored for Instagram feed posts (1:1), Stories/Reels (9:16), Facebook covers (16:9), or portrait feed (4:5)." />
+                                                    </div>
+                                                    <Badge variant="outline" className="text-[10px] font-mono font-bold bg-primary/10 text-primary border-primary/20">
+                                                        {form.aspect_ratio}
+                                                    </Badge>
                                                 </div>
-                                                <div className="grid gap-2.5 sm:grid-cols-3">
-                                                    {aspectRatioOptions.map((opt) => {
-                                                        const active = form.aspect_ratio === opt.value;
-                                                        return (
-                                                            <button
-                                                                key={opt.value}
-                                                                type="button"
-                                                                onClick={() => setForm({ ...form, aspect_ratio: opt.value })}
-                                                                className={`flex flex-col items-start justify-between rounded-2xl border p-3 text-left transition-all ${
-                                                                    active
-                                                                        ? 'border-primary bg-primary/10 shadow-xs ring-1 ring-primary/40'
-                                                                        : 'border-border bg-card hover:border-primary/40 hover:bg-muted/30'
-                                                                }`}
-                                                            >
-                                                                <div className="flex w-full items-center justify-between">
-                                                                    <span className="text-xs font-bold text-foreground">{opt.label}</span>
-                                                                    <span className="text-[10px] font-mono text-muted-foreground">{opt.badge}</span>
+
+                                                <Select
+                                                    value={form.aspect_ratio}
+                                                    onValueChange={(val) => setForm({ ...form, aspect_ratio: val })}
+                                                >
+                                                    <SelectTrigger className="h-11 w-full rounded-2xl border-border bg-card text-xs font-semibold shadow-xs">
+                                                        <SelectValue placeholder="Select canvas aspect ratio" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="rounded-2xl border-border shadow-xl">
+                                                        {aspectRatioOptions.map((opt) => (
+                                                            <SelectItem key={opt.value} value={opt.value} className="py-2.5 cursor-pointer rounded-xl">
+                                                                <div className="flex items-center justify-between w-full gap-4">
+                                                                    <div className="flex items-center gap-2.5">
+                                                                        <Badge variant="outline" className="text-[10px] font-bold px-2 py-0.5 bg-primary/10 text-primary border-primary/20">
+                                                                            {opt.value}
+                                                                        </Badge>
+                                                                        <div>
+                                                                            <p className="text-xs font-bold text-foreground">{opt.label}</p>
+                                                                            <p className="text-[10px] text-muted-foreground">{opt.description}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <Badge variant="secondary" className="text-[10px] font-medium shrink-0 ml-auto font-mono">
+                                                                        {opt.badge}
+                                                                    </Badge>
                                                                 </div>
-                                                                <p className="mt-1 text-[11px] text-muted-foreground">{opt.description}</p>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+
+                                                {/* Selected Aspect Ratio Info Card */}
+                                                {(() => {
+                                                    const currentOpt = aspectRatioOptions.find((o) => o.value === form.aspect_ratio) || aspectRatioOptions[0];
+                                                    return (
+                                                        <div className="flex items-center justify-between p-3 rounded-2xl border border-border/70 bg-muted/20 text-xs">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-semibold text-foreground">{currentOpt.label}</span>
+                                                                <span className="text-muted-foreground">•</span>
+                                                                <span className="text-muted-foreground text-[11px]">{currentOpt.description}</span>
+                                                            </div>
+                                                            <Badge variant="outline" className="text-[10px] font-mono">
+                                                                {currentOpt.badge}
+                                                            </Badge>
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
 
                                             {/* Tagline Generator */}
@@ -1553,46 +1868,154 @@ export default function GeneratorPage() {
                                     </div>
                                 </CardContent>
                             </Card>
-
-                            {/* RIGHT COLUMN SUMMARY CARD */}
-                            <Card className="rounded-3xl border-border bg-card p-5 shadow-sm space-y-4 lg:sticky lg:top-24 lg:self-start">
-                                <CardHeader className="p-0 pb-3 border-b border-border/60">
-                                    <CardTitle className="text-sm font-bold flex items-center gap-2">
-                                        <Sparkles className="h-4 w-4 text-primary" />
-                                        Brief Summary
-                                    </CardTitle>
-                                </CardHeader>
-
-                                <div className="space-y-3 text-xs">
-                                    <div className="flex justify-between gap-2">
-                                        <span className="text-muted-foreground">Product</span>
-                                        <span className="font-semibold text-right truncate max-w-[170px]">{form.product_name || '—'}</span>
-                                    </div>
-                                    <div className="flex justify-between gap-2">
-                                        <span className="text-muted-foreground">Event</span>
-                                        <span className="font-semibold text-right truncate max-w-[170px]">{selectedEvent?.name || 'None'}</span>
-                                    </div>
-                                    <div className="flex justify-between gap-2">
-                                        <span className="text-muted-foreground">Price</span>
-                                        <span className="font-semibold text-right">{form.price ? `₱${Number(form.price).toLocaleString()}` : '—'}</span>
-                                    </div>
-                                    <div className="flex justify-between gap-2">
-                                        <span className="text-muted-foreground">Themes</span>
-                                        <span className="font-semibold text-right truncate max-w-[170px]">{form.content_style.join(', ') || 'Default'}</span>
-                                    </div>
-                                    <div className="flex justify-between gap-2">
-                                        <span className="text-muted-foreground">Tones</span>
-                                        <span className="font-semibold text-right truncate max-w-[170px]">{form.brand_tone.join(', ') || 'Default'}</span>
-                                    </div>
-                                    <div className="flex justify-between gap-2">
-                                        <span className="text-muted-foreground">Dimensions</span>
-                                        <span className="font-semibold text-right">{form.aspect_ratio || '1:1 Square'}</span>
-                                    </div>
-                                </div>
-                            </Card>
                         </div>
                     )}
                 </div>
+
+                {/* =====================================================
+                    DOCKED RIGHT SIDEBAR: BRIEF SUMMARY (ATTACHED TO SYSTEM HEADER)
+                ====================================================== */}
+                {isSummaryCollapsed ? (
+                    /* COLLAPSED VERTICAL RAIL BOX (LIKE LEFT SIDEBAR RAIL) */
+                    <aside
+                        onClick={() => handleSetSummaryCollapsed(false)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') handleSetSummaryCollapsed(false);
+                        }}
+                        className="w-11 lg:w-12 shrink-0 border-l border-border bg-card/60 hover:bg-muted/40 backdrop-blur-md sticky top-14 h-[calc(100vh-3.5rem)] flex flex-col items-center justify-between py-4 cursor-pointer select-none transition-all duration-200 z-20 group"
+                        title="Open Brief Summary"
+                    >
+                        <div className="flex flex-col items-center gap-5">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all shadow-2xs">
+                                <PanelRightOpen className="h-4 w-4" />
+                            </div>
+
+                            <div className="flex flex-col items-center gap-4 py-2">
+                                <span className="[writing-mode:vertical-rl] rotate-180 text-[10px] font-bold tracking-widest uppercase text-muted-foreground group-hover:text-foreground transition-colors">
+                                    Brief Summary
+                                </span>
+                                <span className="[writing-mode:vertical-rl] rotate-180 text-[9px] font-mono font-bold text-primary px-1 py-0.5 rounded border border-primary/30 bg-primary/5">
+                                    {form.aspect_ratio}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground group-hover:text-foreground transition-colors">
+                            <Sparkles className="h-3.5 w-3.5" />
+                        </div>
+                    </aside>
+                ) : (
+                    /* EXPANDED FULL RIGHT SIDEBAR */
+                    <aside className="w-80 lg:w-[320px] shrink-0 border-l border-border bg-card/75 backdrop-blur-md sticky top-14 h-[calc(100vh-3.5rem)] flex flex-col justify-between overflow-y-auto p-5 transition-all duration-300 z-20">
+                        <div className="space-y-5">
+                            {/* Sidebar Header */}
+                            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                                <div className="text-sm font-bold flex items-center gap-2 text-foreground">
+                                    <Sparkles className="h-4 w-4 text-primary" />
+                                    Brief Summary
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleSetSummaryCollapsed(true)}
+                                    className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
+                                    title="Collapse summary sidebar"
+                                >
+                                    <PanelRightClose className="h-4 w-4" />
+                                </Button>
+                            </div>
+
+                            {/* Aspect Ratio Dimension Visualizer (Clean Wireframe Only) */}
+                            <div className="rounded-2xl border border-border/70 bg-muted/20 p-3.5 space-y-3">
+                                <div className="flex items-center justify-between text-xs">
+                                    <span className="font-bold text-foreground">Canvas Ratio</span>
+                                    <Badge variant="outline" className="text-[10px] font-mono font-bold bg-primary/10 text-primary border-primary/20">
+                                        {form.aspect_ratio}
+                                    </Badge>
+                                </div>
+
+                                {/* Proportional Wireframe Box - Pure Dimensions */}
+                                <div className="flex items-center justify-center p-3 rounded-xl bg-background/80 border border-border/50 min-h-[170px] overflow-hidden">
+                                    <div
+                                        className={`relative rounded-lg border-2 border-dashed border-primary/60 bg-primary/5 flex flex-col items-center justify-center transition-all duration-300 ${form.aspect_ratio === '9:16'
+                                                ? 'w-[90px] h-[160px]'
+                                                : form.aspect_ratio === '16:9'
+                                                    ? 'w-[180px] h-[101px]'
+                                                    : form.aspect_ratio === '4:5'
+                                                        ? 'w-[116px] h-[145px]'
+                                                        : form.aspect_ratio === '4:3'
+                                                            ? 'w-[152px] h-[114px]'
+                                                            : 'w-[125px] h-[125px]' // 1:1 square
+                                            }`}
+                                    >
+                                        {/* Centered Ratio & Resolution Tags */}
+                                        <div className="flex flex-col items-center justify-center gap-1 text-center p-1">
+                                            <span className="text-xs font-mono font-extrabold text-primary">
+                                                {form.aspect_ratio}
+                                            </span>
+                                            <span className="text-[10px] font-mono font-semibold text-muted-foreground">
+                                                {aspectRatioOptions.find((o) => o.value === form.aspect_ratio)?.badge || '1024 × 1024'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/40">
+                                    <span className="font-medium text-foreground truncate max-w-[170px]">
+                                        {aspectRatioOptions.find((o) => o.value === form.aspect_ratio)?.label || form.aspect_ratio}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground">
+                                        {aspectRatioOptions.find((o) => o.value === form.aspect_ratio)?.badge || '1024 × 1024'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Parameter Details Rows */}
+                            <div className="space-y-2.5 text-xs">
+                                <div className="flex justify-between items-center gap-2 pb-1.5 border-b border-border/40">
+                                    <span className="text-muted-foreground">Product</span>
+                                    <span className="font-semibold text-right truncate max-w-[160px] text-foreground">{form.product_name || '—'}</span>
+                                </div>
+                                <div className="flex justify-between items-center gap-2 pb-1.5 border-b border-border/40">
+                                    <span className="text-muted-foreground">Event</span>
+                                    <span className="font-semibold text-right truncate max-w-[160px] text-foreground">{selectedEvent?.name || 'None'}</span>
+                                </div>
+                                <div className="flex justify-between items-center gap-2 pb-1.5 border-b border-border/40">
+                                    <span className="text-muted-foreground">Price</span>
+                                    <span className="font-semibold text-right text-emerald-600 dark:text-emerald-400 font-mono">{form.price ? `₱${Number(form.price).toLocaleString()}` : '—'}</span>
+                                </div>
+                                <div className="flex justify-between items-center gap-2 pb-1.5 border-b border-border/40">
+                                    <span className="text-muted-foreground">Themes</span>
+                                    <span className="font-semibold text-right truncate max-w-[160px] text-foreground">{form.content_style.join(', ') || 'Default'}</span>
+                                </div>
+                                <div className="flex justify-between items-center gap-2 pb-1.5 border-b border-border/40">
+                                    <span className="text-muted-foreground">Tones</span>
+                                    <span className="font-semibold text-right truncate max-w-[160px] text-foreground">{form.brand_tone.join(', ') || 'Default'}</span>
+                                </div>
+                                <div className="flex justify-between items-center gap-2 pb-1.5 border-b border-border/40">
+                                    <span className="text-muted-foreground">Dimensions</span>
+                                    <Badge variant="outline" className="text-[10px] font-semibold font-mono">
+                                        {form.aspect_ratio} ({aspectRatioOptions.find((o) => o.value === form.aspect_ratio)?.badge || '1024 × 1024'})
+                                    </Badge>
+                                </div>
+                                <div className="flex justify-between items-center gap-2">
+                                    <span className="text-muted-foreground">Brand Logo</span>
+                                    <Badge variant={form.include_logo ? 'default' : 'outline'} className={`text-[10px] font-semibold ${form.include_logo ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' : ''}`}>
+                                        {form.include_logo ? 'Included' : 'Off'}
+                                    </Badge>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Sticky footer info */}
+                        <div className="pt-4 border-t border-border/50 text-[11px] text-muted-foreground text-center">
+                            <span>MarketPilot AI Creative Engine</span>
+                        </div>
+                    </aside>
+                )}
             </div>
 
             {/* =============================================================
@@ -1621,70 +2044,54 @@ export default function GeneratorPage() {
                         </div>
                     </DialogHeader>
 
-                    {/* Filter & Year Toolbar */}
-                    <div className="border-b border-border p-4 space-y-3 bg-muted/10 shrink-0">
-                        {/* Year Pills & Global Selector */}
-                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                            <span className="text-xs font-semibold text-muted-foreground mr-1 shrink-0">Year:</span>
-                            {availableYears.map((yr) => (
-                                <button
-                                    key={yr}
-                                    type="button"
-                                    onClick={() => setSelectedYearTab(yr)}
-                                    className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-all shrink-0 ${
-                                        selectedYearTab === yr ? 'bg-primary text-primary-foreground shadow-xs font-semibold' : 'bg-card text-muted-foreground hover:text-foreground border border-border/70'
-                                    }`}
-                                >
-                                    {yr}
-                                </button>
-                            ))}
-                            <button
-                                type="button"
-                                onClick={() => setSelectedYearTab('all')}
-                                className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-all shrink-0 ${
-                                    selectedYearTab === 'all' ? 'bg-primary text-primary-foreground shadow-xs font-semibold' : 'bg-card text-muted-foreground hover:text-foreground border border-border/70'
-                                }`}
-                            >
-                                All Years
-                            </button>
-                        </div>
-
-                        {/* Search & Category Tabs */}
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-                            <div className="relative flex-1 w-full">
+                    {/* Filter & Year Toolbar (Responsive Grid with Dropdowns) */}
+                    <div className="border-b border-border p-4 bg-muted/10 shrink-0">
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
+                            {/* Search Input */}
+                            <div className="relative sm:col-span-6">
                                 <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                                 <Input
                                     value={eventSearchQuery}
                                     onChange={(e) => setEventSearchQuery(e.target.value)}
-                                    placeholder="Search events, holidays, sale dates, proclamations..."
-                                    className="h-9 pl-9 text-xs bg-card"
+                                    placeholder="Search events, holidays, sales..."
+                                    className="h-9.5 pl-9 text-xs bg-card rounded-xl border-border"
                                 />
                             </div>
 
-                            <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
-                                {[
-                                    { id: 'all', label: 'All' },
-                                    { id: 'regular', label: 'Regular' },
-                                    { id: 'special_non_working', label: 'Non-Working' },
-                                    { id: 'special_working', label: 'Working' },
-                                    { id: 'islamic', label: 'Islamic' },
-                                    { id: 'long_weekend', label: 'Long Weekends' },
-                                    { id: 'commercial', label: 'Sales' },
-                                    { id: 'custom', label: 'Custom' },
-                                ].map((tab) => (
-                                    <button
-                                        key={tab.id}
-                                        type="button"
-                                        onClick={() => setEventCategoryFilter(tab.id)}
-                                        className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all shrink-0 ${
-                                            eventCategoryFilter === tab.id
-                                                ? 'bg-primary text-primary-foreground shadow-xs font-semibold'
-                                                : 'bg-card text-muted-foreground hover:text-foreground border border-border/60'
-                                        }`}
-                                    >
-                                        {tab.label}
-                                    </button>
-                                ))}
+                            {/* Category Filter Dropdown */}
+                            <div className="sm:col-span-3">
+                                <Select value={eventCategoryFilter} onValueChange={setEventCategoryFilter}>
+                                    <SelectTrigger className="h-9.5 w-full rounded-xl text-xs bg-card font-medium border-border shadow-2xs">
+                                        <SelectValue placeholder="Category" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl border-border shadow-lg">
+                                        <SelectItem value="all">All Categories</SelectItem>
+                                        <SelectItem value="regular">Regular Holidays</SelectItem>
+                                        <SelectItem value="special_non_working">Special Non-Working</SelectItem>
+                                        <SelectItem value="special_working">Special Working</SelectItem>
+                                        <SelectItem value="islamic">Islamic Holidays</SelectItem>
+                                        <SelectItem value="long_weekend">Long Weekends</SelectItem>
+                                        <SelectItem value="commercial">Retail Sales & Payday</SelectItem>
+                                        <SelectItem value="custom">Custom Events</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Year Selector Dropdown */}
+                            <div className="sm:col-span-3">
+                                <Select value={selectedYearTab} onValueChange={setSelectedYearTab}>
+                                    <SelectTrigger className="h-9.5 w-full rounded-xl text-xs bg-card font-medium border-border shadow-2xs">
+                                        <SelectValue placeholder="Year" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl border-border shadow-lg">
+                                        <SelectItem value="all">All Years</SelectItem>
+                                        {availableYears.map((yr) => (
+                                            <SelectItem key={yr} value={yr}>
+                                                Year {yr}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
                     </div>
@@ -1709,11 +2116,10 @@ export default function GeneratorPage() {
                                             key={evt.id}
                                             type="button"
                                             onClick={() => handleSelectEvent(evt)}
-                                            className={`group flex flex-col justify-between rounded-xl border p-3 text-left transition-all ${
-                                                isSelected
+                                            className={`group flex flex-col justify-between rounded-xl border p-3 text-left transition-all ${isSelected
                                                     ? 'border-primary bg-primary/10 ring-2 ring-primary/40 shadow-xs'
                                                     : 'border-border bg-card hover:border-primary/50 hover:bg-muted/30'
-                                            }`}
+                                                }`}
                                         >
                                             <div className="space-y-1.5">
                                                 <div className="flex items-start justify-between gap-1.5">
@@ -1898,23 +2304,20 @@ export default function GeneratorPage() {
                             <img
                                 src={savedDesign.image_url}
                                 alt={form.product_name}
-                                className={`max-h-[82vh] max-w-[90vw] object-contain rounded-2xl shadow-2xl drop-shadow-2xl transition-all duration-300 ${
-                                    isFullViewDetailsExpanded ? 'scale-90 -translate-y-6' : 'scale-100'
-                                }`}
+                                className={`max-h-[82vh] max-w-[90vw] object-contain rounded-2xl shadow-2xl drop-shadow-2xl transition-all duration-300 ${isFullViewDetailsExpanded ? 'scale-90 -translate-y-6' : 'scale-100'
+                                    }`}
                             />
                         ) : (
                             <div
-                                className={`flex flex-col items-center justify-center rounded-3xl border border-white/20 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-8 text-center text-white drop-shadow-2xl transition-all duration-300 ${
-                                    isFullViewDetailsExpanded ? 'scale-90 -translate-y-8' : 'scale-100'
-                                } ${
-                                    form.aspect_ratio === '9:16'
+                                className={`flex flex-col items-center justify-center rounded-3xl border border-white/20 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-8 text-center text-white drop-shadow-2xl transition-all duration-300 ${isFullViewDetailsExpanded ? 'scale-90 -translate-y-8' : 'scale-100'
+                                    } ${form.aspect_ratio === '9:16'
                                         ? 'w-[320px] h-[570px]'
                                         : form.aspect_ratio === '16:9'
-                                          ? 'w-[680px] h-[380px]'
-                                          : form.aspect_ratio === '4:5'
-                                            ? 'w-[400px] h-[500px]'
-                                            : 'w-[480px] h-[480px]'
-                                }`}
+                                            ? 'w-[680px] h-[380px]'
+                                            : form.aspect_ratio === '4:5'
+                                                ? 'w-[400px] h-[500px]'
+                                                : 'w-[480px] h-[480px]'
+                                    }`}
                             >
                                 <Sparkles className="h-10 w-10 text-primary mb-3" />
                                 <h3 className="text-2xl font-bold">{form.product_name}</h3>
@@ -2123,22 +2526,20 @@ export default function GeneratorPage() {
                             <button
                                 type="button"
                                 onClick={() => setCampaignModalTab('existing')}
-                                className={`flex-1 py-1.5 rounded-lg transition-all text-center ${
-                                    campaignModalTab === 'existing'
+                                className={`flex-1 py-1.5 rounded-lg transition-all text-center ${campaignModalTab === 'existing'
                                         ? 'bg-card text-foreground shadow-xs'
                                         : 'text-muted-foreground hover:text-foreground'
-                                }`}
+                                    }`}
                             >
                                 Existing Campaign
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setCampaignModalTab('new')}
-                                className={`flex-1 py-1.5 rounded-lg transition-all text-center ${
-                                    campaignModalTab === 'new'
+                                className={`flex-1 py-1.5 rounded-lg transition-all text-center ${campaignModalTab === 'new'
                                         ? 'bg-card text-foreground shadow-xs'
                                         : 'text-muted-foreground hover:text-foreground'
-                                }`}
+                                    }`}
                             >
                                 + Create New Campaign
                             </button>
@@ -2161,11 +2562,10 @@ export default function GeneratorPage() {
                                                     key={c.id}
                                                     type="button"
                                                     onClick={() => setSelectedExistingCampaignId(String(c.id))}
-                                                    className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all ${
-                                                        isSelected
+                                                    className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all ${isSelected
                                                             ? 'border-primary bg-primary/10 ring-2 ring-primary/40 font-semibold'
                                                             : 'border-border bg-card hover:border-primary/40 hover:bg-muted/20'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     <div className="min-w-0 flex-1">
                                                         <p className="text-xs font-bold text-foreground truncate">{c.name}</p>

@@ -1,6 +1,6 @@
 import { Form, Head } from '@inertiajs/react';
+import { MailCheck, RefreshCw } from 'lucide-react';
 import { useRef } from 'react';
-
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,19 +14,11 @@ export default function VerifyEmail({
 }: {
     status?: string;
 }) {
-    const inputRefs = useRef<
-        Array<HTMLInputElement | null>
-    >([]);
+    const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
     const codeInputRef = useRef<HTMLInputElement>(null);
 
     const submitVerificationForm = () => {
-        const form =
-            document
-                .getElementById(
-                    'verification-code',
-                )
-                ?.closest('form');
-
+        const form = document.getElementById('verification-code')?.closest('form');
         if (form instanceof HTMLFormElement) {
             if (form.requestSubmit) {
                 form.requestSubmit();
@@ -37,134 +29,54 @@ export default function VerifyEmail({
     };
 
     const updateCode = () => {
-        const code = inputRefs.current
-            .map((input) => input?.value || '')
-            .join('');
-
+        const code = inputRefs.current.map((input) => input?.value || '').join('');
         if (codeInputRef.current) {
             codeInputRef.current.value = code;
         }
-
-        // Auto-submit when all 6 digits are filled
         if (code.length === 6) {
             submitVerificationForm();
         }
     };
 
-    const handleCodeInput = (
-        index: number,
-        value: string,
-    ) => {
-        // Numbers only
-        const numericValue =
-            value.replace(/\D/g, '');
-
-        // Keep only one digit
-        const digit =
-            numericValue.slice(-1);
-
-        const input =
-            inputRefs.current[index];
-
+    const handleCodeInput = (index: number, value: string) => {
+        const numericValue = value.replace(/\D/g, '');
+        const digit = numericValue.slice(-1);
+        const input = inputRefs.current[index];
         if (input) {
             input.value = digit;
         }
-
-        // Automatically move to next box
-        if (
-            digit &&
-            index < 5
-        ) {
-            inputRefs.current[
-                index + 1
-            ]?.focus();
+        if (digit && index < 5) {
+            inputRefs.current[index + 1]?.focus();
         }
-
-        // Update the hidden code field
         updateCode();
     };
 
-    const handleKeyDown = (
-        index: number,
-        event: React.KeyboardEvent<HTMLInputElement>,
-    ) => {
-        // Move to previous box when pressing Backspace
-        if (
-            event.key === 'Backspace' &&
-            !event.currentTarget.value &&
-            index > 0
-        ) {
-            inputRefs.current[
-                index - 1
-            ]?.focus();
+    const handleKeyDown = (index: number, event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === 'Backspace' && !event.currentTarget.value && index > 0) {
+            inputRefs.current[index - 1]?.focus();
         }
 
-        // Allow only numbers and control keys
-        const allowedKeys = [
-            'Backspace',
-            'Delete',
-            'Tab',
-            'ArrowLeft',
-            'ArrowRight',
-            'Home',
-            'End',
-        ];
-
-        if (
-            !allowedKeys.includes(
-                event.key,
-            ) &&
-            !/^[0-9]$/.test(
-                event.key,
-            )
-        ) {
+        const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
+        if (!allowedKeys.includes(event.key) && !/^[0-9]$/.test(event.key)) {
             event.preventDefault();
         }
 
-        // Update code after backspace
         if (event.key === 'Backspace') {
             setTimeout(updateCode, 0);
         }
     };
 
-    const handlePaste = (
-        event: React.ClipboardEvent,
-    ) => {
+    const handlePaste = (event: React.ClipboardEvent) => {
         event.preventDefault();
-
-        const pastedValue =
-            event.clipboardData
-                .getData('text')
-                .replace(/\D/g, '')
-                .slice(0, 6);
-
-        pastedValue
-            .split('')
-            .forEach(
-                (digit, index) => {
-                    const input =
-                        inputRefs.current[
-                            index
-                        ];
-
-                    if (input) {
-                        input.value =
-                            digit;
-                    }
-                },
-            );
-
-        const nextIndex =
-            Math.min(
-                pastedValue.length,
-                5,
-            );
-
-        inputRefs.current[
-            nextIndex
-        ]?.focus();
-
-        // Update code after paste
+        const pastedValue = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+        pastedValue.split('').forEach((digit, index) => {
+            const input = inputRefs.current[index];
+            if (input) {
+                input.value = digit;
+            }
+        });
+        const nextIndex = Math.min(pastedValue.length, 5);
+        inputRefs.current[nextIndex]?.focus();
         updateCode();
     };
 
@@ -172,42 +84,36 @@ export default function VerifyEmail({
         <>
             <Head title="Verify your email" />
 
-            {status ===
-                'verification-link-sent' && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    A new verification code has
-                    been sent to your email.
-                </div>
-            )}
-
-            <div className="space-y-6">
-                <div className="space-y-2 text-center">
-                    <h1 className="text-2xl font-semibold tracking-tight">
-                        Enter your verification code
-                    </h1>
-
-                    <p className="text-sm text-muted-foreground">
-                        Check your email for the
-                        6-digit code and enter it
-                        below to verify your
-                        account.
+            <div className="space-y-4">
+                {/* Visual Header Banner */}
+                <div className="flex flex-col items-center justify-center p-3 rounded-2xl bg-primary/10 border border-primary/20 text-center">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs mb-1.5">
+                        <MailCheck className="h-5 w-5" />
+                    </div>
+                    <h3 className="text-xs font-bold text-foreground">
+                        Verification Code Sent
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Please check your inbox and enter the 6-digit code below.
                     </p>
                 </div>
+
+                {status === 'verification-link-sent' && (
+                    <div className="text-center text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 py-2 rounded-xl">
+                        A new verification code has been sent to your email.
+                    </div>
+                )}
 
                 <Form
                     action="/email/verify-code"
                     method="post"
-                    className="space-y-4 text-left"
+                    className="space-y-3.5 text-left"
                 >
-                    {({
-                        processing,
-                        errors,
-                    }) => (
+                    {({ processing, errors }) => (
                         <>
-                            <div className="space-y-2">
-                                <Label>
-                                    Verification
-                                    code
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-semibold">
+                                    6-Digit Verification Code
                                 </Label>
 
                                 {/* Hidden field submitted to Laravel */}
@@ -219,120 +125,66 @@ export default function VerifyEmail({
                                 />
 
                                 <div
-                                    className="flex justify-center gap-2 sm:gap-3"
-                                    onPaste={
-                                        handlePaste
-                                    }
+                                    className="flex justify-center gap-2 sm:gap-2.5 py-1"
+                                    onPaste={handlePaste}
                                 >
-                                    {Array.from(
-                                        {
-                                            length: 6,
-                                        },
-                                        (
-                                            _,
-                                            index,
-                                        ) => (
-                                            <Input
-                                                key={
-                                                    index
-                                                }
-                                                ref={(
-                                                    element,
-                                                ) => {
-                                                    inputRefs.current[
-                                                        index
-                                                    ] =
-                                                        element;
-                                                }}
-                                                type="text"
-                                                inputMode="numeric"
-                                                autoComplete={
-                                                    index ===
-                                                    0
-                                                        ? 'one-time-code'
-                                                        : 'off'
-                                                }
-                                                maxLength={
-                                                    1
-                                                }
-                                                aria-label={`Verification digit ${index + 1}`}
-                                                onInput={(
-                                                    event,
-                                                ) =>
-                                                    handleCodeInput(
-                                                        index,
-                                                        event
-                                                            .currentTarget
-                                                            .value,
-                                                    )
-                                                }
-                                                onKeyDown={(
-                                                    event,
-                                                ) =>
-                                                    handleKeyDown(
-                                                        index,
-                                                        event,
-                                                    )
-                                                }
-                                                className="h-12 w-11 text-center text-lg font-semibold sm:h-14 sm:w-12"
-                                            />
-                                        ),
-                                    )}
+                                    {Array.from({ length: 6 }, (_, index) => (
+                                        <Input
+                                            key={index}
+                                            ref={(element) => {
+                                                inputRefs.current[index] = element;
+                                            }}
+                                            type="text"
+                                            inputMode="numeric"
+                                            autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                                            maxLength={1}
+                                            aria-label={`Verification digit ${index + 1}`}
+                                            onInput={(event) =>
+                                                handleCodeInput(index, event.currentTarget.value)
+                                            }
+                                            onKeyDown={(event) => handleKeyDown(index, event)}
+                                            className="h-11 w-10 sm:h-12 sm:w-11 text-center text-base sm:text-lg font-bold rounded-xl border-border bg-background shadow-xs focus-visible:border-primary focus-visible:ring-primary/20"
+                                        />
+                                    ))}
                                 </div>
 
                                 {errors?.code && (
-                                    <p className="text-center text-sm text-destructive">
-                                        {String(
-                                            errors.code,
-                                        )}
+                                    <p className="text-center text-xs font-medium text-destructive mt-1">
+                                        {String(errors.code)}
                                     </p>
                                 )}
                             </div>
 
                             <Button
-                                disabled={
-                                    processing
-                                }
-                                className="w-full"
+                                disabled={processing}
+                                className="h-10 w-full rounded-xl bg-[#2563EB] text-xs font-semibold text-white shadow-sm hover:bg-[#1D4ED8]"
                             >
-                                {processing && (
-                                    <Spinner />
-                                )}
-
+                                {processing && <Spinner />}
                                 Verify email
                             </Button>
                         </>
                     )}
                 </Form>
 
-                <div className="space-y-3 text-center">
-                    <Form
-                        {...send.form()}
-                        className="inline-block"
-                    >
-                        {({
-                            processing,
-                        }) => (
+                <div className="space-y-2 text-center pt-1 border-t border-border/60">
+                    <Form {...send.form()} className="inline-block">
+                        {({ processing }) => (
                             <Button
                                 type="submit"
-                                disabled={
-                                    processing
-                                }
-                                variant="secondary"
+                                disabled={processing}
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 text-xs font-medium gap-1.5 text-muted-foreground hover:text-foreground"
                             >
-                                {processing && (
-                                    <Spinner />
-                                )}
-
-                                Resend verification
-                                code
+                                {processing ? <Spinner /> : <RefreshCw className="h-3 w-3" />}
+                                Resend verification code
                             </Button>
                         )}
                     </Form>
 
                     <TextLink
                         href={logout()}
-                        className="mx-auto block text-sm"
+                        className="mx-auto block text-xs text-muted-foreground hover:text-foreground"
                     >
                         Log out
                     </TextLink>
@@ -344,6 +196,5 @@ export default function VerifyEmail({
 
 VerifyEmail.layout = {
     title: 'Verify your email',
-    description:
-        'Please confirm your email address to complete setup and unlock your workspace.',
+    description: 'Please confirm your email address to complete setup and unlock your workspace.',
 };

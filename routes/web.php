@@ -148,6 +148,7 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
     })->name('dashboard');
     Route::get('generator', [GeneratorController::class, 'index'])->name('generator.index');
     Route::post('generator', [GeneratorController::class, 'store'])->name('generator.store');
+    Route::post('generator/preview', [GeneratorController::class, 'generatePreview'])->name('generator.preview');
     Route::get('designs', [DesignController::class, 'index'])->name('designs.index');
     Route::post('designs', [DesignController::class, 'store'])->name('designs.store');
     Route::post('designs/bulk-delete', [DesignController::class, 'bulkDestroy'])->name('designs.bulk-delete');
@@ -167,6 +168,7 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
     Route::get('campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
     Route::post('campaigns', [CampaignController::class, 'store'])->name('campaigns.store');
     Route::get('campaigns/{campaign}', [CampaignController::class, 'show'])->name('campaigns.show');
+    Route::post('campaigns/{campaign}/attach-designs', [CampaignController::class, 'attachDesigns'])->name('campaigns.attach-designs');
     Route::put('campaigns/{campaign}', [CampaignController::class, 'update'])->name('campaigns.update');
     Route::delete('campaigns/{campaign}', [CampaignController::class, 'destroy'])->name('campaigns.destroy');
 

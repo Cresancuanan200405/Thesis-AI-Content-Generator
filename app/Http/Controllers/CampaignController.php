@@ -61,6 +61,8 @@ class CampaignController extends Controller
             ->values()
             ->all();
 
+        $allUserCampaigns = $user->campaigns();
+
         return Inertia::render('campaigns/index', [
             'campaigns' => $campaigns->through(function ($campaign, int $key): array {
                 /** @var Campaign $campaign */
@@ -81,10 +83,20 @@ class CampaignController extends Controller
                     'end_date' => $endDate instanceof CarbonInterface ? $endDate->format('Y-m-d') : null,
                     'design_count' => $campaign->designs()->count(),
                     'show_url' => route('campaigns.show', $campaign),
-                    'generator_url' => route('generator.index', ['campaign_id' => $campaign->id]),
+                    'generator_url' => route('generator.index', array_filter([
+                        'campaign_id' => $campaign->id,
+                        'event_id' => $campaign->event_id,
+                        'product_name' => $campaign->product?->name,
+                    ])),
                 ];
             })->values()->all(),
             'events' => $events,
+            'stats' => [
+                'total' => (clone $allUserCampaigns)->count(),
+                'active' => (clone $allUserCampaigns)->where('status', 'active')->count(),
+                'scheduled' => (clone $allUserCampaigns)->where('status', 'scheduled')->count(),
+                'designs' => $user->designs()->whereNotNull('campaign_id')->count(),
+            ],
             'filters' => [
                 'search' => $search,
                 'status' => $status ?? '',
@@ -98,11 +110,14 @@ class CampaignController extends Controller
         ]);
     }
 
-    public function show(Campaign $campaign): Response
+    public function show(Request $request, Campaign $campaign): Response
     {
         $this->authorize('view', $campaign);
 
         $campaign->load(['product', 'event', 'business', 'designs']);
+
+        /** @var User|null $user */
+        $user = $request->user() ?? $campaign->user;
 
         $startDate = $campaign->getAttributeValue('start_date');
         $endDate = $campaign->getAttributeValue('end_date');
@@ -118,8 +133,30 @@ class CampaignController extends Controller
                 'type' => $event->type,
             ])->values()->all();
 
+        $availableDesigns = [];
+        if ($campaign->event_id && $user) {
+            $availableDesigns = $user->designs()
+                ->where('event_id', $campaign->event_id)
+                ->where(function ($q) use ($campaign) {
+                    $q->whereNull('campaign_id')
+                        ->orWhere('campaign_id', '!=', $campaign->id);
+                })
+                ->latest()
+                ->get()
+                ->map(fn (Design $d): array => [
+                    'id' => $d->id,
+                    'product_name' => $d->product_name,
+                    'event_id' => $d->event_id,
+                    'event_name' => $d->event?->name,
+                    'is_matching_event' => true,
+                    'image_url' => $d->generated_image_path ? asset('storage/'.$d->generated_image_path) : null,
+                    'created_at' => $d->created_at->format('M d, Y'),
+                ])->values()->all();
+        }
+
         return Inertia::render('campaigns/show', [
             'events' => $events,
+            'available_designs' => $availableDesigns,
             'campaign' => [
                 'id' => $campaign->id,
                 'name' => $campaign->name,
@@ -146,9 +183,43 @@ class CampaignController extends Controller
                     'image_url' => $design->generated_image_path ? asset('storage/'.$design->generated_image_path) : null,
                     'download_url' => route('designs.download', $design),
                 ])->values()->all(),
-                'generator_url' => route('generator.index', ['campaign' => $campaign->id]),
+                'generator_url' => route('generator.index', array_filter([
+                    'campaign_id' => $campaign->id,
+                    'event_id' => $campaign->event_id,
+                    'product_name' => $campaign->product?->name,
+                ])),
             ],
         ]);
+    }
+
+    public function attachDesigns(Request $request, Campaign $campaign): \Symfony\Component\HttpFoundation\Response
+    {
+        $this->authorize('update', $campaign);
+
+        if (empty($campaign->event_id)) {
+            return back()->withErrors(['design_ids' => 'This campaign is not associated with an event/holiday. Only event-specific campaigns can attach visuals.']);
+        }
+
+        $request->validate([
+            'design_ids' => ['required', 'array'],
+            'design_ids.*' => ['integer', 'exists:designs,id'],
+        ]);
+
+        /** @var User $user */
+        $user = $request->user();
+
+        $updatedCount = $user->designs()
+            ->whereIn('id', $request->input('design_ids'))
+            ->where('event_id', $campaign->event_id)
+            ->update([
+                'campaign_id' => $campaign->id,
+            ]);
+
+        if ($updatedCount === 0) {
+            return back()->withErrors(['design_ids' => 'Only designs specifically created for this campaign\'s event/holiday can be added.']);
+        }
+
+        return back()->with('success', 'Visuals successfully added to campaign.');
     }
 
     public function store(StoreCampaignRequest $request): \Symfony\Component\HttpFoundation\Response

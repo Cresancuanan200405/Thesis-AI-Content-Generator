@@ -5,7 +5,11 @@ import {
     ChevronRight,
     Clock,
     Edit3,
+    Filter,
+    LayoutGrid,
     List,
+    PanelRightClose,
+    PanelRightOpen,
     Plus,
     Search,
     Sparkles,
@@ -124,9 +128,36 @@ export default function MarketingCalendarPage({
     filter = 'all',
 }: any) {
     const today = new Date();
+    const todayDateStr = useMemo(() => {
+        return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    }, []);
+
+    const isEventPast = (dateStr?: string | null) => {
+        if (!dateStr) return false;
+        return dateStr < todayDateStr;
+    };
+
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
     const [activeFilter, setActiveFilter] = useState<string>(filter || 'all');
     const [viewMode, setViewMode] = useState<'grid' | 'agenda' | 'year'>('grid');
+    const [isUpcomingCollapsed, setIsUpcomingCollapsed] = useState<boolean>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('calendar_upcoming_collapsed');
+            if (saved !== null) {
+                return saved === 'true';
+            }
+        }
+        return false;
+    });
+
+    const handleSetUpcomingCollapsed = (collapsed: boolean) => {
+        setIsUpcomingCollapsed(collapsed);
+        if (typeof window !== 'undefined') {
+            try {
+                localStorage.setItem('calendar_upcoming_collapsed', String(collapsed));
+            } catch { }
+        }
+    };
 
     // Dialog States
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -354,24 +385,33 @@ export default function MarketingCalendarPage({
         <>
             <Head title="Marketing Calendar" />
 
-            <div className="min-h-screen bg-background text-foreground pb-20">
-                <div className="space-y-6 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
+            <div className="flex min-h-screen bg-background text-foreground relative">
+                {/* MAIN CALENDAR WORKSPACE */}
+                <div className="flex-1 min-w-0 p-4 md:p-6 lg:p-8 space-y-6 pb-20">
 
                     {/* =====================================================
                         PAGE HEADER & ADD EVENT ACTION
                     ====================================================== */}
 
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/80 pb-4">
-                        <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                                Marketing Calendar
-                            </h1>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                                Plan visuals and promotional campaigns around national holidays and retail sales dates.
-                            </p>
+                    {/* COMPACT & PROFESSIONAL MARKETING CALENDAR HEADER */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-border/60">
+                        <div className="flex items-center gap-2.5">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+                                <CalendarIcon className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h1 className="text-base sm:text-lg font-bold text-foreground tracking-tight">
+                                        Marketing Calendar
+                                    </h1>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Plan visuals and campaigns around national holidays and retail sales dates.
+                                </p>
+                            </div>
                         </div>
 
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-2 self-start sm:self-auto">
                             <Button
                                 onClick={() => {
                                     setFormData({
@@ -382,556 +422,693 @@ export default function MarketingCalendarPage({
                                     });
                                     setIsCreateOpen(true);
                                 }}
-                                className="gap-1.5 font-semibold text-xs h-9 shadow-xs"
+                                size="sm"
+                                className="h-8 gap-1.5 font-semibold text-xs shadow-2xs"
                             >
-                                <Plus className="h-4 w-4" />
+                                <Plus className="h-3.5 w-3.5" />
                                 Add Custom Event
                             </Button>
                         </div>
                     </div>
 
                     {/* =====================================================
-                        INTERACTIVE NAVIGATION TOOLBAR: CLICKABLE MONTH & YEAR
+                        STICKY NAVIGATION TOOLBAR: DROPDOWN SELECTIONS
                     ====================================================== */}
 
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-card border border-border rounded-2xl p-4 shadow-xs">
-                        {/* Month & Year Selectors with Next/Prev controls */}
-                        <div className="flex flex-wrap items-center gap-2">
-                            {/* Prev / Next Buttons */}
-                            <div className="flex items-center rounded-xl border border-border bg-background p-0.5">
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={prevMonth}
-                                    className="h-8 w-8 rounded-lg"
-                                    aria-label="Previous Month"
-                                >
-                                    <ChevronLeft className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={nextMonth}
-                                    className="h-8 w-8 rounded-lg"
-                                    aria-label="Next Month"
-                                >
-                                    <ChevronRight className="h-4 w-4" />
-                                </Button>
-                            </div>
-
-                            {/* Clickable Month Selector */}
-                            <Select
-                                value={String(currentMonth)}
-                                onValueChange={handleMonthChange}
-                            >
-                                <SelectTrigger className="h-9 w-[130px] text-xs font-semibold bg-background">
-                                    <SelectValue>{monthNames[currentMonth]}</SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {monthNames.map((mName, idx) => (
-                                        <SelectItem key={mName} value={String(idx)} className="text-xs">
-                                            {mName}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
-                            {/* Clickable Year Selector */}
-                            <Select
-                                value={String(currentYear)}
-                                onValueChange={handleYearChange}
-                            >
-                                <SelectTrigger className="h-9 w-[95px] text-xs font-semibold bg-background">
-                                    <SelectValue>{currentYear}</SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {availableYears.map((yr) => (
-                                        <SelectItem key={yr} value={String(yr)} className="text-xs">
-                                            {yr}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={jumpToToday}
-                                className="h-9 px-3 text-xs font-medium shadow-none"
-                            >
-                                Today
-                            </Button>
-                        </div>
-
-                        {/* Filter Tabs & View Toggle */}
-                        <div className="flex flex-wrap items-center gap-2.5">
-                            {/* Filter Segment */}
-                            <div className="flex items-center rounded-xl border border-border bg-muted/30 p-1 text-xs">
-                                {[
-                                    { id: 'all', label: 'All' },
-                                    { id: 'regular', label: 'Regular' },
-                                    { id: 'special_non_working', label: 'Non-Working' },
-                                    { id: 'islamic', label: 'Islamic' },
-                                    { id: 'commercial', label: 'Sales & Events' },
-                                    { id: 'custom', label: 'Custom' },
-                                ].map((tab) => (
-                                    <button
-                                        key={tab.id}
+                    <div className="sticky top-14 z-20 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 py-2 bg-background/95 backdrop-blur-md border-b border-border/60 transition-all shadow-2xs">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 bg-card border border-border/80 rounded-2xl p-2.5 sm:p-3 shadow-xs">
+                            {/* Month & Year Selectors with Next/Prev controls */}
+                            <div className="flex flex-wrap items-center gap-2">
+                                {/* Prev / Next Buttons */}
+                                <div className="flex items-center rounded-xl border border-border bg-background p-0.5">
+                                    <Button
                                         type="button"
-                                        onClick={() => setActiveFilter(tab.id)}
-                                        className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-all ${
-                                            activeFilter === tab.id
-                                                ? 'bg-card text-foreground shadow-xs font-semibold border border-border/80'
-                                                : 'text-muted-foreground hover:text-foreground'
-                                        }`}
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={prevMonth}
+                                        className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
+                                        aria-label="Previous Month"
                                     >
-                                        {tab.label}
-                                    </button>
-                                ))}
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={nextMonth}
+                                        className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
+                                        aria-label="Next Month"
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
+
+                                {/* Clickable Month Selector */}
+                                <Select
+                                    value={String(currentMonth)}
+                                    onValueChange={handleMonthChange}
+                                >
+                                    <SelectTrigger className="h-8 w-[120px] text-xs font-semibold bg-background">
+                                        <SelectValue>{monthNames[currentMonth]}</SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {monthNames.map((mName, idx) => (
+                                            <SelectItem key={mName} value={String(idx)} className="text-xs">
+                                                {mName}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+
+                                {/* Clickable Year Selector */}
+                                <Select
+                                    value={String(currentYear)}
+                                    onValueChange={handleYearChange}
+                                >
+                                    <SelectTrigger className="h-8 w-[85px] text-xs font-semibold bg-background">
+                                        <SelectValue>{currentYear}</SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {availableYears.map((yr) => (
+                                            <SelectItem key={yr} value={String(yr)} className="text-xs">
+                                                {yr}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={jumpToToday}
+                                    className="h-8 px-2.5 text-xs font-medium shadow-none"
+                                >
+                                    Today
+                                </Button>
                             </div>
 
-                            {/* Grid vs Agenda vs Year Toggle */}
-                            <div className="flex items-center rounded-xl border border-border bg-muted/30 p-1 text-xs">
-                                <button
-                                    type="button"
-                                    onClick={() => setViewMode('grid')}
-                                    className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-medium transition-all ${
-                                        viewMode === 'grid'
-                                            ? 'bg-card text-foreground shadow-xs font-semibold'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                    }`}
+                            {/* Dropdown Selections for Filters & View Modes (Icon-only triggers) */}
+                            <div className="flex items-center gap-2 self-end sm:self-auto">
+                                {/* Event Type Filter Dropdown (Icon Only Trigger) */}
+                                <Select
+                                    value={activeFilter}
+                                    onValueChange={setActiveFilter}
                                 >
-                                    <CalendarIcon className="h-3.5 w-3.5" />
-                                    Grid
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setViewMode('agenda')}
-                                    className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-medium transition-all ${
-                                        viewMode === 'agenda'
-                                            ? 'bg-card text-foreground shadow-xs font-semibold'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                    }`}
+                                    <SelectTrigger
+                                        size="sm"
+                                        className="h-8 w-8 min-w-8 p-0 flex items-center justify-center bg-background rounded-xl font-semibold relative [&_svg.lucide-chevron-down]:hidden [&_[data-radix-select-icon]]:hidden [&>svg:last-child]:hidden [&>span]:hidden"
+                                        title={`Filter: ${activeFilter === 'all'
+                                                ? 'All Events & Holidays'
+                                                : activeFilter === 'regular'
+                                                    ? 'Regular Holidays'
+                                                    : activeFilter === 'special_non_working'
+                                                        ? 'Special Non-Working'
+                                                        : activeFilter === 'islamic'
+                                                            ? 'Islamic Holidays'
+                                                            : activeFilter === 'commercial'
+                                                                ? 'Sales & Events'
+                                                                : 'Custom Events'
+                                            }`}
+                                        aria-label="Filter events and holidays"
+                                    >
+                                        <div className="relative flex items-center justify-center">
+                                            <Filter className={`h-4 w-4 ${activeFilter !== 'all' ? 'text-primary' : 'text-muted-foreground'}`} />
+                                            {activeFilter !== 'all' && (
+                                                <span className="absolute -top-1 -right-1 h-1.5 w-1.5 rounded-full bg-primary" />
+                                            )}
+                                        </div>
+                                    </SelectTrigger>
+                                    <SelectContent align="end">
+                                        <SelectItem value="all" className="text-xs">
+                                            <div className="flex items-center gap-2">
+                                                <span className="h-2 w-2 rounded-full bg-primary" />
+                                                <span>All Events & Holidays</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="regular" className="text-xs">
+                                            <div className="flex items-center gap-2">
+                                                <span className="h-2 w-2 rounded-full bg-rose-500" />
+                                                <span>Regular Holidays</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="special_non_working" className="text-xs">
+                                            <div className="flex items-center gap-2">
+                                                <span className="h-2 w-2 rounded-full bg-amber-500" />
+                                                <span>Special Non-Working</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="islamic" className="text-xs">
+                                            <div className="flex items-center gap-2">
+                                                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                                                <span>Islamic Holidays</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="commercial" className="text-xs">
+                                            <div className="flex items-center gap-2">
+                                                <span className="h-2 w-2 rounded-full bg-indigo-500" />
+                                                <span>Sales & Events</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="custom" className="text-xs">
+                                            <div className="flex items-center gap-2">
+                                                <span className="h-2 w-2 rounded-full bg-purple-500" />
+                                                <span>Custom Events</span>
+                                            </div>
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                {/* View Mode Dropdown (Icon Only Trigger) */}
+                                <Select
+                                    value={viewMode}
+                                    onValueChange={(val) => setViewMode(val as 'grid' | 'agenda' | 'year')}
                                 >
-                                    <List className="h-3.5 w-3.5" />
-                                    Agenda
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setViewMode('year')}
-                                    className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-medium transition-all ${
-                                        viewMode === 'year'
-                                            ? 'bg-card text-foreground shadow-xs font-semibold'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                    }`}
-                                >
-                                    <Sparkles className="h-3.5 w-3.5 text-primary" />
-                                    Full Year ({currentYear})
-                                </button>
+                                    <SelectTrigger
+                                        size="sm"
+                                        className="h-8 w-8 min-w-8 p-0 flex items-center justify-center bg-background rounded-xl font-semibold relative [&_svg.lucide-chevron-down]:hidden [&_[data-radix-select-icon]]:hidden [&>svg:last-child]:hidden [&>span]:hidden"
+                                        title={`View: ${viewMode === 'grid' ? 'Month Grid' : viewMode === 'agenda' ? 'Agenda List' : `Full Year ${currentYear}`}`}
+                                        aria-label="Select calendar view"
+                                    >
+                                        <div className="flex items-center justify-center">
+                                            {viewMode === 'grid' && <LayoutGrid className="h-4 w-4 text-primary" />}
+                                            {viewMode === 'agenda' && <List className="h-4 w-4 text-blue-500" />}
+                                            {viewMode === 'year' && <Sparkles className="h-4 w-4 text-amber-500" />}
+                                        </div>
+                                    </SelectTrigger>
+                                    <SelectContent align="end">
+                                        <SelectItem value="grid" className="text-xs">
+                                            <div className="flex items-center gap-2">
+                                                <LayoutGrid className="h-3.5 w-3.5 text-primary" />
+                                                <span>Month Grid View</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="agenda" className="text-xs">
+                                            <div className="flex items-center gap-2">
+                                                <List className="h-3.5 w-3.5 text-blue-500" />
+                                                <span>Agenda List View</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="year" className="text-xs">
+                                            <div className="flex items-center gap-2">
+                                                <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                                                <span>Full Year ({currentYear})</span>
+                                            </div>
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
                     </div>
 
                     {/* =====================================================
-                        MAIN CALENDAR CANVAS & CLEAN UPCOMING SIDEBAR
+                        MAIN CALENDAR CANVAS
                     ====================================================== */}
 
-                    <div className="grid gap-6 lg:grid-cols-4">
+                    <div className="space-y-4">
+                        {viewMode === 'grid' ? (
+                            <Card className="overflow-hidden rounded-3xl border-border bg-card shadow-xs">
+                                {/* Weekday Header */}
+                                <div className="grid grid-cols-7 border-b border-border bg-muted/20 text-center text-xs font-semibold text-muted-foreground">
+                                    {weekdayNames.map((wName) => (
+                                        <div key={wName} className="py-3">
+                                            {wName}
+                                        </div>
+                                    ))}
+                                </div>
 
-                        {/* LEFT 3 COLUMNS: MONTH GRID */}
-                        <div className="lg:col-span-3 space-y-4">
-                            {viewMode === 'grid' ? (
-                                <Card className="overflow-hidden rounded-3xl border-border bg-card shadow-xs">
-                                    {/* Weekday Header */}
-                                    <div className="grid grid-cols-7 border-b border-border bg-muted/20 text-center text-xs font-semibold text-muted-foreground">
-                                        {weekdayNames.map((wName) => (
-                                            <div key={wName} className="py-3">
-                                                {wName}
-                                            </div>
-                                        ))}
-                                    </div>
+                                {/* 7x6 Month Cells Grid */}
+                                <div className="grid grid-cols-7 auto-rows-fr divide-x divide-y divide-border/60">
+                                    {calendarDays.map((cell, idx) => {
+                                        const cellEvents = eventsByDate[cell.dateString] || [];
+                                        const isCellPast = cell.dateString < todayDateStr;
 
-                                    {/* 7x6 Month Cells Grid */}
-                                    <div className="grid grid-cols-7 auto-rows-fr divide-x divide-y divide-border/60">
-                                        {calendarDays.map((cell, idx) => {
-                                            const cellEvents = eventsByDate[cell.dateString] || [];
-
-                                            return (
-                                                <div
-                                                    key={idx}
-                                                    onClick={() => handleCellClick(cell.dateString)}
-                                                    className={`group min-h-[115px] p-2 transition-colors hover:bg-muted/30 cursor-pointer flex flex-col justify-between ${
-                                                        !cell.isCurrentMonth
-                                                            ? 'bg-muted/10 text-muted-foreground/30'
+                                        return (
+                                            <div
+                                                key={idx}
+                                                onClick={() => handleCellClick(cell.dateString)}
+                                                className={`group min-h-[115px] p-2 transition-colors hover:bg-muted/30 cursor-pointer flex flex-col justify-between ${!cell.isCurrentMonth
+                                                        ? 'bg-muted/10 text-muted-foreground/30'
+                                                        : isCellPast
+                                                            ? 'bg-muted/5 text-foreground'
                                                             : 'bg-card text-foreground'
                                                     }`}
-                                                >
-                                                    {/* Day Number Header */}
-                                                    <div className="flex items-center justify-between">
-                                                        <span
-                                                            className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
-                                                                cell.isToday
-                                                                    ? 'bg-primary text-primary-foreground font-bold shadow-xs'
-                                                                    : cell.isCurrentMonth
-                                                                      ? 'text-foreground'
-                                                                      : 'text-muted-foreground/40'
+                                            >
+                                                {/* Day Number Header */}
+                                                <div className="flex items-center justify-between">
+                                                    <span
+                                                        className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${cell.isToday
+                                                                ? 'bg-primary text-primary-foreground font-bold shadow-xs'
+                                                                : cell.isCurrentMonth
+                                                                    ? isCellPast
+                                                                        ? 'text-muted-foreground'
+                                                                        : 'text-foreground'
+                                                                    : 'text-muted-foreground/40'
                                                             }`}
-                                                        >
-                                                            {cell.dayNumber}
-                                                        </span>
-                                                    </div>
-
-                                                    {/* Event Pills with Indicator Colors */}
-                                                    <div className="mt-1.5 space-y-1 overflow-hidden">
-                                                        {cellEvents.slice(0, 3).map((evt) => {
-                                                            const styleKey = evt.category || evt.type || 'holiday';
-                                                            const style = categoryStyles[styleKey] || categoryStyles.holiday;
-
-                                                            return (
-                                                                <button
-                                                                    key={evt.id}
-                                                                    type="button"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setSelectedEvent(evt);
-                                                                    }}
-                                                                    className={`w-full text-left rounded-lg border px-2 py-1 text-[11px] font-medium transition-all truncate flex items-center gap-1.5 ${style.bg} ${style.text} ${style.border} hover:opacity-90 shadow-2xs`}
-                                                                >
-                                                                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${style.dot}`} />
-                                                                    <span className="truncate">{evt.name}</span>
-                                                                </button>
-                                                            );
-                                                        })}
-
-                                                        {cellEvents.length > 3 && (
-                                                            <div className="text-[10px] font-medium text-muted-foreground px-1">
-                                                                +{cellEvents.length - 3} more
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                                    >
+                                                        {cell.dayNumber}
+                                                    </span>
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                </Card>
-                            ) : viewMode === 'agenda' ? (
-                                /* Agenda View */
-                                <Card className="rounded-3xl border-border bg-card shadow-xs p-6 space-y-4">
-                                    <div className="flex items-center justify-between border-b border-border pb-3">
-                                        <h3 className="text-sm font-bold text-foreground">
-                                            Schedule for {monthNames[currentMonth]} {currentYear}
-                                        </h3>
-                                        <span className="text-xs text-muted-foreground">
-                                            {filteredEvents.filter((evt) => {
-                                                const dt = new Date(evt.date);
-                                                return dt.getFullYear() === currentYear && dt.getMonth() === currentMonth;
-                                            }).length} Events
-                                        </span>
-                                    </div>
 
-                                    {filteredEvents.filter((evt) => {
-                                        const dt = new Date(evt.date);
-                                        return dt.getFullYear() === currentYear && dt.getMonth() === currentMonth;
-                                    }).length === 0 ? (
-                                        <div className="py-12 text-center text-muted-foreground text-xs">
-                                            No events scheduled for {monthNames[currentMonth]} {currentYear}.
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-2.5">
-                                            {filteredEvents
-                                                .filter((evt) => {
-                                                    const dt = new Date(evt.date);
-                                                    return dt.getFullYear() === currentYear && dt.getMonth() === currentMonth;
-                                                })
-                                                .map((evt) => {
-                                                    const styleKey = evt.category || evt.type || 'holiday';
-                                                    const style = categoryStyles[styleKey] || categoryStyles.holiday;
+                                                {/* Event Pills with Indicator Colors */}
+                                                <div className="mt-1.5 space-y-1 overflow-hidden">
+                                                    {cellEvents.slice(0, 3).map((evt) => {
+                                                        const isPast = isEventPast(evt.date);
+                                                        const styleKey = evt.category || evt.type || 'holiday';
+                                                        const baseStyle = categoryStyles[styleKey] || categoryStyles.holiday;
 
-                                                    return (
-                                                        <div
-                                                            key={evt.id}
-                                                            onClick={() => setSelectedEvent(evt)}
-                                                            className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4 transition-all hover:bg-muted/30 cursor-pointer shadow-xs"
-                                                        >
-                                                            <div className="flex items-center gap-3">
-                                                                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold text-xs ${style.bg} ${style.text}`}>
-                                                                    {new Date(evt.date).getDate()}
-                                                                </div>
-
-                                                                <div className="space-y-0.5">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <Badge variant="outline" className={`text-[10px] font-medium ${style.bg} ${style.text} ${style.border}`}>
-                                                                            {style.label}
-                                                                        </Badge>
-                                                                        {evt.is_long_weekend && (
-                                                                            <Badge variant="secondary" className="text-[10px]">
-                                                                                Long Weekend
-                                                                            </Badge>
-                                                                        )}
-                                                                    </div>
-                                                                    <h4 className="text-xs font-bold text-foreground">
-                                                                        {evt.name}
-                                                                    </h4>
-                                                                </div>
-                                                            </div>
-
-                                                            <Button
+                                                        return (
+                                                            <button
+                                                                key={evt.id}
                                                                 type="button"
-                                                                size="sm"
-                                                                variant="outline"
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    router.visit(`/generator?event_id=${evt.id}`);
+                                                                    setSelectedEvent(evt);
                                                                 }}
-                                                                className="gap-1.5 text-xs h-8 shadow-none"
+                                                                className={`w-full text-left rounded-lg border px-2 py-1 text-[11px] font-medium transition-all truncate flex items-center gap-1.5 shadow-2xs ${isPast
+                                                                        ? 'bg-muted/50 text-muted-foreground border-border/70 border-dashed opacity-75 hover:opacity-100 hover:bg-muted/70'
+                                                                        : `${baseStyle.bg} ${baseStyle.text} ${baseStyle.border} hover:opacity-90`
+                                                                    }`}
+                                                                title={`${evt.name} • ${baseStyle.label}${isPast ? ' (Past Event)' : ''}`}
                                                             >
-                                                                <Sparkles className="h-3.5 w-3.5 text-primary" />
-                                                                Generate Visuals
-                                                            </Button>
+                                                                <span
+                                                                    className={`h-1.5 w-1.5 rounded-full shrink-0 ${isPast ? 'bg-slate-400 dark:bg-slate-500 ring-1 ring-slate-300 dark:ring-slate-600' : baseStyle.dot
+                                                                        }`}
+                                                                />
+                                                                <span className={`truncate ${isPast ? 'line-through decoration-muted-foreground/40' : ''}`}>
+                                                                    {evt.name}
+                                                                </span>
+                                                            </button>
+                                                        );
+                                                    })}
+
+                                                    {cellEvents.length > 3 && (
+                                                        <div className="text-[10px] font-medium text-muted-foreground px-1">
+                                                            +{cellEvents.length - 3} more
                                                         </div>
-                                                    );
-                                                })}
-                                        </div>
-                                    )}
-                                </Card>
-                            ) : (
-                                /* Full Year Overview (12 Months) */
-                                <div className="space-y-6">
-                                    {/* Year Summary Metric Cards */}
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                        {[
-                                            {
-                                                label: 'Total in ' + currentYear,
-                                                count: filteredEvents.filter((evt) => new Date(evt.date).getFullYear() === currentYear).length,
-                                                bg: 'bg-primary/10',
-                                                text: 'text-primary',
-                                                border: 'border-primary/20',
-                                            },
-                                            {
-                                                label: 'Regular Holidays',
-                                                count: filteredEvents.filter((evt) => new Date(evt.date).getFullYear() === currentYear && (evt.category === 'regular' || evt.type === 'holiday')).length,
-                                                bg: 'bg-rose-500/10',
-                                                text: 'text-rose-600 dark:text-rose-400',
-                                                border: 'border-rose-500/20',
-                                            },
-                                            {
-                                                label: 'Special Non-Working',
-                                                count: filteredEvents.filter((evt) => new Date(evt.date).getFullYear() === currentYear && evt.category === 'special_non_working').length,
-                                                bg: 'bg-amber-500/10',
-                                                text: 'text-amber-600 dark:text-amber-400',
-                                                border: 'border-amber-500/20',
-                                            },
-                                            {
-                                                label: 'Long Weekends',
-                                                count: filteredEvents.filter((evt) => new Date(evt.date).getFullYear() === currentYear && evt.is_long_weekend).length,
-                                                bg: 'bg-emerald-500/10',
-                                                text: 'text-emerald-600 dark:text-emerald-400',
-                                                border: 'border-emerald-500/20',
-                                            },
-                                        ].map((stat) => (
-                                            <div
-                                                key={stat.label}
-                                                className={`rounded-2xl border ${stat.border} ${stat.bg} p-4 space-y-1`}
-                                            >
-                                                <div className={`text-2xl font-extrabold ${stat.text}`}>
-                                                    {stat.count}
-                                                </div>
-                                                <div className="text-[11px] font-semibold text-muted-foreground">
-                                                    {stat.label}
+                                                    )}
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
-
-                                    {/* 12 Months Grid */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                                        {monthNames.map((mName, mIdx) => {
-                                            const monthEvts = filteredEvents.filter((evt) => {
-                                                const dt = new Date(evt.date);
-                                                return dt.getFullYear() === currentYear && dt.getMonth() === mIdx;
-                                            });
-
-                                            return (
-                                                <Card
-                                                    key={mName}
-                                                    className="overflow-hidden rounded-3xl border-border bg-card shadow-xs flex flex-col justify-between"
-                                                >
-                                                    <div className="p-4 space-y-3">
-                                                        {/* Month Header */}
-                                                        <div className="flex items-center justify-between border-b border-border/80 pb-2.5">
-                                                            <div className="flex items-center gap-2">
-                                                                <h4 className="text-sm font-bold text-foreground">
-                                                                    {mName}
-                                                                </h4>
-                                                                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                                                                    {monthEvts.length}
-                                                                </span>
-                                                            </div>
-
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setCurrentDate(new Date(currentYear, mIdx, 1));
-                                                                    setViewMode('grid');
-                                                                }}
-                                                                className="text-[11px] font-semibold text-primary hover:underline"
-                                                            >
-                                                                Open Grid →
-                                                            </button>
-                                                        </div>
-
-                                                        {/* Month Events List */}
-                                                        {monthEvts.length === 0 ? (
-                                                            <div className="py-6 text-center text-xs text-muted-foreground/60">
-                                                                No holidays or events
-                                                            </div>
-                                                        ) : (
-                                                            <div className="space-y-2">
-                                                                {monthEvts.map((evt) => {
-                                                                    const styleKey = evt.category || evt.type || 'holiday';
-                                                                    const style = categoryStyles[styleKey] || categoryStyles.holiday;
-                                                                    const dayNumber = new Date(evt.date).getDate();
-
-                                                                    return (
-                                                                        <div
-                                                                            key={evt.id}
-                                                                            onClick={() => setSelectedEvent(evt)}
-                                                                            className="flex items-center justify-between gap-2.5 rounded-xl border border-border/70 bg-card/60 p-2.5 transition-all hover:bg-muted/40 cursor-pointer shadow-2xs group"
-                                                                        >
-                                                                            <div className="flex items-center gap-2 min-w-0">
-                                                                                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg font-bold text-[11px] ${style.bg} ${style.text}`}>
-                                                                                    {dayNumber}
-                                                                                </div>
-                                                                                <div className="min-w-0">
-                                                                                    <p className="text-xs font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                                                                                        {evt.name}
-                                                                                    </p>
-                                                                                    <div className="flex items-center gap-1.5 mt-0.5">
-                                                                                        <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${style.dot}`} />
-                                                                                        <span className="text-[10px] text-muted-foreground truncate">
-                                                                                            {style.label}
-                                                                                        </span>
-                                                                                        {evt.is_long_weekend && (
-                                                                                            <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded-sm">
-                                                                                                Long Weekend
-                                                                                            </span>
-                                                                                        )}
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    router.visit(`/generator?event_id=${evt.id}`);
-                                                                                }}
-                                                                                className="shrink-0 p-1.5 rounded-lg border border-primary/20 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all"
-                                                                                title="Generate Visuals"
-                                                                            >
-                                                                                <Sparkles className="h-3.5 w-3.5" />
-                                                                            </button>
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </Card>
-                                            );
-                                        })}
-                                    </div>
+                                        );
+                                    })}
                                 </div>
-                            )}
-
-                            {/* Indicator Color Legend */}
-                            <div className="flex flex-wrap items-center gap-4 bg-card border border-border rounded-2xl px-4 py-3 text-xs text-muted-foreground">
-                                <span className="font-semibold text-foreground">Legend:</span>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
-                                    <span>Regular Holiday</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-                                    <span>Special Non-Working</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                                    <span>Islamic Holiday</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
-                                    <span>Retail Sale</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="h-2.5 w-2.5 rounded-full bg-purple-500" />
-                                    <span>Custom Event</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* RIGHT 1 COLUMN: REDESIGNED CLEAN & SPACIOUS UPCOMING DATES */}
-                        <div className="space-y-4">
-                            <Card className="rounded-3xl border-border bg-card shadow-xs p-4 sm:p-5 space-y-4">
-                                <div className="flex items-center justify-between border-b border-border/80 pb-3">
-                                    <div className="flex items-center gap-2">
-                                        <Clock className="h-4 w-4 text-primary" />
-                                        <h3 className="text-sm font-bold text-foreground">
-                                            Upcoming Dates
-                                        </h3>
-                                    </div>
-                                    <span className="text-[11px] font-medium text-muted-foreground">
-                                        Next 60 Days
+                            </Card>
+                        ) : viewMode === 'agenda' ? (
+                            /* Agenda View */
+                            <Card className="rounded-3xl border-border bg-card shadow-xs p-6 space-y-4">
+                                <div className="flex items-center justify-between border-b border-border pb-3">
+                                    <h3 className="text-sm font-bold text-foreground">
+                                        Schedule for {monthNames[currentMonth]} {currentYear}
+                                    </h3>
+                                    <span className="text-xs text-muted-foreground">
+                                        {filteredEvents.filter((evt) => {
+                                            const dt = new Date(evt.date);
+                                            return dt.getFullYear() === currentYear && dt.getMonth() === currentMonth;
+                                        }).length} Events
                                     </span>
                                 </div>
 
-                                <div className="space-y-2.5">
-                                    {upcoming_events.length === 0 ? (
-                                        <p className="text-xs text-muted-foreground py-8 text-center">
-                                            No upcoming events scheduled.
-                                        </p>
-                                    ) : (
-                                        upcoming_events.map((evt: any) => {
-                                            const styleKey = evt.category || evt.type || 'holiday';
-                                            const style = categoryStyles[styleKey] || categoryStyles.holiday;
+                                {filteredEvents.filter((evt) => {
+                                    const dt = new Date(evt.date);
+                                    return dt.getFullYear() === currentYear && dt.getMonth() === currentMonth;
+                                }).length === 0 ? (
+                                    <div className="py-12 text-center text-muted-foreground text-xs">
+                                        No events scheduled for {monthNames[currentMonth]} {currentYear}.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2.5">
+                                        {filteredEvents
+                                            .filter((evt) => {
+                                                const dt = new Date(evt.date);
+                                                return dt.getFullYear() === currentYear && dt.getMonth() === currentMonth;
+                                            })
+                                            .map((evt) => {
+                                                const isPast = isEventPast(evt.date);
+                                                const styleKey = evt.category || evt.type || 'holiday';
+                                                const baseStyle = categoryStyles[styleKey] || categoryStyles.holiday;
 
-                                            return (
-                                                <div
-                                                    key={evt.id}
-                                                    onClick={() => setSelectedEvent(evt)}
-                                                    className="rounded-2xl border border-border/70 bg-card p-3.5 transition-all hover:border-primary/50 hover:shadow-xs cursor-pointer space-y-2 group"
-                                                >
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <span className="text-xs font-bold text-foreground whitespace-nowrap">
-                                                            {evt.date}
-                                                        </span>
-                                                        {evt.days && (
-                                                            <Badge variant="outline" className={`text-[10px] font-semibold shrink-0 whitespace-nowrap ${style.bg} ${style.text} ${style.border}`}>
-                                                                {evt.days}
-                                                            </Badge>
-                                                        )}
+                                                return (
+                                                    <div
+                                                        key={evt.id}
+                                                        onClick={() => setSelectedEvent(evt)}
+                                                        className={`flex items-center justify-between gap-4 rounded-2xl border p-4 transition-all hover:bg-muted/30 cursor-pointer shadow-xs ${isPast
+                                                                ? 'border-border/70 border-dashed bg-muted/20 opacity-80 hover:opacity-100'
+                                                                : 'border-border bg-card'
+                                                            }`}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold text-xs ${isPast
+                                                                    ? 'bg-muted text-muted-foreground border border-border/80'
+                                                                    : `${baseStyle.bg} ${baseStyle.text}`
+                                                                }`}>
+                                                                {new Date(evt.date).getDate()}
+                                                            </div>
+
+                                                            <div className="space-y-0.5">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Badge
+                                                                        variant="outline"
+                                                                        className={`text-[10px] font-medium ${isPast
+                                                                                ? 'bg-muted/50 text-muted-foreground border-border'
+                                                                                : `${baseStyle.bg} ${baseStyle.text} ${baseStyle.border}`
+                                                                            }`}
+                                                                    >
+                                                                        {baseStyle.label}
+                                                                    </Badge>
+                                                                    {isPast && (
+                                                                        <Badge variant="secondary" className="text-[10px] text-muted-foreground font-mono bg-muted/80">
+                                                                            Past Event
+                                                                        </Badge>
+                                                                    )}
+                                                                    {evt.is_long_weekend && (
+                                                                        <Badge variant="secondary" className="text-[10px]">
+                                                                            Long Weekend
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                                <h4 className={`text-xs font-bold ${isPast ? 'text-muted-foreground line-through decoration-muted-foreground/40' : 'text-foreground'}`}>
+                                                                    {evt.name}
+                                                                </h4>
+                                                            </div>
+                                                        </div>
+
+                                                        <Button
+                                                            type="button"
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                router.visit(`/generator?event_id=${evt.id}`);
+                                                            }}
+                                                            className="gap-1.5 text-xs h-8 shadow-none"
+                                                        >
+                                                            <Sparkles className="h-3.5 w-3.5 text-primary" />
+                                                            Generate Visuals
+                                                        </Button>
                                                     </div>
-
-                                                    <h4 className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                                                        {evt.name}
-                                                    </h4>
-
-                                                    <div className="flex items-center justify-between pt-1 border-t border-border/40 text-[11px] text-muted-foreground">
-                                                        <span className="capitalize truncate max-w-[130px]">{style.label}</span>
-                                                        <span className="text-primary font-semibold text-[11px] shrink-0">View →</span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
-                                    )}
-                                </div>
+                                                );
+                                            })}
+                                    </div>
+                                )}
                             </Card>
+                        ) : (
+                            /* Full Year Overview (12 Months) */
+                            <div className="space-y-6">
+                                {/* Year Summary Metric Cards */}
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    {[
+                                        {
+                                            label: 'Total in ' + currentYear,
+                                            count: filteredEvents.filter((evt) => new Date(evt.date).getFullYear() === currentYear).length,
+                                            bg: 'bg-primary/10',
+                                            text: 'text-primary',
+                                            border: 'border-primary/20',
+                                        },
+                                        {
+                                            label: 'Regular Holidays',
+                                            count: filteredEvents.filter((evt) => new Date(evt.date).getFullYear() === currentYear && (evt.category === 'regular' || evt.type === 'holiday')).length,
+                                            bg: 'bg-rose-500/10',
+                                            text: 'text-rose-600 dark:text-rose-400',
+                                            border: 'border-rose-500/20',
+                                        },
+                                        {
+                                            label: 'Special Non-Working',
+                                            count: filteredEvents.filter((evt) => new Date(evt.date).getFullYear() === currentYear && evt.category === 'special_non_working').length,
+                                            bg: 'bg-amber-500/10',
+                                            text: 'text-amber-600 dark:text-amber-400',
+                                            border: 'border-amber-500/20',
+                                        },
+                                        {
+                                            label: 'Long Weekends',
+                                            count: filteredEvents.filter((evt) => new Date(evt.date).getFullYear() === currentYear && evt.is_long_weekend).length,
+                                            bg: 'bg-emerald-500/10',
+                                            text: 'text-emerald-600 dark:text-emerald-400',
+                                            border: 'border-emerald-500/20',
+                                        },
+                                    ].map((stat) => (
+                                        <div
+                                            key={stat.label}
+                                            className={`rounded-2xl border ${stat.border} ${stat.bg} p-4 space-y-1`}
+                                        >
+                                            <div className={`text-2xl font-extrabold ${stat.text}`}>
+                                                {stat.count}
+                                            </div>
+                                            <div className="text-[11px] font-semibold text-muted-foreground">
+                                                {stat.label}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* 12 Months Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                    {monthNames.map((mName, mIdx) => {
+                                        const monthEvts = filteredEvents.filter((evt) => {
+                                            const dt = new Date(evt.date);
+                                            return dt.getFullYear() === currentYear && dt.getMonth() === mIdx;
+                                        });
+
+                                        return (
+                                            <Card
+                                                key={mName}
+                                                className="overflow-hidden rounded-3xl border-border bg-card shadow-xs flex flex-col justify-between"
+                                            >
+                                                <div className="p-4 space-y-3">
+                                                    {/* Month Header */}
+                                                    <div className="flex items-center justify-between border-b border-border/80 pb-2.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <h4 className="text-sm font-bold text-foreground">
+                                                                {mName}
+                                                            </h4>
+                                                            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                                                                {monthEvts.length}
+                                                            </span>
+                                                        </div>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setCurrentDate(new Date(currentYear, mIdx, 1));
+                                                                setViewMode('grid');
+                                                            }}
+                                                            className="text-[11px] font-semibold text-primary hover:underline"
+                                                        >
+                                                            Open Grid →
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Month Events List */}
+                                                    {monthEvts.length === 0 ? (
+                                                        <div className="py-6 text-center text-xs text-muted-foreground/60">
+                                                            No holidays or events
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-2">
+                                                            {monthEvts.map((evt) => {
+                                                                const isPast = isEventPast(evt.date);
+                                                                const styleKey = evt.category || evt.type || 'holiday';
+                                                                const baseStyle = categoryStyles[styleKey] || categoryStyles.holiday;
+                                                                const dayNumber = new Date(evt.date).getDate();
+
+                                                                return (
+                                                                    <div
+                                                                        key={evt.id}
+                                                                        onClick={() => setSelectedEvent(evt)}
+                                                                        className={`flex items-center justify-between gap-2.5 rounded-xl border p-2.5 transition-all cursor-pointer shadow-2xs group ${isPast
+                                                                                ? 'border-border/60 border-dashed bg-muted/20 opacity-75 hover:opacity-100'
+                                                                                : 'border-border/70 bg-card/60 hover:bg-muted/40'
+                                                                            }`}
+                                                                    >
+                                                                        <div className="flex items-center gap-2 min-w-0">
+                                                                            <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg font-bold text-[11px] ${isPast
+                                                                                    ? 'bg-muted text-muted-foreground border border-border/60'
+                                                                                    : `${baseStyle.bg} ${baseStyle.text}`
+                                                                                }`}>
+                                                                                {dayNumber}
+                                                                            </div>
+                                                                            <div className="min-w-0">
+                                                                                <p className={`text-xs font-semibold truncate transition-colors ${isPast
+                                                                                        ? 'text-muted-foreground line-through decoration-muted-foreground/40'
+                                                                                        : 'text-foreground group-hover:text-primary'
+                                                                                    }`}>
+                                                                                    {evt.name}
+                                                                                </p>
+                                                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                                                                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${isPast ? 'bg-slate-400 dark:bg-slate-500' : baseStyle.dot}`} />
+                                                                                    <span className="text-[10px] text-muted-foreground truncate">
+                                                                                        {isPast ? 'Past • ' : ''}{baseStyle.label}
+                                                                                    </span>
+                                                                                    {evt.is_long_weekend && (
+                                                                                        <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded-sm">
+                                                                                            Long Weekend
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                router.visit(`/generator?event_id=${evt.id}`);
+                                                                            }}
+                                                                            className="shrink-0 p-1.5 rounded-lg border border-primary/20 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all"
+                                                                            title="Generate Visuals"
+                                                                        >
+                                                                            <Sparkles className="h-3.5 w-3.5" />
+                                                                        </button>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </Card>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Indicator Color Legend */}
+                        <div className="flex flex-wrap items-center gap-4 bg-card border border-border rounded-2xl px-4 py-3 text-xs text-muted-foreground">
+                            <span className="font-semibold text-foreground">Legend:</span>
+                            <div className="flex items-center gap-1.5">
+                                <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
+                                <span>Regular Holiday</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                                <span>Special Non-Working</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                                <span>Islamic Holiday</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                                <span>Retail Sale</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <span className="h-2.5 w-2.5 rounded-full bg-purple-500" />
+                                <span>Custom Event</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 border-l border-border/80 pl-3">
+                                <span className="h-2.5 w-2.5 rounded-full bg-slate-400 dark:bg-slate-500 ring-1 ring-slate-300 dark:ring-slate-600" />
+                                <span className="font-medium text-muted-foreground">Past Event / Date</span>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                {/* =====================================================
+                    DOCKED RIGHT SIDEBAR: UPCOMING DATES (ATTACHED TO SYSTEM HEADER)
+                ====================================================== */}
+                {isUpcomingCollapsed ? (
+                    /* COLLAPSED VERTICAL RAIL BOX (LIKE LEFT SIDEBAR RAIL) */
+                    <aside
+                        onClick={() => handleSetUpcomingCollapsed(false)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') handleSetUpcomingCollapsed(false);
+                        }}
+                        className="w-11 lg:w-12 shrink-0 border-l border-border bg-card/60 hover:bg-muted/40 backdrop-blur-md sticky top-14 h-[calc(100vh-3.5rem)] flex flex-col items-center justify-between py-4 cursor-pointer select-none transition-all duration-200 z-20 group"
+                        title="Open Upcoming Dates"
+                    >
+                        <div className="flex flex-col items-center gap-5">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all shadow-2xs">
+                                <PanelRightOpen className="h-4 w-4" />
+                            </div>
+
+                            <div className="flex flex-col items-center gap-4 py-2">
+                                <span className="[writing-mode:vertical-rl] rotate-180 text-[10px] font-bold tracking-widest uppercase text-muted-foreground group-hover:text-foreground transition-colors">
+                                    Upcoming Dates
+                                </span>
+                                <span className="[writing-mode:vertical-rl] rotate-180 text-[9px] font-mono font-bold text-primary px-1 py-0.5 rounded border border-primary/30 bg-primary/5">
+                                    {upcoming_events.length}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground group-hover:text-foreground transition-colors">
+                            <Clock className="h-3.5 w-3.5" />
+                        </div>
+                    </aside>
+                ) : (
+                    /* EXPANDED FULL RIGHT SIDEBAR */
+                    <aside className="w-80 lg:w-[320px] shrink-0 border-l border-border bg-card/75 backdrop-blur-md sticky top-14 h-[calc(100vh-3.5rem)] flex flex-col justify-between overflow-y-auto p-5 transition-all duration-300 z-20">
+                        <div className="space-y-4">
+                            {/* Sidebar Header */}
+                            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                                <div className="text-sm font-bold flex items-center gap-2 text-foreground">
+                                    <Clock className="h-4 w-4 text-primary" />
+                                    Upcoming Dates
+                                    <Badge variant="secondary" className="text-[10px] font-semibold">
+                                        {upcoming_events.length}
+                                    </Badge>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleSetUpcomingCollapsed(true)}
+                                    className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
+                                    title="Collapse upcoming dates"
+                                >
+                                    <PanelRightClose className="h-4 w-4" />
+                                </Button>
+                            </div>
+
+                            <p className="text-xs text-muted-foreground">
+                                Scheduled marketing holidays and retail events for the next 60 days.
+                            </p>
+
+                            {/* Next 60 Days Events List */}
+                            <div className="space-y-2.5">
+                                {upcoming_events.length === 0 ? (
+                                    <p className="text-xs text-muted-foreground py-8 text-center">
+                                        No upcoming events scheduled.
+                                    </p>
+                                ) : (
+                                    upcoming_events.map((evt: any) => {
+                                        const styleKey = evt.category || evt.type || 'holiday';
+                                        const style = categoryStyles[styleKey] || categoryStyles.holiday;
+
+                                        return (
+                                            <div
+                                                key={evt.id}
+                                                onClick={() => setSelectedEvent(evt)}
+                                                className="rounded-2xl border border-border/70 bg-card p-3.5 transition-all hover:border-primary/50 hover:shadow-xs cursor-pointer space-y-2 group"
+                                            >
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="text-xs font-bold text-foreground whitespace-nowrap">
+                                                        {evt.date}
+                                                    </span>
+                                                    {evt.days && (
+                                                        <Badge variant="outline" className={`text-[10px] font-semibold shrink-0 whitespace-nowrap ${style.bg} ${style.text} ${style.border}`}>
+                                                            {evt.days}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+
+                                                <h4 className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                                                    {evt.name}
+                                                </h4>
+
+                                                <div className="flex items-center justify-between pt-1 border-t border-border/40 text-[11px] text-muted-foreground">
+                                                    <span className="capitalize truncate max-w-[130px]">{style.label}</span>
+                                                    <span className="text-primary font-semibold text-[11px] shrink-0">View →</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
+                    </aside>
+                )}
             </div>
 
             {/* =============================================================
@@ -944,12 +1121,24 @@ export default function MarketingCalendarPage({
                         <DialogHeader className="space-y-2">
                             <div className="flex items-center gap-2">
                                 {(() => {
+                                    const isPast = isEventPast(selectedEvent.date);
                                     const styleKey = selectedEvent.category || selectedEvent.type || 'holiday';
                                     const style = categoryStyles[styleKey] || categoryStyles.holiday;
                                     return (
-                                        <Badge variant="outline" className={`text-[10px] font-semibold ${style.bg} ${style.text} ${style.border}`}>
-                                            {style.label}
-                                        </Badge>
+                                        <>
+                                            <Badge variant="outline" className={`text-[10px] font-semibold ${style.bg} ${style.text} ${style.border}`}>
+                                                {style.label}
+                                            </Badge>
+                                            {isPast ? (
+                                                <Badge variant="secondary" className="text-[10px] font-mono text-muted-foreground bg-muted">
+                                                    Past Event
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant="outline" className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30">
+                                                    Upcoming
+                                                </Badge>
+                                            )}
+                                        </>
                                     );
                                 })()}
                                 {selectedEvent.is_long_weekend && (

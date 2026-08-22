@@ -6,6 +6,7 @@ use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Models\User;
 use App\Notifications\WelcomeEmailNotification;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
@@ -33,7 +34,11 @@ class CreateNewUser implements CreatesNewUsers
             'onboarding_completed_at' => null,
         ]);
 
-        $user->notify(new WelcomeEmailNotification);
+        try {
+            $user->notify(new WelcomeEmailNotification);
+        } catch (\Throwable $e) {
+            Log::warning('Welcome email notification could not be sent: '.$e->getMessage());
+        }
 
         return $user;
     }

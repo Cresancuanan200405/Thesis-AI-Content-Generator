@@ -156,17 +156,20 @@ it('user can save a design with include_logo enabled', function () {
     expect($design->generation_metadata['include_logo'] ?? false)->toBeTrue();
 });
 
-it('user can attach an existing design to an existing campaign', function () {
+it('user can attach an existing design to an existing campaign for matching event', function () {
     $user = User::factory()->create(['onboarding_completed' => true]);
     $business = Business::factory()->create(['user_id' => $user->id]);
+    $event = \App\Models\Event::factory()->create(['user_id' => $user->id]);
     $campaign = Campaign::factory()->create([
         'user_id' => $user->id,
         'business_id' => $business->id,
+        'event_id' => $event->id,
         'name' => 'Autumn Refresh 2026',
     ]);
     $design = Design::factory()->create([
         'user_id' => $user->id,
         'business_id' => $business->id,
+        'event_id' => $event->id,
         'campaign_id' => null,
         'product_name' => 'Autumn Candle Set',
     ]);
@@ -187,6 +190,35 @@ it('user can attach an existing design to an existing campaign', function () {
 
     $design->refresh();
     expect($design->campaign_id)->toBe($campaign->id);
+});
+
+it('rejects attaching a design if event does not match campaign event', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+    $event1 = \App\Models\Event::factory()->create(['user_id' => $user->id]);
+    $event2 = \App\Models\Event::factory()->create(['user_id' => $user->id]);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event1->id,
+        'name' => 'Halloween Campaign',
+    ]);
+    $design = Design::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event2->id,
+        'campaign_id' => null,
+        'product_name' => 'Christmas Candle',
+    ]);
+
+    $response = $this->actingAs($user)
+        ->postJson("/designs/{$design->id}/attach-campaign", [
+            'campaign_id' => $campaign->id,
+        ]);
+
+    $response->assertStatus(422);
+    $design->refresh();
+    expect($design->campaign_id)->toBeNull();
 });
 
 it('user can edit campaign name, dates, status, and details', function () {

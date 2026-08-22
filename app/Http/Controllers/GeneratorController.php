@@ -14,6 +14,7 @@ use App\Services\GeminiImageService;
 use App\Services\MarketingPromptBuilder;
 use App\Services\PhilippineHolidayService;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -53,7 +54,7 @@ class GeneratorController extends Controller
             ->orderBy('date')
             ->get();
 
-        $campaigns = $user?->campaigns()->orderByDesc('created_at')->get() ?? collect();
+        $campaigns = $user?->campaigns()->with(['event', 'product'])->orderByDesc('created_at')->get() ?? collect();
 
         return Inertia::render('generator/index', [
             'business' => $business ? [
@@ -86,6 +87,12 @@ class GeneratorController extends Controller
                 'id' => $c->id,
                 'name' => $c->name,
                 'status' => $c->status,
+                'event_id' => $c->event_id,
+                'event_name' => $c->event?->name,
+                'product_id' => $c->product_id,
+                'product_name' => $c->product?->name,
+                'target_audience' => $c->target_audience,
+                'objective' => $c->objective,
                 'start_date' => $c->start_date?->format('Y-m-d'),
                 'end_date' => $c->end_date?->format('Y-m-d'),
             ])->values()->all(),
@@ -241,6 +248,100 @@ class GeneratorController extends Controller
         ]);
 
         return redirect()->route('generator.index')->with('success', 'Your marketing asset has been generated.');
+    }
+
+    /**
+     * Generate visual creative preview without automatically creating a permanent Design record in My Designs.
+     */
+    public function generatePreview(Request $request, GeminiImageService $geminiService, MarketingPromptBuilder $promptBuilder): JsonResponse
+    {
+        @set_time_limit(120);
+        @ini_set('max_execution_time', '120');
+
+        /** @var User $user */
+        $user = $request->user();
+        /** @var Business $business */
+        $business = $user->business()->firstOrFail();
+
+        $request->validate([
+            'product_name' => ['required', 'string', 'max:255'],
+            'image_prompt' => ['nullable', 'string'],
+        ]);
+
+        $referenceImagePath = null;
+        if ($request->hasFile('reference_image')) {
+            $referenceImagePath = $request->file('reference_image')->store('generation-requests', 'public');
+        }
+
+        $product = $request->filled('product_id') ? Product::find($request->input('product_id')) : null;
+        $campaign = $request->filled('campaign_id') ? Campaign::find($request->input('campaign_id')) : null;
+        $event = $request->filled('event_id') ? Event::find($request->input('event_id')) : null;
+
+        if (! $referenceImagePath && $product?->image_path) {
+            $referenceImagePath = $product->image_path;
+        }
+
+        $includeLogo = (bool) $request->boolean('include_logo', false);
+        $logoPath = ($includeLogo && $business->logo_path) ? $business->logo_path : null;
+        $productImageUrl = $product?->image_path ? asset('storage/'.$product->image_path) : null;
+
+        $prompt = (string) ($request->input('image_prompt') ?: $request->input('prompt') ?: $promptBuilder->build($request->all(), $business));
+
+        try {
+            $brandTone = $request->input('brand_tone') ?? [];
+            if (is_string($brandTone)) {
+                $brandTone = explode(',', $brandTone);
+            }
+            $visualTheme = $request->input('content_style') ?? $request->input('visual_theme') ?? [];
+            if (is_string($visualTheme)) {
+                $visualTheme = explode(',', $visualTheme);
+            }
+
+            $generatedImagePath = $geminiService->generate($prompt, [
+                'product_name' => (string) $request->input('product_name'),
+                'product_description' => $product?->description,
+                'product_category' => $product?->category ?? $business->category,
+                'product_image_url' => $productImageUrl,
+                'campaign_name' => $campaign?->name,
+                'campaign_objective' => $campaign?->objective,
+                'event_name' => $event?->name,
+                'price' => $request->input('price'),
+                'brand_tone' => $brandTone,
+                'visual_theme' => $visualTheme,
+                'tagline' => $request->input('tagline'),
+                'tagline_mode' => $request->input('tagline_mode', 'ai'),
+                'include_logo' => $includeLogo,
+                'aspect_ratio' => $request->input('aspect_ratio', '1:1'),
+                'business_name' => $business->name,
+                'business_industry' => $business->industry,
+                'business_description' => $business->description,
+                'business_target_audience' => $business->target_audience,
+                'business_usp' => $business->unique_selling_point,
+                'business_content_style' => $business->content_style,
+                'business_marketing_prefs' => $business->marketing_preferences,
+                'reference_image_path' => $referenceImagePath,
+                'logo_path' => $logoPath,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'image_url' => asset('storage/'.$generatedImagePath),
+                'generated_image_path' => $generatedImagePath,
+                'prompt' => $prompt,
+                'product_name' => $request->input('product_name'),
+                'tagline' => $request->input('tagline'),
+                'price' => $request->input('price'),
+                'aspect_ratio' => $request->input('aspect_ratio', '1:1'),
+                'message' => 'Visual creative generated successfully.',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Gemini image generation preview failed: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Your visual creative could not be synthesized right now. Please try again.',
+            ], 500);
+        }
     }
 
     /**

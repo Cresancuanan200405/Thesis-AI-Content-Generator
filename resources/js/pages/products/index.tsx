@@ -4,6 +4,8 @@ import {
     Check,
     CheckSquare,
     ChevronDown,
+    ChevronLeft,
+    ChevronRight,
     Download,
     Edit3,
     Eye,
@@ -18,9 +20,12 @@ import {
     Tag,
     Trash2,
     X,
+    ZoomIn,
+    ZoomOut,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { downloadVisualAsFormat } from '@/lib/download';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -47,7 +52,7 @@ export default function ProductsIndexPage({
     count = 0,
 }: any) {
     const [previewProduct, setPreviewProduct] = useState<any>(null);
-    const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
+    const [isZoomed, setIsZoomed] = useState(false);
     const [productToDelete, setProductToDelete] = useState<any>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -56,6 +61,29 @@ export default function ProductsIndexPage({
     const [selectedProductIds, setSelectedProductIds] = useState<Set<number>>(new Set());
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
     const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+
+    const currentPreviewIndex = previewProduct
+        ? products.findIndex((p: any) => p.id === previewProduct.id)
+        : -1;
+    const hasPrevProduct = currentPreviewIndex > 0;
+    const hasNextProduct =
+        currentPreviewIndex !== -1 && currentPreviewIndex < products.length - 1;
+
+    const handlePrevProduct = (e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        if (hasPrevProduct) {
+            setPreviewProduct(products[currentPreviewIndex - 1]);
+            setIsZoomed(false);
+        }
+    };
+
+    const handleNextProduct = (e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        if (hasNextProduct) {
+            setPreviewProduct(products[currentPreviewIndex + 1]);
+            setIsZoomed(false);
+        }
+    };
 
     const updateSearch = (value: string) => {
         router.get(
@@ -70,7 +98,7 @@ export default function ProductsIndexPage({
 
     const handleOpenProductPreview = (product: any) => {
         setPreviewProduct(product);
-        setIsDetailsExpanded(false);
+        setIsZoomed(false);
     };
 
     // Selection Handlers
@@ -194,16 +222,38 @@ export default function ProductsIndexPage({
     };
 
     useEffect(() => {
+        if (previewProduct) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [previewProduct]);
+
+    useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && previewProduct) {
+            if (!previewProduct) return;
+            if (e.key === 'Escape') {
                 setPreviewProduct(null);
-                setIsDetailsExpanded(false);
+                setIsZoomed(false);
+            } else if (e.key === 'ArrowLeft') {
+                if (hasPrevProduct) {
+                    setPreviewProduct(products[currentPreviewIndex - 1]);
+                    setIsZoomed(false);
+                }
+            } else if (e.key === 'ArrowRight') {
+                if (hasNextProduct) {
+                    setPreviewProduct(products[currentPreviewIndex + 1]);
+                    setIsZoomed(false);
+                }
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [previewProduct]);
+    }, [previewProduct, currentPreviewIndex, hasPrevProduct, hasNextProduct, products]);
 
     return (
         <>
@@ -714,47 +764,91 @@ export default function ProductsIndexPage({
 
             {previewProduct && (
                 <div
-                    className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-black/95 backdrop-blur-md animate-in fade-in duration-200 select-none overflow-hidden"
-                    onClick={() => {
-                        setPreviewProduct(null);
-                        setIsDetailsExpanded(false);
-                    }}
+                    className="fixed inset-0 z-50 overflow-y-auto overflow-x-hidden bg-black/95 backdrop-blur-2xl text-white select-none scroll-smooth animate-in fade-in duration-200"
                 >
-                    {/* Top Floating Control Bar */}
+                    {/* Top Floating Control Bar (Sticky) */}
                     <div
-                        className="relative z-50 flex w-full items-center justify-between bg-gradient-to-b from-black/90 via-black/50 to-transparent px-5 py-4 sm:px-8"
-                        onClick={(e) => e.stopPropagation()}
+                        className="sticky top-0 z-50 flex w-full items-center justify-between bg-gradient-to-b from-black/95 via-black/85 to-transparent px-5 py-3.5 sm:px-8 border-b border-white/10 backdrop-blur-md"
                     >
                         <div className="flex items-center gap-3">
-                            <h2 className="max-w-[240px] sm:max-w-md truncate text-sm sm:text-base font-semibold text-white">
+                            <h2 className="max-w-[200px] sm:max-w-md truncate text-sm sm:text-base font-semibold text-white">
                                 {previewProduct.name}
                             </h2>
                             {previewProduct.price && (
-                                <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-bold text-white">
+                                <span className="rounded-full bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-0.5 text-xs font-extrabold text-emerald-400">
                                     ₱{Number(previewProduct.price).toLocaleString()}
                                 </span>
                             )}
                         </div>
 
                         <div className="flex items-center gap-2">
+                            {/* Zoom Toggle */}
+                            <button
+                                type="button"
+                                onClick={() => setIsZoomed(!isZoomed)}
+                                className="hidden sm:flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white px-3 py-1.5 text-xs font-medium backdrop-blur-md transition-all cursor-pointer"
+                                title="Click image or button to zoom"
+                            >
+                                {isZoomed ? (
+                                    <>
+                                        <ZoomOut className="h-3.5 w-3.5 text-primary" />
+                                        <span>Zoomed (175%)</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <ZoomIn className="h-3.5 w-3.5" />
+                                        <span>Click to Zoom</span>
+                                    </>
+                                )}
+                            </button>
+
+                            {/* Download Dropdown */}
                             {previewProduct.image_url && (
-                                <button
-                                    type="button"
-                                    onClick={() => handleDownload(previewProduct)}
-                                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-all backdrop-blur-md"
-                                    title="Download Image"
-                                >
-                                    <Download className="h-4 w-4" />
-                                </button>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button
+                                            type="button"
+                                            className="flex h-9 items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white px-3 text-xs font-semibold transition-all backdrop-blur-md cursor-pointer"
+                                            title="Download Image"
+                                        >
+                                            <Download className="h-4 w-4" />
+                                            Download
+                                            <ChevronDown className="h-3 w-3 opacity-70" />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-48 rounded-xl p-1.5 shadow-xl border-white/20 bg-black/90 text-white backdrop-blur-xl">
+                                        <DropdownMenuItem
+                                            onClick={() => downloadVisualAsFormat(previewProduct.image_url, previewProduct.name, 'png')}
+                                            className="gap-2 text-xs font-medium cursor-pointer text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
+                                        >
+                                            <Download className="h-3.5 w-3.5 text-primary" />
+                                            PNG (High Quality)
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => downloadVisualAsFormat(previewProduct.image_url, previewProduct.name, 'jpeg')}
+                                            className="gap-2 text-xs font-medium cursor-pointer text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
+                                        >
+                                            <Download className="h-3.5 w-3.5 text-blue-400" />
+                                            JPEG (Web-Optimized)
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => downloadVisualAsFormat(previewProduct.image_url, previewProduct.name, 'svg')}
+                                            className="gap-2 text-xs font-medium cursor-pointer text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
+                                        >
+                                            <Download className="h-3.5 w-3.5 text-emerald-400" />
+                                            SVG (Vector Embed)
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             )}
 
                             <button
                                 type="button"
                                 onClick={() => {
                                     setPreviewProduct(null);
-                                    setIsDetailsExpanded(false);
+                                    setIsZoomed(false);
                                 }}
-                                className="ml-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 hover:bg-white/30 text-white transition-all backdrop-blur-md"
+                                className="ml-1 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 hover:bg-white/30 text-white transition-all backdrop-blur-md cursor-pointer"
                                 title="Close (Esc)"
                             >
                                 <X className="h-5 w-5" />
@@ -762,122 +856,199 @@ export default function ProductsIndexPage({
                         </div>
                     </div>
 
-                    {/* Main Full View Image Canvas */}
+                    {/* Floating Previous Image Button (Left) */}
+                    {hasPrevProduct && (
+                        <button
+                            type="button"
+                            onClick={handlePrevProduct}
+                            className="fixed left-3 sm:left-6 top-1/2 -translate-y-1/2 z-50 flex h-11 w-11 sm:h-13 sm:w-13 items-center justify-center rounded-full bg-black/60 text-white/85 backdrop-blur-md border border-white/20 hover:bg-black/90 hover:text-white hover:border-white/40 hover:scale-110 active:scale-95 transition-all duration-200 shadow-2xl cursor-pointer"
+                            title="Previous product (←)"
+                            aria-label="Previous product"
+                        >
+                            <ChevronLeft className="h-6 w-6 sm:h-7 sm:w-7" />
+                        </button>
+                    )}
+
+                    {/* Floating Next Image Button (Right) */}
+                    {hasNextProduct && (
+                        <button
+                            type="button"
+                            onClick={handleNextProduct}
+                            className="fixed right-3 sm:right-6 top-1/2 -translate-y-1/2 z-50 flex h-11 w-11 sm:h-13 sm:w-13 items-center justify-center rounded-full bg-black/60 text-white/85 backdrop-blur-md border border-white/20 hover:bg-black/90 hover:text-white hover:border-white/40 hover:scale-110 active:scale-95 transition-all duration-200 shadow-2xl cursor-pointer"
+                            title="Next product (→)"
+                            aria-label="Next product"
+                        >
+                            <ChevronRight className="h-6 w-6 sm:h-7 sm:w-7" />
+                        </button>
+                    )}
+
+                    {/* Section 1: Main Full View Image Canvas */}
                     <div
-                        className="relative flex h-full w-full flex-1 items-center justify-center p-4 sm:p-8 overflow-hidden"
-                        onClick={(e) => e.stopPropagation()}
+                        className="group/canvas relative flex min-h-[calc(100vh-4.5rem)] w-full flex-col items-center justify-center p-4 sm:p-8"
                     >
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                            <div className="h-[450px] w-[450px] rounded-full bg-gradient-to-tr from-primary/20 via-blue-500/10 to-transparent blur-3xl opacity-40" />
+                        </div>
+
                         {previewProduct.image_url ? (
                             <img
                                 src={previewProduct.image_url}
                                 alt={previewProduct.name}
-                                className={`max-h-[82vh] max-w-[92vw] object-contain drop-shadow-2xl transition-all duration-300 ${
-                                    isDetailsExpanded ? 'scale-90 -translate-y-8' : 'scale-100'
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsZoomed(!isZoomed);
+                                }}
+                                className={`block max-h-[75vh] max-w-[88vw] object-contain rounded-2xl drop-shadow-2xl transition-transform duration-300 ease-out select-none cursor-pointer z-20 ${
+                                    isZoomed
+                                        ? 'scale-[1.7] cursor-zoom-out'
+                                        : 'scale-100 cursor-zoom-in hover:brightness-105'
                                 }`}
                             />
                         ) : (
-                            <div className="flex flex-col items-center justify-center text-white/50">
+                            <div className="flex flex-col items-center justify-center text-white/50 z-20">
                                 <ImageIcon className="h-16 w-16" />
                                 <p className="mt-2 text-sm">No visual image uploaded for this product</p>
                             </div>
                         )}
-                    </div>
 
-                    {/* Bottom Fade-out Section with Toggle & In-Modal Expandable Details */}
-                    <div
-                        className="relative z-50 flex w-full flex-col items-center justify-end bg-gradient-to-t from-black/95 via-black/75 to-transparent pt-12 pb-5 px-4"
-                        onClick={(e) => e.stopPropagation()}
-                    >
+                        {/* Floating Scroll Down Indicator */}
                         <button
                             type="button"
-                            onClick={() => setIsDetailsExpanded(!isDetailsExpanded)}
-                            className="group flex items-center gap-2 rounded-full border border-white/20 bg-black/60 px-5 py-2 text-xs font-medium text-white/90 backdrop-blur-xl shadow-2xl transition-all hover:bg-black/80 hover:border-white/40 hover:text-white active:scale-95"
-                            aria-expanded={isDetailsExpanded}
+                            onClick={() => {
+                                const el = document.getElementById('product-modal-details');
+                                if (el) {
+                                    el.scrollIntoView({ behavior: 'smooth' });
+                                }
+                            }}
+                            className="group/scroll absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 backdrop-blur-xl border border-white/20 text-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-all duration-300 hover:scale-115 hover:border-primary/60 hover:text-white hover:bg-black/90 hover:shadow-[0_0_20px_rgba(var(--primary),0.5)] active:scale-95 cursor-pointer animate-bounce"
+                            title="Scroll down for details"
+                            aria-label="Scroll down for details"
                         >
-                            <span>
-                                {isDetailsExpanded
-                                    ? 'Hide details'
-                                    : 'View product details & actions'}
-                            </span>
-                            <ChevronDown
-                                className={`h-4 w-4 transition-transform duration-300 ${
-                                    isDetailsExpanded
-                                        ? 'rotate-180 text-primary'
-                                        : 'text-white/70 animate-bounce'
-                                }`}
-                            />
+                            <ChevronDown className="h-5 w-5 transition-transform duration-300 group-hover/scroll:translate-y-0.5 group-hover/scroll:text-primary" />
                         </button>
+                    </div>
 
-                        {/* Slide-up In-Modal Details Panel */}
-                        {isDetailsExpanded && (
-                            <div className="mt-4 w-full max-w-xl max-h-[38vh] overflow-y-auto space-y-4 rounded-2xl border border-white/15 bg-black/80 p-5 backdrop-blur-2xl shadow-2xl text-white animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    {/* Section 2: Recreated, Classy Details & Functions Section */}
+                    <div
+                        id="product-modal-details"
+                        className="relative z-30 w-full bg-slate-950/98 backdrop-blur-3xl px-4 pb-16 pt-8 sm:px-8 border-t border-white/20"
+                    >
+                        <div className="mx-auto max-w-3xl space-y-6">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-white/15 pb-4">
                                 <div>
-                                    <div className="flex items-center justify-between gap-2">
-                                        <h3 className="text-lg font-bold text-white">
-                                            {previewProduct.name}
-                                        </h3>
-                                        {previewProduct.price && (
-                                            <span className="text-sm font-bold text-emerald-400">
-                                                ₱{Number(previewProduct.price).toLocaleString()}
-                                            </span>
-                                        )}
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/25 border border-primary/50 text-primary font-extrabold text-xs shadow-xs tracking-wider uppercase">
+                                        <Sparkles className="h-3.5 w-3.5" />
+                                        Product Catalog Details
                                     </div>
-
-                                    {previewProduct.created_at && (
-                                        <p className="text-[11px] text-white/60 mt-0.5">
-                                            Added on {previewProduct.created_at}
-                                        </p>
-                                    )}
-
-                                    {previewProduct.description && (
-                                        <p className="mt-2 text-xs leading-relaxed text-white/80 border-t border-white/10 pt-2">
-                                            {previewProduct.description}
-                                        </p>
-                                    )}
+                                    <h3 className="mt-2 text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-md">
+                                        {previewProduct.name}
+                                    </h3>
                                 </div>
 
-                                <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3 border-t border-white/10">
-                                    <div className="flex flex-wrap gap-2">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                                router.visit(`/generator?product_name=${encodeURIComponent(previewProduct.name)}`);
-                                            }}
-                                            className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 shadow-none"
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        asChild
+                                        size="sm"
+                                        className="h-9 px-4 gap-2 text-xs font-bold shadow-lg shadow-primary/30 hover:scale-105 transition-all bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
+                                    >
+                                        <Link
+                                            href={`/generator?product_name=${encodeURIComponent(previewProduct.name)}&price=${encodeURIComponent(previewProduct.price || '')}`}
                                         >
-                                            <Sparkles className="h-3.5 w-3.5 text-primary" />
+                                            <Sparkles className="h-4 w-4" />
                                             Generate AI Visuals
-                                        </Button>
-
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                                router.visit(previewProduct.edit_url || `/products/${previewProduct.id}/edit`);
-                                            }}
-                                            className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 shadow-none"
-                                        >
-                                            <Edit3 className="h-3.5 w-3.5" />
-                                            Edit Product
-                                        </Button>
-                                    </div>
+                                        </Link>
+                                    </Button>
 
                                     <Button
-                                        type="button"
-                                        variant="destructive"
+                                        asChild
+                                        variant="outline"
                                         size="sm"
-                                        onClick={() => setProductToDelete(previewProduct)}
-                                        className="gap-1.5 text-xs shadow-none"
+                                        className="h-9 px-4 gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 transition-all cursor-pointer"
                                     >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                        Delete
+                                        <Link href={previewProduct.edit_url || `/products/${previewProduct.id}/edit`}>
+                                            <Edit3 className="h-3.5 w-3.5" />
+                                            Edit Product
+                                        </Link>
                                     </Button>
                                 </div>
                             </div>
-                        )}
+
+                            {previewProduct.description && (
+                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-5 backdrop-blur-2xl shadow-lg transition-all duration-300 hover:border-white/30">
+                                    <div className="inline-block px-2.5 py-0.5 rounded bg-white/15 text-[11px] font-extrabold uppercase tracking-wider text-white">
+                                        Description
+                                    </div>
+                                    <p className="mt-2.5 text-sm sm:text-base leading-relaxed text-white/95 font-medium">
+                                        {previewProduct.description}
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 sm:p-5 backdrop-blur-2xl shadow-md transition-all hover:border-white/30 hover:-translate-y-0.5">
+                                    <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-white/70">
+                                        <Tag className="h-3.5 w-3.5 text-primary" />
+                                        Retail Price
+                                    </div>
+                                    <p className="mt-2 text-lg font-extrabold text-emerald-400">
+                                        {previewProduct.price ? `₱${Number(previewProduct.price).toLocaleString()}` : 'Price not set'}
+                                    </p>
+                                </div>
+
+                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 sm:p-5 backdrop-blur-2xl shadow-md transition-all hover:border-white/30 hover:-translate-y-0.5">
+                                    <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-white/70">
+                                        <ImageIcon className="h-3.5 w-3.5 text-primary" />
+                                        Category / Type
+                                    </div>
+                                    <p className="mt-2 truncate text-base font-bold text-white">
+                                        {previewProduct.category || 'Standard Product'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-white/15">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {previewProduct.image_url && (
+                                        <>
+                                            <span className="text-xs font-bold text-white/80 mr-1">Download:</span>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => downloadVisualAsFormat(previewProduct.image_url, previewProduct.name, 'png')}
+                                                className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 hover:scale-105 transition-all shadow-none cursor-pointer"
+                                            >
+                                                <Download className="h-3.5 w-3.5 text-primary" />
+                                                PNG
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => downloadVisualAsFormat(previewProduct.image_url, previewProduct.name, 'jpeg')}
+                                                className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 hover:scale-105 transition-all shadow-none cursor-pointer"
+                                            >
+                                                <Download className="h-3.5 w-3.5 text-blue-400" />
+                                                JPEG
+                                            </Button>
+                                        </>
+                                    )}
+                                </div>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        setPreviewProduct(null);
+                                        setIsZoomed(false);
+                                    }}
+                                    className="h-8 px-4 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white transition-all cursor-pointer"
+                                >
+                                    Close
+                                </Button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

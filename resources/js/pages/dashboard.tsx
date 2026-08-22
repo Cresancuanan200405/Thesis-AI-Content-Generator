@@ -5,6 +5,8 @@ import {
     Calendar,
     CalendarDays,
     ChevronDown,
+    ChevronLeft,
+    ChevronRight,
     Download,
     Eye,
     Heart,
@@ -16,9 +18,12 @@ import {
     Tag,
     TrendingUp,
     X,
+    ZoomIn,
+    ZoomOut,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { downloadVisualAsFormat } from '@/lib/download';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,6 +32,12 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export default function Dashboard({
     auth,
@@ -43,8 +54,36 @@ export default function Dashboard({
 
     // Full-screen image viewer state for recent designs
     const [previewDesign, setPreviewDesign] = useState<any>(null);
-    const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
+    const [isZoomed, setIsZoomed] = useState(false);
     const [hoveredMonthIndex, setHoveredMonthIndex] = useState<number | null>(null);
+
+    const currentPreviewIndex = previewDesign
+        ? recent_designs.findIndex((d: any) => d.id === previewDesign.id)
+        : -1;
+    const hasPrevDesign = currentPreviewIndex > 0;
+    const hasNextDesign =
+        currentPreviewIndex !== -1 && currentPreviewIndex < recent_designs.length - 1;
+
+    const handlePrevDesign = (e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        if (hasPrevDesign) {
+            setPreviewDesign(recent_designs[currentPreviewIndex - 1]);
+            setIsZoomed(false);
+        }
+    };
+
+    const handleNextDesign = (e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        if (hasNextDesign) {
+            setPreviewDesign(recent_designs[currentPreviewIndex + 1]);
+            setIsZoomed(false);
+        }
+    };
+
+    const closePreview = () => {
+        setPreviewDesign(null);
+        setIsZoomed(false);
+    };
 
     const totalDesigns = stats.total_designs ?? recent_designs.length ?? 0;
     const activeCampaigns = stats.active_campaigns ?? campaigns.filter((c: any) => c.status === 'active').length ?? 0;
@@ -120,16 +159,38 @@ export default function Dashboard({
     };
 
     useEffect(() => {
+        if (previewDesign) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [previewDesign]);
+
+    useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && previewDesign) {
+            if (!previewDesign) return;
+            if (e.key === 'Escape') {
                 setPreviewDesign(null);
-                setIsDetailsExpanded(false);
+                setIsZoomed(false);
+            } else if (e.key === 'ArrowLeft') {
+                if (hasPrevDesign) {
+                    setPreviewDesign(recent_designs[currentPreviewIndex - 1]);
+                    setIsZoomed(false);
+                }
+            } else if (e.key === 'ArrowRight') {
+                if (hasNextDesign) {
+                    setPreviewDesign(recent_designs[currentPreviewIndex + 1]);
+                    setIsZoomed(false);
+                }
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [previewDesign]);
+    }, [previewDesign, currentPreviewIndex, hasPrevDesign, hasNextDesign, recent_designs]);
 
     return (
         <>
@@ -335,7 +396,7 @@ export default function Dashboard({
                                             key={design.id}
                                             onClick={() => {
                                                 setPreviewDesign(design);
-                                                setIsDetailsExpanded(false);
+                                                setIsZoomed(false);
                                             }}
                                             className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md cursor-pointer"
                                         >
@@ -439,43 +500,88 @@ export default function Dashboard({
             {/* =============================================================
                 FULL-SCREEN IMAGE VIEWER FOR RECENT DESIGNS
             ============================================================= */}
-
             {previewDesign && (
                 <div
-                    className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-black/95 backdrop-blur-md animate-in fade-in duration-200 select-none overflow-hidden"
-                    onClick={() => {
-                        setPreviewDesign(null);
-                        setIsDetailsExpanded(false);
-                    }}
+                    className="fixed inset-0 z-[150] overflow-y-auto overflow-x-hidden bg-black/95 backdrop-blur-2xl text-white dark select-none scroll-smooth animate-in fade-in duration-200"
                 >
-                    {/* Top Floating Control Bar */}
+                    {/* Top Floating Control Bar (Sticky) */}
                     <div
-                        className="relative z-50 flex w-full items-center justify-between bg-gradient-to-b from-black/90 via-black/50 to-transparent px-5 py-4 sm:px-8"
-                        onClick={(e) => e.stopPropagation()}
+                        className="sticky top-0 z-[160] flex w-full items-center justify-between bg-gradient-to-b from-black/95 via-black/85 to-transparent px-5 py-3.5 sm:px-8 border-b border-white/10 backdrop-blur-md"
                     >
                         <div className="flex items-center gap-3">
-                            <h2 className="max-w-[240px] sm:max-w-md truncate text-sm sm:text-base font-semibold text-white">
+                            <h2 className="max-w-[200px] sm:max-w-md truncate text-sm sm:text-base font-semibold text-white">
                                 {previewDesign.product_name || 'Marketing Visual'}
                             </h2>
+                            {previewDesign.campaign_name && (
+                                <Badge variant="outline" className="border-white/20 text-white/90 text-[10px] hidden sm:inline-flex bg-white/5">
+                                    {previewDesign.campaign_name}
+                                </Badge>
+                            )}
                         </div>
 
                         <div className="flex items-center gap-2">
+                            {/* Zoom Toggle */}
                             <button
                                 type="button"
-                                onClick={() => handleDownload(previewDesign)}
-                                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-all backdrop-blur-md"
-                                title="Download"
+                                onClick={() => setIsZoomed(!isZoomed)}
+                                className="hidden sm:flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white px-3 py-1.5 text-xs font-medium backdrop-blur-md transition-all cursor-pointer"
+                                title="Click image or button to zoom"
                             >
-                                <Download className="h-4 w-4" />
+                                {isZoomed ? (
+                                    <>
+                                        <ZoomOut className="h-3.5 w-3.5 text-primary" />
+                                        <span>Zoomed (175%)</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <ZoomIn className="h-3.5 w-3.5" />
+                                        <span>Click to Zoom</span>
+                                    </>
+                                )}
                             </button>
+
+                            {/* Download Dropdown */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button
+                                        type="button"
+                                        className="flex h-9 items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white px-3 text-xs font-semibold transition-all backdrop-blur-md cursor-pointer"
+                                        title="Download Visual"
+                                    >
+                                        <Download className="h-4 w-4" />
+                                        Download
+                                        <ChevronDown className="h-3 w-3 opacity-70" />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48 rounded-xl p-1.5 shadow-xl border-white/20 bg-black/90 text-white backdrop-blur-xl z-[180]">
+                                    <DropdownMenuItem
+                                        onClick={() => downloadVisualAsFormat(previewDesign.image_url, previewDesign.product_name || 'visual', 'png')}
+                                        className="gap-2 text-xs font-medium cursor-pointer text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
+                                    >
+                                        <Download className="h-3.5 w-3.5 text-primary" />
+                                        PNG (High Quality)
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => downloadVisualAsFormat(previewDesign.image_url, previewDesign.product_name || 'visual', 'jpeg')}
+                                        className="gap-2 text-xs font-medium cursor-pointer text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
+                                    >
+                                        <Download className="h-3.5 w-3.5 text-blue-400" />
+                                        JPEG (Web-Optimized)
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => downloadVisualAsFormat(previewDesign.image_url, previewDesign.product_name || 'visual', 'svg')}
+                                        className="gap-2 text-xs font-medium cursor-pointer text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
+                                    >
+                                        <Download className="h-3.5 w-3.5 text-emerald-400" />
+                                        SVG (Vector Embed)
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
 
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setPreviewDesign(null);
-                                    setIsDetailsExpanded(false);
-                                }}
-                                className="ml-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 hover:bg-white/30 text-white transition-all backdrop-blur-md"
+                                onClick={closePreview}
+                                className="ml-1 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 hover:bg-white/30 text-white transition-all backdrop-blur-md cursor-pointer"
                                 title="Close (Esc)"
                             >
                                 <X className="h-5 w-5" />
@@ -483,93 +589,218 @@ export default function Dashboard({
                         </div>
                     </div>
 
-                    {/* Main Full View Image Canvas */}
+                    {/* Floating Previous Image Button (Left) */}
+                    {hasPrevDesign && (
+                        <button
+                            type="button"
+                            onClick={handlePrevDesign}
+                            className="fixed left-3 sm:left-6 top-1/2 -translate-y-1/2 z-50 flex h-11 w-11 sm:h-13 sm:w-13 items-center justify-center rounded-full bg-black/60 text-white/85 backdrop-blur-md border border-white/20 hover:bg-black/90 hover:text-white hover:border-white/40 hover:scale-110 active:scale-95 transition-all duration-200 shadow-2xl cursor-pointer"
+                            title="Previous visual (←)"
+                            aria-label="Previous image"
+                        >
+                            <ChevronLeft className="h-6 w-6 sm:h-7 sm:w-7" />
+                        </button>
+                    )}
+
+                    {/* Floating Next Image Button (Right) */}
+                    {hasNextDesign && (
+                        <button
+                            type="button"
+                            onClick={handleNextDesign}
+                            className="fixed right-3 sm:right-6 top-1/2 -translate-y-1/2 z-50 flex h-11 w-11 sm:h-13 sm:w-13 items-center justify-center rounded-full bg-black/60 text-white/85 backdrop-blur-md border border-white/20 hover:bg-black/90 hover:text-white hover:border-white/40 hover:scale-110 active:scale-95 transition-all duration-200 shadow-2xl cursor-pointer"
+                            title="Next visual (→)"
+                            aria-label="Next image"
+                        >
+                            <ChevronRight className="h-6 w-6 sm:h-7 sm:w-7" />
+                        </button>
+                    )}
+
+                    {/* Section 1: Main Full View Image Canvas */}
                     <div
-                        className="relative flex h-full w-full flex-1 items-center justify-center p-4 sm:p-8 overflow-hidden"
-                        onClick={(e) => e.stopPropagation()}
+                        className="group/canvas relative flex min-h-[calc(100vh-4.5rem)] w-full flex-col items-center justify-center p-4 sm:p-8"
                     >
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                            <div className="h-[450px] w-[450px] rounded-full bg-gradient-to-tr from-primary/20 via-blue-500/10 to-transparent blur-3xl opacity-40" />
+                        </div>
+
                         {previewDesign.image_url ? (
                             <img
                                 src={previewDesign.image_url}
-                                alt={previewDesign.product_name || 'Design'}
-                                className={`max-h-[82vh] max-w-[92vw] object-contain drop-shadow-2xl transition-all duration-300 ${isDetailsExpanded ? 'scale-90 -translate-y-8' : 'scale-100'
-                                    }`}
+                                alt={previewDesign.product_name || 'Marketing visual'}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsZoomed(!isZoomed);
+                                }}
+                                className={`block max-h-[75vh] max-w-[88vw] object-contain rounded-2xl drop-shadow-2xl transition-transform duration-300 ease-out select-none cursor-pointer z-20 ${
+                                    isZoomed
+                                        ? 'scale-[1.7] cursor-zoom-out'
+                                        : 'scale-100 cursor-zoom-in hover:brightness-105'
+                                }`}
                             />
                         ) : (
-                            <div className="flex flex-col items-center justify-center text-white/50">
+                            <div className="flex flex-col items-center justify-center text-white/50 z-20">
                                 <ImageIcon className="h-16 w-16" />
                                 <p className="mt-2 text-sm">No visual available</p>
                             </div>
                         )}
-                    </div>
 
-                    {/* Bottom Fade-out Section with Toggle & Expandable Details */}
-                    <div
-                        className="relative z-50 flex w-full flex-col items-center justify-end bg-gradient-to-t from-black/95 via-black/75 to-transparent pt-12 pb-5 px-4"
-                        onClick={(e) => e.stopPropagation()}
-                    >
+                        {/* Floating Scroll Down Indicator */}
                         <button
                             type="button"
-                            onClick={() => setIsDetailsExpanded(!isDetailsExpanded)}
-                            className="group flex items-center gap-2 rounded-full border border-white/20 bg-black/60 px-5 py-2 text-xs font-medium text-white/90 backdrop-blur-xl shadow-2xl transition-all hover:bg-black/80 hover:border-white/40 hover:text-white active:scale-95"
-                            aria-expanded={isDetailsExpanded}
+                            onClick={() => {
+                                const el = document.getElementById('dashboard-modal-details');
+                                if (el) {
+                                    el.scrollIntoView({ behavior: 'smooth' });
+                                }
+                            }}
+                            className="group/scroll absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 backdrop-blur-xl border border-white/20 text-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-all duration-300 hover:scale-115 hover:border-primary/60 hover:text-white hover:bg-black/90 hover:shadow-[0_0_20px_rgba(var(--primary),0.5)] active:scale-95 cursor-pointer animate-bounce"
+                            title="Scroll down for details"
+                            aria-label="Scroll down for details"
                         >
-                            <span>
-                                {isDetailsExpanded
-                                    ? 'Hide details'
-                                    : 'View description & actions'}
-                            </span>
-                            <ChevronDown
-                                className={`h-4 w-4 transition-transform duration-300 ${isDetailsExpanded
-                                        ? 'rotate-180 text-primary'
-                                        : 'text-white/70 animate-bounce'
-                                    }`}
-                            />
+                            <ChevronDown className="h-5 w-5 transition-transform duration-300 group-hover/scroll:translate-y-0.5 group-hover/scroll:text-primary" />
                         </button>
+                    </div>
 
-                        {/* Slide-up Details Panel */}
-                        {isDetailsExpanded && (
-                            <div className="mt-4 w-full max-w-xl max-h-[36vh] overflow-y-auto space-y-4 rounded-2xl border border-white/15 bg-black/80 p-5 backdrop-blur-2xl shadow-2xl text-white animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    {/* Section 2: Recreated, Classy Details & Functions Section */}
+                    <div
+                        id="dashboard-modal-details"
+                        className="relative z-30 w-full bg-slate-950/98 backdrop-blur-3xl px-4 pb-16 pt-8 sm:px-8 border-t border-white/20"
+                    >
+                        <div className="mx-auto max-w-3xl space-y-6">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-white/15 pb-4">
                                 <div>
-                                    <h3 className="text-sm font-bold text-white">
-                                        {previewDesign.product_name || 'AI Visual Creative'}
+                                    <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary text-primary-foreground font-black text-xs shadow-lg shadow-primary/30 tracking-wider uppercase">
+                                        <Sparkles className="h-4 w-4" />
+                                        Visual Creative Details
+                                    </div>
+                                    <h3 className="mt-2 text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-md">
+                                        {previewDesign.product_name || 'Marketing Visual'}
                                     </h3>
-                                    <p className="mt-1 text-xs text-white/70">
-                                        {previewDesign.campaign_name ? `Campaign: ${previewDesign.campaign_name}` : 'Marketing Workspace Creative'}
-                                    </p>
                                 </div>
 
-                                <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-white/10">
+                                <div className="flex items-center gap-2">
                                     <Button
-                                        type="button"
-                                        variant="outline"
+                                        asChild
                                         size="sm"
-                                        onClick={() => {
-                                            router.visit(
-                                                `/generator?product_name=${encodeURIComponent(
-                                                    previewDesign.product_name || '',
-                                                )}`,
-                                            );
-                                        }}
-                                        className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 shadow-none"
+                                        className="h-9 px-4 gap-2 text-xs font-bold shadow-lg shadow-primary/30 hover:scale-105 transition-all bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
                                     >
-                                        <Sparkles className="h-3.5 w-3.5 text-primary" />
-                                        Edit in AI Studio
-                                    </Button>
-
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleDownload(previewDesign)}
-                                        className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 shadow-none"
-                                    >
-                                        <Download className="h-3.5 w-3.5" />
-                                        Download Visual
+                                        <Link
+                                            href={`/generator?product_name=${encodeURIComponent(previewDesign.product_name || '')}&price=${encodeURIComponent(previewDesign.price || '')}&campaign_id=${encodeURIComponent(previewDesign.campaign_id || '')}&event_id=${encodeURIComponent(previewDesign.event_id || '')}&tagline=${encodeURIComponent(previewDesign.tagline || '')}&prompt=${encodeURIComponent(previewDesign.prompt || '')}&aspect_ratio=${encodeURIComponent(previewDesign.aspect_ratio || '1:1')}`}
+                                        >
+                                            <Sparkles className="h-4 w-4" />
+                                            Edit in AI Studio
+                                        </Link>
                                     </Button>
                                 </div>
                             </div>
-                        )}
+
+                            {previewDesign.tagline && (
+                                <div className="group relative overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-r from-primary/30 via-slate-900/95 to-primary/20 p-5 sm:p-6 backdrop-blur-2xl shadow-xl shadow-primary/10 transition-all hover:border-primary">
+                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary text-primary-foreground font-extrabold text-[11px] uppercase tracking-wider shadow-sm">
+                                        <Tag className="h-3.5 w-3.5" />
+                                        Catchy Tagline & Hook
+                                    </div>
+                                    <p className="mt-3 text-lg sm:text-xl font-bold italic text-white leading-snug drop-shadow-md">
+                                        "{previewDesign.tagline}"
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-5 backdrop-blur-2xl shadow-lg transition-all duration-300 hover:border-white/30">
+                                <div className="inline-block px-2.5 py-0.5 rounded bg-white/15 text-[11px] font-extrabold uppercase tracking-wider text-white">
+                                    AI Prompt & Concept
+                                </div>
+                                <p className="mt-2.5 text-sm sm:text-base leading-relaxed text-white/95 font-medium">
+                                    {previewDesign.prompt || 'AI-generated visual creative designed for maximum customer impact.'}
+                                </p>
+                            </div>
+
+                            <div className="grid gap-3 sm:grid-cols-3">
+                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 sm:p-5 backdrop-blur-2xl shadow-md transition-all hover:border-white/30 hover:-translate-y-0.5">
+                                    <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-white/70">
+                                        <Tag className="h-3.5 w-3.5 text-primary" />
+                                        Product
+                                    </div>
+                                    <p className="mt-2 truncate text-base font-bold text-white">
+                                        {previewDesign.product_name || 'Standard Offering'}
+                                    </p>
+                                    {previewDesign.price && (
+                                        <p className="mt-0.5 text-xs font-extrabold text-emerald-400">
+                                            ₱{previewDesign.price}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 sm:p-5 backdrop-blur-2xl shadow-md transition-all hover:border-white/30 hover:-translate-y-0.5">
+                                    <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-white/70">
+                                        <Layers className="h-3.5 w-3.5 text-primary" />
+                                        Campaign
+                                    </div>
+                                    <p className="mt-2 truncate text-base font-bold text-white">
+                                        {previewDesign.campaign_name || 'Direct Creative'}
+                                    </p>
+                                </div>
+
+                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 sm:p-5 backdrop-blur-2xl shadow-md transition-all hover:border-white/30 hover:-translate-y-0.5">
+                                    <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-white/70">
+                                        <CalendarDays className="h-3.5 w-3.5 text-primary" />
+                                        Created
+                                    </div>
+                                    <p className="mt-2 truncate text-base font-bold text-white">
+                                        {previewDesign.created_at || 'Recent Creative'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-white/15">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-xs font-bold text-white/80 mr-1">Download as:</span>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => downloadVisualAsFormat(previewDesign.image_url, previewDesign.product_name || 'visual', 'png')}
+                                        className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 hover:scale-105 transition-all shadow-none cursor-pointer"
+                                    >
+                                        <Download className="h-3.5 w-3.5 text-primary" />
+                                        PNG
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => downloadVisualAsFormat(previewDesign.image_url, previewDesign.product_name || 'visual', 'jpeg')}
+                                        className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 hover:scale-105 transition-all shadow-none cursor-pointer"
+                                    >
+                                        <Download className="h-3.5 w-3.5 text-blue-400" />
+                                        JPEG
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => downloadVisualAsFormat(previewDesign.image_url, previewDesign.product_name || 'visual', 'svg')}
+                                        className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 hover:scale-105 transition-all shadow-none cursor-pointer"
+                                    >
+                                        <Download className="h-3.5 w-3.5 text-emerald-400" />
+                                        SVG
+                                    </Button>
+                                </div>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        setPreviewDesign(null);
+                                        setIsZoomed(false);
+                                    }}
+                                    className="h-8 px-4 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white transition-all cursor-pointer"
+                                >
+                                    Close
+                                </Button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

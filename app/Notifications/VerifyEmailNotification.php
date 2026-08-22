@@ -2,27 +2,40 @@
 
 namespace App\Notifications;
 
-use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
 
-class VerifyEmailNotification extends VerifyEmail
+class VerifyEmailNotification extends Notification implements ShouldQueue
 {
+    use Queueable;
+
     public function __construct(public string $code)
     {
         // intentionally blank
     }
 
     /**
+     * Get the notification's delivery channels.
+     *
+     * @return array<int, string>
+     */
+    public function via(object $notifiable): array
+    {
+        return ['mail'];
+    }
+
+    /**
      * Build the mail representation of the notification.
      */
-    public function toMail($notifiable): MailMessage
+    public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Verify your MarketPilot email')
-            ->greeting('Welcome to MarketPilot!')
-            ->line('Use the 6-digit code below to verify your email address and finish setting up your workspace.')
-            ->line('Your verification code: '.$this->code)
-            ->line('This code expires in 15 minutes.')
-            ->line('If you did not create this account, no further action is required.');
+            ->subject('Verify your email address — MarketPilot')
+            ->view('emails.verify-email', [
+                'code' => $this->code,
+                'user' => $notifiable,
+            ]);
     }
 }
