@@ -7,6 +7,7 @@ import {
     ChevronDown,
     ChevronLeft,
     ChevronRight,
+    ChevronUp,
     Download,
     Eye,
     Heart,
@@ -55,7 +56,9 @@ export default function Dashboard({
     // Full-screen image viewer state for recent designs
     const [previewDesign, setPreviewDesign] = useState<any>(null);
     const [isZoomed, setIsZoomed] = useState(false);
+    const [zoomOrigin, setZoomOrigin] = useState({ x: 50, y: 50 });
     const [hoveredMonthIndex, setHoveredMonthIndex] = useState<number | null>(null);
+    const [isScrolledToDetails, setIsScrolledToDetails] = useState(false);
 
     const currentPreviewIndex = previewDesign
         ? recent_designs.findIndex((d: any) => d.id === previewDesign.id)
@@ -69,6 +72,7 @@ export default function Dashboard({
         if (hasPrevDesign) {
             setPreviewDesign(recent_designs[currentPreviewIndex - 1]);
             setIsZoomed(false);
+            setIsScrolledToDetails(false);
         }
     };
 
@@ -77,6 +81,23 @@ export default function Dashboard({
         if (hasNextDesign) {
             setPreviewDesign(recent_designs[currentPreviewIndex + 1]);
             setIsZoomed(false);
+            setIsScrolledToDetails(false);
+        }
+    };
+
+    const handleToggleScrollDetails = () => {
+        if (!isScrolledToDetails) {
+            const el = document.getElementById('dashboard-modal-details');
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth' });
+                setIsScrolledToDetails(true);
+            }
+        } else {
+            const container = document.getElementById('dashboard-modal-container');
+            if (container) {
+                container.scrollTo({ top: 0, behavior: 'smooth' });
+                setIsScrolledToDetails(false);
+            }
         }
     };
 
@@ -502,6 +523,15 @@ export default function Dashboard({
             ============================================================= */}
             {previewDesign && (
                 <div
+                    id="dashboard-modal-container"
+                    onScroll={(e) => {
+                        const target = e.currentTarget;
+                        if (target.scrollTop > 150) {
+                            setIsScrolledToDetails(true);
+                        } else {
+                            setIsScrolledToDetails(false);
+                        }
+                    }}
                     className="fixed inset-0 z-[150] overflow-y-auto overflow-x-hidden bg-black/95 backdrop-blur-2xl text-white dark select-none scroll-smooth animate-in fade-in duration-200"
                 >
                     {/* Top Floating Control Bar (Sticky) */}
@@ -520,10 +550,17 @@ export default function Dashboard({
                         </div>
 
                         <div className="flex items-center gap-2">
-                            {/* Zoom Toggle */}
+                            {/* Zoom Status Hint */}
                             <button
                                 type="button"
-                                onClick={() => setIsZoomed(!isZoomed)}
+                                onClick={() => {
+                                    if (!isZoomed) {
+                                        setZoomOrigin({ x: 50, y: 50 });
+                                        setIsZoomed(true);
+                                    } else {
+                                        setIsZoomed(false);
+                                    }
+                                }}
                                 className="hidden sm:flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white px-3 py-1.5 text-xs font-medium backdrop-blur-md transition-all cursor-pointer"
                                 title="Click image or button to zoom"
                             >
@@ -617,11 +654,15 @@ export default function Dashboard({
 
                     {/* Section 1: Main Full View Image Canvas */}
                     <div
-                        className="group/canvas relative flex min-h-[calc(100vh-4.5rem)] w-full flex-col items-center justify-center p-4 sm:p-8"
+                        className="group/canvas relative flex min-h-[calc(100vh-4.5rem)] w-full flex-col items-center justify-center px-4 pt-4 pb-20 sm:px-8 sm:pt-6 sm:pb-24"
                     >
-                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                        {/* Ambient Glow */}
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-0">
                             <div className="h-[450px] w-[450px] rounded-full bg-gradient-to-tr from-primary/20 via-blue-500/10 to-transparent blur-3xl opacity-40" />
                         </div>
+
+                        {/* Subtle Black Gradient Overlay at the Very Bottom of Dark Backdrop */}
+                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-black via-black/80 to-transparent z-10" />
 
                         {previewDesign.image_url ? (
                             <img
@@ -629,12 +670,25 @@ export default function Dashboard({
                                 alt={previewDesign.product_name || 'Marketing visual'}
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    setIsZoomed(!isZoomed);
+                                    if (!isZoomed) {
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        const offsetX = e.clientX - rect.left;
+                                        const offsetY = e.clientY - rect.top;
+                                        const xPercent = Math.max(0, Math.min(100, (offsetX / rect.width) * 100));
+                                        const yPercent = Math.max(0, Math.min(100, (offsetY / rect.height) * 100));
+                                        setZoomOrigin({ x: xPercent, y: yPercent });
+                                        setIsZoomed(true);
+                                    } else {
+                                        setIsZoomed(false);
+                                    }
                                 }}
-                                className={`block max-h-[75vh] max-w-[88vw] object-contain rounded-2xl drop-shadow-2xl transition-transform duration-300 ease-out select-none cursor-pointer z-20 ${
+                                style={{
+                                    transformOrigin: isZoomed ? `${zoomOrigin.x}% ${zoomOrigin.y}%` : 'center center',
+                                }}
+                                className={`block max-h-[calc(100vh-12rem)] max-w-[86vw] object-contain rounded-2xl drop-shadow-2xl transition-transform duration-300 ease-out select-none cursor-pointer z-20 ${
                                     isZoomed
-                                        ? 'scale-[1.7] cursor-zoom-out'
-                                        : 'scale-100 cursor-zoom-in hover:brightness-105'
+                                        ? 'scale-[1.75] cursor-zoom-out'
+                                        : 'scale-100 cursor-zoom-in'
                                 }`}
                             />
                         ) : (
@@ -644,20 +698,19 @@ export default function Dashboard({
                             </div>
                         )}
 
-                        {/* Floating Scroll Down Indicator */}
+                        {/* Static Scroll Indicator Button (Dark circular navigation arrow layered over the black gradient zone) */}
                         <button
                             type="button"
-                            onClick={() => {
-                                const el = document.getElementById('dashboard-modal-details');
-                                if (el) {
-                                    el.scrollIntoView({ behavior: 'smooth' });
-                                }
-                            }}
-                            className="group/scroll absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 backdrop-blur-xl border border-white/20 text-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-all duration-300 hover:scale-115 hover:border-primary/60 hover:text-white hover:bg-black/90 hover:shadow-[0_0_20px_rgba(var(--primary),0.5)] active:scale-95 cursor-pointer animate-bounce"
-                            title="Scroll down for details"
-                            aria-label="Scroll down for details"
+                            onClick={handleToggleScrollDetails}
+                            className="group/scroll absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-black/80 backdrop-blur-xl border border-white/20 text-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-all duration-300 hover:scale-110 hover:border-primary/60 hover:text-white hover:bg-black hover:shadow-[0_0_20px_rgba(var(--primary),0.5)] active:scale-95 cursor-pointer"
+                            title={isScrolledToDetails ? 'Scroll up to image' : 'Scroll down for details'}
+                            aria-label={isScrolledToDetails ? 'Scroll up to image' : 'Scroll down for details'}
                         >
-                            <ChevronDown className="h-5 w-5 transition-transform duration-300 group-hover/scroll:translate-y-0.5 group-hover/scroll:text-primary" />
+                            {isScrolledToDetails ? (
+                                <ChevronUp className="h-5 w-5 transition-transform duration-300 group-hover/scroll:text-primary" />
+                            ) : (
+                                <ChevronDown className="h-5 w-5 transition-transform duration-300 group-hover/scroll:text-primary" />
+                            )}
                         </button>
                     </div>
 

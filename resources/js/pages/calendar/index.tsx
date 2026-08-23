@@ -15,7 +15,7 @@ import {
     Sparkles,
     Trash2,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -42,7 +42,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 
 type CalendarEvent = {
     id: string | number;
@@ -166,12 +165,22 @@ export default function MarketingCalendarPage({
     const [eventToDelete, setEventToDelete] = useState<CalendarEvent | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Auto-open create event modal if navigated via shortcut
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('action') === 'create-event' || params.get('create') === '1' || params.get('create') === 'true') {
+                setIsCreateOpen(true);
+                window.history.replaceState({}, '', window.location.pathname);
+            }
+        }
+    }, []);
+
     // Form State
     const [formData, setFormData] = useState({
         name: '',
         date: '',
         type: 'custom',
-        description: '',
     });
 
     const currentYear = currentDate.getFullYear();
@@ -301,7 +310,6 @@ export default function MarketingCalendarPage({
             name: '',
             date: dateStr,
             type: 'custom',
-            description: '',
         });
         setIsCreateOpen(true);
     };
@@ -313,7 +321,6 @@ export default function MarketingCalendarPage({
             name: evt.name,
             date: evt.date,
             type: evt.type || 'custom',
-            description: evt.description || '',
         });
         setSelectedEvent(evt);
         setIsEditOpen(true);
@@ -332,7 +339,7 @@ export default function MarketingCalendarPage({
             preserveScroll: true,
             onSuccess: () => {
                 setIsCreateOpen(false);
-                setFormData({ name: '', date: '', type: 'custom', description: '' });
+                setFormData({ name: '', date: '', type: 'custom' });
                 toast.success('Event added to schedule.');
             },
             onError: (errors) => {
@@ -418,7 +425,6 @@ export default function MarketingCalendarPage({
                                         name: '',
                                         date: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`,
                                         type: 'custom',
-                                        description: '',
                                     });
                                     setIsCreateOpen(true);
                                 }}
@@ -1181,40 +1187,54 @@ export default function MarketingCalendarPage({
                                 type="button"
                                 size="sm"
                                 onClick={() => {
-                                    router.visit(`/campaigns/create?event_id=${selectedEvent.id}`);
+                                    router.visit(`/campaigns?create=true&event_id=${selectedEvent.id}`);
                                 }}
                                 className="text-xs w-full sm:w-auto font-semibold shadow-xs"
                             >
                                 Create Campaign
                             </Button>
 
-                            {!selectedEvent.is_global && (
-                                <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleOpenEdit(selectedEvent)}
-                                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                        title="Edit Event"
-                                    >
-                                        <Edit3 className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => {
-                                            setEventToDelete(selectedEvent);
-                                            setSelectedEvent(null);
-                                        }}
-                                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                        title="Delete Event"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            )}
+                            {(() => {
+                                const isRegularOrGlobal = Boolean(
+                                    selectedEvent.is_global ||
+                                    selectedEvent.category === 'regular' ||
+                                    selectedEvent.type === 'regular' ||
+                                    selectedEvent.type === 'holiday' ||
+                                    selectedEvent.category === 'holiday'
+                                );
+
+                                if (isRegularOrGlobal) {
+                                    return null;
+                                }
+
+                                return (
+                                    <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleOpenEdit(selectedEvent)}
+                                            className="h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer"
+                                            title="Edit Event"
+                                        >
+                                            <Edit3 className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => {
+                                                setEventToDelete(selectedEvent);
+                                                setSelectedEvent(null);
+                                            }}
+                                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                                            title="Delete Event"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                );
+                            })()}
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
@@ -1285,20 +1305,6 @@ export default function MarketingCalendarPage({
                                         </SelectContent>
                                     </Select>
                                 </div>
-                            </div>
-
-                            <div className="space-y-1">
-                                <Label htmlFor="create-desc" className="text-xs font-medium">
-                                    Description (Optional)
-                                </Label>
-                                <Textarea
-                                    id="create-desc"
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    placeholder="Brief campaign notes or goals..."
-                                    rows={2}
-                                    className="text-xs"
-                                />
                             </div>
                         </div>
 
@@ -1384,19 +1390,6 @@ export default function MarketingCalendarPage({
                                         </SelectContent>
                                     </Select>
                                 </div>
-                            </div>
-
-                            <div className="space-y-1">
-                                <Label htmlFor="edit-desc" className="text-xs font-medium">
-                                    Description (Optional)
-                                </Label>
-                                <Textarea
-                                    id="edit-desc"
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    rows={2}
-                                    className="text-xs"
-                                />
                             </div>
                         </div>
 

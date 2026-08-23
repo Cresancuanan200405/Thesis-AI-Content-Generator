@@ -139,29 +139,30 @@ export function AppSidebarHeader({
                 top-0
                 z-30
                 flex
-                h-14
+                h-11
+                sm:h-12
                 items-center
                 justify-between
-                gap-4
+                gap-3
                 border-b
                 border-border/80
-                bg-background/80
-                px-4
+                bg-background/85
+                px-3
                 backdrop-blur-md
                 transition-[width,height]
                 ease-linear
-                sm:px-6
+                sm:px-5
             "
         >
             {/* =============================================================
                 LEFT SIDE
             ============================================================= */}
-            <div className="flex items-center gap-3">
-                <SidebarTrigger className="-ml-1" />
+            <div className="flex items-center gap-2.5 sm:gap-3">
+                <SidebarTrigger className="-ml-1 h-8 w-8 hover:bg-muted/80 hover:scale-105 transition-all" />
 
                 <div
                     aria-hidden
-                    className="h-4 w-px bg-border/80 hidden sm:block"
+                    className="h-3.5 w-px bg-border/80 hidden sm:block"
                 />
 
                 <Breadcrumbs breadcrumbs={resolvedBreadcrumbs} />
@@ -170,7 +171,7 @@ export function AppSidebarHeader({
             {/* =============================================================
                 RIGHT ACTIONS
             ============================================================= */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
 
                 {/* ========================================================
                     THEME DROPDOWN
@@ -182,23 +183,26 @@ export function AppSidebarHeader({
                             size="icon"
                             aria-label="Choose theme"
                             title="Choose theme"
-                            className="h-9 w-9 rounded-full hover:bg-muted"
+                            className="h-8 w-8 rounded-full text-muted-foreground transition-all duration-200 hover:scale-105 hover:bg-primary/10 hover:text-primary hover:ring-1 hover:ring-primary/25 active:scale-95 data-[state=open]:bg-primary/15 data-[state=open]:text-primary data-[state=open]:ring-2 data-[state=open]:ring-primary/40 data-[state=open]:scale-105 cursor-pointer shadow-2xs"
                         >
-                            <CurrentIcon className="h-4 w-4" />
+                            <CurrentIcon className="h-4 w-4 transition-transform duration-200" />
                         </Button>
                     </DropdownMenuTrigger>
 
-                    <DropdownMenuContent align="end" sideOffset={8} className="w-36 rounded-xl">
+                    <DropdownMenuContent align="end" sideOffset={10} className="relative w-36 rounded-xl border border-border bg-popover/98 p-1 shadow-xl backdrop-blur-xl animate-in fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 overflow-visible">
+                        {/* Directional Indicator Pointer back to icon */}
+                        <div className="pointer-events-none absolute -top-1.5 right-3 h-3 w-3 rotate-45 border-l border-t border-border bg-popover" />
+
                         {themes.map(({ value, label, icon: Icon }) => {
                             const selected = appearance === value;
                             return (
                                 <DropdownMenuItem
                                     key={value}
                                     onClick={() => updateAppearance(value)}
-                                    className={`cursor-pointer ${selected ? 'bg-primary/10 text-primary' : ''}`}
+                                    className={`relative z-10 cursor-pointer rounded-lg px-2.5 py-1.5 transition-colors ${selected ? 'bg-primary/10 text-primary font-semibold' : 'hover:bg-muted'}`}
                                 >
                                     <Icon className="mr-2 h-4 w-4" />
-                                    <span className="text-sm font-medium">{label}</span>
+                                    <span className="text-xs">{label}</span>
                                     {selected && <Check className="ml-auto h-3.5 w-3.5" />}
                                 </DropdownMenuItem>
                             );
@@ -216,11 +220,11 @@ export function AppSidebarHeader({
                             size="icon"
                             aria-label="Notifications"
                             title="Notifications"
-                            className="relative h-9 w-9 rounded-full hover:bg-muted"
+                            className="relative h-8 w-8 rounded-full text-muted-foreground transition-all duration-200 hover:scale-105 hover:bg-primary/10 hover:text-primary hover:ring-1 hover:ring-primary/25 active:scale-95 data-[state=open]:bg-primary/15 data-[state=open]:text-primary data-[state=open]:ring-2 data-[state=open]:ring-primary/40 data-[state=open]:scale-105 cursor-pointer shadow-2xs"
                         >
-                            <Bell className="h-4 w-4" />
+                            <Bell className="h-4 w-4 transition-transform duration-200" />
                             {unreadCount > 0 && (
-                                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground shadow-sm animate-in zoom-in-50">
+                                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground shadow-sm animate-in zoom-in-50 ring-2 ring-background">
                                     {unreadCount > 9 ? '9+' : unreadCount}
                                 </span>
                             )}
@@ -229,35 +233,38 @@ export function AppSidebarHeader({
 
                     <DropdownMenuContent
                         align="end"
-                        sideOffset={8}
+                        sideOffset={10}
                         className="
                             relative
                             w-84
                             sm:w-96
-                            overflow-hidden
                             rounded-2xl
                             border
                             border-border
                             bg-popover
                             p-0
-                            shadow-xl
-                            shadow-black/15
+                            shadow-2xl
+                            shadow-black/20
                             duration-200
                             animate-in
                             fade-in-0
                             zoom-in-95
-                            slide-in-from-top-2
-                            dark:shadow-black/40
+                            data-[side=bottom]:slide-in-from-top-2
+                            dark:shadow-black/50
+                            overflow-visible
                         "
                     >
+                        {/* Directional Indicator Pointer back to icon */}
+                        <div className="pointer-events-none absolute -top-1.5 right-3 z-30 h-3 w-3 rotate-45 border-l border-t border-border bg-muted" />
+
                         {/* Notification Header */}
-                        <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-3">
+                        <div className="relative z-10 flex items-center justify-between border-b border-border bg-muted/50 rounded-t-2xl px-4 py-2.5">
                             <div className="flex items-center gap-2">
-                                <p className="text-sm font-semibold text-foreground">
+                                <p className="text-xs font-bold text-foreground">
                                     Notifications
                                 </p>
                                 {unreadCount > 0 && (
-                                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground">
+                                    <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1.5 text-[9px] font-bold text-primary-foreground">
                                         {unreadCount} new
                                     </span>
                                 )}

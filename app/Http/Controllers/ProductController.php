@@ -68,10 +68,15 @@ class ProductController extends Controller
             $imagePath = $request->file('image')->store('products/images', 'public');
         }
 
+        $name = trim((string) $request->input('name'));
+        if ($name === '') {
+            $name = 'Untitled Product';
+        }
+
         $product = $business->products()->create([
-            'name' => $request->input('name'),
+            'name' => $name,
             'description' => $request->input('description'),
-            'price' => $request->input('price'),
+            'price' => $request->input('price') !== null && $request->input('price') !== '' ? $request->input('price') : null,
             'image_path' => $imagePath,
         ]);
 
@@ -146,10 +151,16 @@ class ProductController extends Controller
             $imagePath = null;
         }
 
+        $name = $product->name;
+        if ($request->has('name')) {
+            $trimmed = trim((string) $request->input('name'));
+            $name = $trimmed !== '' ? $trimmed : 'Untitled Product';
+        }
+
         $product->update([
-            'name' => $request->input('name', $product->name),
+            'name' => $name,
             'description' => $request->input('description', $product->description),
-            'price' => $request->input('price', $product->price),
+            'price' => $request->has('price') ? ($request->input('price') !== '' ? $request->input('price') : null) : $product->price,
             'image_path' => $imagePath,
         ]);
 

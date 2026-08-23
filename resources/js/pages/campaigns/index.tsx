@@ -22,7 +22,7 @@ import {
     Trash2,
     X,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 
@@ -257,6 +257,24 @@ export default function CampaignsPage({
 
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('create') === 'true') {
+                const eventId = params.get('event_id') || '';
+                const evt = events.find((e: any) => String(e.id) === String(eventId));
+                const prodName = params.get('product_name') || '';
+                setFormData({
+                    name: evt ? `${evt.name} Campaign` : prodName ? `${prodName} Campaign` : '',
+                    event_id: eventId,
+                    start_date: evt?.date || '',
+                    end_date: evt?.date || '',
+                });
+                setIsCreateOpen(true);
+            }
+        }
+    }, [events]);
+
     /* Event Picker Modal State (Same as AI Marketing Studio) */
     const [isEventModalOpen, setIsEventModalOpen] = useState(false);
     const [eventModalTarget, setEventModalTarget] = useState<'create' | 'edit'>('create');
@@ -419,27 +437,34 @@ export default function CampaignsPage({
     */
 
     const handleDownloadCampaign = (campaign: any) => {
-        if (!campaign.designs || campaign.designs.length === 0) {
+        const campaignDesigns = campaign.designs || [];
+        if (campaignDesigns.length === 0) {
             toast.info(`No design assets in "${campaign.name}" yet. Click "Create Design" to add visuals.`);
             return;
         }
 
-        // Trigger download for each design with an image
         let downloaded = 0;
-        campaign.designs.forEach((design: any, index: number) => {
-            if (design.image_url) {
+        toast.info(`Preparing ${campaignDesigns.length} visual asset${campaignDesigns.length > 1 ? 's' : ''} for download...`);
+
+        campaignDesigns.forEach((design: any, index: number) => {
+            const downloadUrl = design.download_url || design.image_url;
+            if (downloadUrl) {
                 downloaded++;
-                const link = document.createElement('a');
-                link.href = design.image_url;
-                link.download = `${campaign.name}-${design.product_name || 'design'}-${index + 1}.svg`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                setTimeout(() => {
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = `${campaign.name}-${design.product_name || 'design'}-${index + 1}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }, index * 250);
             }
         });
 
         if (downloaded > 0) {
-            toast.success(`Downloading ${downloaded} design asset${downloaded > 1 ? 's' : ''} for ${campaign.name}!`);
+            setTimeout(() => {
+                toast.success(`Downloading ${downloaded} design asset${downloaded > 1 ? 's' : ''} for "${campaign.name}"!`);
+            }, 300);
         } else {
             toast.info('Design visual files are not available for download.');
         }

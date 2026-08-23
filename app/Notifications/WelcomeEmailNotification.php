@@ -3,15 +3,11 @@
 namespace App\Notifications;
 
 use App\Models\User;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class WelcomeEmailNotification extends Notification implements ShouldQueue
+class WelcomeEmailNotification extends Notification
 {
-    use Queueable;
-
     /**
      * Get the notification's delivery channels.
      *

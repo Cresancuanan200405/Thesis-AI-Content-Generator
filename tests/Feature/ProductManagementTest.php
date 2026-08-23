@@ -152,11 +152,28 @@ it('product validation works', function () {
 
     $this->actingAs($user)
         ->post('/products', [
-            'name' => '',
             'description' => str_repeat('x', 5000),
             'price' => 'abc',
         ])
-        ->assertSessionHasErrors(['name', 'description', 'price']);
+        ->assertSessionHasErrors(['description', 'price']);
+});
+
+it('product can be created without name or price', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+
+    $this->actingAs($user)
+        ->post('/products', [
+            'name' => '',
+            'price' => '',
+        ])
+        ->assertRedirect('/products');
+
+    $this->assertDatabaseHas('products', [
+        'business_id' => $business->id,
+        'name' => 'Untitled Product',
+        'price' => null,
+    ]);
 });
 
 it('product belongs to business', function () {

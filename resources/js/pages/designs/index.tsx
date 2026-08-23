@@ -8,6 +8,7 @@ import {
     ChevronDown,
     ChevronLeft,
     ChevronRight,
+    ChevronUp,
     Download,
     FolderPlus,
     Filter,
@@ -58,10 +59,7 @@ import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
-    SelectGroup,
     SelectItem,
-    SelectLabel,
-    SelectSeparator,
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
@@ -231,6 +229,8 @@ export default function DesignsPage({
 
     const [previewDesign, setPreviewDesign] = useState<any>(null);
     const [isZoomed, setIsZoomed] = useState(false);
+    const [zoomOrigin, setZoomOrigin] = useState({ x: 50, y: 50 });
+    const [isScrolledToDetails, setIsScrolledToDetails] = useState(false);
 
     const currentPreviewIndex = previewDesign
         ? designList.findIndex((d: any) => d.id === previewDesign.id)
@@ -246,6 +246,8 @@ export default function DesignsPage({
         if (hasPrevDesign) {
             setPreviewDesign(designList[currentPreviewIndex - 1]);
             setIsZoomed(false);
+            setZoomOrigin({ x: 50, y: 50 });
+            setIsScrolledToDetails(false);
         }
     };
 
@@ -256,12 +258,31 @@ export default function DesignsPage({
         if (hasNextDesign) {
             setPreviewDesign(designList[currentPreviewIndex + 1]);
             setIsZoomed(false);
+            setZoomOrigin({ x: 50, y: 50 });
+            setIsScrolledToDetails(false);
+        }
+    };
+
+    const handleToggleScrollDetails = () => {
+        if (!isScrolledToDetails) {
+            const el = document.getElementById('design-modal-details');
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth' });
+                setIsScrolledToDetails(true);
+            }
+        } else {
+            const container = document.getElementById('design-modal-container');
+            if (container) {
+                container.scrollTo({ top: 0, behavior: 'smooth' });
+                setIsScrolledToDetails(false);
+            }
         }
     };
 
     const openPreview = (design: any) => {
         setPreviewDesign(design);
         setIsZoomed(false);
+        setZoomOrigin({ x: 50, y: 50 });
     };
 
     useEffect(() => {
@@ -865,7 +886,7 @@ export default function DesignsPage({
                             ================================================== */}
 
                             {viewMode === 'grid' ? (
-                            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
                                 {designList.map((design: any) => {
                                     const isSelected = selectedIds.includes(design.id);
 
@@ -890,56 +911,34 @@ export default function DesignsPage({
                                                     }
                                                 }
                                             }}
-                                            className={`
-                                                group
-                                                relative
-                                                flex
-                                                flex-col
-                                                justify-between
-                                                overflow-hidden
-                                                rounded-2xl
-                                                border
-                                                bg-card
-                                                shadow-sm
-                                                transition-all
-                                                duration-300
-                                                hover:-translate-y-1
-                                                hover:shadow-md
-                                                cursor-pointer
-                                                text-left
-                                                focus:outline-none
-                                                ${
-                                                    isSelected
-                                                        ? 'border-primary ring-2 ring-primary/40'
-                                                        : 'border-border hover:border-primary/40'
-                                                }
-                                            `}
+                                            className={`group relative flex flex-col justify-between overflow-hidden rounded-xl border bg-card shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-primary/30 ${
+                                                isSelected
+                                                    ? 'border-primary ring-2 ring-primary/40'
+                                                    : 'border-border hover:border-primary/40'
+                                            }`}
                                         >
                                             {/* Image Container */}
-                                            <div className="relative h-56 w-full overflow-hidden bg-muted">
+                                            <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted/20 border-b border-border/50 flex items-center justify-center p-1.5">
                                                 {design.image_url ? (
                                                     <img
                                                         src={design.image_url}
                                                         alt={design.product_name || 'Marketing design'}
-                                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                        className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
                                                     />
                                                 ) : (
-                                                    <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
-                                                        <ImageIcon className="h-10 w-10" />
+                                                    <div className="flex h-full w-full items-center justify-center bg-muted/30 text-muted-foreground">
+                                                        <ImageIcon className="h-7 w-7 opacity-30" />
                                                     </div>
                                                 )}
-
-                                                {/* Image Overlay */}
-                                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 
                                                 {/* SELECTED CHECKMARK BADGE (SHOWN ONLY WHEN SELECTED) */}
                                                 {isSelected && (
-                                                    <div className="absolute top-2.5 left-2.5 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md">
-                                                        <Check className="h-3.5 w-3.5 stroke-[3]" />
+                                                    <div className="absolute top-1.5 left-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md">
+                                                        <Check className="h-3 w-3 stroke-[3]" />
                                                     </div>
                                                 )}
 
-                                                {/* TOP RIGHT: HEART FAVORITE */}
+                                                {/* TOP RIGHT: HEART FAVORITE (ONLY ON HOVER) */}
                                                 <button
                                                     type="button"
                                                     onClick={(e) => {
@@ -952,14 +951,14 @@ export default function DesignsPage({
                                                             ? 'Remove from favorites'
                                                             : 'Add to favorites'
                                                     }
-                                                    className={`absolute top-2.5 right-2.5 z-20 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md shadow-sm transition-transform duration-200 hover:scale-110 cursor-pointer ${
+                                                    className={`absolute top-1.5 right-1.5 z-20 flex h-6.5 w-6.5 items-center justify-center rounded-md backdrop-blur-md shadow-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:scale-110 cursor-pointer ${
                                                         isDesignFavorite(design)
                                                             ? 'bg-white/90 text-rose-500 hover:bg-white dark:bg-slate-900/90'
                                                             : 'bg-black/40 text-white/90 hover:bg-black/60 hover:text-rose-400'
                                                     }`}
                                                 >
                                                     <Heart
-                                                        className={`h-4 w-4 transition-colors ${
+                                                        className={`h-3.5 w-3.5 transition-colors ${
                                                             isDesignFavorite(design)
                                                                 ? 'fill-rose-500 text-rose-500'
                                                                 : 'text-white'
@@ -969,25 +968,25 @@ export default function DesignsPage({
                                             </div>
 
                                             {/* Card Content */}
-                                            <div className="flex flex-1 flex-col justify-between p-4 space-y-2">
+                                            <div className="flex flex-1 flex-col justify-between p-2.5 space-y-1.5">
                                                 <div>
-                                                    <p className="truncate text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                                                    <p className="truncate text-xs font-bold text-foreground group-hover:text-primary transition-colors">
                                                         {design.product_name || 'Untitled design'}
                                                     </p>
 
-                                                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                                                    <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
                                                         {design.event_name || design.campaign_name || 'General marketing'}
                                                     </p>
                                                 </div>
 
                                                 {/* Card Footer */}
-                                                <div className="flex items-center justify-between border-t border-border/60 pt-3">
-                                                    <span className="text-xs text-muted-foreground">
+                                                <div className="flex items-center justify-between border-t border-border/50 pt-1.5 text-[10px]">
+                                                    <span className="text-muted-foreground truncate">
                                                         {design.created_at}
                                                     </span>
 
                                                     <div
-                                                        className="flex items-center gap-1"
+                                                        className="flex items-center gap-1 shrink-0"
                                                         onClick={(e) => e.stopPropagation()}
                                                     >
                                                         <DropdownMenu>
@@ -1399,6 +1398,15 @@ export default function DesignsPage({
 
             {previewDesign && (
                 <div
+                    id="design-modal-container"
+                    onScroll={(e) => {
+                        const target = e.currentTarget;
+                        if (target.scrollTop > 150) {
+                            setIsScrolledToDetails(true);
+                        } else {
+                            setIsScrolledToDetails(false);
+                        }
+                    }}
                     className="fixed inset-0 z-[150] overflow-y-auto overflow-x-hidden bg-black/95 backdrop-blur-2xl text-white dark select-none scroll-smooth animate-in fade-in duration-200"
                 >
                     {/* Top Floating Control Bar (Sticky) */}
@@ -1425,7 +1433,14 @@ export default function DesignsPage({
                             {/* Zoom Status Hint */}
                             <button
                                 type="button"
-                                onClick={() => setIsZoomed(!isZoomed)}
+                                onClick={() => {
+                                    if (!isZoomed) {
+                                        setZoomOrigin({ x: 50, y: 50 });
+                                        setIsZoomed(true);
+                                    } else {
+                                        setIsZoomed(false);
+                                    }
+                                }}
                                 className="hidden sm:flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white px-3 py-1.5 text-xs font-medium backdrop-blur-md transition-all cursor-pointer"
                                 title="Click image or button to zoom"
                             >
@@ -1543,12 +1558,15 @@ export default function DesignsPage({
 
                     {/* Section 1: Full-view Image Canvas (Fits viewport, click to zoom) */}
                     <div
-                        className="group/canvas relative flex min-h-[calc(100vh-4.5rem)] w-full flex-col items-center justify-center p-4 sm:p-8"
+                        className="group/canvas relative flex min-h-[calc(100vh-4.5rem)] w-full flex-col items-center justify-center px-4 pt-4 pb-20 sm:px-8 sm:pt-6 sm:pb-24"
                     >
                         {/* Ambient Glow */}
-                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-0">
                             <div className="h-[450px] w-[450px] rounded-full bg-gradient-to-tr from-primary/20 via-blue-500/10 to-transparent blur-3xl opacity-40" />
                         </div>
+
+                        {/* Subtle Black Gradient Overlay at the Very Bottom of Dark Backdrop */}
+                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-black via-black/80 to-transparent z-10" />
 
                         {previewDesign.image_url ? (
                             <img
@@ -1556,12 +1574,25 @@ export default function DesignsPage({
                                 alt={previewDesign.product_name || 'Design visual'}
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    setIsZoomed(!isZoomed);
+                                    if (!isZoomed) {
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        const offsetX = e.clientX - rect.left;
+                                        const offsetY = e.clientY - rect.top;
+                                        const xPercent = Math.max(0, Math.min(100, (offsetX / rect.width) * 100));
+                                        const yPercent = Math.max(0, Math.min(100, (offsetY / rect.height) * 100));
+                                        setZoomOrigin({ x: xPercent, y: yPercent });
+                                        setIsZoomed(true);
+                                    } else {
+                                        setIsZoomed(false);
+                                    }
                                 }}
-                                className={`block max-h-[75vh] max-w-[88vw] object-contain rounded-2xl drop-shadow-2xl transition-transform duration-300 ease-out select-none cursor-pointer z-20 ${
+                                style={{
+                                    transformOrigin: isZoomed ? `${zoomOrigin.x}% ${zoomOrigin.y}%` : 'center center',
+                                }}
+                                className={`block max-h-[calc(100vh-12rem)] max-w-[86vw] object-contain rounded-2xl drop-shadow-2xl transition-transform duration-300 ease-out select-none cursor-pointer z-20 ${
                                     isZoomed
-                                        ? 'scale-[1.7] cursor-zoom-out'
-                                        : 'scale-100 cursor-zoom-in hover:brightness-105'
+                                        ? 'scale-[1.75] cursor-zoom-out'
+                                        : 'scale-100 cursor-zoom-in'
                                 }`}
                             />
                         ) : (
@@ -1571,20 +1602,19 @@ export default function DesignsPage({
                             </div>
                         )}
 
-                        {/* Floating Scroll Down Indicator (No text, sleek modern glassmorphism & hover glow) */}
+                        {/* Static Scroll Indicator Button (Dark circular navigation arrow layered over the black gradient zone) */}
                         <button
                             type="button"
-                            onClick={() => {
-                                const el = document.getElementById('design-modal-details');
-                                if (el) {
-                                    el.scrollIntoView({ behavior: 'smooth' });
-                                }
-                            }}
-                            className="group/scroll absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 backdrop-blur-xl border border-white/20 text-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-all duration-300 hover:scale-115 hover:border-primary/60 hover:text-white hover:bg-black/90 hover:shadow-[0_0_20px_rgba(var(--primary),0.5)] active:scale-95 cursor-pointer animate-bounce"
-                            title="Scroll down for details"
-                            aria-label="Scroll down for details"
+                            onClick={handleToggleScrollDetails}
+                            className="group/scroll absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-black/80 backdrop-blur-xl border border-white/20 text-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-all duration-300 hover:scale-110 hover:border-primary/60 hover:text-white hover:bg-black hover:shadow-[0_0_20px_rgba(var(--primary),0.5)] active:scale-95 cursor-pointer"
+                            title={isScrolledToDetails ? 'Scroll up to image' : 'Scroll down for details'}
+                            aria-label={isScrolledToDetails ? 'Scroll up to image' : 'Scroll down for details'}
                         >
-                            <ChevronDown className="h-5 w-5 transition-transform duration-300 group-hover/scroll:translate-y-0.5 group-hover/scroll:text-primary" />
+                            {isScrolledToDetails ? (
+                                <ChevronUp className="h-5 w-5 transition-transform duration-300 group-hover/scroll:text-primary" />
+                            ) : (
+                                <ChevronDown className="h-5 w-5 transition-transform duration-300 group-hover/scroll:text-primary" />
+                            )}
                         </button>
                     </div>
 
@@ -1719,17 +1749,6 @@ export default function DesignsPage({
                                         SVG
                                     </Button>
                                 </div>
-
-                                <Button
-                                    type="button"
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => setDesignToDelete(previewDesign)}
-                                    className="gap-1.5 text-xs shadow-none cursor-pointer hover:scale-105 transition-all"
-                                >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                    Delete Visual
-                                </Button>
                             </div>
                         </div>
                     </div>
@@ -1915,19 +1934,17 @@ export default function DesignsPage({
                                             <SelectValue placeholder="Choose matching campaign..." />
                                         </SelectTrigger>
                                         <SelectContent className="max-h-60">
-                                            <SelectGroup>
-                                                <SelectLabel className="text-xs font-bold text-amber-600 dark:text-amber-400">
-                                                    Matching Event: {designToAttachCampaign.event_name}
-                                                </SelectLabel>
-                                                {matchingCampaigns.map((c: any) => (
-                                                    <SelectItem key={c.id} value={String(c.id)}>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />
-                                                            {c.name}
-                                                        </div>
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectGroup>
+                                            <p className="px-2 py-1.5 text-xs font-bold text-amber-600 dark:text-amber-400">
+                                                Matching Event: {designToAttachCampaign.event_name}
+                                            </p>
+                                            {matchingCampaigns.map((c: any) => (
+                                                <SelectItem key={c.id} value={String(c.id)}>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />
+                                                        {c.name}
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </div>

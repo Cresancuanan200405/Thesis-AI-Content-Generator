@@ -81,7 +81,13 @@ class CampaignController extends Controller
                     'event_name' => $campaign->event?->name,
                     'start_date' => $startDate instanceof CarbonInterface ? $startDate->format('Y-m-d') : null,
                     'end_date' => $endDate instanceof CarbonInterface ? $endDate->format('Y-m-d') : null,
-                    'design_count' => $campaign->designs()->count(),
+                    'design_count' => $campaign->designs->count(),
+                    'designs' => $campaign->designs->map(fn (Design $design): array => [
+                        'id' => $design->id,
+                        'product_name' => $design->product_name,
+                        'image_url' => $design->generated_image_path ? asset('storage/'.$design->generated_image_path) : null,
+                        'download_url' => route('designs.download', $design),
+                    ])->values()->all(),
                     'show_url' => route('campaigns.show', $campaign),
                     'generator_url' => route('generator.index', array_filter([
                         'campaign_id' => $campaign->id,
