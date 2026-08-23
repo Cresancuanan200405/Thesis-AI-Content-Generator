@@ -926,13 +926,13 @@ export default function GeneratorPage() {
         <>
             <Head title="AI Marketing Studio" />
 
-            <div className="flex min-h-[calc(100vh-3.5rem)] w-full bg-background text-foreground">
+            <div className="flex min-h-[calc(100vh-2.75rem)] sm:min-h-[calc(100vh-3rem)] w-full bg-background text-foreground">
                 {/* =====================================================
                     MAIN STUDIO WORKSPACE (LEFT/CENTER)
                 ====================================================== */}
                 <div className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 space-y-5">
                     {/* COMPACT & PROFESSIONAL STICKY STUDIO HEADER */}
-                    <div className="sticky top-14 z-20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 bg-background/95 backdrop-blur-md border-b border-border/60 transition-all">
+                    <div className="sticky top-11 sm:top-12 z-20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3 -mt-4 sm:-mt-6 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 bg-background/95 dark:bg-background/90 backdrop-blur-xl border-b border-border/60 transition-all">
                         <div className="flex items-center gap-2.5">
                             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
                                 <Sparkles className="h-4 w-4" />
@@ -1884,7 +1884,7 @@ export default function GeneratorPage() {
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') handleSetSummaryCollapsed(false);
                         }}
-                        className="w-11 lg:w-12 shrink-0 border-l border-border bg-card/60 hover:bg-muted/40 backdrop-blur-md sticky top-14 h-[calc(100vh-3.5rem)] flex flex-col items-center justify-between py-4 cursor-pointer select-none transition-all duration-200 z-20 group"
+                        className="w-11 lg:w-12 shrink-0 border-l border-border/80 bg-card/60 hover:bg-muted/40 backdrop-blur-xl sticky top-11 sm:top-12 h-[calc(100vh-2.75rem)] sm:h-[calc(100vh-3rem)] flex flex-col items-center justify-between py-4 cursor-pointer select-none transition-all duration-200 z-20 group"
                         title="Open Brief Summary"
                     >
                         <div className="flex flex-col items-center gap-5">
@@ -1908,7 +1908,7 @@ export default function GeneratorPage() {
                     </aside>
                 ) : (
                     /* EXPANDED FULL RIGHT SIDEBAR */
-                    <aside className="w-80 lg:w-[320px] shrink-0 border-l border-border bg-card/75 backdrop-blur-md sticky top-14 h-[calc(100vh-3.5rem)] flex flex-col justify-between overflow-y-auto p-5 transition-all duration-300 z-20">
+                    <aside className="w-80 lg:w-[320px] shrink-0 border-l border-border/80 bg-card/75 dark:bg-slate-900/80 backdrop-blur-2xl sticky top-11 sm:top-12 h-[calc(100vh-2.75rem)] sm:h-[calc(100vh-3rem)] flex flex-col justify-between overflow-y-auto p-5 transition-all duration-300 z-20">
                         <div className="space-y-5">
                             {/* Sidebar Header */}
                             <div className="flex items-center justify-between border-b border-border/60 pb-3">

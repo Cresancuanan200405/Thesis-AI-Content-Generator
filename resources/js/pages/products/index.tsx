@@ -253,7 +253,7 @@ export default function ProductsIndexPage({
                     {/* =====================================================
                         STICKY FILTER TOOLBAR
                     ====================================================== */}
-                    <div className="sticky top-14 z-30 bg-card/95 backdrop-blur-xl border border-border/80 rounded-2xl p-2.5 sm:p-3 shadow-sm mb-5 transition-all">
+                    <div className="sticky top-11 sm:top-12 z-30 bg-card/95 dark:bg-slate-900/90 backdrop-blur-xl border border-white/25 dark:border-white/10 rounded-2xl p-2.5 sm:p-3 shadow-md mb-5 transition-all">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
                             {/* Search */}
                             <div className="relative flex-1 min-w-0">

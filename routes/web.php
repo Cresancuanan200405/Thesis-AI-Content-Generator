@@ -117,11 +117,44 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
                 ->count();
 
             return [
-                'month' => $monthLabel,
+                'period' => $monthLabel,
                 'designs' => $designsCount,
                 'campaigns' => $campaignsCount,
             ];
         })->values()->all();
+
+        // 7-Day Weekly Activity Data for interactive toggle
+        $weeklyActivity = collect(range(6, 0))->map(function ($daysAgo) use ($user) {
+            $date = now()->subDays($daysAgo);
+            $dayLabel = $date->format('D');
+            $dateString = $date->toDateString();
+
+            $designsCount = $user->designs()
+                ->whereDate('created_at', $dateString)
+                ->count();
+
+            $campaignsCount = $user->campaigns()
+                ->whereDate('created_at', $dateString)
+                ->count();
+
+            return [
+                'period' => $dayLabel,
+                'designs' => $designsCount,
+                'campaigns' => $campaignsCount,
+            ];
+        })->values()->all();
+
+        // Campaign Pipeline Status Counts
+        $campaignsByStatus = [
+            'active' => $user->campaigns()->where('status', 'active')->count(),
+            'scheduled' => $user->campaigns()->where('status', 'scheduled')->count(),
+            'draft' => $user->campaigns()->where('status', 'draft')->count(),
+            'completed' => $user->campaigns()->where('status', 'completed')->count(),
+        ];
+
+        // Catalog coverage
+        $productsWithDesigns = $user->designs()->whereNotNull('product_name')->distinct('product_name')->count();
+        $catalogCoveragePercent = $totalProducts > 0 ? min(100, round(($productsWithDesigns / $totalProducts) * 100)) : 0;
 
         return inertia('dashboard', [
             'campaigns' => $campaigns,
@@ -138,8 +171,11 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
                 'active_campaigns' => $activeCampaigns,
                 'total_products' => $totalProducts,
                 'upcoming_events' => $upcomingEventsCount,
+                'catalog_coverage' => $catalogCoveragePercent,
             ],
             'monthly_activity' => $monthlyActivity,
+            'weekly_activity' => $weeklyActivity,
+            'campaign_status_breakdown' => $campaignsByStatus,
             'business' => [
                 'name' => $user->business?->name,
                 'industry' => $user->business?->industry,
@@ -166,6 +202,7 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
     Route::delete('events/{event}', [EventController::class, 'destroy'])->name('events.destroy');
 
     Route::get('campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
+    Route::get('campaigns/create', fn () => redirect()->route('campaigns.index', ['create' => 'true']))->name('campaigns.create');
     Route::post('campaigns', [CampaignController::class, 'store'])->name('campaigns.store');
     Route::get('campaigns/{campaign}', [CampaignController::class, 'show'])->name('campaigns.show');
     Route::post('campaigns/{campaign}/attach-designs', [CampaignController::class, 'attachDesigns'])->name('campaigns.attach-designs');

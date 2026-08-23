@@ -441,7 +441,7 @@ export default function MarketingCalendarPage({
                         STICKY NAVIGATION TOOLBAR: DROPDOWN SELECTIONS
                     ====================================================== */}
 
-                    <div className="sticky top-14 z-20 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 py-2 bg-background/95 backdrop-blur-md border-b border-border/60 transition-all shadow-2xs">
+                    <div className="sticky top-11 sm:top-12 z-20 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 py-2 bg-background/95 dark:bg-background/90 backdrop-blur-xl border-b border-border/60 transition-all shadow-2xs">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 bg-card border border-border/80 rounded-2xl p-2.5 sm:p-3 shadow-xs">
                             {/* Month & Year Selectors with Next/Prev controls */}
                             <div className="flex flex-wrap items-center gap-2">
@@ -1020,7 +1020,7 @@ export default function MarketingCalendarPage({
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') handleSetUpcomingCollapsed(false);
                         }}
-                        className="w-11 lg:w-12 shrink-0 border-l border-border bg-card/60 hover:bg-muted/40 backdrop-blur-md sticky top-14 h-[calc(100vh-3.5rem)] flex flex-col items-center justify-between py-4 cursor-pointer select-none transition-all duration-200 z-20 group"
+                        className="w-11 lg:w-12 shrink-0 border-l border-border/80 bg-card/60 hover:bg-muted/40 backdrop-blur-xl sticky top-11 sm:top-12 h-[calc(100vh-2.75rem)] sm:h-[calc(100vh-3rem)] flex flex-col items-center justify-between py-4 cursor-pointer select-none transition-all duration-200 z-20 group"
                         title="Open Upcoming Dates"
                     >
                         <div className="flex flex-col items-center gap-5">
@@ -1044,7 +1044,7 @@ export default function MarketingCalendarPage({
                     </aside>
                 ) : (
                     /* EXPANDED FULL RIGHT SIDEBAR */
-                    <aside className="w-80 lg:w-[320px] shrink-0 border-l border-border bg-card/75 backdrop-blur-md sticky top-14 h-[calc(100vh-3.5rem)] flex flex-col justify-between overflow-y-auto p-5 transition-all duration-300 z-20">
+                    <aside className="w-80 lg:w-[320px] shrink-0 border-l border-border/80 bg-card/75 dark:bg-slate-900/80 backdrop-blur-2xl sticky top-11 sm:top-12 h-[calc(100vh-2.75rem)] sm:h-[calc(100vh-3rem)] flex flex-col justify-between overflow-y-auto p-5 transition-all duration-300 z-20">
                         <div className="space-y-4">
                             {/* Sidebar Header */}
                             <div className="flex items-center justify-between border-b border-border/60 pb-3">

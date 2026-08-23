@@ -145,10 +145,11 @@ export function AppSidebarHeader({
                 justify-between
                 gap-3
                 border-b
-                border-border/80
-                bg-background/85
+                border-border/60
+                bg-background/65
+                dark:bg-background/55
                 px-3
-                backdrop-blur-md
+                backdrop-blur-xl
                 transition-[width,height]
                 ease-linear
                 sm:px-5

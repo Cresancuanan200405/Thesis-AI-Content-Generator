@@ -179,10 +179,18 @@ body {
 @layer components {
     .card-elevated {
         position: relative;
-        border: 1px solid transparent;
-        background-image: linear-gradient(var(--card), var(--card)), var(--card-border-gradient);
-        background-origin: border-box;
-        background-clip: padding-box, border-box;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background-color: color-mix(in srgb, var(--card) 85%, transparent);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        box-shadow: var(--card-highlight);
+    }
+
+    .dark .card-elevated {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background-color: color-mix(in srgb, var(--card) 80%, transparent);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
         box-shadow: var(--card-highlight);
     }
 
@@ -192,10 +200,26 @@ body {
 
     .card-elevated-hover:hover {
         transform: translateY(-2px);
-        box-shadow: var(--card-highlight), 0 12px 30px -10px rgba(0, 0, 0, 0.5);
+        box-shadow: var(--card-highlight), 0 16px 36px -10px rgba(0, 0, 0, 0.4);
+    }
+
+    .glass-card {
+        @apply border border-white/25 bg-card/85 shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/80 dark:shadow-black/50;
     }
 
     .glass-panel {
-        @apply border border-border/80 bg-card/80 shadow-[0_20px_80px_rgba(0,0,0,0.4)] backdrop-blur-xl;
+        @apply border border-white/20 bg-card/80 shadow-[0_20px_80px_rgba(0,0,0,0.25)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/75 dark:shadow-[0_20px_80px_rgba(0,0,0,0.6)];
+    }
+
+    .glass-header {
+        @apply border-b border-sidebar-border/60 bg-background/70 backdrop-blur-xl dark:bg-background/60;
+    }
+
+    .glass-sidebar {
+        @apply border-r border-sidebar-border/60 bg-sidebar/85 backdrop-blur-2xl dark:bg-sidebar/75;
+    }
+
+    .glass-input {
+        @apply border border-border/80 bg-background/80 backdrop-blur-md transition-all focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/20 dark:bg-slate-950/60;
     }
 }

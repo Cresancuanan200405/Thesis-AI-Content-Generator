@@ -304,7 +304,7 @@ export default function NotificationsIndex({
                 </div>
 
                 {/* SEARCH & FILTERS BAR */}
-                <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 rounded-2xl border border-white/25 dark:border-white/10 bg-card/85 dark:bg-slate-900/80 p-4 shadow-lg backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
                     {/* TABS */}
                     <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto">
                         {filterTabs.map((tab) => {
@@ -314,10 +314,10 @@ export default function NotificationsIndex({
                                     key={tab.key}
                                     type="button"
                                     onClick={() => handleFilterChange(tab.key)}
-                                    className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-all ${
+                                    className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
                                         isSelected
-                                            ? 'bg-primary text-primary-foreground shadow-sm'
-                                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                            ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20 scale-[1.02]'
+                                            : 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
                                     }`}
                                 >
                                     {tab.label}
@@ -345,13 +345,13 @@ export default function NotificationsIndex({
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search alerts..."
-                            className="h-9 pl-9 pr-8 text-xs"
+                            className="h-9 pl-9 pr-8 text-xs bg-background/80 dark:bg-slate-950/60 backdrop-blur-md rounded-xl"
                         />
                         {search && (
                             <button
                                 type="button"
                                 onClick={handleClearSearch}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                             >
                                 <X className="h-3.5 w-3.5" />
                             </button>
@@ -368,10 +368,10 @@ export default function NotificationsIndex({
                             return (
                                 <Card
                                     key={notification.id}
-                                    className={`group overflow-hidden rounded-2xl border transition-all duration-200 hover:shadow-md ${
+                                    className={`group overflow-hidden rounded-2xl border transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 ${
                                         !notification.is_read
-                                            ? 'border-primary/40 bg-primary/[0.03] shadow-sm'
-                                            : 'border-border/80 bg-card hover:border-border'
+                                            ? 'border-primary/40 bg-primary/10 dark:bg-primary/15 shadow-md backdrop-blur-xl'
+                                            : 'border-white/20 dark:border-white/10 bg-card/80 dark:bg-slate-900/75 backdrop-blur-xl shadow-sm'
                                     }`}
                                 >
                                     <CardContent className="p-4 sm:p-5">
