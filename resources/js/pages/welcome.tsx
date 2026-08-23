@@ -13,6 +13,7 @@ import {
     ImageIcon,
     Layers,
     LayoutGrid,
+    Megaphone,
     Moon,
     Package,
     Plus,
@@ -253,43 +254,55 @@ export default function Welcome() {
         <>
             <Head title="MarketPilot — AI Marketing Automation & Creative Engine" />
 
-            <div className="min-h-screen bg-background text-foreground transition-colors duration-200 selection:bg-primary/20 selection:text-primary">
+            <div className="min-h-screen bg-background text-foreground transition-colors duration-200 selection:bg-primary/20 selection:text-primary relative overflow-x-hidden">
+
+                {/* Ambient Fixed Background Glow Orbs for Landing Page */}
+                <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+                    <div className="absolute -top-40 left-1/4 h-[550px] w-[550px] rounded-full bg-primary/12 blur-[140px] dark:bg-primary/15" />
+                    <div className="absolute top-1/3 -right-32 h-[500px] w-[500px] rounded-full bg-blue-500/10 blur-[130px] dark:bg-blue-500/15" />
+                    <div className="absolute top-2/3 -left-32 h-[450px] w-[450px] rounded-full bg-purple-500/10 blur-[130px] dark:bg-purple-500/15" />
+                </div>
 
                 {/* ==========================================================
-                    TOP STICKY NAVIGATION HEADER
+                    TOP STICKY NAVIGATION HEADER (GLASSMORPHISM)
                 =========================================================== */}
 
-                <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/90 backdrop-blur-md">
+                <header className="sticky top-0 z-50 w-full border-b border-white/20 dark:border-white/10 bg-background/80 dark:bg-slate-950/75 backdrop-blur-2xl shadow-lg shadow-black/5">
                     <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
 
-                        {/* Brand Logo */}
-                        <Link href={home()} className="flex items-center gap-2.5 focus:outline-none">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                        {/* Brand Logo with Glow */}
+                        <Link href={home()} className="group flex items-center gap-3 focus:outline-none">
+                            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/25 transition-transform duration-200 group-hover:scale-105">
                                 <AppLogoIcon className="h-5 w-5 fill-current" />
+                                <div className="absolute inset-0 rounded-xl bg-primary/30 blur-sm -z-10 group-hover:blur-md transition-all" />
                             </div>
-                            <div>
-                                <span className="text-base font-bold tracking-tight text-foreground">MarketPilot</span>
-                                <span className="hidden sm:inline-block ml-2 text-[11px] font-semibold text-primary px-1.5 py-0.5 rounded-md bg-primary/10 border border-primary/20">
+                            <div className="flex items-center gap-2">
+                                <span className="text-base font-extrabold tracking-tight text-foreground">MarketPilot</span>
+                                <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-primary px-2 py-0.5 rounded-full bg-primary/10 border border-primary/25 shadow-2xs">
+                                    <Sparkles className="h-2.5 w-2.5" />
                                     AI Studio
                                 </span>
                             </div>
                         </Link>
 
                         {/* Desktop Navigation Links */}
-                        <nav className="hidden md:flex items-center gap-7 text-xs font-semibold text-muted-foreground">
-                            <a href="#hero-studio" className="transition-colors hover:text-foreground">
-                                Live Studio Demo
+                        <nav className="hidden md:flex items-center gap-1.5 p-1 rounded-full border border-white/20 dark:border-white/10 bg-card/60 dark:bg-slate-900/60 backdrop-blur-md shadow-xs text-xs font-semibold text-muted-foreground">
+                            <a href="#hero-studio" className="px-3.5 py-1.5 rounded-full transition-all hover:text-foreground hover:bg-muted/80">
+                                Live Studio
                             </a>
-                            <a href="#features" className="transition-colors hover:text-foreground">
+                            <a href="#system-flow" className="px-3.5 py-1.5 rounded-full transition-all hover:text-foreground hover:bg-muted/80">
+                                System Workflow
+                            </a>
+                            <a href="#features" className="px-3.5 py-1.5 rounded-full transition-all hover:text-foreground hover:bg-muted/80">
                                 Core Capabilities
                             </a>
-                            <a href="#calendar-engine" className="transition-colors hover:text-foreground">
-                                Philippine Calendar
+                            <a href="#calendar-engine" className="px-3.5 py-1.5 rounded-full transition-all hover:text-foreground hover:bg-muted/80">
+                                PH Calendar
                             </a>
-                            <a href="#pricing" className="transition-colors hover:text-foreground">
+                            <a href="#pricing" className="px-3.5 py-1.5 rounded-full transition-all hover:text-foreground hover:bg-muted/80">
                                 Pricing
                             </a>
-                            <a href="#faq" className="transition-colors hover:text-foreground">
+                            <a href="#faq" className="px-3.5 py-1.5 rounded-full transition-all hover:text-foreground hover:bg-muted/80">
                                 FAQ
                             </a>
                         </nav>
@@ -303,25 +316,25 @@ export default function Welcome() {
                                 size="icon"
                                 onClick={toggleTheme}
                                 aria-label="Toggle theme"
-                                className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground"
+                                className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all cursor-pointer"
                             >
-                                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                                {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}
                             </Button>
 
                             {auth?.user ? (
-                                <Button asChild size="sm" className="rounded-xl shadow-xs text-xs font-semibold px-4 h-9">
+                                <Button asChild size="sm" className="rounded-xl shadow-lg shadow-primary/25 text-xs font-bold px-4 h-9 hover:scale-105 active:scale-95 transition-all">
                                     <Link href={dashboard()}>
-                                        Dashboard
+                                        Dashboard &rarr;
                                     </Link>
                                 </Button>
                             ) : (
                                 <div className="hidden sm:flex items-center gap-2">
-                                    <Button asChild variant="ghost" size="sm" className="rounded-xl text-xs font-semibold px-3 h-9">
+                                    <Button asChild variant="ghost" size="sm" className="rounded-xl text-xs font-semibold px-3.5 h-9 hover:bg-muted/80">
                                         <Link href={login()}>
                                             Log in
                                         </Link>
                                     </Button>
-                                    <Button asChild size="sm" className="rounded-xl shadow-xs text-xs font-semibold px-4 h-9">
+                                    <Button asChild size="sm" className="rounded-xl shadow-lg shadow-primary/25 text-xs font-bold px-4 h-9 hover:scale-105 active:scale-95 transition-all">
                                         <Link href={register()}>
                                             Get Started Free
                                         </Link>
@@ -345,40 +358,47 @@ export default function Welcome() {
 
                     {/* Mobile Navigation Drawer */}
                     {mobileMenuOpen && (
-                        <div className="border-t border-border bg-card px-4 py-5 md:hidden space-y-4 animate-in slide-in-from-top-2 duration-150">
-                            <nav className="flex flex-col space-y-3 text-sm font-semibold">
+                        <div className="border-t border-border/80 bg-card/95 backdrop-blur-2xl px-4 py-5 md:hidden space-y-4 animate-in slide-in-from-top-2 duration-150">
+                            <nav className="flex flex-col space-y-2 text-sm font-semibold">
                                 <a
                                     href="#hero-studio"
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="px-2 py-1.5 text-muted-foreground hover:text-foreground"
+                                    className="px-3 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"
                                 >
                                     Live Studio Demo
                                 </a>
                                 <a
+                                    href="#system-flow"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="px-3 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"
+                                >
+                                    System Workflow
+                                </a>
+                                <a
                                     href="#features"
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="px-2 py-1.5 text-muted-foreground hover:text-foreground"
+                                    className="px-3 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"
                                 >
                                     Core Capabilities
                                 </a>
                                 <a
                                     href="#calendar-engine"
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="px-2 py-1.5 text-muted-foreground hover:text-foreground"
+                                    className="px-3 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"
                                 >
                                     Philippine Calendar
                                 </a>
                                 <a
                                     href="#pricing"
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="px-2 py-1.5 text-muted-foreground hover:text-foreground"
+                                    className="px-3 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"
                                 >
                                     Pricing
                                 </a>
                                 <a
                                     href="#faq"
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="px-2 py-1.5 text-muted-foreground hover:text-foreground"
+                                    className="px-3 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"
                                 >
                                     FAQ
                                 </a>
@@ -394,7 +414,7 @@ export default function Welcome() {
                                         <Button asChild variant="outline" className="rounded-xl w-full text-xs font-semibold">
                                             <Link href={login()}>Log in</Link>
                                         </Button>
-                                        <Button asChild className="rounded-xl w-full text-xs font-semibold">
+                                        <Button asChild className="rounded-xl w-full text-xs font-semibold shadow-lg shadow-primary/25">
                                             <Link href={register()}>Get Started Free</Link>
                                         </Button>
                                     </>
@@ -406,69 +426,71 @@ export default function Welcome() {
 
                 <main>
                     {/* ==========================================================
-                        REDESIGNED HERO SECTION WITH INTERACTIVE STUDIO SANDBOX
+                        REDESIGNED HERO SECTION WITH SYSTEM-CONNECTED WORKFLOW
                     =========================================================== */}
 
-                    <section id="hero-studio" className="relative border-b border-border/70 bg-card/40 py-12 md:py-20 lg:py-24 overflow-hidden">
-                        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                            <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
+                    <section id="hero-studio" className="relative pt-8 pb-16 md:pt-14 md:pb-24 lg:pt-16 lg:pb-28 overflow-hidden">
+                        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-12">
 
-                                {/* Left Column: Value Proposition & CTAs */}
-                                <div className="space-y-6 lg:col-span-6">
-                                    <div className="inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary">
+                            {/* Top Hero Grid (Left Value Prop + Right Interactive AI Sandbox) */}
+                            <div className="grid gap-8 lg:grid-cols-12 lg:items-center">
+
+                                {/* Left Column: Clear Value Proposition, System Overview & CTAs */}
+                                <div className="space-y-6 lg:col-span-6 xl:col-span-5">
+                                    <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1 text-xs font-bold text-primary backdrop-blur-md shadow-xs">
                                         <Sparkles className="h-3.5 w-3.5" />
                                         Retail Marketing Engine & Philippine Holiday Intelligence
                                     </div>
 
-                                    <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl text-foreground leading-[1.15]">
+                                    <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl text-foreground leading-[1.12]">
                                         Automate seasonal retail visuals and marketing campaigns in seconds.
                                     </h1>
 
                                     <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
-                                        Connect your product catalog with official Philippine national holidays, retail payday cycles, and custom brand guidelines to generate high-converting promotional graphics with one click.
+                                        Connect your product catalog directly with official Philippine national holidays, retail payday cycles, and custom brand guidelines to generate high-converting promotional graphics with one click.
                                     </p>
 
-                                    {/* Action Buttons (No Pill shapes, No arrows) */}
-                                    <div className="flex flex-wrap items-center gap-3 pt-2">
-                                        <Button asChild size="lg" className="rounded-xl shadow-sm text-xs font-bold px-6 h-11 gap-2">
+                                    {/* Action Buttons */}
+                                    <div className="flex flex-wrap items-center gap-3 pt-1">
+                                        <Button asChild size="lg" className="rounded-xl shadow-lg shadow-primary/25 text-xs font-bold px-6 h-11 gap-2 hover:scale-105 active:scale-95 transition-all">
                                             <Link href={register()}>
                                                 <Sparkles className="h-4 w-4" />
                                                 Start Creating Free
                                             </Link>
                                         </Button>
 
-                                        <Button asChild variant="outline" size="lg" className="rounded-xl shadow-none text-xs font-semibold px-5 h-11 gap-2">
-                                            <a href="#calendar-engine">
-                                                <Calendar className="h-4 w-4 text-primary" />
-                                                Explore PH Calendar
+                                        <Button asChild variant="outline" size="lg" className="rounded-xl shadow-xs text-xs font-semibold px-5 h-11 gap-2 hover:border-primary/40 hover:scale-105 active:scale-95 transition-all">
+                                            <a href="#system-flow">
+                                                <Layers className="h-4 w-4 text-primary" />
+                                                How the System Works
                                             </a>
                                         </Button>
                                     </div>
 
-                                    {/* Trust & Guarantee Checks */}
+                                    {/* System Pillars Badges */}
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-border/60 text-xs text-muted-foreground font-medium">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 p-2 rounded-xl bg-card/60 border border-border/50">
                                             <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                                            <span>Official PH Holiday Data</span>
+                                            <span className="font-semibold text-foreground text-[11px]">Official PH Holidays</span>
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 p-2 rounded-xl bg-card/60 border border-border/50">
                                             <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                                            <span>PNG, JPEG & SVG Output</span>
+                                            <span className="font-semibold text-foreground text-[11px]">PNG, JPEG & SVG</span>
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 p-2 rounded-xl bg-card/60 border border-border/50">
                                             <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                                            <span>Zero Design Skills Needed</span>
+                                            <span className="font-semibold text-foreground text-[11px]">Instant Campaign Link</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Right Column: Interactive Live AI Studio Sandbox */}
-                                <div className="lg:col-span-6">
-                                    <div className="rounded-2xl border border-border bg-card shadow-lg overflow-hidden">
+                                {/* Right Column: Interactive Live AI Studio Sandbox (Glassmorphic) */}
+                                <div className="lg:col-span-6 xl:col-span-7">
+                                    <div className="rounded-3xl border border-white/25 dark:border-white/10 bg-card/85 dark:bg-slate-900/80 backdrop-blur-2xl shadow-2xl overflow-hidden transition-all duration-300">
 
                                         {/* Sandbox Top Window Bar */}
-                                        <div className="flex items-center justify-between border-b border-border bg-muted/40 px-4 py-3">
-                                            <div className="flex items-center gap-2">
+                                        <div className="flex items-center justify-between border-b border-border/80 bg-muted/40 px-5 py-3.5">
+                                            <div className="flex items-center gap-2.5">
                                                 <span className="h-3 w-3 rounded-full bg-rose-500/80" />
                                                 <span className="h-3 w-3 rounded-full bg-amber-500/80" />
                                                 <span className="h-3 w-3 rounded-full bg-emerald-500/80" />
@@ -479,25 +501,25 @@ export default function Welcome() {
                                             </div>
 
                                             {/* Preview mode tabs */}
-                                            <div className="flex items-center rounded-lg border border-border bg-card p-0.5 text-[11px] font-semibold">
+                                            <div className="flex items-center rounded-xl border border-border/70 bg-card p-0.5 text-[11px] font-semibold shadow-xs">
                                                 <button
                                                     type="button"
                                                     onClick={() => setActiveTab('preview')}
-                                                    className={`px-2.5 py-1 rounded-md transition-all ${activeTab === 'preview' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
+                                                    className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${activeTab === 'preview' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
                                                 >
                                                     Visual
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => setActiveTab('prompt')}
-                                                    className={`px-2.5 py-1 rounded-md transition-all ${activeTab === 'prompt' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
+                                                    className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${activeTab === 'prompt' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
                                                 >
                                                     Prompt Logic
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => setActiveTab('export')}
-                                                    className={`px-2.5 py-1 rounded-md transition-all ${activeTab === 'export' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
+                                                    className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${activeTab === 'export' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
                                                 >
                                                     Export
                                                 </button>
@@ -505,13 +527,13 @@ export default function Welcome() {
                                         </div>
 
                                         {/* Sandbox Controls Toolbar */}
-                                        <div className="p-4 border-b border-border/80 bg-card space-y-3">
+                                        <div className="p-4 sm:p-5 border-b border-border/80 bg-card/60 space-y-3.5">
                                             {/* 1. Pick Product */}
                                             <div>
                                                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">
                                                     1. Select Catalog Offering
                                                 </label>
-                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                                     {sampleProducts.map((prod) => (
                                                         <button
                                                             key={prod.id}
@@ -520,10 +542,10 @@ export default function Welcome() {
                                                                 setSelectedProduct(prod);
                                                                 handleSimulateGenerate();
                                                             }}
-                                                            className={`text-left p-2 rounded-xl border text-xs transition-all ${selectedProduct.id === prod.id ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs' : 'border-border/80 bg-muted/20 text-muted-foreground hover:border-primary/40'}`}
+                                                            className={`text-left p-2.5 rounded-xl border text-xs transition-all cursor-pointer ${selectedProduct.id === prod.id ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs scale-[1.02]' : 'border-border/80 bg-muted/20 text-muted-foreground hover:border-primary/40'}`}
                                                         >
-                                                            <p className="truncate font-semibold text-foreground">{prod.name.split(' ')[0]}</p>
-                                                            <p className="text-[10px] text-muted-foreground">{prod.price}</p>
+                                                            <p className="truncate font-bold text-foreground">{prod.name.split(' ')[0]}</p>
+                                                            <p className="text-[10px] text-muted-foreground mt-0.5">{prod.price}</p>
                                                         </button>
                                                     ))}
                                                 </div>
@@ -534,7 +556,7 @@ export default function Welcome() {
                                                 <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">
                                                     2. Philippine Event / Campaign Target
                                                 </label>
-                                                <div className="grid grid-cols-2 gap-1.5">
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                                     {sampleEvents.map((evt) => (
                                                         <button
                                                             key={evt.id}
@@ -543,13 +565,13 @@ export default function Welcome() {
                                                                 setSelectedEvent(evt);
                                                                 handleSimulateGenerate();
                                                             }}
-                                                            className={`text-left p-2 rounded-xl border text-xs transition-all flex items-center justify-between ${selectedEvent.id === evt.id ? 'border-primary bg-primary/10 text-foreground font-bold shadow-xs' : 'border-border/80 bg-muted/20 text-muted-foreground hover:border-primary/40'}`}
+                                                            className={`text-left p-2.5 rounded-xl border text-xs transition-all flex items-center justify-between cursor-pointer ${selectedEvent.id === evt.id ? 'border-primary bg-primary/10 text-foreground font-bold shadow-xs scale-[1.02]' : 'border-border/80 bg-muted/20 text-muted-foreground hover:border-primary/40'}`}
                                                         >
-                                                            <div className="min-w-0">
-                                                                <p className="truncate font-semibold">{evt.name}</p>
+                                                            <div className="min-w-0 pr-1">
+                                                                <p className="truncate font-bold">{evt.name}</p>
                                                                 <p className="text-[10px] text-muted-foreground">{evt.date}</p>
                                                             </div>
-                                                            <Badge variant="outline" className="text-[9px] font-bold shrink-0 ml-1">
+                                                            <Badge variant="outline" className="text-[9px] font-bold shrink-0">
                                                                 {evt.badgeLabel.split(' ')[0]}
                                                             </Badge>
                                                         </button>
@@ -558,15 +580,15 @@ export default function Welcome() {
                                             </div>
 
                                             {/* 3. Settings: Aspect Ratio & Logo Switch */}
-                                            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/50 text-xs">
-                                                <div className="flex items-center gap-1.5">
+                                            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/50 text-xs">
+                                                <div className="flex items-center gap-2">
                                                     <span className="text-[11px] font-semibold text-muted-foreground">Ratio:</span>
                                                     {(['1:1', '4:5', '16:9'] as const).map((ratio) => (
                                                         <button
                                                             key={ratio}
                                                             type="button"
                                                             onClick={() => setAspectRatio(ratio)}
-                                                            className={`px-2 py-0.5 rounded-lg border text-[11px] font-semibold transition-all ${aspectRatio === ratio ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-muted/30 text-muted-foreground'}`}
+                                                            className={`px-2.5 py-0.5 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${aspectRatio === ratio ? 'border-primary bg-primary text-primary-foreground shadow-2xs' : 'border-border bg-muted/30 text-muted-foreground hover:text-foreground'}`}
                                                         >
                                                             {ratio}
                                                         </button>
@@ -586,23 +608,23 @@ export default function Welcome() {
                                         </div>
 
                                         {/* Sandbox Interactive Display Body */}
-                                        <div className="p-4 bg-muted/20">
+                                        <div className="p-4 sm:p-5 bg-muted/10">
                                             {activeTab === 'preview' && (
-                                                <div className="relative rounded-2xl border border-border overflow-hidden bg-card shadow-inner p-5 transition-all">
+                                                <div className="relative rounded-2xl border border-white/20 dark:border-white/10 overflow-hidden bg-card/80 shadow-lg p-5 transition-all">
                                                     {/* Simulated AI Render Canvas */}
-                                                    <div className={`relative w-full rounded-xl bg-gradient-to-br ${selectedProduct.gradient} p-6 text-white min-h-[220px] flex flex-col justify-between overflow-hidden shadow-md transition-all duration-300 ${isGenerating ? 'opacity-50 scale-[0.99]' : 'opacity-100 scale-100'}`}>
+                                                    <div className={`relative w-full rounded-2xl bg-gradient-to-br ${selectedProduct.gradient} p-6 text-white min-h-[240px] flex flex-col justify-between overflow-hidden shadow-xl transition-all duration-300 ${isGenerating ? 'opacity-50 scale-[0.99]' : 'opacity-100 scale-100'}`}>
 
                                                         {/* Atmospheric Pattern */}
                                                         <div className={`absolute inset-0 pointer-events-none ${selectedProduct.bgPattern}`} />
 
                                                         {/* Top Event & Logo Bar */}
                                                         <div className="relative z-10 flex items-start justify-between gap-2">
-                                                            <Badge className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-md border-white/20 text-[10px] font-bold">
+                                                            <Badge className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-md border-white/20 text-[10px] font-bold shadow-xs">
                                                                 {selectedEvent.name}
                                                             </Badge>
 
                                                             {includeLogo && (
-                                                                <div className="flex items-center gap-1.5 rounded-lg bg-black/40 backdrop-blur-md px-2.5 py-1 border border-white/10 text-[10px] font-bold text-white">
+                                                                <div className="flex items-center gap-1.5 rounded-lg bg-black/40 backdrop-blur-md px-2.5 py-1 border border-white/10 text-[10px] font-bold text-white shadow-xs">
                                                                     <AppLogoIcon className="h-3.5 w-3.5 fill-white" />
                                                                     <span>YOUR BRAND</span>
                                                                 </div>
@@ -629,63 +651,63 @@ export default function Welcome() {
                                                                 <span className="text-[10px] text-white/60 line-through">₱{(parseInt(selectedProduct.price.replace(/\D/g, '')) * 1.3).toFixed(0)}</span>
                                                             </div>
 
-                                                            <span className="rounded-lg bg-primary px-3 py-1 text-[11px] font-extrabold text-primary-foreground shadow-sm">
+                                                            <span className="rounded-xl bg-primary px-3.5 py-1 text-[11px] font-extrabold text-primary-foreground shadow-md shadow-primary/30">
                                                                 Order Now
                                                             </span>
                                                         </div>
                                                     </div>
 
                                                     {/* Quick Actions Under Canvas */}
-                                                    <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                                                    <div className="mt-3.5 flex items-center justify-between text-xs text-muted-foreground">
                                                         <span className="font-semibold text-foreground text-[11px]">
-                                                            Tone: <span className="text-primary">{selectedProduct.tone}</span>
+                                                            Tone: <span className="text-primary font-bold">{selectedProduct.tone}</span>
                                                         </span>
                                                         <div className="flex items-center gap-1.5">
-                                                            <Badge variant="outline" className="text-[10px]">PNG</Badge>
-                                                            <Badge variant="outline" className="text-[10px]">JPEG</Badge>
-                                                            <Badge variant="outline" className="text-[10px]">SVG</Badge>
+                                                            <Badge variant="outline" className="text-[10px] font-mono">PNG</Badge>
+                                                            <Badge variant="outline" className="text-[10px] font-mono">JPEG</Badge>
+                                                            <Badge variant="outline" className="text-[10px] font-mono">SVG</Badge>
                                                         </div>
                                                     </div>
                                                 </div>
                                             )}
 
                                             {activeTab === 'prompt' && (
-                                                <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+                                                <div className="rounded-2xl border border-white/20 dark:border-white/10 bg-card/80 p-5 space-y-3.5 shadow-lg">
                                                     <div>
-                                                        <p className="text-xs font-bold text-foreground">Generated Prompt Directive:</p>
-                                                        <p className="text-xs font-mono text-muted-foreground mt-1 bg-muted/40 p-3 rounded-xl border border-border/80 leading-relaxed">
+                                                        <p className="text-xs font-bold text-foreground">Generated Gemini Prompt Directive:</p>
+                                                        <p className="text-xs font-mono text-muted-foreground mt-1.5 bg-muted/50 p-3.5 rounded-xl border border-border/80 leading-relaxed">
                                                             {generatedPrompt}
                                                         </p>
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-2 text-xs">
-                                                        <div className="p-2.5 rounded-xl border border-border bg-muted/20">
-                                                            <span className="font-semibold text-foreground">Holiday Season Hook:</span>
-                                                            <p className="text-muted-foreground text-[11px] mt-0.5">{selectedEvent.seasonHook}</p>
+                                                    <div className="grid grid-cols-2 gap-3 text-xs">
+                                                        <div className="p-3 rounded-xl border border-border/60 bg-muted/20">
+                                                            <span className="font-bold text-foreground">Holiday Season Hook:</span>
+                                                            <p className="text-muted-foreground text-[11px] mt-1">{selectedEvent.seasonHook}</p>
                                                         </div>
-                                                        <div className="p-2.5 rounded-xl border border-border bg-muted/20">
-                                                            <span className="font-semibold text-foreground">Output Format Constraint:</span>
-                                                            <p className="text-muted-foreground text-[11px] mt-0.5">{aspectRatio} High-Resolution Export with Auto-Contrast</p>
+                                                        <div className="p-3 rounded-xl border border-border/60 bg-muted/20">
+                                                            <span className="font-bold text-foreground">Output Format Constraint:</span>
+                                                            <p className="text-muted-foreground text-[11px] mt-1">{aspectRatio} High-Resolution Export with Auto-Contrast</p>
                                                         </div>
                                                     </div>
                                                 </div>
                                             )}
 
                                             {activeTab === 'export' && (
-                                                <div className="rounded-2xl border border-border bg-card p-5 space-y-4 text-center">
+                                                <div className="rounded-2xl border border-white/20 dark:border-white/10 bg-card/80 p-6 space-y-4 text-center shadow-lg">
                                                     <h4 className="text-sm font-bold text-foreground">Multi-Format Commercial Export</h4>
                                                     <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                                                         Export ready-to-publish assets optimized for Facebook, Instagram, TikTok, Shopee, Lazada, and physical POS collateral.
                                                     </p>
-                                                    <div className="grid grid-cols-3 gap-2">
-                                                        <div className="rounded-xl border border-border bg-muted/30 p-3 text-center">
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        <div className="rounded-2xl border border-border/60 bg-muted/30 p-3.5 text-center">
                                                             <p className="text-xs font-bold text-primary">PNG Format</p>
                                                             <p className="text-[10px] text-muted-foreground mt-0.5">Lossless Transparent</p>
                                                         </div>
-                                                        <div className="rounded-xl border border-border bg-muted/30 p-3 text-center">
+                                                        <div className="rounded-xl border border-border/60 bg-muted/30 p-3.5 text-center">
                                                             <p className="text-xs font-bold text-blue-500">JPEG Format</p>
                                                             <p className="text-[10px] text-muted-foreground mt-0.5">Fast Social Media Web</p>
                                                         </div>
-                                                        <div className="rounded-xl border border-border bg-muted/30 p-3 text-center">
+                                                        <div className="rounded-xl border border-border/60 bg-muted/30 p-3.5 text-center">
                                                             <p className="text-xs font-bold text-emerald-500">SVG Format</p>
                                                             <p className="text-[10px] text-muted-foreground mt-0.5">Vector Scale Clean</p>
                                                         </div>
@@ -696,6 +718,97 @@ export default function Welcome() {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* ==========================================================
+                                INTERCONNECTED SYSTEM ARCHITECTURE FLOW
+                            =========================================================== */}
+                            <div id="system-flow" className="pt-8 border-t border-border/60">
+                                <div className="text-center max-w-2xl mx-auto space-y-2 mb-8">
+                                    <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-0.5 text-xs font-bold text-primary">
+                                        <Layers className="h-3.5 w-3.5" />
+                                        End-to-End System Engine
+                                    </div>
+                                    <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
+                                        How All System Capabilities Connect
+                                    </h2>
+                                    <p className="text-xs sm:text-sm text-muted-foreground">
+                                        From raw catalog inventory to calendar-synchronized campaign launches.
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    {[
+                                        {
+                                            step: '01',
+                                            title: 'Product Catalog',
+                                            desc: 'Manage your retail products, custom descriptions, pricing, and product imagery.',
+                                            icon: Package,
+                                            color: 'text-purple-500',
+                                            bg: 'bg-purple-500/10',
+                                            route: '/products',
+                                        },
+                                        {
+                                            step: '02',
+                                            title: 'Philippine Calendar',
+                                            desc: 'Official Proclamation regular holidays, special dates, and 15/30 payday retail cycles.',
+                                            icon: CalendarDays,
+                                            color: 'text-amber-500',
+                                            bg: 'bg-amber-500/10',
+                                            route: '/calendar',
+                                        },
+                                        {
+                                            step: '03',
+                                            title: 'Gemini AI Studio',
+                                            desc: 'Synthesize tailored promotional creatives with customizable vibes, styles, and dimensions.',
+                                            icon: Sparkles,
+                                            color: 'text-primary',
+                                            bg: 'bg-primary/10',
+                                            route: '/generator',
+                                        },
+                                        {
+                                            step: '04',
+                                            title: 'Campaign Pipeline',
+                                            desc: 'Organize generated visuals into scheduled marketing campaigns and multi-channel exports.',
+                                            icon: Megaphone,
+                                            color: 'text-emerald-500',
+                                            bg: 'bg-emerald-500/10',
+                                            route: '/campaigns',
+                                        },
+                                    ].map((item) => {
+                                        const Icon = item.icon;
+                                        return (
+                                            <div
+                                                key={item.step}
+                                                className="group relative flex flex-col justify-between rounded-3xl border border-white/25 dark:border-white/10 bg-card/85 dark:bg-slate-900/80 p-5 shadow-lg backdrop-blur-2xl transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl"
+                                            >
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <span className="text-[11px] font-mono font-extrabold text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md">
+                                                            {item.step}
+                                                        </span>
+                                                        <div className={`flex h-8 w-8 items-center justify-center rounded-xl ${item.bg} ${item.color} shadow-xs`}>
+                                                            <Icon className="h-4 w-4" />
+                                                        </div>
+                                                    </div>
+
+                                                    <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
+                                                        {item.title}
+                                                    </h3>
+                                                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                                        {item.desc}
+                                                    </p>
+                                                </div>
+
+                                                <div className="pt-3 mt-3 border-t border-border/50 flex items-center justify-between text-[11px]">
+                                                    <span className="font-semibold text-primary">Connected Feature</span>
+                                                    <span className="text-muted-foreground group-hover:translate-x-1 transition-transform">&rarr;</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
                         </div>
                     </section>
 

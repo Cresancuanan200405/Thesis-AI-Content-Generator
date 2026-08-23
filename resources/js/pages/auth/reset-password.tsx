@@ -87,7 +87,7 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
 
                         <Button
                             type="submit"
-                            className="group mt-2 h-11 w-full rounded-xl bg-[#2563EB] font-semibold text-white shadow-[0_15px_35px_-12px_rgba(37,99,235,0.6)] transition-all duration-300 hover:scale-[1.01] hover:bg-[#1D4ED8] hover:shadow-[0_20px_45px_-12px_rgba(37,99,235,0.7)] disabled:opacity-70 disabled:hover:scale-100"
+                            className="group mt-2 h-11 w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:scale-[1.01] hover:bg-primary/90 hover:shadow-primary/35 active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100 cursor-pointer"
                             disabled={processing}
                             data-test="reset-password-button"
                         >

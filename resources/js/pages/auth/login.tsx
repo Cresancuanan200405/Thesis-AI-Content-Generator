@@ -85,7 +85,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
-                                            className="ml-auto text-[11px] font-medium text-[#2563EB] transition-colors duration-300 hover:text-[#1D4ED8] dark:text-[#60A5FA] dark:hover:text-[#93C5FD]"
+                                            className="ml-auto text-[11px] font-semibold text-primary transition-colors duration-300 hover:text-primary/80"
                                             tabIndex={5}
                                         >
                                             Forgot password?
@@ -103,10 +103,10 @@ export default function Login({ status, canResetPassword }: Props) {
                                     id="remember"
                                     name="remember"
                                     tabIndex={3}
-                                    className="rounded-md border-border transition-colors duration-300 focus-visible:ring-[#2563EB]/40 data-[state=checked]:border-[#2563EB] data-[state=checked]:bg-[#2563EB] data-[state=checked]:text-white"
+                                    className="rounded-md border-border transition-colors duration-300 focus-visible:ring-primary/40 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                                 />
 
-                                <span className="cursor-pointer text-xs text-muted-foreground">
+                                <span className="cursor-pointer text-xs text-muted-foreground font-medium">
                                     Remember me
                                 </span>
                             </label>
@@ -117,7 +117,7 @@ export default function Login({ status, canResetPassword }: Props) {
                             {/* Login Button */}
                             <Button
                                 type="submit"
-                                className="group mt-1 h-10 w-full rounded-xl bg-[#2563EB] text-xs font-semibold text-white shadow-[0_12px_28px_-10px_rgba(37,99,235,0.6)] transition-all duration-300 hover:scale-[1.01] hover:bg-[#1D4ED8] hover:shadow-[0_16px_36px_-10px_rgba(37,99,235,0.7)] disabled:opacity-70 disabled:hover:scale-100"
+                                className="group mt-1.5 h-10 w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:scale-[1.01] hover:bg-primary/90 hover:shadow-primary/35 active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100 cursor-pointer"
                                 tabIndex={4}
                                 disabled={processing}
                                 data-test="login-button"
@@ -134,14 +134,14 @@ export default function Login({ status, canResetPassword }: Props) {
                         </div>
 
                         {/* Sign Up */}
-                        <div className="text-center text-xs text-muted-foreground">
+                        <div className="text-center text-xs text-muted-foreground pt-1">
                             Don't have an account?{' '}
                             <TextLink
                                 href={register()}
                                 tabIndex={6}
-                                className="font-semibold text-[#2563EB] transition-colors duration-300 hover:text-[#1D4ED8] dark:text-[#60A5FA] dark:hover:text-[#93C5FD]"
+                                className="font-bold text-primary transition-colors duration-300 hover:text-primary/80"
                             >
-                                Sign up
+                                Sign up &rarr;
                             </TextLink>
                         </div>
                     </>

@@ -157,10 +157,10 @@ export default function VerifyEmail({
 
                             <Button
                                 disabled={processing}
-                                className="h-10 w-full rounded-xl bg-[#2563EB] text-xs font-semibold text-white shadow-sm hover:bg-[#1D4ED8]"
+                                className="h-10 w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:scale-[1.01] hover:bg-primary/90 hover:shadow-primary/35 active:scale-[0.98] cursor-pointer"
                             >
                                 {processing && <Spinner />}
-                                Verify email
+                                Verify email &rarr;
                             </Button>
                         </>
                     )}

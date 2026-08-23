@@ -65,7 +65,7 @@ export default function ForgotPassword({
 
                             <Button
                                 type="submit"
-                                className="group h-10 w-full rounded-xl bg-[#2563EB] text-xs font-semibold text-white shadow-[0_12px_28px_-10px_rgba(37,99,235,0.6)] transition-all duration-300 hover:scale-[1.01] hover:bg-[#1D4ED8] hover:shadow-[0_16px_36px_-10px_rgba(37,99,235,0.7)] disabled:opacity-70"
+                                className="group h-10 w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:scale-[1.01] hover:bg-primary/90 hover:shadow-primary/35 active:scale-[0.98] disabled:opacity-70 cursor-pointer"
                                 disabled={processing}
                                 data-test="email-password-reset-link-button"
                             >
@@ -82,13 +82,13 @@ export default function ForgotPassword({
                     )}
                 </Form>
 
-                <div className="text-center text-xs text-muted-foreground">
+                <div className="text-center text-xs text-muted-foreground pt-1">
                     Remember your password?{' '}
                     <TextLink
                         href={login()}
-                        className="font-semibold text-[#2563EB] transition-colors duration-300 hover:text-[#1D4ED8] dark:text-[#60A5FA] dark:hover:text-[#93C5FD]"
+                        className="font-bold text-primary transition-colors duration-300 hover:text-primary/80"
                     >
-                        Log in
+                        Log in &rarr;
                     </TextLink>
                 </div>
             </div>

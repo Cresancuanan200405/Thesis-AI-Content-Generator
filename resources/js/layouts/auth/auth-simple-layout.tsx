@@ -1,6 +1,19 @@
 import { Link } from '@inertiajs/react';
-import { CalendarDays, CheckCircle2, Sparkles, Zap } from 'lucide-react';
+import {
+    CalendarDays,
+    CheckCircle2,
+    Layers,
+    Megaphone,
+    Moon,
+    Package,
+    Sparkles,
+    Sun,
+    Zap,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
 
@@ -9,170 +22,201 @@ export default function AuthSimpleLayout({
     title,
     description,
 }: AuthLayoutProps) {
-    return (
-        <div className="relative flex min-h-screen h-screen items-center justify-center bg-background p-2 sm:p-4 lg:p-6 text-foreground overflow-hidden">
-            {/* Ambient Background Glow */}
-            <div
-                aria-hidden
-                className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.12),transparent_60%)]"
-            />
+    const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
-            <div className="card-elevated mx-auto grid w-full max-w-5xl max-h-[94vh] overflow-hidden rounded-3xl bg-card shadow-2xl lg:grid-cols-[0.85fr_1.15fr] border border-border/60">
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const saved = window.localStorage.getItem('theme');
+            const isDark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            setTheme(isDark ? 'dark' : 'light');
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+    }, []);
+
+    const toggleTheme = () => {
+        const next = theme === 'dark' ? 'light' : 'dark';
+        setTheme(next);
+        if (typeof window !== 'undefined') {
+            window.localStorage.setItem('theme', next);
+            if (next === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+    };
+
+    return (
+        <div className="relative flex min-h-screen items-center justify-center bg-background p-3 sm:p-5 lg:p-8 text-foreground overflow-hidden selection:bg-primary/20 selection:text-primary">
+            {/* Ambient Fixed Background Glow Orbs */}
+            <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+                <div className="absolute -top-32 left-1/4 h-[500px] w-[500px] rounded-full bg-primary/15 blur-[140px] dark:bg-primary/20" />
+                <div className="absolute top-1/3 -right-32 h-[450px] w-[450px] rounded-full bg-blue-500/12 blur-[130px] dark:bg-blue-500/15" />
+                <div className="absolute -bottom-32 -left-32 h-[450px] w-[450px] rounded-full bg-purple-500/12 blur-[130px] dark:bg-purple-500/15" />
+            </div>
+
+            <div className="mx-auto grid w-full max-w-5xl overflow-hidden rounded-3xl border border-white/25 dark:border-white/10 bg-card/85 dark:bg-slate-900/80 backdrop-blur-2xl shadow-2xl lg:grid-cols-[0.95fr_1.05fr]">
 
                 {/* ============================================================
-                    LEFT PANEL — Hero-matched cinematic dark design panel
+                    LEFT PANEL — Hero-matched Glassmorphic Overview Panel
                 ============================================================= */}
                 <div
-                    className="relative hidden flex-col justify-between overflow-hidden border-r border-border/70 p-6 lg:flex"
+                    className="relative hidden flex-col justify-between overflow-hidden border-r border-white/15 dark:border-white/10 p-7 lg:flex"
                     style={{
-                        background: 'linear-gradient(135deg, #0a0f1e 0%, #0d1829 40%, #101828 100%)',
+                        background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 15, 30, 0.98) 60%, rgba(2, 6, 23, 1) 100%)',
                     }}
                 >
-                    {/* Layered Background Effects */}
+                    {/* Inner Ambient Glows */}
                     <div aria-hidden className="pointer-events-none absolute inset-0">
                         <div
-                            className="absolute -top-32 -left-32 h-80 w-80 rounded-full opacity-30"
-                            style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.55) 0%, transparent 70%)' }}
+                            className="absolute -top-24 -left-24 h-72 w-72 rounded-full opacity-35"
+                            style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.6) 0%, transparent 70%)' }}
                         />
                         <div
-                            className="absolute top-1/2 -right-24 h-72 w-72 rounded-full opacity-20"
-                            style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.5) 0%, transparent 70%)' }}
+                            className="absolute bottom-1/4 -right-20 h-64 w-64 rounded-full opacity-25"
+                            style={{ background: 'radial-gradient(circle, rgba(147,51,234,0.5) 0%, transparent 70%)' }}
                         />
                         <div
-                            className="absolute inset-0 opacity-[0.04]"
+                            className="absolute inset-0 opacity-[0.03]"
                             style={{
                                 backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
-                                backgroundSize: '36px 36px',
+                                backgroundSize: '32px 32px',
                             }}
                         />
                     </div>
 
-                    {/* Floating Particle Dots */}
-                    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-                        {[
-                            { top: '15%', left: '20%', size: 3, opacity: 0.6, delay: '0s' },
-                            { top: '30%', left: '75%', size: 2, opacity: 0.4, delay: '0.8s' },
-                            { top: '55%', left: '12%', size: 3, opacity: 0.5, delay: '1.4s' },
-                            { top: '75%', left: '60%', size: 2, opacity: 0.35, delay: '0.4s' },
-                        ].map((dot, i) => (
-                            <div
-                                key={i}
-                                className="absolute rounded-full bg-blue-400 animate-pulse"
-                                style={{
-                                    top: dot.top,
-                                    left: dot.left,
-                                    width: dot.size,
-                                    height: dot.size,
-                                    opacity: dot.opacity,
-                                    animationDelay: dot.delay,
-                                    animationDuration: '3s',
-                                }}
-                            />
-                        ))}
+                    {/* Top: Logo with Hero Studio Badge */}
+                    <div className="relative z-10 flex items-center justify-between">
+                        <Link href={home()} className="group flex items-center gap-2.5">
+                            <div className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/30 transition-transform duration-200 group-hover:scale-105">
+                                <AppLogoIcon className="h-4 w-4 fill-current" />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-extrabold tracking-tight text-white">
+                                    MarketPilot
+                                </span>
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-300 px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-400/30">
+                                    <Sparkles className="h-2.5 w-2.5 text-blue-400" />
+                                    AI Studio
+                                </span>
+                            </div>
+                        </Link>
                     </div>
 
-                    {/* Top: Logo */}
-                    <div className="relative z-10 flex items-center gap-2.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white shadow-sm backdrop-blur-sm">
-                            <AppLogoIcon className="h-4 w-4 fill-current text-white" />
-                        </div>
-                        <div>
-                            <span className="block text-xs font-bold tracking-[0.2em] text-white uppercase">
-                                MarketPilot
-                            </span>
-                            <span className="block text-[9px] font-semibold tracking-wider text-blue-400 uppercase">
-                                AI Studio
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Middle: Hero Copy */}
-                    <div className="relative z-10 space-y-3.5 my-auto py-2">
-                        <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-[11px] font-bold tracking-wider text-blue-300 uppercase backdrop-blur-sm">
-                            <Sparkles className="h-3 w-3" />
-                            AI Marketing OS
+                    {/* Middle: Hero Typography & System Pillars */}
+                    <div className="relative z-10 space-y-4 my-auto py-4">
+                        <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-[10px] font-bold tracking-wider text-blue-300 uppercase backdrop-blur-md">
+                            <Sparkles className="h-3 w-3 text-blue-400" />
+                            Retail Intelligence Engine
                         </div>
 
-                        <h1 className="max-w-xs text-2xl font-extrabold tracking-tight text-white leading-[1.18]">
-                            Automate seasonal visuals{' '}
-                            <span className="bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent">
+                        <h1 className="text-2xl font-extrabold tracking-tight text-white leading-snug">
+                            Automate seasonal visuals and marketing campaigns{' '}
+                            <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-300 bg-clip-text text-transparent">
                                 in seconds.
                             </span>
                         </h1>
 
-                        <p className="max-w-xs text-xs leading-relaxed text-white/60">
-                            Connect your catalog with Philippine national holidays, retail payday cycles, and brand guidelines to generate high-converting promotional graphics.
+                        <p className="text-xs leading-relaxed text-slate-300/80">
+                            Connect your product catalog with official Philippine national holidays, retail payday cycles, and custom brand guidelines.
                         </p>
 
-                        {/* Feature highlights */}
-                        <div className="space-y-2 pt-1">
+                        {/* Connected 4-Step System Workflow Mini-Grid */}
+                        <div className="grid grid-cols-2 gap-2 pt-2">
                             {[
-                                { icon: CalendarDays, text: 'Official PH Holiday Intelligence' },
-                                { icon: Zap, text: 'Generate campaign visuals in < 15s' },
-                                { icon: CheckCircle2, text: 'PNG, JPEG & SVG — no design skills needed' },
-                            ].map(({ icon: Icon, text }) => (
-                                <div key={text} className="flex items-center gap-2.5">
-                                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-blue-500/15 border border-blue-400/20">
-                                        <Icon className="h-3 w-3 text-blue-400" />
+                                { step: '01', title: 'Product Catalog', icon: Package, color: 'text-purple-400', bg: 'bg-purple-500/15 border-purple-400/20' },
+                                { step: '02', title: 'PH Holiday Intel', icon: CalendarDays, color: 'text-amber-400', bg: 'bg-amber-500/15 border-amber-400/20' },
+                                { step: '03', title: 'Gemini AI Studio', icon: Sparkles, color: 'text-blue-400', bg: 'bg-blue-500/15 border-blue-400/20' },
+                                { step: '04', title: 'Campaign Pipeline', icon: Megaphone, color: 'text-emerald-400', bg: 'bg-emerald-500/15 border-emerald-400/20' },
+                            ].map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                    <div
+                                        key={item.step}
+                                        className="flex items-center gap-2 p-2 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm shadow-xs"
+                                    >
+                                        <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border ${item.bg}`}>
+                                            <Icon className={`h-3 w-3 ${item.color}`} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-[11px] font-bold text-white truncate">{item.title}</p>
+                                        </div>
                                     </div>
-                                    <span className="text-[11px] font-medium text-white/70">{text}</span>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
 
-                    {/* Bottom: Stats */}
-                    <div className="relative z-10 grid grid-cols-3 gap-2 text-xs">
-                        {[
-                            { stat: '3×', label: 'faster planning' },
-                            { stat: '12+', label: 'campaign signals' },
-                            { stat: '1', label: 'shared workflow' },
-                        ].map(({ stat, label }) => (
-                            <div
-                                key={label}
-                                className="rounded-xl border border-white/8 bg-white/5 p-2.5 backdrop-blur-sm text-center"
-                            >
-                                <div className="text-base font-extrabold text-white">{stat}</div>
-                                <div className="mt-0.5 text-[10px] text-white/45">{label}</div>
-                            </div>
-                        ))}
+                    {/* Bottom: Trust & Feature Badges */}
+                    <div className="relative z-10 grid grid-cols-3 gap-2 text-center pt-2 border-t border-white/10 text-[11px]">
+                        <div className="rounded-xl border border-white/10 bg-white/5 p-2 backdrop-blur-sm">
+                            <div className="font-extrabold text-white text-xs">Official</div>
+                            <div className="text-[9px] text-slate-400 mt-0.5">PH Holidays</div>
+                        </div>
+                        <div className="rounded-xl border border-white/10 bg-white/5 p-2 backdrop-blur-sm">
+                            <div className="font-extrabold text-white text-xs">&lt; 15s</div>
+                            <div className="text-[9px] text-slate-400 mt-0.5">Generation</div>
+                        </div>
+                        <div className="rounded-xl border border-white/10 bg-white/5 p-2 backdrop-blur-sm">
+                            <div className="font-extrabold text-white text-xs">PNG & SVG</div>
+                            <div className="text-[9px] text-slate-400 mt-0.5">Vector Scale</div>
+                        </div>
                     </div>
                 </div>
 
                 {/* ============================================================
-                    RIGHT PANEL — Form Area (No scroll, compact & responsive)
+                    RIGHT PANEL — Form Area (Glassmorphic)
                 ============================================================= */}
-                <div className="flex flex-col justify-center p-5 sm:p-7 lg:p-9 overflow-y-auto max-h-[94vh]">
+                <div className="relative flex flex-col justify-center p-6 sm:p-8 lg:p-10">
+                    {/* Top Right Theme Toggle */}
+                    <div className="absolute top-5 right-5 flex items-center gap-2">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={toggleTheme}
+                            aria-label="Toggle theme"
+                            className="h-8 w-8 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all cursor-pointer"
+                        >
+                            {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}
+                        </Button>
+                    </div>
+
                     <div className="w-full max-w-md mx-auto">
-                        <div className="mb-3.5 flex items-center justify-between gap-3">
+                        <div className="mb-4 flex items-center justify-between gap-3 lg:hidden">
                             <Link
                                 href={home()}
-                                className="group inline-flex items-center gap-2.5 font-medium transition-transform active:scale-95"
+                                className="group inline-flex items-center gap-2 font-medium transition-transform active:scale-95"
                             >
-                                <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-foreground shadow-sm">
-                                    <AppLogoIcon className="h-4 w-4 fill-current transition-transform duration-300 group-hover:scale-105" />
+                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                                    <AppLogoIcon className="h-4 w-4 fill-current" />
                                 </div>
-                                <span className="text-xs font-semibold tracking-[0.18em] text-foreground uppercase">
+                                <span className="text-xs font-bold tracking-tight text-foreground uppercase">
                                     MarketPilot
                                 </span>
                             </Link>
                         </div>
 
                         <div className="space-y-1 text-left">
-                            <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+                            <h2 className="text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
                                 {title}
                             </h2>
                             {description && (
-                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                <p className="text-xs text-muted-foreground leading-relaxed">
                                     {description}
                                 </p>
                             )}
                         </div>
 
-                        <div className="mt-4">{children}</div>
+                        <div className="mt-5">{children}</div>
                     </div>
                 </div>
             </div>
         </div>
     );
 }
+
