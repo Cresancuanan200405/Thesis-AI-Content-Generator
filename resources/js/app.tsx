@@ -23,15 +23,25 @@ createInertiaApp({
                 !Array.isArray(rawLayout) &&
                 !('$$typeof' in rawLayout);
 
-            const breadcrumbs = isPlainObject ? rawLayout.breadcrumbs || [] : [];
+            const breadcrumbs = isPlainObject
+                ? rawLayout.breadcrumbs || []
+                : [];
             const title = isPlainObject ? rawLayout.title || '' : '';
-            const description = isPlainObject ? rawLayout.description || '' : '';
+            const description = isPlainObject
+                ? rawLayout.description || ''
+                : '';
 
-            if (name === 'welcome' || name === 'onboarding' || name.startsWith('onboarding/')) {
+            if (
+                name === 'welcome' ||
+                name === 'onboarding' ||
+                name.startsWith('onboarding/')
+            ) {
                 page.default.layout = null;
             } else if (name.startsWith('auth/')) {
                 page.default.layout = (children: React.ReactNode) => (
-                    <AuthLayout title={title} description={description}>{children}</AuthLayout>
+                    <AuthLayout title={title} description={description}>
+                        {children}
+                    </AuthLayout>
                 );
             } else if (name.startsWith('settings/')) {
                 page.default.layout = (children: React.ReactNode) => (

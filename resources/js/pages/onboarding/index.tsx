@@ -62,9 +62,9 @@ type Props = {
     step?: number;
     business?: Partial<
         BusinessForm &
-        DescriptionForm & {
-            logo_url?: string | null;
-        }
+            DescriptionForm & {
+                logo_url?: string | null;
+            }
     > | null;
 };
 
@@ -303,10 +303,7 @@ const steps = [
 |--------------------------------------------------------------------------
 */
 
-export default function OnboardingIndex({
-    step = 1,
-    business,
-}: Props) {
+export default function OnboardingIndex({ step = 1, business }: Props) {
     const { errors } = usePage().props as any;
 
     const [currentStep, setCurrentStep] = useState(
@@ -337,15 +334,13 @@ export default function OnboardingIndex({
         business?.industry === 'Other',
     );
 
-    const [descriptionForm, setDescriptionForm] =
-        useState<DescriptionForm>({
-            description: business?.description ?? '',
-        });
+    const [descriptionForm, setDescriptionForm] = useState<DescriptionForm>({
+        description: business?.description ?? '',
+    });
 
-    const [preferencesForm, setPreferencesForm] =
-        useState<PreferencesForm>({
-            marketing_preferences: [],
-        });
+    const [preferencesForm, setPreferencesForm] = useState<PreferencesForm>({
+        marketing_preferences: [],
+    });
 
     const logoInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -373,13 +368,13 @@ export default function OnboardingIndex({
             ? businessPage === 1
                 ? 15
                 : businessPage === 2
-                    ? 28
-                    : 40
+                  ? 28
+                  : 40
             : currentStep === 2
-                ? 60
-                : currentStep === 3
-                    ? 80
-                    : 100;
+              ? 60
+              : currentStep === 3
+                ? 80
+                : 100;
 
     /*
     |--------------------------------------------------------------------------
@@ -405,9 +400,7 @@ export default function OnboardingIndex({
     |--------------------------------------------------------------------------
     */
 
-    const handleLogoChange = (
-        event: React.ChangeEvent<HTMLInputElement>,
-    ) => {
+    const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0] ?? null;
 
         if (!file) {
@@ -435,10 +428,7 @@ export default function OnboardingIndex({
         setBusinessForm((current) => ({
             ...current,
             industry,
-            category:
-                current.industry === industry
-                    ? current.category
-                    : '',
+            category: current.industry === industry ? current.category : '',
         }));
 
         setCustomCategoryMode(industry === 'Other');
@@ -449,10 +439,7 @@ export default function OnboardingIndex({
 
         setBusinessForm((current) => ({
             ...current,
-            category:
-                category === 'Other'
-                    ? ''
-                    : category,
+            category: category === 'Other' ? '' : category,
         }));
     };
 
@@ -464,18 +451,14 @@ export default function OnboardingIndex({
 
     const togglePreference = (title: string) => {
         setPreferencesForm((current) => {
-            const selected =
-                current.marketing_preferences.includes(title);
+            const selected = current.marketing_preferences.includes(title);
 
             return {
                 marketing_preferences: selected
                     ? current.marketing_preferences.filter(
-                        (item) => item !== title,
-                    )
-                    : [
-                        ...current.marketing_preferences,
-                        title,
-                    ],
+                          (item) => item !== title,
+                      )
+                    : [...current.marketing_preferences, title],
             };
         });
     };
@@ -536,8 +519,7 @@ export default function OnboardingIndex({
             '/onboarding/business',
             {
                 ...businessForm,
-                description:
-                    descriptionForm.description.trim(),
+                description: descriptionForm.description.trim(),
             },
             {
                 preserveScroll: true,
@@ -566,31 +548,25 @@ export default function OnboardingIndex({
 
         formData.append(
             'marketing_preferences',
-            JSON.stringify(
-                preferencesForm.marketing_preferences,
-            ),
+            JSON.stringify(preferencesForm.marketing_preferences),
         );
 
         if (logoForm.logo) {
             formData.append('logo', logoForm.logo);
         }
 
-        router.post(
-            '/onboarding/complete',
-            formData,
-            {
-                forceFormData: true,
-                preserveScroll: true,
+        router.post('/onboarding/complete', formData, {
+            forceFormData: true,
+            preserveScroll: true,
 
-                onError: () => {
-                    setIsSubmitting(false);
-                },
-
-                onFinish: () => {
-                    setIsSubmitting(false);
-                },
+            onError: () => {
+                setIsSubmitting(false);
             },
-        );
+
+            onFinish: () => {
+                setIsSubmitting(false);
+            },
+        });
     };
 
     /*
@@ -708,30 +684,24 @@ export default function OnboardingIndex({
             <Head title="Business Onboarding" />
 
             <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background px-3 py-4 sm:px-5">
-
                 {/* Ambient system glow */}
-                <div className="pointer-events-none absolute -left-32 -top-32 h-72 w-72 rounded-full bg-primary/20 blur-[110px]" />
+                <div className="pointer-events-none absolute -top-32 -left-32 h-72 w-72 rounded-full bg-primary/20 blur-[110px]" />
 
-                <div className="pointer-events-none absolute -bottom-32 -right-32 h-72 w-72 rounded-full bg-blue-500/10 blur-[110px]" />
+                <div className="pointer-events-none absolute -right-32 -bottom-32 h-72 w-72 rounded-full bg-blue-500/10 blur-[110px]" />
 
-                <div className="pointer-events-none absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-[80px]" />
+                <div className="pointer-events-none absolute top-1/2 left-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-[80px]" />
 
                 {/* Main onboarding card */}
                 <div className="relative z-10 flex w-full max-w-[680px] flex-col overflow-hidden rounded-[26px] border border-white/30 bg-card/80 shadow-2xl shadow-black/10 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/80 dark:shadow-black/40">
-
                     {/* --------------------------------------------------
                         HEADER
                     -------------------------------------------------- */}
 
                     <div className="border-b border-border/60 bg-background/35 px-4 py-3 backdrop-blur-xl sm:px-5">
-
                         <div className="flex items-center justify-between gap-4">
-
                             {/* Brand */}
                             <div className="flex min-w-0 items-center gap-2.5">
-
                                 <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-
                                     <Sparkles className="h-4 w-4" />
 
                                     <span className="absolute inset-0 rounded-xl ring-1 ring-white/30" />
@@ -750,15 +720,12 @@ export default function OnboardingIndex({
 
                             {/* Progress */}
                             <div className="flex items-center gap-1.5">
-
                                 {steps.map((item) => {
                                     const Icon = item.icon;
 
-                                    const active =
-                                        currentStep === item.id;
+                                    const active = currentStep === item.id;
 
-                                    const completed =
-                                        currentStep > item.id;
+                                    const completed = currentStep > item.id;
 
                                     return (
                                         <div
@@ -766,12 +733,12 @@ export default function OnboardingIndex({
                                             className={cn(
                                                 'flex h-7 items-center gap-1.5 rounded-full px-2 transition-all duration-300',
                                                 active &&
-                                                'bg-primary text-primary-foreground shadow-md shadow-primary/20',
+                                                    'bg-primary text-primary-foreground shadow-md shadow-primary/20',
                                                 completed &&
-                                                'bg-primary/10 text-primary',
+                                                    'bg-primary/10 text-primary',
                                                 !active &&
-                                                !completed &&
-                                                'text-muted-foreground',
+                                                    !completed &&
+                                                    'text-muted-foreground',
                                             )}
                                         >
                                             {completed ? (
@@ -783,8 +750,7 @@ export default function OnboardingIndex({
                                             <span
                                                 className={cn(
                                                     'hidden text-[10px] font-semibold sm:inline',
-                                                    active &&
-                                                    'inline',
+                                                    active && 'inline',
                                                 )}
                                             >
                                                 {item.title}
@@ -809,19 +775,16 @@ export default function OnboardingIndex({
                     -------------------------------------------------- */}
 
                     <div className="min-h-[410px] px-4 py-5 sm:px-7 sm:py-6">
-
                         {/* ============================
                             STEP 1
                         ============================ */}
 
                         {currentStep === 1 && (
-                            <div className="animate-in fade-in-50 duration-300">
-
+                            <div className="animate-in duration-300 fade-in-50">
                                 {/* Mini step */}
                                 <div className="mb-4 flex items-center justify-between">
-
                                     <div className="flex items-center gap-2">
-                                        <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-primary">
+                                        <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[9px] font-bold tracking-wider text-primary uppercase">
                                             Business Profile
                                         </span>
 
@@ -839,8 +802,8 @@ export default function OnboardingIndex({
                                                     businessPage === page
                                                         ? 'w-5 bg-primary'
                                                         : businessPage > page
-                                                            ? 'w-2 bg-primary/40'
-                                                            : 'w-2 bg-muted',
+                                                          ? 'w-2 bg-primary/40'
+                                                          : 'w-2 bg-muted',
                                                 )}
                                             />
                                         ))}
@@ -850,71 +813,69 @@ export default function OnboardingIndex({
                                 {/* Industry */}
                                 {businessPage === 1 && (
                                     <div>
-
                                         <div className="mb-4">
                                             <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
                                                 What does your business do?
                                             </h1>
 
                                             <p className="mt-1 text-xs text-muted-foreground">
-                                                This helps MarketPilot tailor AI-generated marketing content to your business.
+                                                This helps MarketPilot tailor
+                                                AI-generated marketing content
+                                                to your business.
                                             </p>
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                                            {industryOptions.map(
-                                                (industry) => {
-                                                    const Icon =
-                                                        industryIcons[
-                                                        industry
-                                                        ] ?? Layers;
+                                            {industryOptions.map((industry) => {
+                                                const Icon =
+                                                    industryIcons[industry] ??
+                                                    Layers;
 
-                                                    const selected =
-                                                        businessForm.industry ===
-                                                        industry;
+                                                const selected =
+                                                    businessForm.industry ===
+                                                    industry;
 
-                                                    return (
-                                                        <button
-                                                            key={industry}
-                                                            type="button"
-                                                            onClick={() =>
-                                                                handleSelectIndustry(
-                                                                    industry,
-                                                                )
-                                                            }
+                                                return (
+                                                    <button
+                                                        key={industry}
+                                                        type="button"
+                                                        onClick={() =>
+                                                            handleSelectIndustry(
+                                                                industry,
+                                                            )
+                                                        }
+                                                        className={cn(
+                                                            'group relative flex h-[58px] items-center gap-2 rounded-xl border px-2.5 text-left transition-all duration-200',
+                                                            'hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 hover:shadow-md',
+                                                            'active:scale-[0.97]',
+                                                            selected
+                                                                ? 'border-primary/60 bg-primary/10 shadow-sm ring-1 ring-primary/20'
+                                                                : 'border-border/70 bg-background/30',
+                                                        )}
+                                                    >
+                                                        <div
                                                             className={cn(
-                                                                'group relative flex h-[58px] items-center gap-2 rounded-xl border px-2.5 text-left transition-all duration-200',
-                                                                'hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 hover:shadow-md',
-                                                                'active:scale-[0.97]',
+                                                                'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all',
                                                                 selected
-                                                                    ? 'border-primary/60 bg-primary/10 shadow-sm ring-1 ring-primary/20'
-                                                                    : 'border-border/70 bg-background/30',
+                                                                    ? 'bg-primary text-primary-foreground shadow-sm'
+                                                                    : 'bg-muted/70 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary',
                                                             )}
                                                         >
-                                                            <div
-                                                                className={cn(
-                                                                    'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all',
-                                                                    selected
-                                                                        ? 'bg-primary text-primary-foreground shadow-sm'
-                                                                        : 'bg-muted/70 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary',
-                                                                )}
-                                                            >
-                                                                <Icon className="h-3.5 w-3.5" />
+                                                            <Icon className="h-3.5 w-3.5" />
+                                                        </div>
+
+                                                        <span className="min-w-0 truncate text-[11px] font-semibold">
+                                                            {industry}
+                                                        </span>
+
+                                                        {selected && (
+                                                            <div className="absolute top-1.5 right-1.5">
+                                                                <Check className="h-3 w-3 text-primary" />
                                                             </div>
-
-                                                            <span className="min-w-0 truncate text-[11px] font-semibold">
-                                                                {industry}
-                                                            </span>
-
-                                                            {selected && (
-                                                                <div className="absolute right-1.5 top-1.5">
-                                                                    <Check className="h-3 w-3 text-primary" />
-                                                                </div>
-                                                            )}
-                                                        </button>
-                                                    );
-                                                },
-                                            )}
+                                                        )}
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )}
@@ -922,7 +883,6 @@ export default function OnboardingIndex({
                                 {/* Category */}
                                 {businessPage === 2 && (
                                     <div>
-
                                         <div className="mb-4">
                                             <div className="mb-1 text-[10px] font-medium text-muted-foreground">
                                                 Industry
@@ -933,7 +893,8 @@ export default function OnboardingIndex({
                                             </h1>
 
                                             <p className="mt-1 text-xs text-muted-foreground">
-                                                Select the category that best describes your business.
+                                                Select the category that best
+                                                describes your business.
                                             </p>
                                         </div>
 
@@ -986,10 +947,9 @@ export default function OnboardingIndex({
 
                                         {customCategoryMode && (
                                             <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
-
                                                 <Label
                                                     htmlFor="custom-category"
-                                                    className="text-[10px] font-bold uppercase tracking-wider"
+                                                    className="text-[10px] font-bold tracking-wider uppercase"
                                                 >
                                                     Custom Category
                                                 </Label>
@@ -1021,9 +981,7 @@ export default function OnboardingIndex({
                                 {/* Business Name */}
                                 {businessPage === 3 && (
                                     <div className="mx-auto max-w-md py-6">
-
                                         <div className="mb-5 text-center">
-
                                             <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                                                 <Building2 className="h-5 w-5" />
                                             </div>
@@ -1033,31 +991,27 @@ export default function OnboardingIndex({
                                             </h1>
 
                                             <p className="mt-1 text-xs text-muted-foreground">
-                                                Use the name customers recognize your brand by.
+                                                Use the name customers recognize
+                                                your brand by.
                                             </p>
                                         </div>
 
                                         <div className="space-y-2">
                                             <Label
                                                 htmlFor="business-name"
-                                                className="text-[10px] font-bold uppercase tracking-wider"
+                                                className="text-[10px] font-bold tracking-wider uppercase"
                                             >
                                                 Business Name
                                             </Label>
 
                                             <Input
                                                 id="business-name"
-                                                value={
-                                                    businessForm.name
-                                                }
+                                                value={businessForm.name}
                                                 onChange={(e) =>
-                                                    setBusinessForm(
-                                                        (curr) => ({
-                                                            ...curr,
-                                                            name: e.target
-                                                                .value,
-                                                        }),
-                                                    )
+                                                    setBusinessForm((curr) => ({
+                                                        ...curr,
+                                                        name: e.target.value,
+                                                    }))
                                                 }
                                                 placeholder="e.g. Brew & Co."
                                                 className="h-11 rounded-xl bg-background/50 text-sm"
@@ -1071,7 +1025,6 @@ export default function OnboardingIndex({
                                             )}
 
                                             <div className="mt-3 flex items-center gap-2 rounded-xl border border-border/60 bg-muted/30 px-3 py-2.5">
-
                                                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                                     <Layers className="h-3.5 w-3.5" />
                                                 </div>
@@ -1099,10 +1052,9 @@ export default function OnboardingIndex({
                         ============================ */}
 
                         {currentStep === 2 && (
-                            <div className="mx-auto max-w-lg animate-in fade-in-50 duration-300">
-
+                            <div className="mx-auto max-w-lg animate-in duration-300 fade-in-50">
                                 <div className="mb-5">
-                                    <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-primary">
+                                    <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[9px] font-bold tracking-wider text-primary uppercase">
                                         About your business
                                     </span>
 
@@ -1111,16 +1063,17 @@ export default function OnboardingIndex({
                                     </h1>
 
                                     <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                                        Give MarketPilot some context so its AI can create more relevant captions, campaigns, and promotional ideas.
+                                        Give MarketPilot some context so its AI
+                                        can create more relevant captions,
+                                        campaigns, and promotional ideas.
                                     </p>
                                 </div>
 
                                 <div className="space-y-2">
-
                                     <div className="flex items-center justify-between">
                                         <Label
                                             htmlFor="description"
-                                            className="text-[10px] font-bold uppercase tracking-wider"
+                                            className="text-[10px] font-bold tracking-wider uppercase"
                                         >
                                             Business Description
                                         </Label>
@@ -1132,13 +1085,10 @@ export default function OnboardingIndex({
 
                                     <Textarea
                                         id="description"
-                                        value={
-                                            descriptionForm.description
-                                        }
+                                        value={descriptionForm.description}
                                         onChange={(e) =>
                                             setDescriptionForm({
-                                                description:
-                                                    e.target.value,
+                                                description: e.target.value,
                                             })
                                         }
                                         placeholder="Example: We are a specialty coffee shop serving locally roasted coffee, pastries, and comfortable spaces for students and professionals."
@@ -1154,11 +1104,13 @@ export default function OnboardingIndex({
                                 </div>
 
                                 <div className="mt-3 flex items-start gap-2 rounded-xl border border-primary/10 bg-primary/5 p-3">
-
                                     <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
 
                                     <p className="text-[10px] leading-relaxed text-muted-foreground">
-                                        The more context you provide, the more accurately MarketPilot can adapt AI-generated marketing content to your brand.
+                                        The more context you provide, the more
+                                        accurately MarketPilot can adapt
+                                        AI-generated marketing content to your
+                                        brand.
                                     </p>
                                 </div>
                             </div>
@@ -1169,12 +1121,10 @@ export default function OnboardingIndex({
                         ============================ */}
 
                         {currentStep === 3 && (
-                            <div className="animate-in fade-in-50 duration-300">
-
+                            <div className="animate-in duration-300 fade-in-50">
                                 <div className="mb-4">
                                     <div className="flex items-center justify-between">
-
-                                        <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-primary">
+                                        <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[9px] font-bold tracking-wider text-primary uppercase">
                                             Visual Direction
                                         </span>
 
@@ -1188,73 +1138,65 @@ export default function OnboardingIndex({
                                     </h1>
 
                                     <p className="mt-1 text-xs text-muted-foreground">
-                                        Select one or more styles for your AI-generated marketing visuals.
+                                        Select one or more styles for your
+                                        AI-generated marketing visuals.
                                     </p>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-
-                                    {visualStyleOptions.map(
-                                        (style) => {
-                                            const selected =
-                                                preferencesForm.marketing_preferences.includes(
-                                                    style.title,
-                                                );
-
-                                            return (
-                                                <button
-                                                    key={style.title}
-                                                    type="button"
-                                                    onClick={() =>
-                                                        togglePreference(
-                                                            style.title,
-                                                        )
-                                                    }
-                                                    className={cn(
-                                                        'group relative flex min-h-[82px] flex-col justify-between rounded-xl border p-3 text-left transition-all duration-200',
-                                                        'hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 hover:shadow-md',
-                                                        'active:scale-[0.97]',
-                                                        selected
-                                                            ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/20'
-                                                            : 'border-border/70 bg-background/30',
-                                                    )}
-                                                >
-
-                                                    <div className="flex items-start justify-between gap-2">
-
-                                                        <span className="text-[10px] font-bold leading-tight">
-                                                            {style.title}
-                                                        </span>
-
-                                                        <Checkbox
-                                                            checked={
-                                                                selected
-                                                            }
-                                                            onCheckedChange={() =>
-                                                                togglePreference(
-                                                                    style.title,
-                                                                )
-                                                            }
-                                                            onClick={(e) =>
-                                                                e.stopPropagation()
-                                                            }
-                                                            className="h-3.5 w-3.5"
-                                                        />
-                                                    </div>
-
-                                                    <p className="mt-2 line-clamp-2 text-[9px] leading-relaxed text-muted-foreground">
-                                                        {
-                                                            style.description
-                                                        }
-                                                    </p>
-
-                                                    {selected && (
-                                                        <div className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-primary" />
-                                                    )}
-                                                </button>
+                                    {visualStyleOptions.map((style) => {
+                                        const selected =
+                                            preferencesForm.marketing_preferences.includes(
+                                                style.title,
                                             );
-                                        },
-                                    )}
+
+                                        return (
+                                            <button
+                                                key={style.title}
+                                                type="button"
+                                                onClick={() =>
+                                                    togglePreference(
+                                                        style.title,
+                                                    )
+                                                }
+                                                className={cn(
+                                                    'group relative flex min-h-[82px] flex-col justify-between rounded-xl border p-3 text-left transition-all duration-200',
+                                                    'hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 hover:shadow-md',
+                                                    'active:scale-[0.97]',
+                                                    selected
+                                                        ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/20'
+                                                        : 'border-border/70 bg-background/30',
+                                                )}
+                                            >
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <span className="text-[10px] leading-tight font-bold">
+                                                        {style.title}
+                                                    </span>
+
+                                                    <Checkbox
+                                                        checked={selected}
+                                                        onCheckedChange={() =>
+                                                            togglePreference(
+                                                                style.title,
+                                                            )
+                                                        }
+                                                        onClick={(e) =>
+                                                            e.stopPropagation()
+                                                        }
+                                                        className="h-3.5 w-3.5"
+                                                    />
+                                                </div>
+
+                                                <p className="mt-2 line-clamp-2 text-[9px] leading-relaxed text-muted-foreground">
+                                                    {style.description}
+                                                </p>
+
+                                                {selected && (
+                                                    <div className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-primary" />
+                                                )}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
@@ -1264,15 +1206,13 @@ export default function OnboardingIndex({
                         ============================ */}
 
                         {currentStep === 4 && (
-                            <div className="mx-auto max-w-md animate-in fade-in-50 duration-300">
-
+                            <div className="mx-auto max-w-md animate-in duration-300 fade-in-50">
                                 <div className="mb-5 text-center">
-
                                     <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                                         <ImageIcon className="h-5 w-5" />
                                     </div>
 
-                                    <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-primary">
+                                    <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[9px] font-bold tracking-wider text-primary uppercase">
                                         Brand Identity
                                     </span>
 
@@ -1281,7 +1221,8 @@ export default function OnboardingIndex({
                                     </h1>
 
                                     <p className="mt-1 text-xs text-muted-foreground">
-                                        Your logo can be incorporated into future marketing visuals.
+                                        Your logo can be incorporated into
+                                        future marketing visuals.
                                     </p>
                                 </div>
 
@@ -1295,14 +1236,10 @@ export default function OnboardingIndex({
 
                                 {logoForm.logoPreview ? (
                                     <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-
                                         <div className="flex items-center gap-4">
-
                                             <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-white p-2 shadow-sm">
                                                 <img
-                                                    src={
-                                                        logoForm.logoPreview
-                                                    }
+                                                    src={logoForm.logoPreview}
                                                     alt="Logo preview"
                                                     className="h-full w-full object-contain"
                                                 />
@@ -1314,7 +1251,9 @@ export default function OnboardingIndex({
                                                 </p>
 
                                                 <p className="mt-1 text-[10px] text-muted-foreground">
-                                                    Your logo is ready to be used in your marketing visuals.
+                                                    Your logo is ready to be
+                                                    used in your marketing
+                                                    visuals.
                                                 </p>
 
                                                 <div className="mt-3 flex gap-2">
@@ -1365,7 +1304,6 @@ export default function OnboardingIndex({
                                         }
                                         className="group w-full rounded-2xl border border-dashed border-border bg-background/30 p-6 text-center transition-all duration-200 hover:border-primary/50 hover:bg-primary/5 hover:shadow-lg"
                                     >
-
                                         <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-200 group-hover:scale-110">
                                             <UploadCloud className="h-5 w-5" />
                                         </div>
@@ -1384,7 +1322,8 @@ export default function OnboardingIndex({
                                     <Sparkles className="h-3.5 w-3.5 text-primary" />
 
                                     <p className="text-[9px] leading-relaxed text-muted-foreground">
-                                        You can skip this step and add your logo later.
+                                        You can skip this step and add your logo
+                                        later.
                                     </p>
                                 </div>
                             </div>
@@ -1396,17 +1335,14 @@ export default function OnboardingIndex({
                     -------------------------------------------------- */}
 
                     <div className="border-t border-border/60 bg-background/35 px-4 py-3 backdrop-blur-xl sm:px-5">
-
                         <div className="flex items-center justify-between">
-
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={goBack}
                                 disabled={
-                                    currentStep === 1 &&
-                                    businessPage === 1
+                                    currentStep === 1 && businessPage === 1
                                 }
                                 className="h-8 rounded-lg px-3 text-[10px] font-semibold"
                             >
@@ -1415,7 +1351,6 @@ export default function OnboardingIndex({
                             </Button>
 
                             <div className="flex items-center gap-2">
-
                                 {currentStep === 4 && (
                                     <Button
                                         type="button"
@@ -1433,10 +1368,7 @@ export default function OnboardingIndex({
                                     type="button"
                                     size="sm"
                                     onClick={handleNext}
-                                    disabled={
-                                        !canContinue ||
-                                        isSubmitting
-                                    }
+                                    disabled={!canContinue || isSubmitting}
                                     className="group h-8 rounded-lg px-4 text-[10px] font-bold shadow-md shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.97]"
                                 >
                                     {isSubmitting
@@ -1445,13 +1377,12 @@ export default function OnboardingIndex({
                                             : 'Saving...'
                                         : getContinueLabel()}
 
-                                    {!isSubmitting && (
-                                        currentStep === 4 ? (
+                                    {!isSubmitting &&
+                                        (currentStep === 4 ? (
                                             <Check className="ml-1.5 h-3 w-3 transition-transform group-hover:scale-110" />
                                         ) : (
                                             <ArrowRight className="ml-1.5 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-                                        )
-                                    )}
+                                        ))}
                                 </Button>
                             </div>
                         </div>
@@ -1469,6 +1400,5 @@ export default function OnboardingIndex({
 
 OnboardingIndex.layout = {
     title: 'Setup your business',
-    description:
-        'Get your business profile ready to create marketing content.',
+    description: 'Get your business profile ready to create marketing content.',
 };

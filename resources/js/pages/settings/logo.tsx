@@ -35,6 +35,7 @@ export default function BusinessLogoSettings({ business }: BusinessLogoProps) {
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
+
         if (file) {
             processSelectedFile(file);
         }
@@ -42,12 +43,16 @@ export default function BusinessLogoSettings({ business }: BusinessLogoProps) {
 
     const processSelectedFile = (file: File) => {
         if (!file.type.match(/^image\/(png|jpeg|jpg|webp|gif|svg\+xml)$/)) {
-            toast.error('Please upload a valid image file (PNG, JPG, SVG, WEBP).');
+            toast.error(
+                'Please upload a valid image file (PNG, JPG, SVG, WEBP).',
+            );
+
             return;
         }
 
         if (file.size > 5 * 1024 * 1024) {
             toast.error('Image size must be less than 5MB.');
+
             return;
         }
 
@@ -69,6 +74,7 @@ export default function BusinessLogoSettings({ business }: BusinessLogoProps) {
         e.preventDefault();
         setIsDragging(false);
         const file = e.dataTransfer.files?.[0];
+
         if (file) {
             processSelectedFile(file);
         }
@@ -76,8 +82,10 @@ export default function BusinessLogoSettings({ business }: BusinessLogoProps) {
 
     const handleUploadSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
         if (!selectedFile) {
             toast.error('Please select an image file first.');
+
             return;
         }
 
@@ -103,7 +111,9 @@ export default function BusinessLogoSettings({ business }: BusinessLogoProps) {
     };
 
     const handleRemoveLogo = () => {
-        if (!business?.logo_url && !previewUrl) return;
+        if (!business?.logo_url && !previewUrl) {
+            return;
+        }
 
         if (!confirm('Are you sure you want to remove your business logo?')) {
             return;
@@ -115,9 +125,11 @@ export default function BusinessLogoSettings({ business }: BusinessLogoProps) {
             onSuccess: () => {
                 setSelectedFile(null);
                 setPreviewUrl(null);
+
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }
+
                 toast.success('Business logo removed.');
             },
             onError: () => {
@@ -176,7 +188,7 @@ export default function BusinessLogoSettings({ business }: BusinessLogoProps) {
                             <div className="grid gap-6 md:grid-cols-[200px_1fr]">
                                 {/* LOGO DISPLAY BOX */}
                                 <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/30 p-4 text-center">
-                                    <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                    <p className="mb-3 text-xs font-medium tracking-wider text-muted-foreground uppercase">
                                         Preview
                                     </p>
                                     <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-xl border border-border bg-background p-2 shadow-inner">
@@ -191,7 +203,11 @@ export default function BusinessLogoSettings({ business }: BusinessLogoProps) {
                                         )}
                                     </div>
                                     <p className="mt-2 text-[11px] text-muted-foreground">
-                                        {previewUrl ? (selectedFile ? 'Unsaved preview' : 'Current active logo') : 'Placeholder'}
+                                        {previewUrl
+                                            ? selectedFile
+                                                ? 'Unsaved preview'
+                                                : 'Current active logo'
+                                            : 'Placeholder'}
                                     </p>
                                 </div>
 
@@ -204,7 +220,9 @@ export default function BusinessLogoSettings({ business }: BusinessLogoProps) {
                                         onDragOver={handleDragOver}
                                         onDragLeave={handleDragLeave}
                                         onDrop={handleDrop}
-                                        onClick={() => fileInputRef.current?.click()}
+                                        onClick={() =>
+                                            fileInputRef.current?.click()
+                                        }
                                         className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-all ${
                                             isDragging
                                                 ? 'border-primary bg-primary/5'
@@ -222,7 +240,8 @@ export default function BusinessLogoSettings({ business }: BusinessLogoProps) {
                                         </p>
 
                                         <p className="mt-1 text-xs text-muted-foreground">
-                                            Supports PNG, SVG, JPG, WEBP (Max 5MB)
+                                            Supports PNG, SVG, JPG, WEBP (Max
+                                            5MB)
                                         </p>
 
                                         <input
@@ -239,7 +258,9 @@ export default function BusinessLogoSettings({ business }: BusinessLogoProps) {
                                         <div className="flex gap-2">
                                             <Button
                                                 type="submit"
-                                                disabled={isUploading || !selectedFile}
+                                                disabled={
+                                                    isUploading || !selectedFile
+                                                }
                                                 className="gap-2"
                                             >
                                                 {isUploading ? (
@@ -261,9 +282,16 @@ export default function BusinessLogoSettings({ business }: BusinessLogoProps) {
                                                     variant="ghost"
                                                     onClick={() => {
                                                         setSelectedFile(null);
-                                                        setPreviewUrl(business?.logo_url || null);
-                                                        if (fileInputRef.current) {
-                                                            fileInputRef.current.value = '';
+                                                        setPreviewUrl(
+                                                            business?.logo_url ||
+                                                                null,
+                                                        );
+
+                                                        if (
+                                                            fileInputRef.current
+                                                        ) {
+                                                            fileInputRef.current.value =
+                                                                '';
                                                         }
                                                     }}
                                                     disabled={isUploading}
@@ -278,7 +306,9 @@ export default function BusinessLogoSettings({ business }: BusinessLogoProps) {
                                                 type="button"
                                                 variant="outline"
                                                 onClick={handleRemoveLogo}
-                                                disabled={isRemoving || isUploading}
+                                                disabled={
+                                                    isRemoving || isUploading
+                                                }
                                                 className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                                             >
                                                 {isRemoving ? (
@@ -301,9 +331,20 @@ export default function BusinessLogoSettings({ business }: BusinessLogoProps) {
                                     Logo Tips for Best AI Generation Quality:
                                 </p>
                                 <ul className="mt-2 list-disc space-y-1 pl-4">
-                                    <li>Transparent PNG or SVG formats yield the cleanest integration.</li>
-                                    <li>High resolution (at least 512x512 pixels) ensures sharp results across banner sizes.</li>
-                                    <li>You can toggle logo inclusion on or off whenever generating in the AI Marketing Studio.</li>
+                                    <li>
+                                        Transparent PNG or SVG formats yield the
+                                        cleanest integration.
+                                    </li>
+                                    <li>
+                                        High resolution (at least 512x512
+                                        pixels) ensures sharp results across
+                                        banner sizes.
+                                    </li>
+                                    <li>
+                                        You can toggle logo inclusion on or off
+                                        whenever generating in the AI Marketing
+                                        Studio.
+                                    </li>
                                 </ul>
                             </div>
                         </div>

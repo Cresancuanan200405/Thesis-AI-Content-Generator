@@ -28,22 +28,10 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { downloadVisualAsFormat } from '@/lib/download';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -63,18 +51,22 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { downloadVisualAsFormat } from '@/lib/download';
 
 const statusStyles: Record<string, string> = {
-    draft:
-        'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300',
-    active:
-        'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300',
+    draft: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300',
+    active: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300',
     scheduled:
         'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300',
     completed:
         'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900/50 dark:bg-purple-950/40 dark:text-purple-300',
-    archived:
-        'border-border bg-muted text-muted-foreground',
+    archived: 'border-border bg-muted text-muted-foreground',
 };
 
 const statusLabels: Record<string, string> = {
@@ -96,8 +88,10 @@ const statusDot: Record<string, string> = {
 const statusGlow: Record<string, string> = {
     draft: 'border-amber-500/30 hover:border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.06)]',
     active: 'border-emerald-500/30 hover:border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.08)]',
-    scheduled: 'border-blue-500/30 hover:border-blue-500/60 shadow-[0_0_20px_rgba(59,130,246,0.08)]',
-    completed: 'border-purple-500/30 hover:border-purple-500/60 shadow-[0_0_20px_rgba(168,85,247,0.08)]',
+    scheduled:
+        'border-blue-500/30 hover:border-blue-500/60 shadow-[0_0_20px_rgba(59,130,246,0.08)]',
+    completed:
+        'border-purple-500/30 hover:border-purple-500/60 shadow-[0_0_20px_rgba(168,85,247,0.08)]',
     archived: 'border-border/60 hover:border-border',
 };
 
@@ -129,7 +123,10 @@ export default function CampaignShowPage({
     };
 
     const confirmAttachExisting = () => {
-        if (existingDesignIds.length === 0) return;
+        if (existingDesignIds.length === 0) {
+            return;
+        }
+
         setIsAttachingExisting(true);
 
         router.post(
@@ -140,7 +137,9 @@ export default function CampaignShowPage({
                 onSuccess: () => {
                     setIsAddExistingOpen(false);
                     setExistingDesignIds([]);
-                    toast.success(`${existingDesignIds.length} visual(s) added to campaign.`);
+                    toast.success(
+                        `${existingDesignIds.length} visual(s) added to campaign.`,
+                    );
                 },
                 onError: () => {
                     toast.error('Failed to add visuals to campaign.');
@@ -168,6 +167,7 @@ export default function CampaignShowPage({
         setIsZoomed(false);
         setZoomOrigin({ x: 50, y: 50 });
         setIsScrolledToDetails(false);
+
         if (isGalleryModalOpen || fromGallery) {
             setWasGalleryOpen(true);
             setIsGalleryModalOpen(false);
@@ -177,24 +177,33 @@ export default function CampaignShowPage({
     };
 
     const closePreview = (e?: React.MouseEvent) => {
-        if (e) e.stopPropagation();
+        if (e) {
+            e.stopPropagation();
+        }
+
         setPreviewDesign(null);
         setIsZoomed(false);
         setZoomOrigin({ x: 50, y: 50 });
         setIsScrolledToDetails(false);
+
         if (wasGalleryOpen) {
             setIsGalleryModalOpen(true);
             setWasGalleryOpen(false);
         }
     };
 
-    const currentPreviewIndex = designs.findIndex((d) => d.id === previewDesign?.id);
+    const currentPreviewIndex = designs.findIndex(
+        (d) => d.id === previewDesign?.id,
+    );
     const hasPrevDesign = currentPreviewIndex > 0;
     const hasNextDesign =
         currentPreviewIndex !== -1 && currentPreviewIndex < designs.length - 1;
 
     const handlePrevDesign = (e?: React.MouseEvent) => {
-        if (e) e.stopPropagation();
+        if (e) {
+            e.stopPropagation();
+        }
+
         if (hasPrevDesign) {
             setPreviewDesign(designs[currentPreviewIndex - 1]);
             setIsZoomed(false);
@@ -204,7 +213,10 @@ export default function CampaignShowPage({
     };
 
     const handleNextDesign = (e?: React.MouseEvent) => {
-        if (e) e.stopPropagation();
+        if (e) {
+            e.stopPropagation();
+        }
+
         if (hasNextDesign) {
             setPreviewDesign(designs[currentPreviewIndex + 1]);
             setIsZoomed(false);
@@ -216,12 +228,16 @@ export default function CampaignShowPage({
     const handleToggleScrollDetails = () => {
         if (!isScrolledToDetails) {
             const el = document.getElementById('campaign-modal-details');
+
             if (el) {
                 el.scrollIntoView({ behavior: 'smooth' });
                 setIsScrolledToDetails(true);
             }
         } else {
-            const container = document.getElementById('campaign-modal-container');
+            const container = document.getElementById(
+                'campaign-modal-container',
+            );
+
             if (container) {
                 container.scrollTo({ top: 0, behavior: 'smooth' });
                 setIsScrolledToDetails(false);
@@ -235,6 +251,7 @@ export default function CampaignShowPage({
         } else {
             document.body.style.overflow = 'unset';
         }
+
         return () => {
             document.body.style.overflow = 'unset';
         };
@@ -242,7 +259,10 @@ export default function CampaignShowPage({
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (!previewDesign) return;
+            if (!previewDesign) {
+                return;
+            }
+
             if (e.key === 'Escape') {
                 closePreview();
             } else if (e.key === 'ArrowLeft') {
@@ -259,8 +279,15 @@ export default function CampaignShowPage({
         };
 
         window.addEventListener('keydown', handleKeyDown);
+
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [previewDesign, currentPreviewIndex, hasPrevDesign, hasNextDesign, designs]);
+    }, [
+        previewDesign,
+        currentPreviewIndex,
+        hasPrevDesign,
+        hasNextDesign,
+        designs,
+    ]);
 
     const [editForm, setEditForm] = useState({
         name: campaign?.name || '',
@@ -285,12 +312,14 @@ export default function CampaignShowPage({
 
     const handleEditSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
         if (isSaving) {
             return;
         }
 
         if (!editForm.name.trim()) {
             setEditErrors({ name: 'Campaign name is required.' });
+
             return;
         }
 
@@ -344,6 +373,7 @@ export default function CampaignShowPage({
     const handleDownloadAll = () => {
         if (designs.length === 0) {
             toast.info('No visual assets to download.');
+
             return;
         }
 
@@ -369,7 +399,6 @@ export default function CampaignShowPage({
 
             <div className="min-h-screen bg-background text-foreground">
                 <div className="p-4 md:p-6 lg:p-8">
-
                     {/* =====================================================
                         HEADER
                     ====================================================== */}
@@ -397,8 +426,16 @@ export default function CampaignShowPage({
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <Button asChild className="group gap-2 shadow-sm">
-                                                <Link href={campaign?.generator_url ?? `/generator?event_id=${campaign?.event_id || ''}&campaign_id=${campaign?.id}`}>
+                                            <Button
+                                                asChild
+                                                className="group gap-2 shadow-sm"
+                                            >
+                                                <Link
+                                                    href={
+                                                        campaign?.generator_url ??
+                                                        `/generator?event_id=${campaign?.event_id || ''}&campaign_id=${campaign?.id}`
+                                                    }
+                                                >
                                                     <Sparkles className="h-4 w-4" />
                                                     Create Design
                                                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -406,7 +443,10 @@ export default function CampaignShowPage({
                                             </Button>
                                         </TooltipTrigger>
                                         <TooltipContent>
-                                            <p>Generate new marketing visuals in AI Studio for this campaign</p>
+                                            <p>
+                                                Generate new marketing visuals
+                                                in AI Studio for this campaign
+                                            </p>
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
@@ -423,7 +463,10 @@ export default function CampaignShowPage({
                                         </Button>
                                     </DropdownMenuTrigger>
 
-                                    <DropdownMenuContent align="end" className="w-52 rounded-xl border border-border bg-popover p-1.5 shadow-lg">
+                                    <DropdownMenuContent
+                                        align="end"
+                                        className="w-52 rounded-xl border border-border bg-popover p-1.5 shadow-lg"
+                                    >
                                         <DropdownMenuItem
                                             onClick={openEditModal}
                                             className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent"
@@ -444,7 +487,9 @@ export default function CampaignShowPage({
                                         <DropdownMenuSeparator className="my-1 border-border/60" />
 
                                         <DropdownMenuItem
-                                            onClick={() => setIsDeleteOpen(true)}
+                                            onClick={() =>
+                                                setIsDeleteOpen(true)
+                                            }
                                             className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 focus:bg-destructive/10 focus:text-destructive"
                                         >
                                             <Trash2 className="h-3.5 w-3.5" />
@@ -475,7 +520,9 @@ export default function CampaignShowPage({
                             </p>
                         </div>
 
-                        <div className={`rounded-2xl border bg-card p-4 shadow-sm transition-all ${statusGlow[status] ?? statusGlow.draft}`}>
+                        <div
+                            className={`rounded-2xl border bg-card p-4 shadow-sm transition-all ${statusGlow[status] ?? statusGlow.draft}`}
+                        >
                             <div className="flex items-center gap-2">
                                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                     <Layers className="h-3.5 w-3.5" />
@@ -485,7 +532,9 @@ export default function CampaignShowPage({
                                 </span>
                             </div>
                             <div className="mt-2 flex items-center gap-2">
-                                <span className={`h-2 w-2 rounded-full ${statusDot[status]}`} />
+                                <span
+                                    className={`h-2 w-2 rounded-full ${statusDot[status]}`}
+                                />
                                 <p className="text-base font-semibold capitalize">
                                     {statusLabels[status] ?? status}
                                 </p>
@@ -502,7 +551,8 @@ export default function CampaignShowPage({
                                 </span>
                             </div>
                             <p className="mt-2 text-base font-semibold">
-                                {designs.length} {designs.length === 1 ? 'asset' : 'assets'}
+                                {designs.length}{' '}
+                                {designs.length === 1 ? 'asset' : 'assets'}
                             </p>
                         </div>
 
@@ -517,7 +567,8 @@ export default function CampaignShowPage({
                             </div>
                             <p className="mt-2 truncate text-base font-semibold">
                                 {campaign?.start_date
-                                    ? campaign?.end_date && campaign.end_date !== campaign.start_date
+                                    ? campaign?.end_date &&
+                                      campaign.end_date !== campaign.start_date
                                         ? `${campaign.start_date} – ${campaign.end_date}`
                                         : campaign.start_date
                                     : 'Dates not set'}
@@ -530,57 +581,73 @@ export default function CampaignShowPage({
                     ====================================================== */}
 
                     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-
                         {/* LEFT COLUMN: DESIGNS & SCHEDULE */}
                         <div className="space-y-6">
-
                             {/* Campaign Designs Gallery - 1-Icon Photo Stack Component */}
-                            <Card className="overflow-hidden rounded-3xl border-border bg-card shadow-sm isolate">
-                                <CardHeader className="border-b p-4 sm:p-5 bg-muted/10">
+                            <Card className="isolate overflow-hidden rounded-3xl border-border bg-card shadow-sm">
+                                <CardHeader className="border-b bg-muted/10 p-4 sm:p-5">
                                     <div className="flex items-center justify-between">
                                         <CardTitle className="flex items-center gap-2 text-base font-bold">
                                             <ImageIcon className="h-4 w-4 text-primary" />
                                             Campaign Visuals
                                         </CardTitle>
-                                        <Badge variant="secondary" className="rounded-full px-2.5 text-xs font-semibold">
-                                            {designs.length} {designs.length === 1 ? 'Asset' : 'Assets'}
+                                        <Badge
+                                            variant="secondary"
+                                            className="rounded-full px-2.5 text-xs font-semibold"
+                                        >
+                                            {designs.length}{' '}
+                                            {designs.length === 1
+                                                ? 'Asset'
+                                                : 'Assets'}
                                         </Badge>
                                     </div>
                                 </CardHeader>
 
-                                <CardContent className="p-8 sm:p-12 flex flex-col items-center justify-center min-h-[380px] isolate">
+                                <CardContent className="isolate flex min-h-[380px] flex-col items-center justify-center p-8 sm:p-12">
                                     {/* The 3-Photo Layered Stack (Sleek System Theme Design with Local Isolation) */}
                                     <div
-                                        onClick={() => setIsGalleryModalOpen(true)}
+                                        onClick={() =>
+                                            setIsGalleryModalOpen(true)
+                                        }
                                         role="button"
                                         tabIndex={0}
                                         onKeyDown={(e) => {
-                                            if (e.key === 'Enter' || e.key === ' ') {
+                                            if (
+                                                e.key === 'Enter' ||
+                                                e.key === ' '
+                                            ) {
                                                 setIsGalleryModalOpen(true);
                                             }
                                         }}
-                                        className="group relative isolate cursor-pointer select-none transition-all duration-300 hover:scale-105 focus:outline-none"
+                                        className="group relative isolate cursor-pointer transition-all duration-300 select-none hover:scale-105 focus:outline-none"
                                         title="Click to view campaign visuals"
                                     >
-                                        <div className="relative isolate w-56 h-64 sm:w-64 sm:h-72 flex items-center justify-center">
+                                        <div className="relative isolate flex h-64 w-56 items-center justify-center sm:h-72 sm:w-64">
                                             {/* Back Photo (Layer 3) */}
                                             <div
-                                                className="absolute inset-0 rounded-2xl bg-card border-2 border-border/70 shadow-md transition-transform duration-300 group-hover:rotate-[18deg] group-hover:translate-x-5 p-2.5 sm:p-3 flex flex-col ring-1 ring-border/40"
+                                                className="absolute inset-0 flex flex-col rounded-2xl border-2 border-border/70 bg-card p-2.5 shadow-md ring-1 ring-border/40 transition-transform duration-300 group-hover:translate-x-5 group-hover:rotate-[18deg] sm:p-3"
                                                 style={{
-                                                    transform: 'rotate(14deg) translate(14px, 10px)',
+                                                    transform:
+                                                        'rotate(14deg) translate(14px, 10px)',
                                                     zIndex: 1,
                                                 }}
                                             >
-                                                <div className="flex-1 rounded-xl overflow-hidden bg-muted/40 border border-border/50 flex items-center justify-center">
-                                                    {(designs[2] || designs[0])?.image_url ? (
+                                                <div className="flex flex-1 items-center justify-center overflow-hidden rounded-xl border border-border/50 bg-muted/40">
+                                                    {(designs[2] || designs[0])
+                                                        ?.image_url ? (
                                                         <img
-                                                            src={(designs[2] || designs[0]).image_url}
+                                                            src={
+                                                                (
+                                                                    designs[2] ||
+                                                                    designs[0]
+                                                                ).image_url
+                                                            }
                                                             alt="Visual layer 3"
-                                                            className="h-full w-full object-cover rounded-lg"
+                                                            className="h-full w-full rounded-lg object-cover"
                                                         />
                                                     ) : (
                                                         <div className="flex h-full w-full items-center justify-center text-muted-foreground/50">
-                                                            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+                                                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
                                                                 <div className="h-8 w-8 rounded-full bg-muted-foreground/30" />
                                                             </div>
                                                         </div>
@@ -591,22 +658,29 @@ export default function CampaignShowPage({
 
                                             {/* Middle Photo (Layer 2) */}
                                             <div
-                                                className="absolute inset-0 rounded-2xl bg-card border-2 border-border/80 shadow-lg transition-transform duration-300 group-hover:rotate-[9deg] group-hover:translate-x-2.5 p-2.5 sm:p-3 flex flex-col ring-1 ring-border/50"
+                                                className="absolute inset-0 flex flex-col rounded-2xl border-2 border-border/80 bg-card p-2.5 shadow-lg ring-1 ring-border/50 transition-transform duration-300 group-hover:translate-x-2.5 group-hover:rotate-[9deg] sm:p-3"
                                                 style={{
-                                                    transform: 'rotate(7deg) translate(7px, 5px)',
+                                                    transform:
+                                                        'rotate(7deg) translate(7px, 5px)',
                                                     zIndex: 2,
                                                 }}
                                             >
-                                                <div className="flex-1 rounded-xl overflow-hidden bg-muted/50 border border-border/60 flex items-center justify-center">
-                                                    {(designs[1] || designs[0])?.image_url ? (
+                                                <div className="flex flex-1 items-center justify-center overflow-hidden rounded-xl border border-border/60 bg-muted/50">
+                                                    {(designs[1] || designs[0])
+                                                        ?.image_url ? (
                                                         <img
-                                                            src={(designs[1] || designs[0]).image_url}
+                                                            src={
+                                                                (
+                                                                    designs[1] ||
+                                                                    designs[0]
+                                                                ).image_url
+                                                            }
                                                             alt="Visual layer 2"
-                                                            className="h-full w-full object-cover rounded-lg"
+                                                            className="h-full w-full rounded-lg object-cover"
                                                         />
                                                     ) : (
                                                         <div className="flex h-full w-full items-center justify-center text-muted-foreground/50">
-                                                            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+                                                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
                                                                 <div className="h-8 w-8 rounded-full bg-muted-foreground/30" />
                                                             </div>
                                                         </div>
@@ -617,22 +691,25 @@ export default function CampaignShowPage({
 
                                             {/* Front Photo (Layer 1) */}
                                             <div
-                                                className="absolute inset-0 rounded-2xl bg-card border-2 border-border shadow-xl transition-transform duration-300 group-hover:-rotate-2 p-2.5 sm:p-3 flex flex-col ring-1 ring-primary/20"
+                                                className="absolute inset-0 flex flex-col rounded-2xl border-2 border-border bg-card p-2.5 shadow-xl ring-1 ring-primary/20 transition-transform duration-300 group-hover:-rotate-2 sm:p-3"
                                                 style={{
                                                     transform: 'rotate(0deg)',
                                                     zIndex: 3,
                                                 }}
                                             >
-                                                <div className="flex-1 rounded-xl overflow-hidden bg-muted/60 border border-border/70 flex items-center justify-center">
+                                                <div className="flex flex-1 items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-muted/60">
                                                     {designs[0]?.image_url ? (
                                                         <img
-                                                            src={designs[0].image_url}
+                                                            src={
+                                                                designs[0]
+                                                                    .image_url
+                                                            }
                                                             alt="Campaign visual front"
-                                                            className="h-full w-full object-cover rounded-lg"
+                                                            className="h-full w-full rounded-lg object-cover"
                                                         />
                                                     ) : (
                                                         <div className="flex flex-col items-center justify-center text-muted-foreground">
-                                                            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+                                                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
                                                                 <div className="h-9 w-9 rounded-full bg-muted-foreground/40" />
                                                             </div>
                                                         </div>
@@ -664,7 +741,8 @@ export default function CampaignShowPage({
                                                 </span>
                                             </div>
                                             <p className="mt-2 text-sm font-semibold">
-                                                {campaign?.start_date || 'Not set'}
+                                                {campaign?.start_date ||
+                                                    'Not set'}
                                             </p>
                                         </div>
 
@@ -676,7 +754,8 @@ export default function CampaignShowPage({
                                                 </span>
                                             </div>
                                             <p className="mt-2 text-sm font-semibold">
-                                                {campaign?.end_date || 'Not set'}
+                                                {campaign?.end_date ||
+                                                    'Not set'}
                                             </p>
                                         </div>
                                     </div>
@@ -686,7 +765,6 @@ export default function CampaignShowPage({
 
                         {/* RIGHT COLUMN: SIDEBAR */}
                         <div className="space-y-6">
-
                             {/* Event Details */}
                             <Card className="rounded-2xl border-border shadow-sm">
                                 <CardHeader className="border-b p-5">
@@ -698,15 +776,17 @@ export default function CampaignShowPage({
 
                                 <CardContent className="p-5">
                                     <div className="rounded-xl border border-border bg-muted/20 p-4">
-                                        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                                        <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
                                             Holiday / Event
                                         </p>
                                         <p className="mt-1 text-sm font-semibold">
-                                            {campaign?.event_name ?? 'No event linked'}
+                                            {campaign?.event_name ??
+                                                'No event linked'}
                                         </p>
                                         {campaign?.event_date && (
                                             <p className="mt-1 text-xs text-muted-foreground">
-                                                Event date: {campaign.event_date}
+                                                Event date:{' '}
+                                                {campaign.event_date}
                                             </p>
                                         )}
                                     </div>
@@ -727,24 +807,29 @@ export default function CampaignShowPage({
                     id="campaign-modal-container"
                     onScroll={(e) => {
                         const target = e.currentTarget;
+
                         if (target.scrollTop > 150) {
                             setIsScrolledToDetails(true);
                         } else {
                             setIsScrolledToDetails(false);
                         }
                     }}
-                    className="fixed inset-0 z-[150] overflow-y-auto overflow-x-hidden bg-black/95 backdrop-blur-2xl text-white dark select-none scroll-smooth animate-in fade-in duration-200"
+                    className="dark fixed inset-0 z-[150] animate-in overflow-x-hidden overflow-y-auto scroll-smooth bg-black/95 text-white backdrop-blur-2xl duration-200 select-none fade-in"
                 >
                     {/* Top Floating Control Bar (Sticky) */}
-                    <div
-                        className="sticky top-0 z-[160] flex w-full items-center justify-between bg-gradient-to-b from-black/95 via-black/85 to-transparent px-5 py-3.5 sm:px-8 border-b border-white/10 backdrop-blur-md"
-                    >
+                    <div className="sticky top-0 z-[160] flex w-full items-center justify-between border-b border-white/10 bg-gradient-to-b from-black/95 via-black/85 to-transparent px-5 py-3.5 backdrop-blur-md sm:px-8">
                         <div className="flex items-center gap-3">
-                            <h2 className="max-w-[200px] sm:max-w-md truncate text-sm sm:text-base font-semibold text-white">
-                                {previewDesign.product_name || 'Campaign Visual'}
+                            <h2 className="max-w-[200px] truncate text-sm font-semibold text-white sm:max-w-md sm:text-base">
+                                {previewDesign.product_name ||
+                                    'Campaign Visual'}
                             </h2>
-                            <Badge variant="outline" className="border-white/20 text-white/90 text-[10px] hidden sm:inline-flex bg-white/5">
-                                {campaign.name} {designs.length > 1 && `(${currentPreviewIndex + 1}/${designs.length})`}
+                            <Badge
+                                variant="outline"
+                                className="hidden border-white/20 bg-white/5 text-[10px] text-white/90 sm:inline-flex"
+                            >
+                                {campaign.name}{' '}
+                                {designs.length > 1 &&
+                                    `(${currentPreviewIndex + 1}/${designs.length})`}
                             </Badge>
                         </div>
 
@@ -760,7 +845,7 @@ export default function CampaignShowPage({
                                         setIsZoomed(false);
                                     }
                                 }}
-                                className="hidden sm:flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white px-3 py-1.5 text-xs font-medium backdrop-blur-md transition-all cursor-pointer"
+                                className="hidden cursor-pointer items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80 backdrop-blur-md transition-all hover:bg-white/20 hover:text-white sm:flex"
                                 title="Click image or button to zoom"
                             >
                                 {isZoomed ? (
@@ -781,7 +866,7 @@ export default function CampaignShowPage({
                                 <DropdownMenuTrigger asChild>
                                     <button
                                         type="button"
-                                        className="flex h-9 items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white px-3 text-xs font-semibold transition-all backdrop-blur-md cursor-pointer"
+                                        className="flex h-9 cursor-pointer items-center gap-1.5 rounded-full bg-white/10 px-3 text-xs font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20"
                                         title="Download Visual"
                                     >
                                         <Download className="h-4 w-4" />
@@ -789,24 +874,45 @@ export default function CampaignShowPage({
                                         <ChevronDown className="h-3 w-3 opacity-70" />
                                     </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-48 rounded-xl p-1.5 shadow-xl border-white/20 bg-black/90 text-white backdrop-blur-xl z-[180]">
+                                <DropdownMenuContent
+                                    align="end"
+                                    className="z-[180] w-48 rounded-xl border-white/20 bg-black/90 p-1.5 text-white shadow-xl backdrop-blur-xl"
+                                >
                                     <DropdownMenuItem
-                                        onClick={() => downloadVisualAsFormat(previewDesign.image_url, `${campaign.name}-${previewDesign.product_name || 'visual'}`, 'png')}
-                                        className="gap-2 text-xs font-medium cursor-pointer text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
+                                        onClick={() =>
+                                            downloadVisualAsFormat(
+                                                previewDesign.image_url,
+                                                `${campaign.name}-${previewDesign.product_name || 'visual'}`,
+                                                'png',
+                                            )
+                                        }
+                                        className="cursor-pointer gap-2 text-xs font-medium text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
                                     >
                                         <Download className="h-3.5 w-3.5 text-primary" />
                                         PNG (High Quality)
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                        onClick={() => downloadVisualAsFormat(previewDesign.image_url, `${campaign.name}-${previewDesign.product_name || 'visual'}`, 'jpeg')}
-                                        className="gap-2 text-xs font-medium cursor-pointer text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
+                                        onClick={() =>
+                                            downloadVisualAsFormat(
+                                                previewDesign.image_url,
+                                                `${campaign.name}-${previewDesign.product_name || 'visual'}`,
+                                                'jpeg',
+                                            )
+                                        }
+                                        className="cursor-pointer gap-2 text-xs font-medium text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
                                     >
                                         <Download className="h-3.5 w-3.5 text-blue-400" />
                                         JPEG (Web-Optimized)
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                        onClick={() => downloadVisualAsFormat(previewDesign.image_url, `${campaign.name}-${previewDesign.product_name || 'visual'}`, 'svg')}
-                                        className="gap-2 text-xs font-medium cursor-pointer text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
+                                        onClick={() =>
+                                            downloadVisualAsFormat(
+                                                previewDesign.image_url,
+                                                `${campaign.name}-${previewDesign.product_name || 'visual'}`,
+                                                'svg',
+                                            )
+                                        }
+                                        className="cursor-pointer gap-2 text-xs font-medium text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
                                     >
                                         <Download className="h-3.5 w-3.5 text-emerald-400" />
                                         SVG (Vector Embed)
@@ -817,7 +923,7 @@ export default function CampaignShowPage({
                             <button
                                 type="button"
                                 onClick={closePreview}
-                                className="ml-1 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 hover:bg-white/30 text-white transition-all backdrop-blur-md cursor-pointer"
+                                className="ml-1 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md transition-all hover:bg-white/30"
                                 title="Close (Esc)"
                             >
                                 <X className="h-5 w-5" />
@@ -830,7 +936,7 @@ export default function CampaignShowPage({
                         <button
                             type="button"
                             onClick={handlePrevDesign}
-                            className="fixed left-3 sm:left-6 top-1/2 -translate-y-1/2 z-[170] flex h-11 w-11 sm:h-13 sm:w-13 items-center justify-center rounded-full bg-black/60 text-white/85 backdrop-blur-md border border-white/20 hover:bg-black/90 hover:text-white hover:border-white/40 hover:scale-110 active:scale-95 transition-all duration-200 shadow-2xl cursor-pointer"
+                            className="fixed top-1/2 left-3 z-[170] flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/60 text-white/85 shadow-2xl backdrop-blur-md transition-all duration-200 hover:scale-110 hover:border-white/40 hover:bg-black/90 hover:text-white active:scale-95 sm:left-6 sm:h-13 sm:w-13"
                             title="Previous visual (←)"
                             aria-label="Previous image"
                         >
@@ -843,7 +949,7 @@ export default function CampaignShowPage({
                         <button
                             type="button"
                             onClick={handleNextDesign}
-                            className="fixed right-3 sm:right-6 top-1/2 -translate-y-1/2 z-[170] flex h-11 w-11 sm:h-13 sm:w-13 items-center justify-center rounded-full bg-black/60 text-white/85 backdrop-blur-md border border-white/20 hover:bg-black/90 hover:text-white hover:border-white/40 hover:scale-110 active:scale-95 transition-all duration-200 shadow-2xl cursor-pointer"
+                            className="fixed top-1/2 right-3 z-[170] flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/60 text-white/85 shadow-2xl backdrop-blur-md transition-all duration-200 hover:scale-110 hover:border-white/40 hover:bg-black/90 hover:text-white active:scale-95 sm:right-6 sm:h-13 sm:w-13"
                             title="Next visual (→)"
                             aria-label="Next image"
                         >
@@ -852,48 +958,70 @@ export default function CampaignShowPage({
                     )}
 
                     {/* Section 1: Full-view Image Canvas */}
-                    <div
-                        className="group/canvas relative flex min-h-[calc(100vh-4.5rem)] w-full flex-col items-center justify-center px-4 pt-4 pb-20 sm:px-8 sm:pt-6 sm:pb-24"
-                    >
+                    <div className="group/canvas relative flex min-h-[calc(100vh-4.5rem)] w-full flex-col items-center justify-center px-4 pt-4 pb-20 sm:px-8 sm:pt-6 sm:pb-24">
                         {/* Ambient Glow */}
-                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-0">
-                            <div className="h-[450px] w-[450px] rounded-full bg-gradient-to-tr from-primary/20 via-blue-500/10 to-transparent blur-3xl opacity-40" />
+                        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
+                            <div className="h-[450px] w-[450px] rounded-full bg-gradient-to-tr from-primary/20 via-blue-500/10 to-transparent opacity-40 blur-3xl" />
                         </div>
 
                         {/* Subtle Black Gradient Overlay at the Very Bottom of Dark Backdrop */}
-                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-black via-black/80 to-transparent z-10" />
+                        <div className="pointer-events-none absolute right-0 bottom-0 left-0 z-10 h-28 bg-gradient-to-t from-black via-black/80 to-transparent" />
 
                         {previewDesign.image_url ? (
                             <img
                                 src={previewDesign.image_url}
-                                alt={previewDesign.product_name || 'Campaign visual'}
+                                alt={
+                                    previewDesign.product_name ||
+                                    'Campaign visual'
+                                }
                                 onClick={(e) => {
                                     e.stopPropagation();
+
                                     if (!isZoomed) {
-                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        const rect =
+                                            e.currentTarget.getBoundingClientRect();
                                         const offsetX = e.clientX - rect.left;
                                         const offsetY = e.clientY - rect.top;
-                                        const xPercent = Math.max(0, Math.min(100, (offsetX / rect.width) * 100));
-                                        const yPercent = Math.max(0, Math.min(100, (offsetY / rect.height) * 100));
-                                        setZoomOrigin({ x: xPercent, y: yPercent });
+                                        const xPercent = Math.max(
+                                            0,
+                                            Math.min(
+                                                100,
+                                                (offsetX / rect.width) * 100,
+                                            ),
+                                        );
+                                        const yPercent = Math.max(
+                                            0,
+                                            Math.min(
+                                                100,
+                                                (offsetY / rect.height) * 100,
+                                            ),
+                                        );
+                                        setZoomOrigin({
+                                            x: xPercent,
+                                            y: yPercent,
+                                        });
                                         setIsZoomed(true);
                                     } else {
                                         setIsZoomed(false);
                                     }
                                 }}
                                 style={{
-                                    transformOrigin: isZoomed ? `${zoomOrigin.x}% ${zoomOrigin.y}%` : 'center center',
+                                    transformOrigin: isZoomed
+                                        ? `${zoomOrigin.x}% ${zoomOrigin.y}%`
+                                        : 'center center',
                                 }}
-                                className={`block max-h-[calc(100vh-12rem)] max-w-[86vw] object-contain rounded-2xl drop-shadow-2xl transition-transform duration-300 ease-out select-none cursor-pointer z-20 ${
+                                className={`z-20 block max-h-[calc(100vh-12rem)] max-w-[86vw] cursor-pointer rounded-2xl object-contain drop-shadow-2xl transition-transform duration-300 ease-out select-none ${
                                     isZoomed
                                         ? 'scale-[1.75] cursor-zoom-out'
                                         : 'scale-100 cursor-zoom-in'
                                 }`}
                             />
                         ) : (
-                            <div className="flex flex-col items-center justify-center text-white/50 z-20">
+                            <div className="z-20 flex flex-col items-center justify-center text-white/50">
                                 <ImageIcon className="h-16 w-16" />
-                                <p className="mt-2 text-sm">No visual available</p>
+                                <p className="mt-2 text-sm">
+                                    No visual available
+                                </p>
                             </div>
                         )}
 
@@ -901,9 +1029,17 @@ export default function CampaignShowPage({
                         <button
                             type="button"
                             onClick={handleToggleScrollDetails}
-                            className="group/scroll absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-black/80 backdrop-blur-xl border border-white/20 text-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-all duration-300 hover:scale-110 hover:border-primary/60 hover:text-white hover:bg-black hover:shadow-[0_0_20px_rgba(var(--primary),0.5)] active:scale-95 cursor-pointer"
-                            title={isScrolledToDetails ? 'Scroll up to image' : 'Scroll down for details'}
-                            aria-label={isScrolledToDetails ? 'Scroll up to image' : 'Scroll down for details'}
+                            className="group/scroll absolute bottom-4 left-1/2 z-30 flex h-10 w-10 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/80 text-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.6)] backdrop-blur-xl transition-all duration-300 hover:scale-110 hover:border-primary/60 hover:bg-black hover:text-white hover:shadow-[0_0_20px_rgba(var(--primary),0.5)] active:scale-95"
+                            title={
+                                isScrolledToDetails
+                                    ? 'Scroll up to image'
+                                    : 'Scroll down for details'
+                            }
+                            aria-label={
+                                isScrolledToDetails
+                                    ? 'Scroll up to image'
+                                    : 'Scroll down for details'
+                            }
                         >
                             {isScrolledToDetails ? (
                                 <ChevronUp className="h-5 w-5 transition-transform duration-300 group-hover/scroll:text-primary" />
@@ -916,17 +1052,18 @@ export default function CampaignShowPage({
                     {/* Section 2: Recreated, Classy Details & Functions Section */}
                     <div
                         id="campaign-modal-details"
-                        className="relative z-30 w-full bg-slate-950/98 backdrop-blur-3xl px-4 pb-16 pt-8 sm:px-8 border-t border-white/20"
+                        className="relative z-30 w-full border-t border-white/20 bg-slate-950/98 px-4 pt-8 pb-16 backdrop-blur-3xl sm:px-8"
                     >
                         <div className="mx-auto max-w-3xl space-y-6">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-white/15 pb-4">
+                            <div className="flex flex-col gap-3 border-b border-white/15 pb-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary text-primary-foreground font-black text-xs shadow-lg shadow-primary/30 tracking-wider uppercase">
+                                    <div className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-xs font-black tracking-wider text-primary-foreground uppercase shadow-lg shadow-primary/30">
                                         <Sparkles className="h-4 w-4" />
                                         Visual Creative Details
                                     </div>
-                                    <h3 className="mt-2 text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-md">
-                                        {previewDesign.product_name || 'Campaign Visual'}
+                                    <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-white drop-shadow-md sm:text-3xl">
+                                        {previewDesign.product_name ||
+                                            'Campaign Visual'}
                                     </h3>
                                 </div>
 
@@ -934,11 +1071,12 @@ export default function CampaignShowPage({
                                     <Button
                                         asChild
                                         size="sm"
-                                        className="h-9 px-4 gap-2 text-xs font-bold shadow-lg shadow-primary/30 hover:scale-105 transition-all bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
+                                        className="h-9 cursor-pointer gap-2 bg-primary px-4 text-xs font-bold text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-105 hover:bg-primary/90"
                                     >
                                         <Link
                                             href={`/generator?event_id=${campaign?.event_id || ''}&campaign_id=${campaign.id}&product_name=${encodeURIComponent(
-                                                previewDesign.product_name || '',
+                                                previewDesign.product_name ||
+                                                    '',
                                             )}&price=${encodeURIComponent(previewDesign.price || '')}&tagline=${encodeURIComponent(previewDesign.tagline || '')}&prompt=${encodeURIComponent(previewDesign.prompt || '')}&aspect_ratio=${encodeURIComponent(previewDesign.aspect_ratio || '1:1')}`}
                                         >
                                             <Sparkles className="h-4 w-4" />
@@ -949,34 +1087,36 @@ export default function CampaignShowPage({
                             </div>
 
                             {previewDesign.tagline && (
-                                <div className="group relative overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-r from-primary/30 via-slate-900/95 to-primary/20 p-5 sm:p-6 backdrop-blur-2xl shadow-xl shadow-primary/10 transition-all hover:border-primary">
-                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary text-primary-foreground font-extrabold text-[11px] uppercase tracking-wider shadow-sm">
+                                <div className="group relative overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-r from-primary/30 via-slate-900/95 to-primary/20 p-5 shadow-xl shadow-primary/10 backdrop-blur-2xl transition-all hover:border-primary sm:p-6">
+                                    <div className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-[11px] font-extrabold tracking-wider text-primary-foreground uppercase shadow-sm">
                                         <Tag className="h-3.5 w-3.5" />
                                         Catchy Tagline & Hook
                                     </div>
-                                    <p className="mt-3 text-lg sm:text-xl font-bold italic text-white leading-snug drop-shadow-md">
+                                    <p className="mt-3 text-lg leading-snug font-bold text-white italic drop-shadow-md sm:text-xl">
                                         "{previewDesign.tagline}"
                                     </p>
                                 </div>
                             )}
 
-                            <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-5 backdrop-blur-2xl shadow-lg transition-all duration-300 hover:border-white/30">
-                                <div className="inline-block px-2.5 py-0.5 rounded bg-white/15 text-[11px] font-extrabold uppercase tracking-wider text-white">
+                            <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-5 shadow-lg backdrop-blur-2xl transition-all duration-300 hover:border-white/30">
+                                <div className="inline-block rounded bg-white/15 px-2.5 py-0.5 text-[11px] font-extrabold tracking-wider text-white uppercase">
                                     AI Prompt & Concept
                                 </div>
-                                <p className="mt-2.5 text-sm sm:text-base leading-relaxed text-white/95 font-medium">
-                                    {previewDesign.prompt || `${campaign.name} visual creative tailored for high engagement.`}
+                                <p className="mt-2.5 text-sm leading-relaxed font-medium text-white/95 sm:text-base">
+                                    {previewDesign.prompt ||
+                                        `${campaign.name} visual creative tailored for high engagement.`}
                                 </p>
                             </div>
 
                             <div className="grid gap-3 sm:grid-cols-3">
-                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 sm:p-5 backdrop-blur-2xl shadow-md transition-all hover:border-white/30 hover:-translate-y-0.5">
-                                    <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-white/70">
+                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 shadow-md backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
+                                    <div className="flex items-center gap-1.5 text-xs font-extrabold tracking-wider text-white/70 uppercase">
                                         <Tag className="h-3.5 w-3.5 text-primary" />
                                         Product
                                     </div>
                                     <p className="mt-2 truncate text-base font-bold text-white">
-                                        {previewDesign.product_name || 'Standard Offering'}
+                                        {previewDesign.product_name ||
+                                            'Standard Offering'}
                                     </p>
                                     {previewDesign.price && (
                                         <p className="mt-0.5 text-xs font-extrabold text-emerald-400">
@@ -985,8 +1125,8 @@ export default function CampaignShowPage({
                                     )}
                                 </div>
 
-                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 sm:p-5 backdrop-blur-2xl shadow-md transition-all hover:border-white/30 hover:-translate-y-0.5">
-                                    <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-white/70">
+                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 shadow-md backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
+                                    <div className="flex items-center gap-1.5 text-xs font-extrabold tracking-wider text-white/70 uppercase">
                                         <Layers className="h-3.5 w-3.5 text-primary" />
                                         Campaign
                                     </div>
@@ -995,26 +1135,35 @@ export default function CampaignShowPage({
                                     </p>
                                 </div>
 
-                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 sm:p-5 backdrop-blur-2xl shadow-md transition-all hover:border-white/30 hover:-translate-y-0.5">
-                                    <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-white/70">
+                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 shadow-md backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
+                                    <div className="flex items-center gap-1.5 text-xs font-extrabold tracking-wider text-white/70 uppercase">
                                         <CalendarDays className="h-3.5 w-3.5 text-primary" />
                                         Created
                                     </div>
                                     <p className="mt-2 truncate text-base font-bold text-white">
-                                        {previewDesign.created_at || 'Saved Visual'}
+                                        {previewDesign.created_at ||
+                                            'Saved Visual'}
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-white/15">
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/15 pt-4">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <span className="text-xs font-bold text-white/80 mr-1">Download as:</span>
+                                    <span className="mr-1 text-xs font-bold text-white/80">
+                                        Download as:
+                                    </span>
                                     <Button
                                         type="button"
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => downloadVisualAsFormat(previewDesign.image_url, `${campaign.name}-${previewDesign.product_name || 'visual'}`, 'png')}
-                                        className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 hover:scale-105 transition-all shadow-none cursor-pointer"
+                                        onClick={() =>
+                                            downloadVisualAsFormat(
+                                                previewDesign.image_url,
+                                                `${campaign.name}-${previewDesign.product_name || 'visual'}`,
+                                                'png',
+                                            )
+                                        }
+                                        className="cursor-pointer gap-1.5 border-white/20 bg-white/10 text-xs text-white shadow-none transition-all hover:scale-105 hover:bg-white/20"
                                     >
                                         <Download className="h-3.5 w-3.5 text-primary" />
                                         PNG
@@ -1023,8 +1172,14 @@ export default function CampaignShowPage({
                                         type="button"
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => downloadVisualAsFormat(previewDesign.image_url, `${campaign.name}-${previewDesign.product_name || 'visual'}`, 'jpeg')}
-                                        className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 hover:scale-105 transition-all shadow-none cursor-pointer"
+                                        onClick={() =>
+                                            downloadVisualAsFormat(
+                                                previewDesign.image_url,
+                                                `${campaign.name}-${previewDesign.product_name || 'visual'}`,
+                                                'jpeg',
+                                            )
+                                        }
+                                        className="cursor-pointer gap-1.5 border-white/20 bg-white/10 text-xs text-white shadow-none transition-all hover:scale-105 hover:bg-white/20"
                                     >
                                         <Download className="h-3.5 w-3.5 text-blue-400" />
                                         JPEG
@@ -1033,8 +1188,14 @@ export default function CampaignShowPage({
                                         type="button"
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => downloadVisualAsFormat(previewDesign.image_url, `${campaign.name}-${previewDesign.product_name || 'visual'}`, 'svg')}
-                                        className="gap-1.5 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 hover:scale-105 transition-all shadow-none cursor-pointer"
+                                        onClick={() =>
+                                            downloadVisualAsFormat(
+                                                previewDesign.image_url,
+                                                `${campaign.name}-${previewDesign.product_name || 'visual'}`,
+                                                'svg',
+                                            )
+                                        }
+                                        className="cursor-pointer gap-1.5 border-white/20 bg-white/10 text-xs text-white shadow-none transition-all hover:scale-105 hover:bg-white/20"
                                     >
                                         <Download className="h-3.5 w-3.5 text-emerald-400" />
                                         SVG
@@ -1046,7 +1207,7 @@ export default function CampaignShowPage({
                                     variant="outline"
                                     size="sm"
                                     onClick={closePreview}
-                                    className="h-8 px-4 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white transition-all cursor-pointer"
+                                    className="h-8 cursor-pointer border-white/20 bg-white/10 px-4 text-xs text-white transition-all hover:bg-white/20 hover:text-white"
                                 >
                                     Close
                                 </Button>
@@ -1068,7 +1229,8 @@ export default function CampaignShowPage({
                                 Edit Campaign
                             </DialogTitle>
                             <DialogDescription>
-                                Update campaign name, status, and scheduled timeline.
+                                Update campaign name, status, and scheduled
+                                timeline.
                             </DialogDescription>
                         </DialogHeader>
 
@@ -1088,7 +1250,11 @@ export default function CampaignShowPage({
                                     }
                                     placeholder="e.g. Summer Launch 2026"
                                     disabled={isSaving}
-                                    className={editErrors.name ? 'border-destructive' : ''}
+                                    className={
+                                        editErrors.name
+                                            ? 'border-destructive'
+                                            : ''
+                                    }
                                 />
                                 {editErrors.name && (
                                     <p className="text-xs text-destructive">
@@ -1115,9 +1281,13 @@ export default function CampaignShowPage({
                                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring/30"
                                     >
                                         <option value="draft">Draft</option>
-                                        <option value="scheduled">Scheduled</option>
+                                        <option value="scheduled">
+                                            Scheduled
+                                        </option>
                                         <option value="active">Active</option>
-                                        <option value="completed">Completed</option>
+                                        <option value="completed">
+                                            Completed
+                                        </option>
                                     </select>
                                 </div>
 
@@ -1137,7 +1307,9 @@ export default function CampaignShowPage({
                                         disabled={isSaving}
                                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring/30"
                                     >
-                                        <option value="">No linked event</option>
+                                        <option value="">
+                                            No linked event
+                                        </option>
                                         {events.map((ev: any) => (
                                             <option key={ev.id} value={ev.id}>
                                                 {ev.name} ({ev.date})
@@ -1239,7 +1411,8 @@ export default function CampaignShowPage({
                             <span className="font-semibold text-foreground">
                                 "{campaign?.name}"
                             </span>
-                            ? This will remove the campaign record. Associated designs will remain safe in My Designs.
+                            ? This will remove the campaign record. Associated
+                            designs will remain safe in My Designs.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -1276,6 +1449,7 @@ export default function CampaignShowPage({
                     if (!open && previewDesign) {
                         return;
                     }
+
                     setIsGalleryModalOpen(open);
                 }}
             >
@@ -1296,39 +1470,51 @@ export default function CampaignShowPage({
                             closePreview();
                         }
                     }}
-                    className="max-h-[85vh] flex flex-col overflow-hidden rounded-3xl p-0 sm:max-w-3xl border-border bg-card shadow-2xl"
+                    className="flex max-h-[85vh] flex-col overflow-hidden rounded-3xl border-border bg-card p-0 shadow-2xl sm:max-w-3xl"
                 >
-                    <DialogHeader className="border-b border-border p-4 sm:p-5 bg-muted/20 shrink-0">
+                    <DialogHeader className="shrink-0 border-b border-border bg-muted/20 p-4 sm:p-5">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                                     <ImageIcon className="h-5 w-5" />
                                 </div>
                                 <div>
-                                    <DialogTitle className="text-lg sm:text-xl font-bold text-foreground">
+                                    <DialogTitle className="text-lg font-bold text-foreground sm:text-xl">
                                         Campaign Visuals
                                     </DialogTitle>
-                                    <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                                        {campaign.name} &bull; {designs.length} {designs.length === 1 ? 'creative asset' : 'creative assets'}
+                                    <DialogDescription className="mt-0.5 text-xs text-muted-foreground">
+                                        {campaign.name} &bull; {designs.length}{' '}
+                                        {designs.length === 1
+                                            ? 'creative asset'
+                                            : 'creative assets'}
                                     </DialogDescription>
                                 </div>
                             </div>
 
-                            {designs.length > 0 && available_designs.length > 0 && (
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setIsAddExistingOpen(true)}
-                                    className="h-8 gap-1.5 text-xs rounded-xl shadow-none mr-2"
-                                >
-                                    <FolderPlus className="h-3.5 w-3.5" />
-                                    Add Existing
-                                </Button>
-                            )}
+                            {designs.length > 0 &&
+                                available_designs.length > 0 && (
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() =>
+                                            setIsAddExistingOpen(true)
+                                        }
+                                        className="mr-2 h-8 gap-1.5 rounded-xl text-xs shadow-none"
+                                    >
+                                        <FolderPlus className="h-3.5 w-3.5" />
+                                        Add Existing
+                                    </Button>
+                                )}
 
                             {designs.length > 0 && (
-                                <Button asChild size="sm" className="h-8 gap-1.5 text-xs rounded-xl shadow-none mr-6">
-                                    <Link href={`/generator?campaign_id=${campaign.id}${campaign.event_id ? `&event_id=${campaign.event_id}` : ''}${campaign.product_name ? `&product_name=${encodeURIComponent(campaign.product_name)}` : ''}`}>
+                                <Button
+                                    asChild
+                                    size="sm"
+                                    className="mr-6 h-8 gap-1.5 rounded-xl text-xs shadow-none"
+                                >
+                                    <Link
+                                        href={`/generator?campaign_id=${campaign.id}${campaign.event_id ? `&event_id=${campaign.event_id}` : ''}${campaign.product_name ? `&product_name=${encodeURIComponent(campaign.product_name)}` : ''}`}
+                                    >
                                         <Plus className="h-3.5 w-3.5" />
                                         Generate Visual
                                     </Link>
@@ -1337,31 +1523,43 @@ export default function CampaignShowPage({
                         </div>
                     </DialogHeader>
 
-                    <div className="flex-1 overflow-y-auto min-h-0 p-5 sm:p-6">
+                    <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
                         {designs.length === 0 ? (
-                            <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
+                            <div className="flex flex-col items-center justify-center space-y-4 py-12 text-center">
                                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                                     <ImageIcon className="h-8 w-8" />
                                 </div>
-                                <div className="space-y-1 max-w-sm">
-                                    <h3 className="text-base font-bold text-foreground">No Campaign Visuals Yet</h3>
-                                    <p className="text-xs text-muted-foreground leading-relaxed">
-                                        There are currently no visual assets generated or linked to this campaign. Generate AI marketing creatives tailored to this campaign.
+                                <div className="max-w-sm space-y-1">
+                                    <h3 className="text-base font-bold text-foreground">
+                                        No Campaign Visuals Yet
+                                    </h3>
+                                    <p className="text-xs leading-relaxed text-muted-foreground">
+                                        There are currently no visual assets
+                                        generated or linked to this campaign.
+                                        Generate AI marketing creatives tailored
+                                        to this campaign.
                                     </p>
                                 </div>
-                                <div className="flex items-center gap-2 mt-2">
+                                <div className="mt-2 flex items-center gap-2">
                                     {available_designs.length > 0 && (
                                         <Button
                                             variant="outline"
-                                            onClick={() => setIsAddExistingOpen(true)}
-                                            className="gap-2 text-xs rounded-xl shadow-sm"
+                                            onClick={() =>
+                                                setIsAddExistingOpen(true)
+                                            }
+                                            className="gap-2 rounded-xl text-xs shadow-sm"
                                         >
                                             <FolderPlus className="h-4 w-4" />
                                             Add Existing Visual
                                         </Button>
                                     )}
-                                    <Button asChild className="gap-2 text-xs rounded-xl shadow-sm">
-                                        <Link href={`/generator?campaign_id=${campaign.id}${campaign.event_id ? `&event_id=${campaign.event_id}` : ''}${campaign.product_name ? `&product_name=${encodeURIComponent(campaign.product_name)}` : ''}`}>
+                                    <Button
+                                        asChild
+                                        className="gap-2 rounded-xl text-xs shadow-sm"
+                                    >
+                                        <Link
+                                            href={`/generator?campaign_id=${campaign.id}${campaign.event_id ? `&event_id=${campaign.event_id}` : ''}${campaign.product_name ? `&product_name=${encodeURIComponent(campaign.product_name)}` : ''}`}
+                                        >
                                             <Sparkles className="h-4 w-4" />
                                             Generate Visuals in AI Studio
                                         </Link>
@@ -1369,17 +1567,22 @@ export default function CampaignShowPage({
                                 </div>
                             </div>
                         ) : (
-                            <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
+                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                                 {designs.map((design: any, index: number) => (
                                     <div
                                         key={design.id || index}
-                                        onClick={() => openPreview(design, true)}
-                                        className="group relative aspect-square w-full rounded-2xl overflow-hidden bg-muted/20 border border-border cursor-pointer shadow-xs hover:shadow-xl hover:border-primary/50 transition-all duration-300"
+                                        onClick={() =>
+                                            openPreview(design, true)
+                                        }
+                                        className="group relative aspect-square w-full cursor-pointer overflow-hidden rounded-2xl border border-border bg-muted/20 shadow-xs transition-all duration-300 hover:border-primary/50 hover:shadow-xl"
                                     >
                                         {design.image_url ? (
                                             <img
                                                 src={design.image_url}
-                                                alt={design.product_name || `Visual #${index + 1}`}
+                                                alt={
+                                                    design.product_name ||
+                                                    `Visual #${index + 1}`
+                                                }
                                                 className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                                             />
                                         ) : (
@@ -1408,67 +1611,96 @@ export default function CampaignShowPage({
                     }
                 }}
             >
-                <DialogContent className="rounded-2xl sm:max-w-2xl max-h-[85vh] flex flex-col">
+                <DialogContent className="flex max-h-[85vh] flex-col rounded-2xl sm:max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle className="text-lg flex items-center gap-2">
+                        <DialogTitle className="flex items-center gap-2 text-lg">
                             <FolderPlus className="h-5 w-5 text-amber-500" />
                             Add Existing Visuals
                         </DialogTitle>
                         <DialogDescription>
                             {campaign.event_name ? (
                                 <span>
-                                    Select visuals created specifically for <span className="font-semibold text-amber-500">{campaign.event_name}</span> to link to <span className="font-semibold text-foreground">"{campaign.name}"</span>.
+                                    Select visuals created specifically for{' '}
+                                    <span className="font-semibold text-amber-500">
+                                        {campaign.event_name}
+                                    </span>{' '}
+                                    to link to{' '}
+                                    <span className="font-semibold text-foreground">
+                                        "{campaign.name}"
+                                    </span>
+                                    .
                                 </span>
                             ) : (
                                 <span>
-                                    This campaign does not have an assigned event/holiday.
+                                    This campaign does not have an assigned
+                                    event/holiday.
                                 </span>
                             )}
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="flex-1 overflow-y-auto min-h-0 mt-2">
+                    <div className="mt-2 min-h-0 flex-1 overflow-y-auto">
                         {!campaign.event_id ? (
-                            <div className="py-8 text-center space-y-2">
-                                <p className="text-sm font-medium text-foreground">No Event Associated</p>
-                                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                                    Visuals can only be attached to campaigns created for a specific holiday or event. Edit this campaign to assign an event.
+                            <div className="space-y-2 py-8 text-center">
+                                <p className="text-sm font-medium text-foreground">
+                                    No Event Associated
+                                </p>
+                                <p className="mx-auto max-w-sm text-xs text-muted-foreground">
+                                    Visuals can only be attached to campaigns
+                                    created for a specific holiday or event.
+                                    Edit this campaign to assign an event.
                                 </p>
                             </div>
                         ) : available_designs.length === 0 ? (
-                            <div className="py-8 text-center space-y-3">
+                            <div className="space-y-3 py-8 text-center">
                                 <p className="text-sm font-medium text-foreground">
                                     No Visuals Found for {campaign.event_name}
                                 </p>
-                                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                                    You don't have any existing visuals created for this event. Generate a new visual tailored to this campaign in AI Studio.
+                                <p className="mx-auto max-w-sm text-xs text-muted-foreground">
+                                    You don't have any existing visuals created
+                                    for this event. Generate a new visual
+                                    tailored to this campaign in AI Studio.
                                 </p>
-                                <Button asChild size="sm" className="gap-2 text-xs rounded-xl shadow-xs">
-                                    <Link href={`/generator?campaign_id=${campaign.id}${campaign.event_id ? `&event_id=${campaign.event_id}` : ''}${campaign.product_name ? `&product_name=${encodeURIComponent(campaign.product_name)}` : ''}`}>
+                                <Button
+                                    asChild
+                                    size="sm"
+                                    className="gap-2 rounded-xl text-xs shadow-xs"
+                                >
+                                    <Link
+                                        href={`/generator?campaign_id=${campaign.id}${campaign.event_id ? `&event_id=${campaign.event_id}` : ''}${campaign.product_name ? `&product_name=${encodeURIComponent(campaign.product_name)}` : ''}`}
+                                    >
                                         <Sparkles className="h-3.5 w-3.5" />
                                         Generate Visual in AI Studio
                                     </Link>
                                 </Button>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
                                 {available_designs.map((d: any) => {
-                                    const isChosen = existingDesignIds.includes(d.id);
+                                    const isChosen = existingDesignIds.includes(
+                                        d.id,
+                                    );
+
                                     return (
                                         <button
                                             key={d.id}
                                             type="button"
-                                            onClick={() => toggleExistingDesign(d.id)}
-                                            className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all duration-200 cursor-pointer group ${
+                                            onClick={() =>
+                                                toggleExistingDesign(d.id)
+                                            }
+                                            className={`group relative aspect-square cursor-pointer overflow-hidden rounded-xl border-2 transition-all duration-200 ${
                                                 isChosen
-                                                    ? 'border-primary ring-2 ring-primary/40 shadow-lg'
+                                                    ? 'border-primary shadow-lg ring-2 ring-primary/40'
                                                     : 'border-amber-400/50 hover:border-amber-400'
                                             }`}
                                         >
                                             {d.image_url ? (
                                                 <img
                                                     src={d.image_url}
-                                                    alt={d.product_name || 'Visual'}
+                                                    alt={
+                                                        d.product_name ||
+                                                        'Visual'
+                                                    }
                                                     className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
                                                 />
                                             ) : (
@@ -1478,16 +1710,17 @@ export default function CampaignShowPage({
                                             )}
 
                                             {isChosen && (
-                                                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                                <div className="absolute inset-0 flex items-center justify-center bg-primary/20">
                                                     <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow">
                                                         <Check className="h-4 w-4 stroke-[3]" />
                                                     </div>
                                                 </div>
                                             )}
 
-                                            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6">
-                                                <p className="text-[10px] font-medium text-white truncate">
-                                                    {d.product_name || 'Untitled'}
+                                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6">
+                                                <p className="truncate text-[10px] font-medium text-white">
+                                                    {d.product_name ||
+                                                        'Untitled'}
                                                 </p>
                                             </div>
                                         </button>
@@ -1512,7 +1745,10 @@ export default function CampaignShowPage({
                         <Button
                             type="button"
                             onClick={confirmAttachExisting}
-                            disabled={isAttachingExisting || existingDesignIds.length === 0}
+                            disabled={
+                                isAttachingExisting ||
+                                existingDesignIds.length === 0
+                            }
                             className="gap-2"
                         >
                             <FolderPlus className="h-4 w-4" />
@@ -1552,35 +1788,27 @@ function CampaignLifecycle({ status }: { status: string }) {
                 return (
                     <div key={item.key} className="flex items-center gap-3">
                         <div
-                            className={`
-                                flex
-                                h-7
-                                w-7
-                                shrink-0
-                                items-center
-                                justify-center
-                                rounded-full
-                                text-[10px]
-                                font-semibold
-                                ${isCurrent
+                            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${
+                                isCurrent
                                     ? 'bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/20'
                                     : isComplete
-                                        ? 'bg-primary/10 text-primary'
-                                        : 'bg-muted text-muted-foreground'
-                                }
-                            `}
+                                      ? 'bg-primary/10 text-primary'
+                                      : 'bg-muted text-muted-foreground'
+                            } `}
                         >
-                            {isComplete ? <Check className="h-3.5 w-3.5" /> : index + 1}
+                            {isComplete ? (
+                                <Check className="h-3.5 w-3.5" />
+                            ) : (
+                                index + 1
+                            )}
                         </div>
 
                         <span
-                            className={`
-                                text-sm
-                                ${isCurrent
+                            className={`text-sm ${
+                                isCurrent
                                     ? 'font-semibold text-foreground'
                                     : 'text-muted-foreground'
-                                }
-                            `}
+                            } `}
                         >
                             {item.label}
                         </span>

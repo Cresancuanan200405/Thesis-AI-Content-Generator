@@ -26,9 +26,9 @@ export default function ProductShowPage({ product }: any) {
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-2">
-                    <Card className="shadow-sm overflow-hidden">
+                    <Card className="overflow-hidden shadow-sm">
                         {product?.image_url && (
-                            <div className="relative h-64 w-full overflow-hidden bg-muted/40 border-b border-border/60">
+                            <div className="relative h-64 w-full overflow-hidden border-b border-border/60 bg-muted/40">
                                 <img
                                     src={product.image_url}
                                     alt={product.name}
@@ -45,7 +45,10 @@ export default function ProductShowPage({ product }: any) {
                                     Price
                                 </p>
                                 <p className="mt-1 text-lg font-semibold">
-                                    ₱{Number(product?.price ?? 0).toLocaleString()}
+                                    ₱
+                                    {Number(
+                                        product?.price ?? 0,
+                                    ).toLocaleString()}
                                 </p>
                             </div>
                             <div>

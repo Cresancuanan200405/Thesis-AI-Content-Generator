@@ -221,15 +221,19 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             src={auth.user?.avatar}
                                             alt={auth.user?.name}
                                         />
-                                        <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white text-xs">
+                                        <AvatarFallback className="rounded-lg bg-neutral-200 text-xs text-black dark:bg-neutral-700 dark:text-white">
                                             {getInitials(auth.user?.name ?? '')}
                                         </AvatarFallback>
                                     </Avatar>
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="relative w-56 overflow-visible" align="end" sideOffset={10}>
+                            <DropdownMenuContent
+                                className="relative w-56 overflow-visible"
+                                align="end"
+                                sideOffset={10}
+                            >
                                 {/* Directional Indicator Pointer back to icon */}
-                                <div className="pointer-events-none absolute -top-1.5 right-3 h-3 w-3 rotate-45 border-l border-t border-border bg-popover" />
+                                <div className="pointer-events-none absolute -top-1.5 right-3 h-3 w-3 rotate-45 border-t border-l border-border bg-popover" />
                                 {auth.user && (
                                     <UserMenuContent user={auth.user} />
                                 )}

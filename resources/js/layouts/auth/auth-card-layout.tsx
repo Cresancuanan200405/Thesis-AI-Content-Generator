@@ -21,7 +21,7 @@ export default function AuthCardLayout({
     description?: string;
 }>) {
     return (
-        <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-4 sm:p-6 text-foreground overflow-hidden selection:bg-primary/20 selection:text-primary">
+        <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background p-4 text-foreground selection:bg-primary/20 selection:text-primary sm:p-6">
             {/* Ambient Fixed Background Glow Orbs */}
             <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
                 <div className="absolute -top-32 left-1/4 h-[500px] w-[500px] rounded-full bg-primary/15 blur-[140px] dark:bg-primary/20" />
@@ -32,7 +32,7 @@ export default function AuthCardLayout({
             <div className="flex w-full max-w-md flex-col gap-6">
                 <Link
                     href={home()}
-                    className="flex items-center gap-2.5 self-center font-medium transition-transform active:scale-95 group"
+                    className="group flex items-center gap-2.5 self-center font-medium transition-transform active:scale-95"
                 >
                     <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/30 transition-transform duration-200 group-hover:scale-105">
                         <AppLogoIcon className="h-5 w-5 fill-current" />
@@ -41,24 +41,27 @@ export default function AuthCardLayout({
                         <span className="text-base font-extrabold tracking-tight text-foreground">
                             MarketPilot
                         </span>
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-primary px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
                             <Sparkles className="h-2.5 w-2.5" />
                             AI Studio
                         </span>
                     </div>
                 </Link>
 
-                <div className="rounded-3xl border border-white/25 dark:border-white/10 bg-card/85 dark:bg-slate-900/80 backdrop-blur-2xl shadow-2xl overflow-hidden p-6 sm:p-8">
-                    <div className="text-center mb-6 space-y-1.5">
-                        <h1 className="text-2xl font-extrabold tracking-tight text-foreground">{title}</h1>
-                        {description && <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>}
+                <div className="overflow-hidden rounded-3xl border border-white/25 bg-card/85 p-6 shadow-2xl backdrop-blur-2xl sm:p-8 dark:border-white/10 dark:bg-slate-900/80">
+                    <div className="mb-6 space-y-1.5 text-center">
+                        <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
+                            {title}
+                        </h1>
+                        {description && (
+                            <p className="text-xs leading-relaxed text-muted-foreground">
+                                {description}
+                            </p>
+                        )}
                     </div>
-                    <div>
-                        {children}
-                    </div>
+                    <div>{children}</div>
                 </div>
             </div>
         </div>
     );
 }
-

@@ -108,8 +108,7 @@ const eventTypeStyles: Record<
 */
 
 const statusGlow: Record<string, string> = {
-    active:
-        'border-emerald-500/40 shadow-[0_0_20px_-3px_rgba(16,185,129,0.15)] hover:border-emerald-500/70 hover:shadow-[0_0_25px_-3px_rgba(16,185,129,0.28)] dark:border-emerald-500/30 dark:shadow-[0_0_20px_-3px_rgba(16,185,129,0.1)] dark:hover:border-emerald-500/60 dark:hover:shadow-[0_0_25px_-3px_rgba(16,185,129,0.25)]',
+    active: 'border-emerald-500/40 shadow-[0_0_20px_-3px_rgba(16,185,129,0.15)] hover:border-emerald-500/70 hover:shadow-[0_0_25px_-3px_rgba(16,185,129,0.28)] dark:border-emerald-500/30 dark:shadow-[0_0_20px_-3px_rgba(16,185,129,0.1)] dark:hover:border-emerald-500/60 dark:hover:shadow-[0_0_25px_-3px_rgba(16,185,129,0.25)]',
 
     scheduled:
         'border-blue-500/40 shadow-[0_0_20px_-3px_rgba(59,130,246,0.15)] hover:border-blue-500/70 hover:shadow-[0_0_25px_-3px_rgba(59,130,246,0.28)] dark:border-blue-500/30 dark:shadow-[0_0_20px_-3px_rgba(59,130,246,0.1)] dark:hover:border-blue-500/60 dark:hover:shadow-[0_0_25px_-3px_rgba(59,130,246,0.25)]',
@@ -117,8 +116,7 @@ const statusGlow: Record<string, string> = {
     completed:
         'border-violet-500/40 shadow-[0_0_20px_-3px_rgba(139,92,246,0.15)] hover:border-violet-500/70 hover:shadow-[0_0_25px_-3px_rgba(139,92,246,0.28)] dark:border-violet-500/30 dark:shadow-[0_0_20px_-3px_rgba(139,92,246,0.1)] dark:hover:border-violet-500/60 dark:hover:shadow-[0_0_25px_-3px_rgba(139,92,246,0.25)]',
 
-    draft:
-        'border-amber-500/30 shadow-[0_0_20px_-3px_rgba(245,158,11,0.1)] hover:border-amber-500/60 hover:shadow-[0_0_25px_-3px_rgba(245,158,11,0.22)] dark:border-amber-500/20 dark:shadow-[0_0_20px_-3px_rgba(245,158,11,0.08)] dark:hover:border-amber-500/50 dark:hover:shadow-[0_0_25px_-3px_rgba(245,158,11,0.2)]',
+    draft: 'border-amber-500/30 shadow-[0_0_20px_-3px_rgba(245,158,11,0.1)] hover:border-amber-500/60 hover:shadow-[0_0_25px_-3px_rgba(245,158,11,0.22)] dark:border-amber-500/20 dark:shadow-[0_0_20px_-3px_rgba(245,158,11,0.08)] dark:hover:border-amber-500/50 dark:hover:shadow-[0_0_25px_-3px_rgba(245,158,11,0.2)]',
 };
 
 const statusIconColor: Record<
@@ -158,13 +156,7 @@ const statusDot: Record<string, string> = {
     completed: 'bg-violet-500',
 };
 
-const statusOptions = [
-    'all',
-    'active',
-    'scheduled',
-    'draft',
-    'completed',
-];
+const statusOptions = ['all', 'active', 'scheduled', 'draft', 'completed'];
 
 /*
 |--------------------------------------------------------------------------
@@ -190,10 +182,7 @@ function formatDate(date?: string | null) {
     });
 }
 
-function formatDateRange(
-    startDate?: string | null,
-    endDate?: string | null,
-) {
+function formatDateRange(startDate?: string | null, endDate?: string | null) {
     if (!startDate && !endDate) {
         return 'Dates not set';
     }
@@ -246,7 +235,9 @@ export default function CampaignsPage({
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [editingCampaign, setEditingCampaign] = useState<any>(null);
     const [isSavingEdit, setIsSavingEdit] = useState(false);
-    const [editFormErrors, setEditFormErrors] = useState<Record<string, string>>({});
+    const [editFormErrors, setEditFormErrors] = useState<
+        Record<string, string>
+    >({});
     const [editFormData, setEditFormData] = useState({
         name: '',
         status: 'draft',
@@ -260,12 +251,19 @@ export default function CampaignsPage({
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
+
             if (params.get('create') === 'true') {
                 const eventId = params.get('event_id') || '';
-                const evt = events.find((e: any) => String(e.id) === String(eventId));
+                const evt = events.find(
+                    (e: any) => String(e.id) === String(eventId),
+                );
                 const prodName = params.get('product_name') || '';
                 setFormData({
-                    name: evt ? `${evt.name} Campaign` : prodName ? `${prodName} Campaign` : '',
+                    name: evt
+                        ? `${evt.name} Campaign`
+                        : prodName
+                          ? `${prodName} Campaign`
+                          : '',
                     event_id: eventId,
                     start_date: evt?.date || '',
                     end_date: evt?.date || '',
@@ -277,7 +275,9 @@ export default function CampaignsPage({
 
     /* Event Picker Modal State (Same as AI Marketing Studio) */
     const [isEventModalOpen, setIsEventModalOpen] = useState(false);
-    const [eventModalTarget, setEventModalTarget] = useState<'create' | 'edit'>('create');
+    const [eventModalTarget, setEventModalTarget] = useState<'create' | 'edit'>(
+        'create',
+    );
     const [eventSearchQuery, setEventSearchQuery] = useState('');
     const [eventCategoryFilter, setEventCategoryFilter] = useState('all');
     const currentYear = String(new Date().getFullYear());
@@ -288,9 +288,13 @@ export default function CampaignsPage({
         events.forEach((e: any) => {
             if (e.date) {
                 const yr = e.date.substring(0, 4);
-                if (yr) yrs.add(yr);
+
+                if (yr) {
+                    yrs.add(yr);
+                }
             }
         });
+
         return Array.from(yrs).sort();
     }, [events]);
 
@@ -298,17 +302,26 @@ export default function CampaignsPage({
         return events.filter((evt: any) => {
             const matchesSearch =
                 !eventSearchQuery.trim() ||
-                evt.name?.toLowerCase().includes(eventSearchQuery.toLowerCase()) ||
-                evt.description?.toLowerCase().includes(eventSearchQuery.toLowerCase()) ||
+                evt.name
+                    ?.toLowerCase()
+                    .includes(eventSearchQuery.toLowerCase()) ||
+                evt.description
+                    ?.toLowerCase()
+                    .includes(eventSearchQuery.toLowerCase()) ||
                 evt.date?.includes(eventSearchQuery);
 
             const cat = evt.category || evt.type || 'holiday';
             const matchesCategory =
                 eventCategoryFilter === 'all' ||
-                (eventCategoryFilter === 'regular' && (cat === 'regular' || cat === 'holiday')) ||
-                (eventCategoryFilter === 'special_non_working' && cat === 'special_non_working') ||
+                (eventCategoryFilter === 'regular' &&
+                    (cat === 'regular' || cat === 'holiday')) ||
+                (eventCategoryFilter === 'special_non_working' &&
+                    cat === 'special_non_working') ||
                 (eventCategoryFilter === 'islamic' && cat === 'islamic') ||
-                (eventCategoryFilter === 'commercial' && (cat === 'commercial' || cat === 'sale' || cat === 'retail')) ||
+                (eventCategoryFilter === 'commercial' &&
+                    (cat === 'commercial' ||
+                        cat === 'sale' ||
+                        cat === 'retail')) ||
                 (eventCategoryFilter === 'custom' && cat === 'custom');
 
             const matchesYear =
@@ -337,17 +350,32 @@ export default function CampaignsPage({
                 name: current.name || `${evt.name} Campaign`,
             }));
         }
+
         setIsEventModalOpen(false);
     };
 
     const selectedCreateEvent = useMemo(() => {
-        if (!formData.event_id) return null;
-        return events.find((e: any) => String(e.id) === String(formData.event_id)) || null;
+        if (!formData.event_id) {
+            return null;
+        }
+
+        return (
+            events.find(
+                (e: any) => String(e.id) === String(formData.event_id),
+            ) || null
+        );
     }, [events, formData.event_id]);
 
     const selectedEditEvent = useMemo(() => {
-        if (!editFormData.event_id) return null;
-        return events.find((e: any) => String(e.id) === String(editFormData.event_id)) || null;
+        if (!editFormData.event_id) {
+            return null;
+        }
+
+        return (
+            events.find(
+                (e: any) => String(e.id) === String(editFormData.event_id),
+            ) || null
+        );
     }, [events, editFormData.event_id]);
 
     const openEditDialog = (campaign: any) => {
@@ -365,11 +393,16 @@ export default function CampaignsPage({
 
     const handleEditCampaign = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        if (!editingCampaign) return;
+
+        if (!editingCampaign) {
+            return;
+        }
 
         const name = editFormData.name.trim();
+
         if (!name) {
             setEditFormErrors({ name: 'Campaign name is required.' });
+
             return;
         }
 
@@ -394,7 +427,9 @@ export default function CampaignsPage({
                 },
                 onError: (errors) => {
                     setEditFormErrors(errors as Record<string, string>);
-                    toast.error('Failed to update campaign. Please check the inputs.');
+                    toast.error(
+                        'Failed to update campaign. Please check the inputs.',
+                    );
                 },
                 onFinish: () => {
                     setIsSavingEdit(false);
@@ -413,7 +448,10 @@ export default function CampaignsPage({
     const [isDeleting, setIsDeleting] = useState(false);
 
     const confirmDeleteCampaign = () => {
-        if (!campaignToDelete) return;
+        if (!campaignToDelete) {
+            return;
+        }
+
         setIsDeleting(true);
         router.delete(`/campaigns/${campaignToDelete.id}`, {
             preserveScroll: true,
@@ -438,16 +476,23 @@ export default function CampaignsPage({
 
     const handleDownloadCampaign = (campaign: any) => {
         const campaignDesigns = campaign.designs || [];
+
         if (campaignDesigns.length === 0) {
-            toast.info(`No design assets in "${campaign.name}" yet. Click "Create Design" to add visuals.`);
+            toast.info(
+                `No design assets in "${campaign.name}" yet. Click "Create Design" to add visuals.`,
+            );
+
             return;
         }
 
         let downloaded = 0;
-        toast.info(`Preparing ${campaignDesigns.length} visual asset${campaignDesigns.length > 1 ? 's' : ''} for download...`);
+        toast.info(
+            `Preparing ${campaignDesigns.length} visual asset${campaignDesigns.length > 1 ? 's' : ''} for download...`,
+        );
 
         campaignDesigns.forEach((design: any, index: number) => {
             const downloadUrl = design.download_url || design.image_url;
+
             if (downloadUrl) {
                 downloaded++;
                 setTimeout(() => {
@@ -463,7 +508,9 @@ export default function CampaignsPage({
 
         if (downloaded > 0) {
             setTimeout(() => {
-                toast.success(`Downloading ${downloaded} design asset${downloaded > 1 ? 's' : ''} for "${campaign.name}"!`);
+                toast.success(
+                    `Downloading ${downloaded} design asset${downloaded > 1 ? 's' : ''} for "${campaign.name}"!`,
+                );
             }, 300);
         } else {
             toast.info('Design visual files are not available for download.');
@@ -498,13 +545,11 @@ export default function CampaignsPage({
 
     const stats = useMemo(() => {
         const active = campaigns.filter(
-            (campaign: any) =>
-                (campaign.status ?? 'draft') === 'active',
+            (campaign: any) => (campaign.status ?? 'draft') === 'active',
         ).length;
 
         const scheduled = campaigns.filter(
-            (campaign: any) =>
-                (campaign.status ?? 'draft') === 'scheduled',
+            (campaign: any) => (campaign.status ?? 'draft') === 'scheduled',
         ).length;
 
         const designs = campaigns.reduce(
@@ -547,22 +592,22 @@ export default function CampaignsPage({
     |--------------------------------------------------------------------------
     */
 
-    const handleCreateCampaign = (
-        event: FormEvent<HTMLFormElement>,
-    ) => {
+    const handleCreateCampaign = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
         const name = formData.name.trim();
 
         if (!name) {
             setFormErrors({ name: 'Campaign name is required.' });
+
             return;
         }
 
         setIsSubmitting(true);
         setFormErrors({});
 
-        const startDate = formData.start_date || new Date().toISOString().split('T')[0];
+        const startDate =
+            formData.start_date || new Date().toISOString().split('T')[0];
         const endDate = formData.end_date || startDate;
 
         router.post(
@@ -592,7 +637,9 @@ export default function CampaignsPage({
                 },
                 onError: (errors) => {
                     setFormErrors(errors as Record<string, string>);
-                    toast.error('Failed to create campaign. Please check the inputs.');
+                    toast.error(
+                        'Failed to create campaign. Please check the inputs.',
+                    );
                 },
                 onFinish: () => {
                     setIsSubmitting(false);
@@ -624,24 +671,24 @@ export default function CampaignsPage({
 
             <div className="min-h-screen bg-background text-foreground">
                 <div className="p-4 md:p-6 lg:p-8">
-
                     {/* =====================================================
                         HEADER
                     ====================================================== */}
 
-                    <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-border/60">
+                    <div className="mb-6 flex flex-col gap-3 border-b border-border/60 pb-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-2.5">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                                 <Layers className="h-4 w-4" />
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <h1 className="text-base sm:text-lg font-bold text-foreground tracking-tight">
+                                    <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
                                         Campaigns
                                     </h1>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    Organize and manage your marketing campaigns around events, seasons, and launches.
+                                    Organize and manage your marketing campaigns
+                                    around events, seasons, and launches.
                                 </p>
                             </div>
                         </div>
@@ -660,7 +707,7 @@ export default function CampaignsPage({
                                     setIsCreateOpen(true);
                                 }}
                                 size="sm"
-                                className="h-8 gap-1.5 font-semibold text-xs shadow-2xs"
+                                className="h-8 gap-1.5 text-xs font-semibold shadow-2xs"
                             >
                                 <Plus className="h-3.5 w-3.5" />
                                 Create Campaign
@@ -734,7 +781,7 @@ export default function CampaignsPage({
                         TOOLBAR CARD (FILTERS, STATS & VIEW MODE)
                     ====================================================== */}
 
-                    <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-xs">
+                    <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3 shadow-xs sm:p-4">
                         <div className="inline-flex flex-wrap gap-1 rounded-xl border border-border/70 bg-muted/30 p-1">
                             {statusOptions.map((status) => {
                                 const active =
@@ -745,23 +792,14 @@ export default function CampaignsPage({
                                     <button
                                         key={status}
                                         type="button"
-                                        onClick={() => changeStatusFilter(status)}
-                                        className={`
-                                            inline-flex
-                                            items-center
-                                            gap-1.5
-                                            rounded-lg
-                                            px-3
-                                            py-1.5
-                                            text-xs
-                                            font-medium
-                                            capitalize
-                                            transition-all
-                                            ${active
-                                                ? 'bg-card text-foreground shadow-xs font-semibold'
+                                        onClick={() =>
+                                            changeStatusFilter(status)
+                                        }
+                                        className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-all ${
+                                            active
+                                                ? 'bg-card font-semibold text-foreground shadow-xs'
                                                 : 'text-muted-foreground hover:bg-card/60 hover:text-foreground'
-                                            }
-                                        `}
+                                        } `}
                                     >
                                         {status !== 'all' && (
                                             <span
@@ -769,7 +807,9 @@ export default function CampaignsPage({
                                             />
                                         )}
 
-                                        {status === 'all' ? 'All Campaigns' : status}
+                                        {status === 'all'
+                                            ? 'All Campaigns'
+                                            : status}
                                     </button>
                                 );
                             })}
@@ -778,16 +818,19 @@ export default function CampaignsPage({
                         <div className="flex items-center gap-3">
                             <p className="text-xs font-medium text-muted-foreground">
                                 Showing {sortedCampaigns.length}{' '}
-                                {sortedCampaigns.length === 1 ? 'campaign' : 'campaigns'}
+                                {sortedCampaigns.length === 1
+                                    ? 'campaign'
+                                    : 'campaigns'}
                             </p>
                             <div className="flex items-center rounded-lg border border-border/80 bg-muted/40 p-0.5">
                                 <button
                                     type="button"
                                     onClick={() => setViewMode('grid')}
-                                    className={`flex h-7 w-7 items-center justify-center rounded-md transition-all ${viewMode === 'grid'
-                                        ? 'bg-card text-foreground shadow-xs'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                        }`}
+                                    className={`flex h-7 w-7 items-center justify-center rounded-md transition-all ${
+                                        viewMode === 'grid'
+                                            ? 'bg-card text-foreground shadow-xs'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
                                     aria-label="Grid view"
                                 >
                                     <LayoutGrid className="h-3.5 w-3.5" />
@@ -795,10 +838,11 @@ export default function CampaignsPage({
                                 <button
                                     type="button"
                                     onClick={() => setViewMode('list')}
-                                    className={`flex h-7 w-7 items-center justify-center rounded-md transition-all ${viewMode === 'list'
-                                        ? 'bg-card text-foreground shadow-xs'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                        }`}
+                                    className={`flex h-7 w-7 items-center justify-center rounded-md transition-all ${
+                                        viewMode === 'list'
+                                            ? 'bg-card text-foreground shadow-xs'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
                                     aria-label="List view"
                                 >
                                     <List className="h-3.5 w-3.5" />
@@ -841,10 +885,17 @@ export default function CampaignsPage({
                         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                             {sortedCampaigns.map((campaign: any) => {
                                 const status = campaign.status ?? 'draft';
-                                const eventName = campaign.event_name ?? 'No event selected';
-                                const designCount = Number(campaign.design_count || (campaign.designs?.length ?? 0));
-                                const currentGlow = statusGlow[status] ?? statusGlow.draft;
-                                const currentIcon = statusIconColor[status] ?? statusIconColor.draft;
+                                const eventName =
+                                    campaign.event_name ?? 'No event selected';
+                                const designCount = Number(
+                                    campaign.design_count ||
+                                        (campaign.designs?.length ?? 0),
+                                );
+                                const currentGlow =
+                                    statusGlow[status] ?? statusGlow.draft;
+                                const currentIcon =
+                                    statusIconColor[status] ??
+                                    statusIconColor.draft;
 
                                 return (
                                     <div
@@ -852,7 +903,7 @@ export default function CampaignsPage({
                                         onClick={() =>
                                             router.visit(
                                                 campaign.show_url ??
-                                                `/campaigns/${campaign.id}`,
+                                                    `/campaigns/${campaign.id}`,
                                             )
                                         }
                                         role="button"
@@ -864,36 +915,16 @@ export default function CampaignsPage({
                                             ) {
                                                 router.visit(
                                                     campaign.show_url ??
-                                                    `/campaigns/${campaign.id}`,
+                                                        `/campaigns/${campaign.id}`,
                                                 );
                                             }
                                         }}
-                                        className={`
-                                            group
-                                            relative
-                                            flex
-                                            min-h-[210px]
-                                            cursor-pointer
-                                            flex-col
-                                            justify-between
-                                            overflow-hidden
-                                            rounded-2xl
-                                            border
-                                            bg-card
-                                            text-left
-                                            transition-all
-                                            duration-300
-                                            hover:-translate-y-1
-                                            focus:outline-none
-                                            focus:ring-2
-                                            focus:ring-primary/40
-                                            ${currentGlow}
-                                        `}
+                                        className={`group relative flex min-h-[210px] cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border bg-card text-left transition-all duration-300 hover:-translate-y-1 focus:ring-2 focus:ring-primary/40 focus:outline-none ${currentGlow} `}
                                     >
                                         {/* CARD TOP HEADER: LOGO BESIDE NAME + DOTTED MENU */}
                                         <div className="border-b border-border/60 p-5">
                                             <div className="flex items-start justify-between gap-3">
-                                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                <div className="flex min-w-0 flex-1 items-center gap-3">
                                                     {/* ICON LOGO */}
                                                     <div
                                                         className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105 ${currentIcon.bg} ${currentIcon.text}`}
@@ -910,17 +941,25 @@ export default function CampaignsPage({
                                                             <span
                                                                 className={`inline-block h-2 w-2 rounded-full ${currentIcon.dot}`}
                                                             />
-                                                            <span className="font-medium capitalize text-muted-foreground">
-                                                                {currentIcon.label}
+                                                            <span className="font-medium text-muted-foreground capitalize">
+                                                                {
+                                                                    currentIcon.label
+                                                                }
                                                             </span>
-                                                            {eventName && eventName !== 'No event selected' && (
-                                                                <>
-                                                                    <span className="text-muted-foreground/40">•</span>
-                                                                    <span className="truncate text-muted-foreground">
-                                                                        {eventName}
-                                                                    </span>
-                                                                </>
-                                                            )}
+                                                            {eventName &&
+                                                                eventName !==
+                                                                    'No event selected' && (
+                                                                    <>
+                                                                        <span className="text-muted-foreground/40">
+                                                                            •
+                                                                        </span>
+                                                                        <span className="truncate text-muted-foreground">
+                                                                            {
+                                                                                eventName
+                                                                            }
+                                                                        </span>
+                                                                    </>
+                                                                )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -932,14 +971,18 @@ export default function CampaignsPage({
                                                     }}
                                                 >
                                                     <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
+                                                        <DropdownMenuTrigger
+                                                            asChild
+                                                        >
                                                             <button
                                                                 type="button"
-                                                                onClick={(e) => {
+                                                                onClick={(
+                                                                    e,
+                                                                ) => {
                                                                     e.preventDefault();
                                                                     e.stopPropagation();
                                                                 }}
-                                                                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                                                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:ring-2 focus:ring-primary/30 focus:outline-none"
                                                                 aria-label="Campaign actions"
                                                             >
                                                                 <MoreVertical className="h-4 w-4" />
@@ -948,13 +991,17 @@ export default function CampaignsPage({
 
                                                         <DropdownMenuContent
                                                             align="end"
-                                                            className="w-48 rounded-xl border border-border bg-popover p-1.5 shadow-lg z-50"
+                                                            className="z-50 w-48 rounded-xl border border-border bg-popover p-1.5 shadow-lg"
                                                         >
                                                             <DropdownMenuItem
-                                                                onClick={(e) => {
+                                                                onClick={(
+                                                                    e,
+                                                                ) => {
                                                                     e.preventDefault();
                                                                     e.stopPropagation();
-                                                                    openEditDialog(campaign);
+                                                                    openEditDialog(
+                                                                        campaign,
+                                                                    );
                                                                 }}
                                                                 className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent"
                                                             >
@@ -963,10 +1010,14 @@ export default function CampaignsPage({
                                                             </DropdownMenuItem>
 
                                                             <DropdownMenuItem
-                                                                onClick={(e) => {
+                                                                onClick={(
+                                                                    e,
+                                                                ) => {
                                                                     e.preventDefault();
                                                                     e.stopPropagation();
-                                                                    handleDownloadCampaign(campaign);
+                                                                    handleDownloadCampaign(
+                                                                        campaign,
+                                                                    );
                                                                 }}
                                                                 className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent"
                                                             >
@@ -977,10 +1028,14 @@ export default function CampaignsPage({
                                                             <DropdownMenuSeparator className="my-1 border-border/60" />
 
                                                             <DropdownMenuItem
-                                                                onClick={(e) => {
+                                                                onClick={(
+                                                                    e,
+                                                                ) => {
                                                                     e.preventDefault();
                                                                     e.stopPropagation();
-                                                                    setCampaignToDelete(campaign);
+                                                                    setCampaignToDelete(
+                                                                        campaign,
+                                                                    );
                                                                 }}
                                                                 className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 focus:bg-destructive/10 focus:text-destructive"
                                                             >
@@ -1010,7 +1065,9 @@ export default function CampaignsPage({
                                                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                         <Tag className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
                                                         <span className="truncate">
-                                                            {campaign.product_name}
+                                                            {
+                                                                campaign.product_name
+                                                            }
                                                         </span>
                                                     </div>
                                                 )}
@@ -1022,10 +1079,11 @@ export default function CampaignsPage({
                                                     <ImageIcon className="h-3.5 w-3.5 text-primary/70" />
                                                     <span>
                                                         {designCount}{' '}
-                                                        {designCount === 1 ? 'design asset' : 'design assets'}
+                                                        {designCount === 1
+                                                            ? 'design asset'
+                                                            : 'design assets'}
                                                     </span>
                                                 </div>
-
                                             </div>
                                         </div>
                                     </div>
@@ -1037,79 +1095,149 @@ export default function CampaignsPage({
                         <div className="space-y-2">
                             {sortedCampaigns.map((campaign: any) => {
                                 const status = campaign.status ?? 'draft';
-                                const eventName = campaign.event_name ?? 'No event selected';
-                                const designCount = Number(campaign.design_count || (campaign.designs?.length ?? 0));
-                                const currentIcon = statusIconColor[status] ?? statusIconColor.draft;
+                                const eventName =
+                                    campaign.event_name ?? 'No event selected';
+                                const designCount = Number(
+                                    campaign.design_count ||
+                                        (campaign.designs?.length ?? 0),
+                                );
+                                const currentIcon =
+                                    statusIconColor[status] ??
+                                    statusIconColor.draft;
 
                                 return (
                                     <div
                                         key={campaign.id}
-                                        onClick={() => router.visit(campaign.show_url ?? `/campaigns/${campaign.id}`)}
+                                        onClick={() =>
+                                            router.visit(
+                                                campaign.show_url ??
+                                                    `/campaigns/${campaign.id}`,
+                                            )
+                                        }
                                         role="button"
                                         tabIndex={0}
                                         onKeyDown={(e) => {
-                                            if (e.key === 'Enter' || e.key === ' ') {
-                                                router.visit(campaign.show_url ?? `/campaigns/${campaign.id}`);
+                                            if (
+                                                e.key === 'Enter' ||
+                                                e.key === ' '
+                                            ) {
+                                                router.visit(
+                                                    campaign.show_url ??
+                                                        `/campaigns/${campaign.id}`,
+                                                );
                                             }
                                         }}
-                                        className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-3.5 shadow-sm transition-all duration-200 cursor-pointer hover:shadow-md hover:border-primary/40"
+                                        className="group flex cursor-pointer items-center gap-4 rounded-2xl border border-border bg-card p-3.5 shadow-sm transition-all duration-200 hover:border-primary/40 hover:shadow-md"
                                     >
                                         {/* Status Icon */}
-                                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${currentIcon.bg} ${currentIcon.text}`}>
+                                        <div
+                                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${currentIcon.bg} ${currentIcon.text}`}
+                                        >
                                             <Layers className="h-4 w-4" />
                                         </div>
 
                                         {/* Info */}
                                         <div className="min-w-0 flex-1">
-                                            <p className="truncate text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                                            <p className="truncate text-sm font-semibold text-foreground transition-colors group-hover:text-primary">
                                                 {campaign.name}
                                             </p>
-                                            <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                                                <span className={`h-1.5 w-1.5 rounded-full ${currentIcon.dot}`} />
-                                                <span className="capitalize font-medium">{currentIcon.label}</span>
-                                                {eventName && eventName !== 'No event selected' && (
-                                                    <>
-                                                        <span className="text-muted-foreground/40">•</span>
-                                                        <span className="truncate">{eventName}</span>
-                                                    </>
-                                                )}
+                                            <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                                                <span
+                                                    className={`h-1.5 w-1.5 rounded-full ${currentIcon.dot}`}
+                                                />
+                                                <span className="font-medium capitalize">
+                                                    {currentIcon.label}
+                                                </span>
+                                                {eventName &&
+                                                    eventName !==
+                                                        'No event selected' && (
+                                                        <>
+                                                            <span className="text-muted-foreground/40">
+                                                                •
+                                                            </span>
+                                                            <span className="truncate">
+                                                                {eventName}
+                                                            </span>
+                                                        </>
+                                                    )}
                                             </div>
                                         </div>
 
                                         {/* Date */}
-                                        <span className="shrink-0 text-xs text-muted-foreground hidden md:block">
-                                            {formatDateRange(campaign.start_date, campaign.end_date)}
+                                        <span className="hidden shrink-0 text-xs text-muted-foreground md:block">
+                                            {formatDateRange(
+                                                campaign.start_date,
+                                                campaign.end_date,
+                                            )}
                                         </span>
 
                                         {/* Design Count */}
-                                        <div className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground hidden sm:flex">
+                                        <div className="flex hidden shrink-0 items-center gap-1 text-xs text-muted-foreground sm:flex">
                                             <ImageIcon className="h-3 w-3 text-primary/70" />
                                             <span>{designCount}</span>
                                         </div>
 
                                         {/* Actions */}
-                                        <div onClick={(e) => e.stopPropagation()}>
+                                        <div
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <button
                                                         type="button"
-                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                        }}
                                                         className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none"
                                                         aria-label="Campaign actions"
                                                     >
                                                         <MoreVertical className="h-4 w-4" />
                                                     </button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-48 rounded-xl p-1.5 shadow-lg border-border">
-                                                    <DropdownMenuItem onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditDialog(campaign); }} className="gap-2 text-xs font-medium cursor-pointer">
-                                                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" /> Edit Campaign
+                                                <DropdownMenuContent
+                                                    align="end"
+                                                    className="w-48 rounded-xl border-border p-1.5 shadow-lg"
+                                                >
+                                                    <DropdownMenuItem
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            openEditDialog(
+                                                                campaign,
+                                                            );
+                                                        }}
+                                                        className="cursor-pointer gap-2 text-xs font-medium"
+                                                    >
+                                                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />{' '}
+                                                        Edit Campaign
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDownloadCampaign(campaign); }} className="gap-2 text-xs font-medium cursor-pointer">
-                                                        <Download className="h-3.5 w-3.5 text-muted-foreground" /> Download Assets
+                                                    <DropdownMenuItem
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleDownloadCampaign(
+                                                                campaign,
+                                                            );
+                                                        }}
+                                                        className="cursor-pointer gap-2 text-xs font-medium"
+                                                    >
+                                                        <Download className="h-3.5 w-3.5 text-muted-foreground" />{' '}
+                                                        Download Assets
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator className="my-1 border-border/60" />
-                                                    <DropdownMenuItem onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCampaignToDelete(campaign); }} className="gap-2 text-xs font-medium text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer">
-                                                        <Trash2 className="h-3.5 w-3.5" /> Delete Campaign
+                                                    <DropdownMenuItem
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            setCampaignToDelete(
+                                                                campaign,
+                                                            );
+                                                        }}
+                                                        className="cursor-pointer gap-2 text-xs font-medium text-destructive focus:bg-destructive/10 focus:text-destructive"
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5" />{' '}
+                                                        Delete Campaign
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -1135,10 +1263,7 @@ export default function CampaignsPage({
                                     router.get(
                                         '/campaigns',
                                         {
-                                            page: Math.max(
-                                                1,
-                                                currentPage - 1,
-                                            ),
+                                            page: Math.max(1, currentPage - 1),
                                             status: statusFilter,
                                         },
                                         {
@@ -1189,9 +1314,9 @@ export default function CampaignsPage({
             ============================================================= */}
 
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                <DialogContent className="rounded-3xl border-border bg-card shadow-2xl sm:max-w-lg p-0 overflow-hidden">
+                <DialogContent className="overflow-hidden rounded-3xl border-border bg-card p-0 shadow-2xl sm:max-w-lg">
                     <form onSubmit={handleCreateCampaign}>
-                        <DialogHeader className="p-6 pb-4 border-b border-border/80 bg-muted/20">
+                        <DialogHeader className="border-b border-border/80 bg-muted/20 p-6 pb-4">
                             <div className="flex items-center gap-2">
                                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
                                     <Plus className="h-4 w-4" />
@@ -1201,15 +1326,19 @@ export default function CampaignsPage({
                                 </DialogTitle>
                             </div>
 
-                            <DialogDescription className="text-xs text-muted-foreground mt-1">
-                                Launch a new marketing campaign linked to holidays, seasonal sales, or product releases.
+                            <DialogDescription className="mt-1 text-xs text-muted-foreground">
+                                Launch a new marketing campaign linked to
+                                holidays, seasonal sales, or product releases.
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div className="p-6 space-y-5">
+                        <div className="space-y-5 p-6">
                             {/* Campaign Name */}
                             <div className="space-y-1.5">
-                                <Label htmlFor="campaign-name" className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                <Label
+                                    htmlFor="campaign-name"
+                                    className="flex items-center gap-1.5 text-xs font-semibold text-foreground"
+                                >
                                     Campaign Name *
                                 </Label>
 
@@ -1224,16 +1353,18 @@ export default function CampaignsPage({
                                     }
                                     placeholder="e.g. Summer Mega Sale 2026"
                                     disabled={isSubmitting}
-                                    className={`text-xs h-10 rounded-xl ${formErrors.name ? 'border-destructive' : ''}`}
+                                    className={`h-10 rounded-xl text-xs ${formErrors.name ? 'border-destructive' : ''}`}
                                 />
                                 {formErrors.name && (
-                                    <p className="text-[11px] text-destructive font-medium">{formErrors.name}</p>
+                                    <p className="text-[11px] font-medium text-destructive">
+                                        {formErrors.name}
+                                    </p>
                                 )}
                             </div>
 
                             {/* Linked Holiday or Event (AI Studio-style Picker Trigger) */}
                             <div className="space-y-1.5">
-                                <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                <Label className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
                                     <Calendar className="h-3.5 w-3.5 text-primary" />
                                     Marketing Event or Holiday (Optional)
                                 </Label>
@@ -1241,26 +1372,49 @@ export default function CampaignsPage({
                                 {selectedCreateEvent ? (
                                     <div className="flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/5 p-3.5">
                                         <div className="flex items-center gap-3">
-                                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary font-bold text-xs">
+                                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-xs font-bold text-primary">
                                                 <CalendarDays className="h-4 w-4" />
                                             </div>
                                             <div>
                                                 <div className="flex items-center gap-2">
                                                     <p className="text-xs font-bold text-foreground">
-                                                        {selectedCreateEvent.name}
+                                                        {
+                                                            selectedCreateEvent.name
+                                                        }
                                                     </p>
                                                     <Badge
                                                         variant="outline"
-                                                        className={`text-[9px] uppercase tracking-wider ${eventTypeStyles[selectedCreateEvent.category || selectedCreateEvent.type || 'holiday']?.bg
-                                                            } ${eventTypeStyles[selectedCreateEvent.category || selectedCreateEvent.type || 'holiday']?.text
-                                                            } ${eventTypeStyles[selectedCreateEvent.category || selectedCreateEvent.type || 'holiday']?.border
-                                                            }`}
+                                                        className={`text-[9px] tracking-wider uppercase ${
+                                                            eventTypeStyles[
+                                                                selectedCreateEvent.category ||
+                                                                    selectedCreateEvent.type ||
+                                                                    'holiday'
+                                                            ]?.bg
+                                                        } ${
+                                                            eventTypeStyles[
+                                                                selectedCreateEvent.category ||
+                                                                    selectedCreateEvent.type ||
+                                                                    'holiday'
+                                                            ]?.text
+                                                        } ${
+                                                            eventTypeStyles[
+                                                                selectedCreateEvent.category ||
+                                                                    selectedCreateEvent.type ||
+                                                                    'holiday'
+                                                            ]?.border
+                                                        }`}
                                                     >
-                                                        {eventTypeStyles[selectedCreateEvent.category || selectedCreateEvent.type || 'holiday']?.label || 'Event'}
+                                                        {eventTypeStyles[
+                                                            selectedCreateEvent.category ||
+                                                                selectedCreateEvent.type ||
+                                                                'holiday'
+                                                        ]?.label || 'Event'}
                                                     </Badge>
                                                 </div>
-                                                <p className="text-[11px] text-muted-foreground mt-0.5">
-                                                    {formatDate(selectedCreateEvent.date)}
+                                                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                                    {formatDate(
+                                                        selectedCreateEvent.date,
+                                                    )}
                                                 </p>
                                             </div>
                                         </div>
@@ -1271,10 +1425,12 @@ export default function CampaignsPage({
                                                 variant="outline"
                                                 size="sm"
                                                 onClick={() => {
-                                                    setEventModalTarget('create');
+                                                    setEventModalTarget(
+                                                        'create',
+                                                    );
                                                     setIsEventModalOpen(true);
                                                 }}
-                                                className="h-7 text-xs shadow-none px-2.5"
+                                                className="h-7 px-2.5 text-xs shadow-none"
                                             >
                                                 Change
                                             </Button>
@@ -1301,13 +1457,16 @@ export default function CampaignsPage({
                                             setEventModalTarget('create');
                                             setIsEventModalOpen(true);
                                         }}
-                                        className="flex h-11 w-full items-center justify-between rounded-xl border border-dashed border-border bg-muted/20 px-4 text-xs font-medium text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-foreground transition-all"
+                                        className="flex h-11 w-full items-center justify-between rounded-xl border border-dashed border-border bg-muted/20 px-4 text-xs font-medium text-muted-foreground transition-all hover:border-primary/50 hover:bg-primary/5 hover:text-foreground"
                                     >
                                         <span className="flex items-center gap-2">
                                             <Calendar className="h-4 w-4 text-primary" />
-                                            Choose a retail event, season, or holiday...
+                                            Choose a retail event, season, or
+                                            holiday...
                                         </span>
-                                        <span className="font-semibold text-primary">Browse Events →</span>
+                                        <span className="font-semibold text-primary">
+                                            Browse Events →
+                                        </span>
                                     </button>
                                 )}
                             </div>
@@ -1315,7 +1474,10 @@ export default function CampaignsPage({
                             {/* Timeline Dates */}
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="campaign-start-date" className="text-xs font-semibold text-foreground">
+                                    <Label
+                                        htmlFor="campaign-start-date"
+                                        className="text-xs font-semibold text-foreground"
+                                    >
                                         Start Date
                                     </Label>
 
@@ -1330,15 +1492,20 @@ export default function CampaignsPage({
                                             }))
                                         }
                                         disabled={isSubmitting}
-                                        className={`text-xs h-10 rounded-xl ${formErrors.start_date ? 'border-destructive' : ''}`}
+                                        className={`h-10 rounded-xl text-xs ${formErrors.start_date ? 'border-destructive' : ''}`}
                                     />
                                     {formErrors.start_date && (
-                                        <p className="text-[11px] text-destructive font-medium">{formErrors.start_date}</p>
+                                        <p className="text-[11px] font-medium text-destructive">
+                                            {formErrors.start_date}
+                                        </p>
                                     )}
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="campaign-end-date" className="text-xs font-semibold text-foreground">
+                                    <Label
+                                        htmlFor="campaign-end-date"
+                                        className="text-xs font-semibold text-foreground"
+                                    >
                                         End Date
                                     </Label>
 
@@ -1353,22 +1520,24 @@ export default function CampaignsPage({
                                             }))
                                         }
                                         disabled={isSubmitting}
-                                        className={`text-xs h-10 rounded-xl ${formErrors.end_date ? 'border-destructive' : ''}`}
+                                        className={`h-10 rounded-xl text-xs ${formErrors.end_date ? 'border-destructive' : ''}`}
                                     />
                                     {formErrors.end_date && (
-                                        <p className="text-[11px] text-destructive font-medium">{formErrors.end_date}</p>
+                                        <p className="text-[11px] font-medium text-destructive">
+                                            {formErrors.end_date}
+                                        </p>
                                     )}
                                 </div>
                             </div>
                         </div>
 
-                        <DialogFooter className="p-6 pt-3 border-t border-border/80 bg-muted/10">
+                        <DialogFooter className="border-t border-border/80 bg-muted/10 p-6 pt-3">
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={resetCreateForm}
                                 disabled={isSubmitting}
-                                className="text-xs rounded-xl shadow-none"
+                                className="rounded-xl text-xs shadow-none"
                             >
                                 Cancel
                             </Button>
@@ -1376,7 +1545,7 @@ export default function CampaignsPage({
                             <Button
                                 type="submit"
                                 disabled={isSubmitting || !formData.name.trim()}
-                                className="gap-2 text-xs rounded-xl shadow-sm"
+                                className="gap-2 rounded-xl text-xs shadow-sm"
                             >
                                 {isSubmitting ? (
                                     <>
@@ -1400,9 +1569,9 @@ export default function CampaignsPage({
             ============================================================= */}
 
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="rounded-3xl border-border bg-card shadow-2xl sm:max-w-lg p-0 overflow-hidden">
+                <DialogContent className="overflow-hidden rounded-3xl border-border bg-card p-0 shadow-2xl sm:max-w-lg">
                     <form onSubmit={handleEditCampaign}>
-                        <DialogHeader className="p-6 pb-4 border-b border-border/80 bg-muted/20">
+                        <DialogHeader className="border-b border-border/80 bg-muted/20 p-6 pb-4">
                             <div className="flex items-center gap-2">
                                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
                                     <Pencil className="h-4 w-4" />
@@ -1411,14 +1580,18 @@ export default function CampaignsPage({
                                     Edit Campaign
                                 </DialogTitle>
                             </div>
-                            <DialogDescription className="text-xs text-muted-foreground mt-1">
-                                Update your campaign details, timeline schedule, and active status.
+                            <DialogDescription className="mt-1 text-xs text-muted-foreground">
+                                Update your campaign details, timeline schedule,
+                                and active status.
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div className="p-6 space-y-5">
+                        <div className="space-y-5 p-6">
                             <div className="space-y-1.5">
-                                <Label htmlFor="edit-c-name" className="text-xs font-semibold text-foreground">
+                                <Label
+                                    htmlFor="edit-c-name"
+                                    className="text-xs font-semibold text-foreground"
+                                >
                                     Campaign Name *
                                 </Label>
                                 <Input
@@ -1432,15 +1605,20 @@ export default function CampaignsPage({
                                     }
                                     placeholder="e.g. Summer Launch 2026"
                                     disabled={isSavingEdit}
-                                    className={`text-xs h-10 rounded-xl ${editFormErrors.name ? 'border-destructive' : ''}`}
+                                    className={`h-10 rounded-xl text-xs ${editFormErrors.name ? 'border-destructive' : ''}`}
                                 />
                                 {editFormErrors.name && (
-                                    <p className="text-[11px] text-destructive font-medium">{editFormErrors.name}</p>
+                                    <p className="text-[11px] font-medium text-destructive">
+                                        {editFormErrors.name}
+                                    </p>
                                 )}
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label htmlFor="edit-c-status" className="text-xs font-semibold text-foreground">
+                                <Label
+                                    htmlFor="edit-c-status"
+                                    className="text-xs font-semibold text-foreground"
+                                >
                                     Status
                                 </Label>
                                 <select
@@ -1464,7 +1642,7 @@ export default function CampaignsPage({
 
                             {/* Linked Holiday or Event */}
                             <div className="space-y-1.5">
-                                <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                                <Label className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
                                     <Calendar className="h-3.5 w-3.5 text-primary" />
                                     Marketing Event or Holiday (Optional)
                                 </Label>
@@ -1472,7 +1650,7 @@ export default function CampaignsPage({
                                 {selectedEditEvent ? (
                                     <div className="flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/5 p-3.5">
                                         <div className="flex items-center gap-3">
-                                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary font-bold text-xs">
+                                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-xs font-bold text-primary">
                                                 <CalendarDays className="h-4 w-4" />
                                             </div>
                                             <div>
@@ -1482,16 +1660,37 @@ export default function CampaignsPage({
                                                     </p>
                                                     <Badge
                                                         variant="outline"
-                                                        className={`text-[9px] uppercase tracking-wider ${eventTypeStyles[selectedEditEvent.category || selectedEditEvent.type || 'holiday']?.bg
-                                                            } ${eventTypeStyles[selectedEditEvent.category || selectedEditEvent.type || 'holiday']?.text
-                                                            } ${eventTypeStyles[selectedEditEvent.category || selectedEditEvent.type || 'holiday']?.border
-                                                            }`}
+                                                        className={`text-[9px] tracking-wider uppercase ${
+                                                            eventTypeStyles[
+                                                                selectedEditEvent.category ||
+                                                                    selectedEditEvent.type ||
+                                                                    'holiday'
+                                                            ]?.bg
+                                                        } ${
+                                                            eventTypeStyles[
+                                                                selectedEditEvent.category ||
+                                                                    selectedEditEvent.type ||
+                                                                    'holiday'
+                                                            ]?.text
+                                                        } ${
+                                                            eventTypeStyles[
+                                                                selectedEditEvent.category ||
+                                                                    selectedEditEvent.type ||
+                                                                    'holiday'
+                                                            ]?.border
+                                                        }`}
                                                     >
-                                                        {eventTypeStyles[selectedEditEvent.category || selectedEditEvent.type || 'holiday']?.label || 'Event'}
+                                                        {eventTypeStyles[
+                                                            selectedEditEvent.category ||
+                                                                selectedEditEvent.type ||
+                                                                'holiday'
+                                                        ]?.label || 'Event'}
                                                     </Badge>
                                                 </div>
-                                                <p className="text-[11px] text-muted-foreground mt-0.5">
-                                                    {formatDate(selectedEditEvent.date)}
+                                                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                                    {formatDate(
+                                                        selectedEditEvent.date,
+                                                    )}
                                                 </p>
                                             </div>
                                         </div>
@@ -1505,7 +1704,7 @@ export default function CampaignsPage({
                                                     setEventModalTarget('edit');
                                                     setIsEventModalOpen(true);
                                                 }}
-                                                className="h-7 text-xs shadow-none px-2.5"
+                                                className="h-7 px-2.5 text-xs shadow-none"
                                             >
                                                 Change
                                             </Button>
@@ -1514,10 +1713,12 @@ export default function CampaignsPage({
                                                 variant="ghost"
                                                 size="icon"
                                                 onClick={() =>
-                                                    setEditFormData((current) => ({
-                                                        ...current,
-                                                        event_id: '',
-                                                    }))
+                                                    setEditFormData(
+                                                        (current) => ({
+                                                            ...current,
+                                                            event_id: '',
+                                                        }),
+                                                    )
                                                 }
                                                 className="h-7 w-7 text-muted-foreground hover:text-destructive"
                                             >
@@ -1532,20 +1733,26 @@ export default function CampaignsPage({
                                             setEventModalTarget('edit');
                                             setIsEventModalOpen(true);
                                         }}
-                                        className="flex h-11 w-full items-center justify-between rounded-xl border border-dashed border-border bg-muted/20 px-4 text-xs font-medium text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-foreground transition-all"
+                                        className="flex h-11 w-full items-center justify-between rounded-xl border border-dashed border-border bg-muted/20 px-4 text-xs font-medium text-muted-foreground transition-all hover:border-primary/50 hover:bg-primary/5 hover:text-foreground"
                                     >
                                         <span className="flex items-center gap-2">
                                             <Calendar className="h-4 w-4 text-primary" />
-                                            Choose a retail event, season, or holiday...
+                                            Choose a retail event, season, or
+                                            holiday...
                                         </span>
-                                        <span className="font-semibold text-primary">Browse Events →</span>
+                                        <span className="font-semibold text-primary">
+                                            Browse Events →
+                                        </span>
                                     </button>
                                 )}
                             </div>
 
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="edit-c-start" className="text-xs font-semibold text-foreground">
+                                    <Label
+                                        htmlFor="edit-c-start"
+                                        className="text-xs font-semibold text-foreground"
+                                    >
                                         Start Date
                                     </Label>
                                     <Input
@@ -1559,12 +1766,15 @@ export default function CampaignsPage({
                                             }))
                                         }
                                         disabled={isSavingEdit}
-                                        className="text-xs h-10 rounded-xl"
+                                        className="h-10 rounded-xl text-xs"
                                     />
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="edit-c-end" className="text-xs font-semibold text-foreground">
+                                    <Label
+                                        htmlFor="edit-c-end"
+                                        className="text-xs font-semibold text-foreground"
+                                    >
                                         End Date
                                     </Label>
                                     <Input
@@ -1578,26 +1788,28 @@ export default function CampaignsPage({
                                             }))
                                         }
                                         disabled={isSavingEdit}
-                                        className="text-xs h-10 rounded-xl"
+                                        className="h-10 rounded-xl text-xs"
                                     />
                                 </div>
                             </div>
                         </div>
 
-                        <DialogFooter className="p-6 pt-3 border-t border-border/80 bg-muted/10">
+                        <DialogFooter className="border-t border-border/80 bg-muted/10 p-6 pt-3">
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={() => setIsEditOpen(false)}
                                 disabled={isSavingEdit}
-                                className="text-xs rounded-xl shadow-none"
+                                className="rounded-xl text-xs shadow-none"
                             >
                                 Cancel
                             </Button>
                             <Button
                                 type="submit"
-                                disabled={isSavingEdit || !editFormData.name.trim()}
-                                className="gap-2 text-xs rounded-xl shadow-sm"
+                                disabled={
+                                    isSavingEdit || !editFormData.name.trim()
+                                }
+                                className="gap-2 rounded-xl text-xs shadow-sm"
                             >
                                 {isSavingEdit ? (
                                     <>
@@ -1618,64 +1830,92 @@ export default function CampaignsPage({
             ============================================================= */}
 
             <Dialog open={isEventModalOpen} onOpenChange={setIsEventModalOpen}>
-                <DialogContent className="max-h-[85vh] flex flex-col overflow-hidden rounded-3xl p-0 sm:max-w-4xl border-border bg-card shadow-2xl">
-                    <DialogHeader className="border-b border-border p-4 sm:p-5 bg-muted/20 shrink-0">
+                <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden rounded-3xl border-border bg-card p-0 shadow-2xl sm:max-w-4xl">
+                    <DialogHeader className="shrink-0 border-b border-border bg-muted/20 p-4 sm:p-5">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                                 <CalendarDays className="h-5 w-5" />
                             </div>
                             <div>
-                                <DialogTitle className="text-lg sm:text-xl font-bold text-foreground">
+                                <DialogTitle className="text-lg font-bold text-foreground sm:text-xl">
                                     Select Marketing Event or Holiday
                                 </DialogTitle>
-                                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                                    Choose an event or holiday to tailor your visual concept, seasonal theme, and promotion.
+                                <DialogDescription className="mt-0.5 text-xs text-muted-foreground">
+                                    Choose an event or holiday to tailor your
+                                    visual concept, seasonal theme, and
+                                    promotion.
                                 </DialogDescription>
                             </div>
                         </div>
                     </DialogHeader>
 
                     {/* Filter & Year Toolbar (Responsive Grid with Dropdowns) */}
-                    <div className="border-b border-border p-4 bg-muted/10 shrink-0">
-                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
+                    <div className="shrink-0 border-b border-border bg-muted/10 p-4">
+                        <div className="grid grid-cols-1 items-center gap-2.5 sm:grid-cols-12">
                             {/* Search Input */}
                             <div className="relative sm:col-span-6">
-                                <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                                <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                                 <Input
                                     value={eventSearchQuery}
-                                    onChange={(e) => setEventSearchQuery(e.target.value)}
+                                    onChange={(e) =>
+                                        setEventSearchQuery(e.target.value)
+                                    }
                                     placeholder="Search events, holidays, sales..."
-                                    className="h-9.5 pl-9 text-xs bg-card rounded-xl border-border"
+                                    className="h-9.5 rounded-xl border-border bg-card pl-9 text-xs"
                                 />
                             </div>
 
                             {/* Category Filter Dropdown */}
                             <div className="sm:col-span-3">
-                                <Select value={eventCategoryFilter} onValueChange={setEventCategoryFilter}>
-                                    <SelectTrigger className="h-9.5 w-full rounded-xl text-xs bg-card font-medium border-border shadow-2xs">
+                                <Select
+                                    value={eventCategoryFilter}
+                                    onValueChange={setEventCategoryFilter}
+                                >
+                                    <SelectTrigger className="h-9.5 w-full rounded-xl border-border bg-card text-xs font-medium shadow-2xs">
                                         <SelectValue placeholder="Category" />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-xl border-border shadow-lg">
-                                        <SelectItem value="all">All Categories</SelectItem>
-                                        <SelectItem value="regular">Regular Holidays</SelectItem>
-                                        <SelectItem value="special_non_working">Special Non-Working</SelectItem>
-                                        <SelectItem value="special_working">Special Working</SelectItem>
-                                        <SelectItem value="islamic">Islamic Holidays</SelectItem>
-                                        <SelectItem value="long_weekend">Long Weekends</SelectItem>
-                                        <SelectItem value="commercial">Retail Sales & Payday</SelectItem>
-                                        <SelectItem value="custom">Custom Events</SelectItem>
+                                        <SelectItem value="all">
+                                            All Categories
+                                        </SelectItem>
+                                        <SelectItem value="regular">
+                                            Regular Holidays
+                                        </SelectItem>
+                                        <SelectItem value="special_non_working">
+                                            Special Non-Working
+                                        </SelectItem>
+                                        <SelectItem value="special_working">
+                                            Special Working
+                                        </SelectItem>
+                                        <SelectItem value="islamic">
+                                            Islamic Holidays
+                                        </SelectItem>
+                                        <SelectItem value="long_weekend">
+                                            Long Weekends
+                                        </SelectItem>
+                                        <SelectItem value="commercial">
+                                            Retail Sales & Payday
+                                        </SelectItem>
+                                        <SelectItem value="custom">
+                                            Custom Events
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             {/* Year Selector Dropdown */}
                             <div className="sm:col-span-3">
-                                <Select value={selectedYearTab} onValueChange={setSelectedYearTab}>
-                                    <SelectTrigger className="h-9.5 w-full rounded-xl text-xs bg-card font-medium border-border shadow-2xs">
+                                <Select
+                                    value={selectedYearTab}
+                                    onValueChange={setSelectedYearTab}
+                                >
+                                    <SelectTrigger className="h-9.5 w-full rounded-xl border-border bg-card text-xs font-medium shadow-2xs">
                                         <SelectValue placeholder="Year" />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-xl border-border shadow-lg">
-                                        <SelectItem value="all">All Years</SelectItem>
+                                        <SelectItem value="all">
+                                            All Years
+                                        </SelectItem>
                                         {availableYears.map((yr) => (
                                             <SelectItem key={yr} value={yr}>
                                                 Year {yr}
@@ -1688,54 +1928,82 @@ export default function CampaignsPage({
                     </div>
 
                     {/* Events List Grid */}
-                    <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-5">
+                    <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
                         {filteredEvents.length === 0 ? (
-                            <div className="py-12 text-center text-muted-foreground space-y-2">
+                            <div className="space-y-2 py-12 text-center text-muted-foreground">
                                 <CalendarDays className="mx-auto h-8 w-8 opacity-30" />
-                                <p className="text-sm font-semibold text-foreground">No events found matching your filter</p>
-                                <p className="text-xs text-muted-foreground">Try clearing search keywords or selecting "All" categories.</p>
+                                <p className="text-sm font-semibold text-foreground">
+                                    No events found matching your filter
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    Try clearing search keywords or selecting
+                                    "All" categories.
+                                </p>
                             </div>
                         ) : (
                             <div className="grid gap-2.5 sm:grid-cols-2 md:grid-cols-3">
                                 {filteredEvents.map((evt: any) => {
-                                    const currentTargetId = eventModalTarget === 'create' ? formData.event_id : editFormData.event_id;
-                                    const isSelected = String(evt.id) === String(currentTargetId);
-                                    const styleKey = evt.category || evt.type || 'holiday';
-                                    const style = eventTypeStyles[styleKey] || eventTypeStyles.holiday;
+                                    const currentTargetId =
+                                        eventModalTarget === 'create'
+                                            ? formData.event_id
+                                            : editFormData.event_id;
+                                    const isSelected =
+                                        String(evt.id) ===
+                                        String(currentTargetId);
+                                    const styleKey =
+                                        evt.category || evt.type || 'holiday';
+                                    const style =
+                                        eventTypeStyles[styleKey] ||
+                                        eventTypeStyles.holiday;
 
                                     return (
                                         <button
                                             key={evt.id}
                                             type="button"
-                                            onClick={() => handleSelectEvent(evt)}
-                                            className={`group flex flex-col justify-between rounded-xl border p-3 text-left transition-all ${isSelected
-                                                ? 'border-primary bg-primary/10 ring-2 ring-primary/40 shadow-xs'
-                                                : 'border-border bg-card hover:border-primary/50 hover:bg-muted/30'
-                                                }`}
+                                            onClick={() =>
+                                                handleSelectEvent(evt)
+                                            }
+                                            className={`group flex flex-col justify-between rounded-xl border p-3 text-left transition-all ${
+                                                isSelected
+                                                    ? 'border-primary bg-primary/10 shadow-xs ring-2 ring-primary/40'
+                                                    : 'border-border bg-card hover:border-primary/50 hover:bg-muted/30'
+                                            }`}
                                         >
                                             <div className="space-y-1.5">
                                                 <div className="flex items-start justify-between gap-1.5">
-                                                    <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                                                    <span className="line-clamp-2 text-xs font-bold text-foreground transition-colors group-hover:text-primary">
                                                         {evt.name}
                                                     </span>
-                                                    <Badge variant="outline" className={`text-[9px] uppercase tracking-wider shrink-0 font-medium ${style.bg} ${style.text} ${style.border}`}>
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={`shrink-0 text-[9px] font-medium tracking-wider uppercase ${style.bg} ${style.text} ${style.border}`}
+                                                    >
                                                         {style.label}
                                                     </Badge>
                                                 </div>
 
                                                 {evt.is_long_weekend && (
-                                                    <Badge variant="secondary" className="text-[9px] font-medium py-0">
+                                                    <Badge
+                                                        variant="secondary"
+                                                        className="py-0 text-[9px] font-medium"
+                                                    >
                                                         Long Weekend
                                                     </Badge>
                                                 )}
                                             </div>
 
-                                            <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
-                                                <span className="font-medium text-[11px]">{formatDate(evt.date)}</span>
+                                            <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-2 text-xs text-muted-foreground">
+                                                <span className="text-[11px] font-medium">
+                                                    {formatDate(evt.date)}
+                                                </span>
                                                 {isSelected ? (
-                                                    <span className="font-bold text-primary text-xs">Selected ✓</span>
+                                                    <span className="text-xs font-bold text-primary">
+                                                        Selected ✓
+                                                    </span>
                                                 ) : (
-                                                    <span className="text-[11px] font-medium group-hover:text-foreground transition-colors">Select</span>
+                                                    <span className="text-[11px] font-medium transition-colors group-hover:text-foreground">
+                                                        Select
+                                                    </span>
                                                 )}
                                             </div>
                                         </button>
@@ -1759,17 +2027,18 @@ export default function CampaignsPage({
                     }
                 }}
             >
-                <DialogContent className="rounded-3xl border-border bg-card sm:max-w-md shadow-2xl p-6">
+                <DialogContent className="rounded-3xl border-border bg-card p-6 shadow-2xl sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold text-foreground">
                             Delete Campaign?
                         </DialogTitle>
-                        <DialogDescription className="text-xs text-muted-foreground mt-1">
+                        <DialogDescription className="mt-1 text-xs text-muted-foreground">
                             Are you sure you want to delete{' '}
                             <span className="font-semibold text-foreground">
                                 "{campaignToDelete?.name}"
                             </span>
-                            ? This will remove the campaign record. Associated designs will remain safe in My Designs.
+                            ? This will remove the campaign record. Associated
+                            designs will remain safe in My Designs.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -1779,7 +2048,7 @@ export default function CampaignsPage({
                             variant="outline"
                             onClick={() => setCampaignToDelete(null)}
                             disabled={isDeleting}
-                            className="text-xs rounded-xl shadow-none"
+                            className="rounded-xl text-xs shadow-none"
                         >
                             Cancel
                         </Button>
@@ -1788,7 +2057,7 @@ export default function CampaignsPage({
                             variant="destructive"
                             onClick={confirmDeleteCampaign}
                             disabled={isDeleting}
-                            className="gap-2 text-xs rounded-xl shadow-sm"
+                            className="gap-2 rounded-xl text-xs shadow-sm"
                         >
                             <Trash2 className="h-4 w-4" />
                             {isDeleting ? 'Deleting...' : 'Delete Campaign'}

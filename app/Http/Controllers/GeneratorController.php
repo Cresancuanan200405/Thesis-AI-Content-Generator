@@ -134,9 +134,12 @@ class GeneratorController extends Controller
         }
 
         // Resolve product details for context
-        $product = ! empty($payload['product_id']) ? Product::find($payload['product_id']) : null;
-        $campaign = ! empty($payload['campaign_id']) ? Campaign::find($payload['campaign_id']) : null;
-        $event = ! empty($payload['event_id']) ? Event::find($payload['event_id']) : null;
+        /** @var Product|null $product */
+        $product = ! empty($payload['product_id']) ? Product::query()->where('id', $payload['product_id'])->first() : null;
+        /** @var Campaign|null $campaign */
+        $campaign = ! empty($payload['campaign_id']) ? Campaign::query()->where('id', $payload['campaign_id'])->first() : null;
+        /** @var Event|null $event */
+        $event = ! empty($payload['event_id']) ? Event::query()->where('id', $payload['event_id'])->first() : null;
 
         // Resolve product image as reference (catalog selection)
         if (! $referenceImagePath && $product?->image_path) {
@@ -175,7 +178,7 @@ class GeneratorController extends Controller
                 // Step 1 — Product & Campaign
                 'product_name' => $payload['product_name'],
                 'product_description' => $product?->description,
-                'product_category' => $product?->category ?? $business->category,
+                'product_category' => $business->category,
                 'product_image_url' => $productImageUrl,
                 'campaign_name' => $campaign?->name,
                 'campaign_objective' => $campaign?->objective,
@@ -273,9 +276,12 @@ class GeneratorController extends Controller
             $referenceImagePath = $request->file('reference_image')->store('generation-requests', 'public');
         }
 
-        $product = $request->filled('product_id') ? Product::find($request->input('product_id')) : null;
-        $campaign = $request->filled('campaign_id') ? Campaign::find($request->input('campaign_id')) : null;
-        $event = $request->filled('event_id') ? Event::find($request->input('event_id')) : null;
+        /** @var Product|null $product */
+        $product = $request->filled('product_id') ? Product::query()->where('id', $request->input('product_id'))->first() : null;
+        /** @var Campaign|null $campaign */
+        $campaign = $request->filled('campaign_id') ? Campaign::query()->where('id', $request->input('campaign_id'))->first() : null;
+        /** @var Event|null $event */
+        $event = $request->filled('event_id') ? Event::query()->where('id', $request->input('event_id'))->first() : null;
 
         if (! $referenceImagePath && $product?->image_path) {
             $referenceImagePath = $product->image_path;
@@ -300,7 +306,7 @@ class GeneratorController extends Controller
             $generatedImagePath = $geminiService->generate($prompt, [
                 'product_name' => (string) $request->input('product_name'),
                 'product_description' => $product?->description,
-                'product_category' => $product?->category ?? $business->category,
+                'product_category' => $business->category,
                 'product_image_url' => $productImageUrl,
                 'campaign_name' => $campaign?->name,
                 'campaign_objective' => $campaign?->objective,

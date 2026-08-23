@@ -7,8 +7,6 @@ import {
     CheckCheck,
     Clock,
     ExternalLink,
-    Filter,
-    Layers,
     Loader2,
     Megaphone,
     MoreVertical,
@@ -30,7 +28,6 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import type { BreadcrumbItem } from '@/types';
 
 type NotificationItem = {
     id: number;
@@ -52,17 +49,6 @@ type Props = {
     current_filter: string;
     search_query: string;
 };
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-    },
-    {
-        title: 'Notifications',
-        href: '/notifications',
-    },
-];
 
 const filterTabs = [
     { key: 'all', label: 'All' },
@@ -196,6 +182,7 @@ export default function NotificationsIndex({
                 </div>
             );
         }
+
         if (type.includes('design')) {
             return (
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-purple-500/20 bg-purple-500/10 text-purple-500">
@@ -203,6 +190,7 @@ export default function NotificationsIndex({
                 </div>
             );
         }
+
         if (type.includes('product')) {
             return (
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-500">
@@ -210,6 +198,7 @@ export default function NotificationsIndex({
                 </div>
             );
         }
+
         if (type.includes('event')) {
             return (
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-pink-500/20 bg-pink-500/10 text-pink-500">
@@ -217,6 +206,7 @@ export default function NotificationsIndex({
                 </div>
             );
         }
+
         if (type.includes('logo')) {
             return (
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-500">
@@ -224,6 +214,7 @@ export default function NotificationsIndex({
                 </div>
             );
         }
+
         if (type.includes('security') || type.includes('profile')) {
             return (
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-500">
@@ -231,6 +222,7 @@ export default function NotificationsIndex({
                 </div>
             );
         }
+
         return (
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
                 <Bell className="h-5 w-5" />
@@ -260,7 +252,8 @@ export default function NotificationsIndex({
                             )}
                         </div>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Stay up to date with design generations, campaign actions, and marketing updates.
+                            Stay up to date with design generations, campaign
+                            actions, and marketing updates.
                         </p>
                     </div>
 
@@ -304,54 +297,59 @@ export default function NotificationsIndex({
                 </div>
 
                 {/* SEARCH & FILTERS BAR */}
-                <div className="flex flex-col gap-3 rounded-2xl border border-white/25 dark:border-white/10 bg-card/85 dark:bg-slate-900/80 p-4 shadow-lg backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 rounded-2xl border border-white/25 bg-card/85 p-4 shadow-lg backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:bg-slate-900/80">
                     {/* TABS */}
                     <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto">
                         {filterTabs.map((tab) => {
                             const isSelected = activeFilter === tab.key;
+
                             return (
                                 <button
                                     key={tab.key}
                                     type="button"
                                     onClick={() => handleFilterChange(tab.key)}
-                                    className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
                                         isSelected
-                                            ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20 scale-[1.02]'
+                                            ? 'scale-[1.02] bg-primary text-primary-foreground shadow-sm shadow-primary/20'
                                             : 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
                                     }`}
                                 >
                                     {tab.label}
-                                    {tab.key === 'unread' && unread_count > 0 && (
-                                        <span
-                                            className={`flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold ${
-                                                isSelected
-                                                    ? 'bg-background text-foreground'
-                                                    : 'bg-primary text-primary-foreground'
-                                            }`}
-                                        >
-                                            {unread_count}
-                                        </span>
-                                    )}
+                                    {tab.key === 'unread' &&
+                                        unread_count > 0 && (
+                                            <span
+                                                className={`flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold ${
+                                                    isSelected
+                                                        ? 'bg-background text-foreground'
+                                                        : 'bg-primary text-primary-foreground'
+                                                }`}
+                                            >
+                                                {unread_count}
+                                            </span>
+                                        )}
                                 </button>
                             );
                         })}
                     </div>
 
                     {/* SEARCH INPUT */}
-                    <form onSubmit={handleSearchSubmit} className="relative sm:w-64">
-                        <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <form
+                        onSubmit={handleSearchSubmit}
+                        className="relative sm:w-64"
+                    >
+                        <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search alerts..."
-                            className="h-9 pl-9 pr-8 text-xs bg-background/80 dark:bg-slate-950/60 backdrop-blur-md rounded-xl"
+                            className="h-9 rounded-xl bg-background/80 pr-8 pl-9 text-xs backdrop-blur-md dark:bg-slate-950/60"
                         />
                         {search && (
                             <button
                                 type="button"
                                 onClick={handleClearSearch}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                                className="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
                             >
                                 <X className="h-3.5 w-3.5" />
                             </button>
@@ -363,21 +361,24 @@ export default function NotificationsIndex({
                 {notifications.length > 0 ? (
                     <div className="space-y-3">
                         {notifications.map((notification) => {
-                            const isProcessing = processingId === notification.id;
+                            const isProcessing =
+                                processingId === notification.id;
 
                             return (
                                 <Card
                                     key={notification.id}
-                                    className={`group overflow-hidden rounded-2xl border transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 ${
+                                    className={`group overflow-hidden rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl ${
                                         !notification.is_read
-                                            ? 'border-primary/40 bg-primary/10 dark:bg-primary/15 shadow-md backdrop-blur-xl'
-                                            : 'border-white/20 dark:border-white/10 bg-card/80 dark:bg-slate-900/75 backdrop-blur-xl shadow-sm'
+                                            ? 'border-primary/40 bg-primary/10 shadow-md backdrop-blur-xl dark:bg-primary/15'
+                                            : 'border-white/20 bg-card/80 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/75'
                                     }`}
                                 >
                                     <CardContent className="p-4 sm:p-5">
                                         <div className="flex items-start gap-4">
                                             {/* CATEGORY ICON */}
-                                            {getNotificationIcon(notification.type)}
+                                            {getNotificationIcon(
+                                                notification.type,
+                                            )}
 
                                             {/* CONTENT */}
                                             <div className="min-w-0 flex-1">
@@ -415,12 +416,20 @@ export default function NotificationsIndex({
                                                             variant="outline"
                                                             className="h-7 gap-1 rounded-lg text-xs"
                                                             onClick={() => {
-                                                                if (!notification.is_read) {
-                                                                    handleMarkAsRead(notification);
+                                                                if (
+                                                                    !notification.is_read
+                                                                ) {
+                                                                    handleMarkAsRead(
+                                                                        notification,
+                                                                    );
                                                                 }
                                                             }}
                                                         >
-                                                            <Link href={notification.action_url}>
+                                                            <Link
+                                                                href={
+                                                                    notification.action_url
+                                                                }
+                                                            >
                                                                 View details
                                                                 <ExternalLink className="h-3 w-3" />
                                                             </Link>
@@ -432,8 +441,14 @@ export default function NotificationsIndex({
                                                             type="button"
                                                             variant="ghost"
                                                             size="sm"
-                                                            onClick={() => handleMarkAsRead(notification)}
-                                                            disabled={isProcessing}
+                                                            onClick={() =>
+                                                                handleMarkAsRead(
+                                                                    notification,
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                isProcessing
+                                                            }
                                                             className="h-7 gap-1 rounded-lg text-xs text-muted-foreground hover:text-foreground"
                                                         >
                                                             <Check className="h-3 w-3" />
@@ -444,8 +459,14 @@ export default function NotificationsIndex({
                                                             type="button"
                                                             variant="ghost"
                                                             size="sm"
-                                                            onClick={() => handleMarkAsUnread(notification)}
-                                                            disabled={isProcessing}
+                                                            onClick={() =>
+                                                                handleMarkAsUnread(
+                                                                    notification,
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                isProcessing
+                                                            }
                                                             className="h-7 gap-1 rounded-lg text-xs text-muted-foreground hover:text-foreground"
                                                         >
                                                             Mark as unread
@@ -460,15 +481,22 @@ export default function NotificationsIndex({
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 text-muted-foreground opacity-60 hover:opacity-100 group-hover:opacity-100"
+                                                        className="h-8 w-8 text-muted-foreground opacity-60 group-hover:opacity-100 hover:opacity-100"
                                                     >
                                                         <MoreVertical className="h-4 w-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-40 rounded-xl">
+                                                <DropdownMenuContent
+                                                    align="end"
+                                                    className="w-40 rounded-xl"
+                                                >
                                                     {!notification.is_read ? (
                                                         <DropdownMenuItem
-                                                            onClick={() => handleMarkAsRead(notification)}
+                                                            onClick={() =>
+                                                                handleMarkAsRead(
+                                                                    notification,
+                                                                )
+                                                            }
                                                             className="cursor-pointer text-xs"
                                                         >
                                                             <Check className="mr-2 h-3.5 w-3.5" />
@@ -476,7 +504,11 @@ export default function NotificationsIndex({
                                                         </DropdownMenuItem>
                                                     ) : (
                                                         <DropdownMenuItem
-                                                            onClick={() => handleMarkAsUnread(notification)}
+                                                            onClick={() =>
+                                                                handleMarkAsUnread(
+                                                                    notification,
+                                                                )
+                                                            }
                                                             className="cursor-pointer text-xs"
                                                         >
                                                             <Clock className="mr-2 h-3.5 w-3.5" />
@@ -484,7 +516,11 @@ export default function NotificationsIndex({
                                                         </DropdownMenuItem>
                                                     )}
                                                     <DropdownMenuItem
-                                                        onClick={() => handleDelete(notification)}
+                                                        onClick={() =>
+                                                            handleDelete(
+                                                                notification,
+                                                            )
+                                                        }
                                                         className="cursor-pointer text-xs text-destructive hover:bg-destructive/10"
                                                     >
                                                         <Trash2 className="mr-2 h-3.5 w-3.5" />
@@ -511,8 +547,8 @@ export default function NotificationsIndex({
                             {search
                                 ? `No notifications matched "${search}". Try clearing your search query.`
                                 : activeFilter === 'unread'
-                                    ? "You don't have any unread notifications. You're all caught up!"
-                                    : 'When campaigns, designs, products, or marketing updates occur, they will be logged here.'}
+                                  ? "You don't have any unread notifications. You're all caught up!"
+                                  : 'When campaigns, designs, products, or marketing updates occur, they will be logged here.'}
                         </p>
                         {search && (
                             <Button

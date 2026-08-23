@@ -159,7 +159,7 @@ it('user can save a design with include_logo enabled', function () {
 it('user can attach an existing design to an existing campaign for matching event', function () {
     $user = User::factory()->create(['onboarding_completed' => true]);
     $business = Business::factory()->create(['user_id' => $user->id]);
-    $event = \App\Models\Event::factory()->create(['user_id' => $user->id]);
+    $event = Event::factory()->create(['user_id' => $user->id]);
     $campaign = Campaign::factory()->create([
         'user_id' => $user->id,
         'business_id' => $business->id,
@@ -195,8 +195,8 @@ it('user can attach an existing design to an existing campaign for matching even
 it('rejects attaching a design if event does not match campaign event', function () {
     $user = User::factory()->create(['onboarding_completed' => true]);
     $business = Business::factory()->create(['user_id' => $user->id]);
-    $event1 = \App\Models\Event::factory()->create(['user_id' => $user->id]);
-    $event2 = \App\Models\Event::factory()->create(['user_id' => $user->id]);
+    $event1 = Event::factory()->create(['user_id' => $user->id]);
+    $event2 = Event::factory()->create(['user_id' => $user->id]);
     $campaign = Campaign::factory()->create([
         'user_id' => $user->id,
         'business_id' => $business->id,

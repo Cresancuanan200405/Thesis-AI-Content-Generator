@@ -10,4 +10,5 @@ parameters:
         - database/
         - routes/
 
-    level: 7
+    level: 4
+    treatPhpDocTypesAsCertain: false

@@ -12,16 +12,12 @@ import { email } from '@/routes/password';
 const fieldGlow =
     'group relative rounded-xl transition-all duration-300 focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.18)] hover:shadow-[0_0_0_3px_rgba(59,130,246,0.08)]';
 
-export default function ForgotPassword({
-    status,
-}: {
-    status?: string;
-}) {
+export default function ForgotPassword({ status }: { status?: string }) {
     return (
         <>
             <Head title="Reset password" />
 
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="animate-in space-y-4 duration-300 fade-in slide-in-from-bottom-2">
                 {/* Success Status */}
                 {status && (
                     <div className="flex items-center justify-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-3.5 py-2 text-center text-xs font-medium text-blue-600 dark:text-blue-400">
@@ -39,14 +35,15 @@ export default function ForgotPassword({
                         <>
                             {/* Email Address */}
                             <div className="grid gap-1">
-                                <Label htmlFor="email" className="text-xs font-semibold text-foreground">
+                                <Label
+                                    htmlFor="email"
+                                    className="text-xs font-semibold text-foreground"
+                                >
                                     Email address
                                 </Label>
 
                                 <div className={fieldGlow}>
-                                    <Mail
-                                        className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground transition-colors duration-300 group-focus-within:text-[#2563EB]"
-                                    />
+                                    <Mail className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground transition-colors duration-300 group-focus-within:text-[#2563EB]" />
 
                                     <Input
                                         id="email"
@@ -65,7 +62,7 @@ export default function ForgotPassword({
 
                             <Button
                                 type="submit"
-                                className="group h-10 w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:scale-[1.01] hover:bg-primary/90 hover:shadow-primary/35 active:scale-[0.98] disabled:opacity-70 cursor-pointer"
+                                className="group h-10 w-full cursor-pointer rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:scale-[1.01] hover:bg-primary/90 hover:shadow-primary/35 active:scale-[0.98] disabled:opacity-70"
                                 disabled={processing}
                                 data-test="email-password-reset-link-button"
                             >
@@ -82,7 +79,7 @@ export default function ForgotPassword({
                     )}
                 </Form>
 
-                <div className="text-center text-xs text-muted-foreground pt-1">
+                <div className="pt-1 text-center text-xs text-muted-foreground">
                     Remember your password?{' '}
                     <TextLink
                         href={login()}
@@ -98,5 +95,6 @@ export default function ForgotPassword({
 
 ForgotPassword.layout = {
     title: 'Forgot password',
-    description: 'Enter your email address to receive a secure password reset link.',
+    description:
+        'Enter your email address to receive a secure password reset link.',
 };

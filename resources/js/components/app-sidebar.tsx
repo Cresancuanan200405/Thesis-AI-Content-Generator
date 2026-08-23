@@ -9,9 +9,9 @@ import {
     Sparkles,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
-import { Button } from '@/components/ui/button';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
+import { Button } from '@/components/ui/button';
 import {
     Sidebar,
     SidebarContent,
@@ -73,7 +73,7 @@ export function AppSidebar() {
                 <div className="px-2 group-data-[collapsible=icon]:hidden">
                     <Button
                         asChild
-                        className="w-full justify-start gap-2 rounded-xl bg-foreground text-background font-semibold shadow-sm hover:bg-foreground/90 active:scale-[0.98] transition-all"
+                        className="w-full justify-start gap-2 rounded-xl bg-foreground font-semibold text-background shadow-sm transition-all hover:bg-foreground/90 active:scale-[0.98]"
                         size="sm"
                     >
                         <Link href="/generator">

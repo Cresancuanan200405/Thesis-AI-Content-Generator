@@ -10,19 +10,24 @@ export async function downloadVisualAsFormat(
 ) {
     if (!imageUrl) {
         toast.error('No image available for download.');
+
         return;
     }
 
-    const cleanName = filename.replace(/\.[^/.]+$/, '').trim() || 'marketing-visual';
+    const cleanName =
+        filename.replace(/\.[^/.]+$/, '').trim() || 'marketing-visual';
 
     try {
         if (format === 'svg') {
             if (imageUrl.includes('.svg')) {
                 try {
                     const res = await fetch(imageUrl);
+
                     if (res.ok) {
                         const svgText = await res.text();
-                        const blob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
+                        const blob = new Blob([svgText], {
+                            type: 'image/svg+xml;charset=utf-8',
+                        });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
@@ -32,6 +37,7 @@ export async function downloadVisualAsFormat(
                         document.body.removeChild(a);
                         URL.revokeObjectURL(url);
                         toast.success(`Downloaded ${cleanName}.svg`);
+
                         return;
                     }
                 } catch {
@@ -48,7 +54,9 @@ export async function downloadVisualAsFormat(
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">
   <image width="${width}" height="${height}" xlink:href="${imageUrl}" />
 </svg>`;
-                const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+                const blob = new Blob([svgContent], {
+                    type: 'image/svg+xml;charset=utf-8',
+                });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -69,6 +77,7 @@ export async function downloadVisualAsFormat(
                 toast.success(`Downloaded ${cleanName}.png`);
             };
             img.src = imageUrl;
+
             return;
         }
 
@@ -79,11 +88,13 @@ export async function downloadVisualAsFormat(
             canvas.width = img.naturalWidth || 1024;
             canvas.height = img.naturalHeight || 1024;
             const ctx = canvas.getContext('2d');
+
             if (ctx) {
                 if (format === 'jpeg') {
                     ctx.fillStyle = '#FFFFFF';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                 }
+
                 ctx.drawImage(img, 0, 0);
                 const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
                 const quality = format === 'jpeg' ? 0.92 : 1.0;
@@ -100,7 +111,9 @@ export async function downloadVisualAsFormat(
                             a.click();
                             document.body.removeChild(a);
                             URL.revokeObjectURL(url);
-                            toast.success(`Downloaded ${cleanName}.${ext} (${format.toUpperCase()})`);
+                            toast.success(
+                                `Downloaded ${cleanName}.${ext} (${format.toUpperCase()})`,
+                            );
                         } else {
                             const a = document.createElement('a');
                             a.href = imageUrl;
@@ -129,7 +142,8 @@ export async function downloadVisualAsFormat(
         img.src = imageUrl;
     } catch (e) {
         console.error(e);
-        const ext = format === 'jpeg' ? 'jpg' : format === 'svg' ? 'svg' : 'png';
+        const ext =
+            format === 'jpeg' ? 'jpg' : format === 'svg' ? 'svg' : 'png';
         const a = document.createElement('a');
         a.href = imageUrl;
         a.download = `${cleanName}.${ext}`;

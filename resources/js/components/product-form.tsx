@@ -64,8 +64,10 @@ async function processImageForUpload(file: File): Promise<File> {
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
+
                 if (!ctx) {
                     resolve(file);
+
                     return;
                 }
 
@@ -77,7 +79,11 @@ async function processImageForUpload(file: File): Promise<File> {
 
                 canvas.toBlob(
                     (blob) => {
-                        if (blob && (blob.size < file.size || file.size > 1.8 * 1024 * 1024)) {
+                        if (
+                            blob &&
+                            (blob.size < file.size ||
+                                file.size > 1.8 * 1024 * 1024)
+                        ) {
                             const newExt = isPng ? '.png' : '.jpg';
                             const compressedFile = new File(
                                 [blob],
@@ -130,7 +136,9 @@ export default function ProductForm({
     });
 
     const handleFile = async (file: File) => {
-        if (!file) return;
+        if (!file) {
+            return;
+        }
 
         // Preview immediately
         const reader = new FileReader();
@@ -152,6 +160,7 @@ export default function ProductForm({
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
+
         if (file) {
             handleFile(file);
         }
@@ -161,6 +170,7 @@ export default function ProductForm({
         e.preventDefault();
         setIsDragging(false);
         const file = e.dataTransfer.files?.[0];
+
         if (file && file.type.startsWith('image/')) {
             handleFile(file);
         }
@@ -177,10 +187,14 @@ export default function ProductForm({
     };
 
     const handleRemoveImage = (e?: React.MouseEvent) => {
-        if (e) e.stopPropagation();
+        if (e) {
+            e.stopPropagation();
+        }
+
         setSelectedFile(null);
         setImagePreview(null);
         setRemoveImage(true);
+
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -212,13 +226,15 @@ export default function ProductForm({
                     toast.success('Product updated successfully!');
                 },
                 onError: (errs) => {
-                    const message = Object.values(errs)[0] || 'Failed to update product.';
+                    const message =
+                        Object.values(errs)[0] || 'Failed to update product.';
                     toast.error(message);
                 },
                 onFinish: () => {
                     setIsSubmitting(false);
                 },
             });
+
             return;
         }
 
@@ -229,7 +245,8 @@ export default function ProductForm({
                 toast.success('Product created successfully!');
             },
             onError: (errs) => {
-                const message = Object.values(errs)[0] || 'Failed to create product.';
+                const message =
+                    Object.values(errs)[0] || 'Failed to create product.';
                 toast.error(message);
             },
             onFinish: () => {
@@ -240,17 +257,17 @@ export default function ProductForm({
 
     return (
         <>
-            <form onSubmit={submit} className="max-w-4xl mx-auto space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+            <form onSubmit={submit} className="mx-auto max-w-4xl space-y-6">
+                <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-12">
                     {/* PHOTO UPLOAD CARD (LEFT / 5 COLS) */}
-                    <Card className="md:col-span-5 rounded-3xl border-border bg-card shadow-xs overflow-hidden">
-                        <CardContent className="p-5 sm:p-6 space-y-4">
+                    <Card className="overflow-hidden rounded-3xl border-border bg-card shadow-xs md:col-span-5">
+                        <CardContent className="space-y-4 p-5 sm:p-6">
                             <div className="flex items-center justify-between">
-                                <Label className="text-xs font-bold uppercase tracking-wider text-foreground">
+                                <Label className="text-xs font-bold tracking-wider text-foreground uppercase">
                                     Product Visual
                                 </Label>
                                 {imagePreview && (
-                                    <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                                    <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                                         Photo Added
                                     </span>
                                 )}
@@ -271,11 +288,14 @@ export default function ProductForm({
                                         role="button"
                                         tabIndex={0}
                                         onKeyDown={(e) => {
-                                            if (e.key === 'Enter' || e.key === ' ') {
+                                            if (
+                                                e.key === 'Enter' ||
+                                                e.key === ' '
+                                            ) {
                                                 setIsViewingImage(true);
                                             }
                                         }}
-                                        className="group relative aspect-square w-full rounded-2xl overflow-hidden border border-border bg-muted/20 shadow-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                        className="group relative aspect-square w-full cursor-pointer overflow-hidden rounded-2xl border border-border bg-muted/20 shadow-xs focus:ring-2 focus:ring-primary/30 focus:outline-none"
                                         title="Click image to view full size"
                                     >
                                         <img
@@ -291,8 +311,10 @@ export default function ProductForm({
                                             type="button"
                                             size="sm"
                                             variant="outline"
-                                            onClick={() => fileInputRef.current?.click()}
-                                            className="flex-1 h-8 text-xs gap-1.5 rounded-xl font-semibold shadow-none"
+                                            onClick={() =>
+                                                fileInputRef.current?.click()
+                                            }
+                                            className="h-8 flex-1 gap-1.5 rounded-xl text-xs font-semibold shadow-none"
                                         >
                                             <Upload className="h-3.5 w-3.5" />
                                             Change Photo
@@ -302,7 +324,7 @@ export default function ProductForm({
                                             size="sm"
                                             variant="destructive"
                                             onClick={handleRemoveImage}
-                                            className="h-8 px-3 text-xs gap-1.5 rounded-xl font-semibold shadow-none"
+                                            className="h-8 gap-1.5 rounded-xl px-3 text-xs font-semibold shadow-none"
                                         >
                                             <Trash2 className="h-3.5 w-3.5" />
                                             Remove
@@ -311,51 +333,59 @@ export default function ProductForm({
                                 </div>
                             ) : (
                                 <div
-                                    onClick={() => fileInputRef.current?.click()}
+                                    onClick={() =>
+                                        fileInputRef.current?.click()
+                                    }
                                     onDrop={handleDrop}
                                     onDragOver={handleDragOver}
                                     onDragLeave={handleDragLeave}
-                                    className={`aspect-square w-full cursor-pointer flex flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all p-6 text-center group ${
+                                    className={`group flex aspect-square w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-all ${
                                         isDragging
-                                            ? 'border-primary bg-primary/10 scale-[0.99]'
+                                            ? 'scale-[0.99] border-primary bg-primary/10'
                                             : 'border-border/80 bg-muted/15 hover:border-primary/50 hover:bg-primary/5'
                                     }`}
                                 >
-                                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary group-hover:scale-110 transition-transform shadow-2xs">
+                                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-2xs transition-transform group-hover:scale-110">
                                         <ImagePlus className="h-7 w-7" />
                                     </div>
                                     <p className="mt-3 text-xs font-bold text-foreground">
                                         Click or Drag & Drop Photo
                                     </p>
-                                    <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
+                                    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                                         PNG, JPG, WebP, or SVG
                                     </p>
                                 </div>
                             )}
 
-                            <div className="rounded-xl border border-border/60 bg-muted/20 p-3 text-[11px] text-muted-foreground leading-relaxed space-y-1">
-                                <p className="font-semibold text-foreground flex items-center gap-1.5">
+                            <div className="space-y-1 rounded-xl border border-border/60 bg-muted/20 p-3 text-[11px] leading-relaxed text-muted-foreground">
+                                <p className="flex items-center gap-1.5 font-semibold text-foreground">
                                     <Sparkles className="h-3 w-3 text-primary" />
                                     AI Studio Integration
                                 </p>
                                 <p>
-                                    This photo will be available in AI Studio when generating marketing creatives.
+                                    This photo will be available in AI Studio
+                                    when generating marketing creatives.
                                 </p>
                             </div>
                         </CardContent>
                     </Card>
 
                     {/* DETAILS CARD (RIGHT / 7 COLS) */}
-                    <div className="md:col-span-7 space-y-6">
+                    <div className="space-y-6 md:col-span-7">
                         <Card className="rounded-3xl border-border bg-card shadow-xs">
-                            <CardContent className="p-5 sm:p-6 space-y-5">
+                            <CardContent className="space-y-5 p-5 sm:p-6">
                                 {/* PRODUCT NAME */}
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
-                                        <Label htmlFor="product-name" className="text-xs font-bold uppercase tracking-wider text-foreground">
+                                        <Label
+                                            htmlFor="product-name"
+                                            className="text-xs font-bold tracking-wider text-foreground uppercase"
+                                        >
                                             Product Name
                                         </Label>
-                                        <span className="text-[11px] text-muted-foreground">Optional</span>
+                                        <span className="text-[11px] text-muted-foreground">
+                                            Optional
+                                        </span>
                                     </div>
                                     <div className="relative">
                                         <Tag className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -363,16 +393,21 @@ export default function ProductForm({
                                             id="product-name"
                                             value={data.name}
                                             onChange={(event) =>
-                                                setData('name', event.target.value)
+                                                setData(
+                                                    'name',
+                                                    event.target.value,
+                                                )
                                             }
                                             placeholder="e.g. Signature Lavender Scented Candle"
-                                            className={`h-11 pl-10 text-sm font-medium rounded-xl border-input bg-background focus-visible:ring-primary/30 ${
-                                                errors.name ? 'border-destructive ring-destructive/20' : ''
+                                            className={`h-11 rounded-xl border-input bg-background pl-10 text-sm font-medium focus-visible:ring-primary/30 ${
+                                                errors.name
+                                                    ? 'border-destructive ring-destructive/20'
+                                                    : ''
                                             }`}
                                         />
                                     </div>
                                     {errors.name && (
-                                        <p className="text-xs text-destructive font-medium mt-1">
+                                        <p className="mt-1 text-xs font-medium text-destructive">
                                             {errors.name}
                                         </p>
                                     )}
@@ -381,10 +416,15 @@ export default function ProductForm({
                                 {/* PRICE */}
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
-                                        <Label htmlFor="product-price" className="text-xs font-bold uppercase tracking-wider text-foreground">
+                                        <Label
+                                            htmlFor="product-price"
+                                            className="text-xs font-bold tracking-wider text-foreground uppercase"
+                                        >
                                             Price (₱ PHP)
                                         </Label>
-                                        <span className="text-[11px] text-muted-foreground">Optional</span>
+                                        <span className="text-[11px] text-muted-foreground">
+                                            Optional
+                                        </span>
                                     </div>
                                     <div className="relative">
                                         <span className="absolute top-1/2 left-3.5 -translate-y-1/2 text-sm font-bold text-muted-foreground select-none">
@@ -397,21 +437,27 @@ export default function ProductForm({
                                             step="0.01"
                                             value={data.price}
                                             onChange={(event) =>
-                                                setData('price', event.target.value)
+                                                setData(
+                                                    'price',
+                                                    event.target.value,
+                                                )
                                             }
                                             placeholder="0.00"
-                                            className={`h-11 pl-9 text-sm font-medium rounded-xl border-input bg-background focus-visible:ring-primary/30 ${
-                                                errors.price ? 'border-destructive ring-destructive/20' : ''
+                                            className={`h-11 rounded-xl border-input bg-background pl-9 text-sm font-medium focus-visible:ring-primary/30 ${
+                                                errors.price
+                                                    ? 'border-destructive ring-destructive/20'
+                                                    : ''
                                             }`}
                                         />
                                     </div>
                                     {errors.price ? (
-                                        <p className="text-xs text-destructive font-medium mt-1">
+                                        <p className="mt-1 text-xs font-medium text-destructive">
                                             {errors.price}
                                         </p>
                                     ) : (
                                         <p className="text-[11px] text-muted-foreground">
-                                            Optional retail price displayed on generated product designs.
+                                            Optional retail price displayed on
+                                            generated product designs.
                                         </p>
                                     )}
                                 </div>
@@ -423,7 +469,7 @@ export default function ProductForm({
                             <Button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="h-11 px-8 rounded-xl text-sm font-bold gap-2 shadow-sm w-full sm:w-auto"
+                                className="h-11 w-full gap-2 rounded-xl px-8 text-sm font-bold shadow-sm sm:w-auto"
                             >
                                 {isSubmitting ? (
                                     <>
@@ -444,13 +490,13 @@ export default function ProductForm({
 
             {/* FULLSCREEN IMAGE VIEWER MODAL ON CLICK */}
             {isViewingImage && imagePreview && (
-                <div className="fixed inset-0 z-[150] flex flex-col items-center justify-center bg-black/95 backdrop-blur-2xl text-white select-none animate-in fade-in duration-200 p-4">
+                <div className="fixed inset-0 z-[150] flex animate-in flex-col items-center justify-center bg-black/95 p-4 text-white backdrop-blur-2xl duration-200 select-none fade-in">
                     {/* Top Control Bar */}
                     <div className="absolute top-4 right-4 z-[160] flex items-center gap-2">
                         <button
                             type="button"
                             onClick={() => setIsZoomed(!isZoomed)}
-                            className="flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 text-xs font-medium backdrop-blur-md transition-all cursor-pointer"
+                            className="flex cursor-pointer items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md transition-all hover:bg-white/20"
                         >
                             {isZoomed ? (
                                 <>
@@ -471,7 +517,7 @@ export default function ProductForm({
                                 setIsViewingImage(false);
                                 setIsZoomed(false);
                             }}
-                            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 hover:bg-white/30 text-white transition-all backdrop-blur-md cursor-pointer"
+                            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md transition-all hover:bg-white/30"
                             title="Close"
                         >
                             <X className="h-5 w-5" />
@@ -479,17 +525,30 @@ export default function ProductForm({
                     </div>
 
                     {/* Image View Canvas */}
-                    <div className="relative max-h-[85vh] max-w-[90vw] overflow-hidden flex items-center justify-center">
+                    <div className="relative flex max-h-[85vh] max-w-[90vw] items-center justify-center overflow-hidden">
                         <img
                             src={imagePreview}
                             alt="Full product preview"
                             onClick={(e) => {
                                 if (!isZoomed) {
-                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const rect =
+                                        e.currentTarget.getBoundingClientRect();
                                     const offsetX = e.clientX - rect.left;
                                     const offsetY = e.clientY - rect.top;
-                                    const xPercent = Math.max(0, Math.min(100, (offsetX / rect.width) * 100));
-                                    const yPercent = Math.max(0, Math.min(100, (offsetY / rect.height) * 100));
+                                    const xPercent = Math.max(
+                                        0,
+                                        Math.min(
+                                            100,
+                                            (offsetX / rect.width) * 100,
+                                        ),
+                                    );
+                                    const yPercent = Math.max(
+                                        0,
+                                        Math.min(
+                                            100,
+                                            (offsetY / rect.height) * 100,
+                                        ),
+                                    );
                                     setZoomOrigin({ x: xPercent, y: yPercent });
                                     setIsZoomed(true);
                                 } else {
@@ -497,10 +556,14 @@ export default function ProductForm({
                                 }
                             }}
                             style={{
-                                transformOrigin: isZoomed ? `${zoomOrigin.x}% ${zoomOrigin.y}%` : 'center center',
+                                transformOrigin: isZoomed
+                                    ? `${zoomOrigin.x}% ${zoomOrigin.y}%`
+                                    : 'center center',
                             }}
-                            className={`max-h-[82vh] max-w-[88vw] object-contain rounded-2xl drop-shadow-2xl transition-transform duration-300 ease-out cursor-pointer ${
-                                isZoomed ? 'scale-[1.75] cursor-zoom-out' : 'scale-100 cursor-zoom-in'
+                            className={`max-h-[82vh] max-w-[88vw] cursor-pointer rounded-2xl object-contain drop-shadow-2xl transition-transform duration-300 ease-out ${
+                                isZoomed
+                                    ? 'scale-[1.75] cursor-zoom-out'
+                                    : 'scale-100 cursor-zoom-in'
                             }`}
                         />
                     </div>

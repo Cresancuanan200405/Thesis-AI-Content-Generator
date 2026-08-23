@@ -215,22 +215,25 @@ class DesignController extends Controller
             $referenceImagePath = $request->file('reference_image')->store('generation-requests', 'public');
         }
 
+        /** @var Product|null $product */
         $product = null;
         if ($request->filled('product_id')) {
-            $product = Product::query()->find($request->input('product_id'));
+            $product = Product::query()->where('id', $request->input('product_id'))->first();
             if ($product && $product->image_path) {
                 $referenceImagePath = $referenceImagePath ?: $product->image_path;
             }
         }
 
+        /** @var Campaign|null $campaign */
         $campaign = null;
         if ($request->filled('campaign_id')) {
-            $campaign = Campaign::query()->find($request->input('campaign_id'));
+            $campaign = Campaign::query()->where('id', $request->input('campaign_id'))->first();
         }
 
+        /** @var Event|null $event */
         $event = null;
         if ($request->filled('event_id')) {
-            $event = Event::query()->find($request->input('event_id'));
+            $event = Event::query()->where('id', $request->input('event_id'))->first();
         }
 
         $business = $user->business;
@@ -252,7 +255,7 @@ class DesignController extends Controller
                 // Step 1 — Product & Campaign
                 'product_name' => (string) $request->input('product_name'),
                 'product_description' => $product?->description,
-                'product_category' => $product?->category ?? $business?->category,
+                'product_category' => $business?->category,
                 'product_image_url' => $productImageUrl,
                 'campaign_name' => $campaign?->name,
                 'campaign_objective' => $campaign?->objective,

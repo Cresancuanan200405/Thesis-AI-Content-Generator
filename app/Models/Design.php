@@ -19,6 +19,7 @@ use Illuminate\Support\Carbon;
  * @property string $product_name
  * @property string|null $prompt
  * @property string|null $tagline
+ * @property string|null $content_style
  * @property string $status
  * @property string|null $generated_image_path
  * @property array<string, mixed>|null $generation_metadata

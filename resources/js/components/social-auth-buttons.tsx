@@ -28,7 +28,11 @@ export function GoogleIcon({ className = 'h-4 w-4' }: { className?: string }) {
     );
 }
 
-export function FacebookIcon({ className = 'h-4 w-4' }: { className?: string }) {
+export function FacebookIcon({
+    className = 'h-4 w-4',
+}: {
+    className?: string;
+}) {
     return (
         <svg
             className={className}
@@ -71,23 +75,7 @@ export function SocialAuthButtons({
                     type="button"
                     variant="outline"
                     onClick={() => handleSocialLogin('google')}
-                    className="
-                        card-elevated
-                        h-9.5
-                        w-full
-                        gap-2
-                        rounded-xl
-                        border-border
-                        bg-card
-                        text-xs
-                        font-medium
-                        text-foreground
-                        shadow-xs
-                        transition-all
-                        duration-200
-                        hover:bg-muted/60
-                        active:scale-[0.98]
-                    "
+                    className="card-elevated h-9.5 w-full gap-2 rounded-xl border-border bg-card text-xs font-medium text-foreground shadow-xs transition-all duration-200 hover:bg-muted/60 active:scale-[0.98]"
                 >
                     <GoogleIcon className="h-3.5 w-3.5 shrink-0" />
                     <span>Google</span>
@@ -97,23 +85,7 @@ export function SocialAuthButtons({
                     type="button"
                     variant="outline"
                     onClick={() => handleSocialLogin('facebook')}
-                    className="
-                        card-elevated
-                        h-9.5
-                        w-full
-                        gap-2
-                        rounded-xl
-                        border-border
-                        bg-card
-                        text-xs
-                        font-medium
-                        text-foreground
-                        shadow-xs
-                        transition-all
-                        duration-200
-                        hover:bg-muted/60
-                        active:scale-[0.98]
-                    "
+                    className="card-elevated h-9.5 w-full gap-2 rounded-xl border-border bg-card text-xs font-medium text-foreground shadow-xs transition-all duration-200 hover:bg-muted/60 active:scale-[0.98]"
                 >
                     <FacebookIcon className="h-3.5 w-3.5 shrink-0" />
                     <span>Facebook</span>

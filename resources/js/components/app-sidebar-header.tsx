@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { Link, router, usePage } from '@inertiajs/react';
 import {
     Bell,
@@ -12,6 +11,7 @@ import {
     Sparkles,
     Sun,
 } from 'lucide-react';
+import * as React from 'react';
 
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Button } from '@/components/ui/button';
@@ -37,18 +37,40 @@ type NotificationItem = {
 };
 
 function formatTimeAgo(dateString?: string): string {
-    if (!dateString) return '';
+    if (!dateString) {
+        return '';
+    }
+
     const date = new Date(dateString);
     const now = new Date();
     const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    if (seconds < 60) return 'Just now';
+
+    if (seconds < 60) {
+        return 'Just now';
+    }
+
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
+
+    if (minutes < 60) {
+        return `${minutes}m ago`;
+    }
+
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
+
+    if (hours < 24) {
+        return `${hours}h ago`;
+    }
+
     const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+    if (days < 7) {
+        return `${days}d ago`;
+    }
+
+    return date.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+    });
 }
 
 function getNotificationIcon(type: string) {
@@ -84,8 +106,13 @@ export function AppSidebarHeader({
 
     const handleNotificationClick = (item: NotificationItem) => {
         if (!item.read_at) {
-            router.post(`/notifications/${item.id}/read`, {}, { preserveScroll: true });
+            router.post(
+                `/notifications/${item.id}/read`,
+                {},
+                { preserveScroll: true },
+            );
         }
+
         if (item.action_url) {
             router.visit(item.action_url);
         } else {
@@ -104,14 +131,18 @@ export function AppSidebarHeader({
         }
 
         const path = (url || '').split('?')[0].replace(/^\//, '');
+
         if (!path || path === 'dashboard') {
             return [{ title: 'Dashboard', href: '/dashboard' }];
         }
 
         const segments = path.split('/');
+
         return segments.map((seg, i) => {
             const href = '/' + segments.slice(0, i + 1).join('/');
-            const title = seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, ' ');
+            const title =
+                seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, ' ');
+
             return { title, href };
         });
     }, [breadcrumbs, url]);
@@ -127,43 +158,21 @@ export function AppSidebarHeader({
     ];
 
     const currentTheme =
-        themes.find((theme) => theme.value === appearance) ??
-        themes[0];
+        themes.find((theme) => theme.value === appearance) ?? themes[0];
 
     const CurrentIcon = currentTheme.icon;
 
     return (
-        <header
-            className="
-                sticky
-                top-0
-                z-30
-                flex
-                h-11
-                sm:h-12
-                items-center
-                justify-between
-                gap-3
-                border-b
-                border-border/60
-                bg-background/65
-                dark:bg-background/55
-                px-3
-                backdrop-blur-xl
-                transition-[width,height]
-                ease-linear
-                sm:px-5
-            "
-        >
+        <header className="sticky top-0 z-30 flex h-11 items-center justify-between gap-3 border-b border-border/60 bg-background/65 px-3 backdrop-blur-xl transition-[width,height] ease-linear sm:h-12 sm:px-5 dark:bg-background/55">
             {/* =============================================================
                 LEFT SIDE
             ============================================================= */}
             <div className="flex items-center gap-2.5 sm:gap-3">
-                <SidebarTrigger className="-ml-1 h-8 w-8 hover:bg-muted/80 hover:scale-105 transition-all" />
+                <SidebarTrigger className="-ml-1 h-8 w-8 transition-all hover:scale-105 hover:bg-muted/80" />
 
                 <div
                     aria-hidden
-                    className="h-3.5 w-px bg-border/80 hidden sm:block"
+                    className="hidden h-3.5 w-px bg-border/80 sm:block"
                 />
 
                 <Breadcrumbs breadcrumbs={resolvedBreadcrumbs} />
@@ -173,7 +182,6 @@ export function AppSidebarHeader({
                 RIGHT ACTIONS
             ============================================================= */}
             <div className="flex items-center gap-1">
-
                 {/* ========================================================
                     THEME DROPDOWN
                 ========================================================= */}
@@ -184,27 +192,34 @@ export function AppSidebarHeader({
                             size="icon"
                             aria-label="Choose theme"
                             title="Choose theme"
-                            className="h-8 w-8 rounded-full text-muted-foreground transition-all duration-200 hover:scale-105 hover:bg-primary/10 hover:text-primary hover:ring-1 hover:ring-primary/25 active:scale-95 data-[state=open]:bg-primary/15 data-[state=open]:text-primary data-[state=open]:ring-2 data-[state=open]:ring-primary/40 data-[state=open]:scale-105 cursor-pointer shadow-2xs"
+                            className="h-8 w-8 cursor-pointer rounded-full text-muted-foreground shadow-2xs transition-all duration-200 hover:scale-105 hover:bg-primary/10 hover:text-primary hover:ring-1 hover:ring-primary/25 active:scale-95 data-[state=open]:scale-105 data-[state=open]:bg-primary/15 data-[state=open]:text-primary data-[state=open]:ring-2 data-[state=open]:ring-primary/40"
                         >
                             <CurrentIcon className="h-4 w-4 transition-transform duration-200" />
                         </Button>
                     </DropdownMenuTrigger>
 
-                    <DropdownMenuContent align="end" sideOffset={10} className="relative w-36 rounded-xl border border-border bg-popover/98 p-1 shadow-xl backdrop-blur-xl animate-in fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 overflow-visible">
+                    <DropdownMenuContent
+                        align="end"
+                        sideOffset={10}
+                        className="relative w-36 animate-in overflow-visible rounded-xl border border-border bg-popover/98 p-1 shadow-xl backdrop-blur-xl fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2"
+                    >
                         {/* Directional Indicator Pointer back to icon */}
-                        <div className="pointer-events-none absolute -top-1.5 right-3 h-3 w-3 rotate-45 border-l border-t border-border bg-popover" />
+                        <div className="pointer-events-none absolute -top-1.5 right-3 h-3 w-3 rotate-45 border-t border-l border-border bg-popover" />
 
                         {themes.map(({ value, label, icon: Icon }) => {
                             const selected = appearance === value;
+
                             return (
                                 <DropdownMenuItem
                                     key={value}
                                     onClick={() => updateAppearance(value)}
-                                    className={`relative z-10 cursor-pointer rounded-lg px-2.5 py-1.5 transition-colors ${selected ? 'bg-primary/10 text-primary font-semibold' : 'hover:bg-muted'}`}
+                                    className={`relative z-10 cursor-pointer rounded-lg px-2.5 py-1.5 transition-colors ${selected ? 'bg-primary/10 font-semibold text-primary' : 'hover:bg-muted'}`}
                                 >
                                     <Icon className="mr-2 h-4 w-4" />
                                     <span className="text-xs">{label}</span>
-                                    {selected && <Check className="ml-auto h-3.5 w-3.5" />}
+                                    {selected && (
+                                        <Check className="ml-auto h-3.5 w-3.5" />
+                                    )}
                                 </DropdownMenuItem>
                             );
                         })}
@@ -221,11 +236,11 @@ export function AppSidebarHeader({
                             size="icon"
                             aria-label="Notifications"
                             title="Notifications"
-                            className="relative h-8 w-8 rounded-full text-muted-foreground transition-all duration-200 hover:scale-105 hover:bg-primary/10 hover:text-primary hover:ring-1 hover:ring-primary/25 active:scale-95 data-[state=open]:bg-primary/15 data-[state=open]:text-primary data-[state=open]:ring-2 data-[state=open]:ring-primary/40 data-[state=open]:scale-105 cursor-pointer shadow-2xs"
+                            className="relative h-8 w-8 cursor-pointer rounded-full text-muted-foreground shadow-2xs transition-all duration-200 hover:scale-105 hover:bg-primary/10 hover:text-primary hover:ring-1 hover:ring-primary/25 active:scale-95 data-[state=open]:scale-105 data-[state=open]:bg-primary/15 data-[state=open]:text-primary data-[state=open]:ring-2 data-[state=open]:ring-primary/40"
                         >
                             <Bell className="h-4 w-4 transition-transform duration-200" />
                             {unreadCount > 0 && (
-                                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground shadow-sm animate-in zoom-in-50 ring-2 ring-background">
+                                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 animate-in items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground shadow-sm ring-2 ring-background zoom-in-50">
                                     {unreadCount > 9 ? '9+' : unreadCount}
                                 </span>
                             )}
@@ -235,31 +250,13 @@ export function AppSidebarHeader({
                     <DropdownMenuContent
                         align="end"
                         sideOffset={10}
-                        className="
-                            relative
-                            w-84
-                            sm:w-96
-                            rounded-2xl
-                            border
-                            border-border
-                            bg-popover
-                            p-0
-                            shadow-2xl
-                            shadow-black/20
-                            duration-200
-                            animate-in
-                            fade-in-0
-                            zoom-in-95
-                            data-[side=bottom]:slide-in-from-top-2
-                            dark:shadow-black/50
-                            overflow-visible
-                        "
+                        className="relative w-84 animate-in overflow-visible rounded-2xl border border-border bg-popover p-0 shadow-2xl shadow-black/20 duration-200 fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 sm:w-96 dark:shadow-black/50"
                     >
                         {/* Directional Indicator Pointer back to icon */}
-                        <div className="pointer-events-none absolute -top-1.5 right-3 z-30 h-3 w-3 rotate-45 border-l border-t border-border bg-muted" />
+                        <div className="pointer-events-none absolute -top-1.5 right-3 z-30 h-3 w-3 rotate-45 border-t border-l border-border bg-muted" />
 
                         {/* Notification Header */}
-                        <div className="relative z-10 flex items-center justify-between border-b border-border bg-muted/50 rounded-t-2xl px-4 py-2.5">
+                        <div className="relative z-10 flex items-center justify-between rounded-t-2xl border-b border-border bg-muted/50 px-4 py-2.5">
                             <div className="flex items-center gap-2">
                                 <p className="text-xs font-bold text-foreground">
                                     Notifications
@@ -289,7 +286,9 @@ export function AppSidebarHeader({
                                 {notifications.map((item) => (
                                     <div
                                         key={item.id}
-                                        onClick={() => handleNotificationClick(item)}
+                                        onClick={() =>
+                                            handleNotificationClick(item)
+                                        }
                                         className={`group relative flex cursor-pointer items-start gap-3 p-3.5 transition-colors hover:bg-muted/50 ${
                                             !item.read_at ? 'bg-muted/20' : ''
                                         }`}
@@ -300,15 +299,19 @@ export function AppSidebarHeader({
 
                                         <div className="min-w-0 flex-1">
                                             <div className="flex items-center justify-between gap-2">
-                                                <p className={`truncate text-xs font-semibold ${!item.read_at ? 'text-foreground font-bold' : 'text-foreground/90'}`}>
+                                                <p
+                                                    className={`truncate text-xs font-semibold ${!item.read_at ? 'font-bold text-foreground' : 'text-foreground/90'}`}
+                                                >
                                                     {item.title}
                                                 </p>
                                                 <span className="shrink-0 text-[10px] text-muted-foreground">
-                                                    {formatTimeAgo(item.created_at)}
+                                                    {formatTimeAgo(
+                                                        item.created_at,
+                                                    )}
                                                 </span>
                                             </div>
 
-                                            <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground leading-relaxed">
+                                            <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                                                 {item.message}
                                             </p>
                                         </div>
@@ -330,7 +333,8 @@ export function AppSidebarHeader({
                                 </p>
 
                                 <p className="mt-1 max-w-[220px] text-xs leading-relaxed text-muted-foreground">
-                                    Campaign, design generation, and event updates will appear here.
+                                    Campaign, design generation, and event
+                                    updates will appear here.
                                 </p>
                             </div>
                         )}

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
+use Symfony\Component\HttpFoundation\RedirectResponse as SymfonyRedirectResponse;
 use Throwable;
 
 class SocialAuthController extends Controller
@@ -24,7 +25,7 @@ class SocialAuthController extends Controller
     /**
      * Redirect to the provider's OAuth authentication page.
      */
-    public function redirect(string $provider): RedirectResponse
+    public function redirect(string $provider): RedirectResponse|SymfonyRedirectResponse
     {
         if (! in_array($provider, $this->supportedProviders, true)) {
             return redirect()->route('login')->with('error', 'Unsupported authentication provider.');

@@ -29,21 +29,22 @@ export default function Login({ status, canResetPassword }: Props) {
             <Form
                 {...store.form()}
                 resetOnSuccess={['password']}
-                className="flex flex-col gap-3.5 duration-300 animate-in fade-in slide-in-from-bottom-2"
+                className="flex animate-in flex-col gap-3.5 duration-300 fade-in slide-in-from-bottom-2"
             >
                 {({ processing, errors }) => (
                     <>
                         <div className="grid gap-3">
                             {/* Email Address */}
                             <div className="grid gap-1">
-                                <Label htmlFor="email" className="text-xs font-semibold text-foreground">
+                                <Label
+                                    htmlFor="email"
+                                    className="text-xs font-semibold text-foreground"
+                                >
                                     Email address
                                 </Label>
 
                                 <div className={fieldGlow}>
-                                    <Mail
-                                        className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground transition-colors duration-300 group-focus-within:text-[#2563EB]"
-                                    />
+                                    <Mail className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground transition-colors duration-300 group-focus-within:text-[#2563EB]" />
 
                                     <Input
                                         id="email"
@@ -63,7 +64,10 @@ export default function Login({ status, canResetPassword }: Props) {
 
                             {/* Password */}
                             <div className="grid gap-1">
-                                <Label htmlFor="password" className="text-xs font-semibold text-foreground">
+                                <Label
+                                    htmlFor="password"
+                                    className="text-xs font-semibold text-foreground"
+                                >
                                     Password
                                 </Label>
 
@@ -106,7 +110,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     className="rounded-md border-border transition-colors duration-300 focus-visible:ring-primary/40 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                                 />
 
-                                <span className="cursor-pointer text-xs text-muted-foreground font-medium">
+                                <span className="cursor-pointer text-xs font-medium text-muted-foreground">
                                     Remember me
                                 </span>
                             </label>
@@ -117,7 +121,7 @@ export default function Login({ status, canResetPassword }: Props) {
                             {/* Login Button */}
                             <Button
                                 type="submit"
-                                className="group mt-1.5 h-10 w-full rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:scale-[1.01] hover:bg-primary/90 hover:shadow-primary/35 active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100 cursor-pointer"
+                                className="group mt-1.5 h-10 w-full cursor-pointer rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:scale-[1.01] hover:bg-primary/90 hover:shadow-primary/35 active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100"
                                 tabIndex={4}
                                 disabled={processing}
                                 data-test="login-button"
@@ -134,7 +138,7 @@ export default function Login({ status, canResetPassword }: Props) {
                         </div>
 
                         {/* Sign Up */}
-                        <div className="text-center text-xs text-muted-foreground pt-1">
+                        <div className="pt-1 text-center text-xs text-muted-foreground">
                             Don't have an account?{' '}
                             <TextLink
                                 href={register()}
@@ -161,5 +165,6 @@ export default function Login({ status, canResetPassword }: Props) {
 
 Login.layout = {
     title: 'Welcome back',
-    description: 'Sign in to keep your campaigns, brand guidance, and content calendar moving.',
+    description:
+        'Sign in to keep your campaigns, brand guidance, and content calendar moving.',
 };

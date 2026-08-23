@@ -22,26 +22,31 @@ export function useFlashToast(): void {
 
             if (flash.toast?.type && flash.toast?.message) {
                 const key = `${flash.toast.type}:${flash.toast.message}`;
+
                 if (lastToastRef.current !== key) {
                     lastToastRef.current = key;
                     toast[flash.toast.type](flash.toast.message);
                 }
             } else if (flash.success) {
                 const key = `success:${flash.success}`;
+
                 if (lastToastRef.current !== key) {
                     lastToastRef.current = key;
                     toast.success(flash.success);
                 }
             } else if (flash.error) {
                 const key = `error:${flash.error}`;
+
                 if (lastToastRef.current !== key) {
                     lastToastRef.current = key;
                     toast.error(flash.error);
                 }
             } else if (flash.info || flash.message) {
                 const msg = flash.info || flash.message;
+
                 if (msg) {
                     const key = `info:${msg}`;
+
                     if (lastToastRef.current !== key) {
                         lastToastRef.current = key;
                         toast.info(msg);
@@ -51,12 +56,14 @@ export function useFlashToast(): void {
         };
 
         const unregisterNavigate = router.on('navigate', (event: any) => {
-            const flash = event?.detail?.page?.props?.flash as FlashData | undefined;
+            const flash = event?.detail?.page?.props?.flash as
+                FlashData | undefined;
             handleFlash(flash);
         });
 
         const unregisterSuccess = router.on('success', (event: any) => {
-            const flash = event?.detail?.page?.props?.flash as FlashData | undefined;
+            const flash = event?.detail?.page?.props?.flash as
+                FlashData | undefined;
             handleFlash(flash);
         });
 

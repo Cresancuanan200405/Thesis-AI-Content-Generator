@@ -11,12 +11,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -115,7 +110,9 @@ export default function DesignShowPage({ design }: any) {
                             >
                                 <Heart
                                     className={`h-4 w-4 ${
-                                        isFavorite ? 'fill-rose-500 text-rose-500' : ''
+                                        isFavorite
+                                            ? 'fill-rose-500 text-rose-500'
+                                            : ''
                                     }`}
                                 />
                                 {isFavorite ? 'Favorited' : 'Favorite'}
@@ -160,17 +157,14 @@ export default function DesignShowPage({ design }: any) {
                                         </DialogTitle>
 
                                         <DialogDescription>
-                                            This will remove the generated
-                                            image and the design record from
-                                            your account.
+                                            This will remove the generated image
+                                            and the design record from your
+                                            account.
                                         </DialogDescription>
                                     </DialogHeader>
 
                                     <DialogFooter>
-                                        <Button
-                                            variant="outline"
-                                            type="button"
-                                        >
+                                        <Button variant="outline" type="button">
                                             Cancel
                                         </Button>
 
@@ -319,7 +313,7 @@ export default function DesignShowPage({ design }: any) {
                                             Status
                                         </p>
 
-                                        <p className="mt-1.5 text-sm font-medium capitalize text-foreground">
+                                        <p className="mt-1.5 text-sm font-medium text-foreground capitalize">
                                             {design.status || '—'}
                                         </p>
                                     </div>
