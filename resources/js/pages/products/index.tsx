@@ -286,7 +286,7 @@ export default function ProductsIndexPage({
                     {/* =====================================================
                         STICKY FILTER TOOLBAR
                     ====================================================== */}
-                    <div className="sticky top-11 z-30 mb-5 rounded-2xl border border-white/25 bg-card/95 p-2.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:p-3 dark:border-white/10 dark:bg-slate-900/90">
+                    <div className="sticky top-11 z-30 mb-5 rounded-2xl border border-white/25 bg-card/95 p-2.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:p-3 dark:border-white/10 dark:bg-card/95">
                         <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
                             {/* Search */}
                             <div className="relative min-w-0 flex-1">
@@ -921,7 +921,7 @@ export default function ProductsIndexPage({
                     {/* Section 2: Recreated, Classy Details & Functions Section */}
                     <div
                         id="product-modal-details"
-                        className="relative z-30 w-full border-t border-white/20 bg-slate-950/98 px-4 pt-8 pb-16 backdrop-blur-3xl sm:px-8"
+                        className="relative z-30 w-full border-t border-white/20 bg-background/98 px-4 pt-8 pb-16 backdrop-blur-3xl sm:px-8"
                     >
                         <div className="mx-auto max-w-3xl space-y-6">
                             <div className="flex flex-col gap-3 border-b border-white/15 pb-4 sm:flex-row sm:items-center sm:justify-between">
@@ -969,7 +969,7 @@ export default function ProductsIndexPage({
                             </div>
 
                             <div className="grid gap-3 sm:grid-cols-2">
-                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 shadow-md backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
+                                <div className="group rounded-2xl border border-white/20 bg-card/90 p-4 shadow-md backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
                                     <div className="flex items-center gap-1.5 text-xs font-extrabold tracking-wider text-white/70 uppercase">
                                         <Tag className="h-3.5 w-3.5 text-primary" />
                                         Retail Price
@@ -981,7 +981,7 @@ export default function ProductsIndexPage({
                                     </p>
                                 </div>
 
-                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 shadow-md backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
+                                <div className="group rounded-2xl border border-white/20 bg-card/90 p-4 shadow-md backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
                                     <div className="flex items-center gap-1.5 text-xs font-extrabold tracking-wider text-white/70 uppercase">
                                         <Calendar className="h-3.5 w-3.5 text-primary" />
                                         Added to Catalog

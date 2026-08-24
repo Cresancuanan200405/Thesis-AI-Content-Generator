@@ -1589,7 +1589,7 @@ export default function GeneratorPage() {
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <div className="w-full max-w-md space-y-3 rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 text-center text-white">
+                                                    <div className="w-full max-w-md space-y-3 rounded-2xl bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 p-6 text-center text-white">
                                                         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20 text-primary shadow-md">
                                                             <Sparkles className="h-6 w-6 text-primary" />
                                                         </div>
@@ -2744,7 +2744,7 @@ export default function GeneratorPage() {
                     </aside>
                 ) : (
                     /* EXPANDED FULL RIGHT SIDEBAR */
-                    <aside className="sticky top-11 z-20 flex h-[calc(100vh-2.75rem)] w-80 shrink-0 flex-col justify-between overflow-y-auto border-l border-border/80 bg-card/75 p-5 backdrop-blur-2xl transition-all duration-300 sm:top-12 sm:h-[calc(100vh-3rem)] lg:w-[320px] dark:bg-slate-900/80">
+                    <aside className="sticky top-11 z-20 flex h-[calc(100vh-2.75rem)] w-80 shrink-0 flex-col justify-between overflow-y-auto border-l border-border/80 bg-card/75 p-5 backdrop-blur-2xl transition-all duration-300 sm:top-12 sm:h-[calc(100vh-3rem)] lg:w-[320px] dark:bg-card/85">
                         <div className="space-y-5">
                             {/* Sidebar Header */}
                             <div className="flex items-center justify-between border-b border-border/60 pb-3">
@@ -3291,7 +3291,7 @@ export default function GeneratorPage() {
                             />
                         ) : (
                             <div
-                                className={`flex flex-col items-center justify-center rounded-3xl border border-white/20 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-8 text-center text-white drop-shadow-2xl transition-all duration-300 ${
+                                className={`flex flex-col items-center justify-center rounded-3xl border border-white/20 bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 p-8 text-center text-white drop-shadow-2xl transition-all duration-300 ${
                                     isFullViewDetailsExpanded
                                         ? '-translate-y-8 scale-90'
                                         : 'scale-100'

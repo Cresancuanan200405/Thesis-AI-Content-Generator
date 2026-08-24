@@ -655,7 +655,7 @@ export default function DesignsPage({
                         STICKY FILTER TOOLBAR (SYSTEM DESIGN COMPATIBLE)
                     ====================================================== */}
 
-                    <div className="sticky top-11 z-30 mb-6 rounded-2xl border border-white/25 bg-card/95 p-3 shadow-md backdrop-blur-xl transition-all sm:top-12 dark:border-white/10 dark:bg-slate-900/90">
+                    <div className="sticky top-11 z-30 mb-6 rounded-2xl border border-white/25 bg-card/95 p-3 shadow-md backdrop-blur-xl transition-all sm:top-12 dark:border-white/10 dark:bg-card/95">
                         <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
                             {/* Search */}
                             <div className="relative min-w-0 flex-1">
@@ -1185,7 +1185,7 @@ export default function DesignsPage({
                                                             isDesignFavorite(
                                                                 design,
                                                             )
-                                                                ? 'bg-white/90 text-rose-500 hover:bg-white dark:bg-slate-900/90'
+                                                                ? 'bg-white/90 text-rose-500 hover:bg-white dark:bg-card/90'
                                                                 : 'bg-black/40 text-white/90 hover:bg-black/60 hover:text-rose-400'
                                                         }`}
                                                     >
@@ -2099,7 +2099,7 @@ export default function DesignsPage({
                     {/* Section 2: Recreated, Classy Details & Functions Section (Scroll down) */}
                     <div
                         id="design-modal-details"
-                        className="relative z-30 w-full border-t border-white/20 bg-slate-950/98 px-4 pt-8 pb-16 backdrop-blur-3xl sm:px-8"
+                        className="relative z-30 w-full border-t border-white/20 bg-background/98 px-4 pt-8 pb-16 backdrop-blur-3xl sm:px-8"
                     >
                         <div className="mx-auto max-w-3xl space-y-6">
                             {/* Header / Title block */}
@@ -2133,7 +2133,7 @@ export default function DesignsPage({
 
                             {/* Tagline Card (Ultra-visible, high-contrast primary card) */}
                             {previewDesign.tagline && (
-                                <div className="group relative overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-r from-primary/30 via-slate-900/95 to-primary/20 p-5 shadow-xl shadow-primary/10 backdrop-blur-2xl transition-all hover:border-primary sm:p-6">
+                                <div className="group relative overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-r from-primary/30 via-card/95 to-primary/20 p-5 shadow-xl shadow-primary/10 backdrop-blur-2xl transition-all hover:border-primary sm:p-6">
                                     <div className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-[11px] font-extrabold tracking-wider text-primary-foreground uppercase shadow-sm">
                                         <Tag className="h-3.5 w-3.5" />
                                         Catchy Tagline & Hook
@@ -2145,7 +2145,7 @@ export default function DesignsPage({
                             )}
 
                             {/* Prompt & Visual Concept (with hover effect) */}
-                            <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-5 shadow-lg backdrop-blur-2xl transition-all duration-300 hover:border-white/30">
+                            <div className="group rounded-2xl border border-white/20 bg-card/90 p-5 shadow-lg backdrop-blur-2xl transition-all duration-300 hover:border-white/30">
                                 <div className="inline-block rounded bg-white/15 px-2.5 py-0.5 text-[11px] font-extrabold tracking-wider text-white uppercase">
                                     AI Prompt & Concept
                                 </div>
@@ -2157,7 +2157,7 @@ export default function DesignsPage({
 
                             {/* Metadata Grid (3 columns with hover cards) */}
                             <div className="grid gap-3 sm:grid-cols-3">
-                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 shadow-md backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
+                                <div className="group rounded-2xl border border-white/20 bg-card/90 p-4 shadow-md backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
                                     <div className="flex items-center gap-1.5 text-xs font-extrabold tracking-wider text-white/70 uppercase">
                                         <Tag className="h-3.5 w-3.5 text-primary" />
                                         Product
@@ -2173,7 +2173,7 @@ export default function DesignsPage({
                                     )}
                                 </div>
 
-                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 shadow-md backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
+                                <div className="group rounded-2xl border border-white/20 bg-card/90 p-4 shadow-md backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
                                     <div className="flex items-center gap-1.5 text-xs font-extrabold tracking-wider text-white/70 uppercase">
                                         <Layers className="h-3.5 w-3.5 text-primary" />
                                         Campaign
@@ -2184,7 +2184,7 @@ export default function DesignsPage({
                                     </p>
                                 </div>
 
-                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 shadow-md backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
+                                <div className="group rounded-2xl border border-white/20 bg-card/90 p-4 shadow-md backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
                                     <div className="flex items-center gap-1.5 text-xs font-extrabold tracking-wider text-white/70 uppercase">
                                         <CalendarDays className="h-3.5 w-3.5 text-primary" />
                                         Created / Event

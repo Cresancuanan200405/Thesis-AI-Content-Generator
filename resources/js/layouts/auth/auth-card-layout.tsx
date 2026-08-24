@@ -48,7 +48,7 @@ export default function AuthCardLayout({
                     </div>
                 </Link>
 
-                <div className="overflow-hidden rounded-3xl border border-white/25 bg-card/85 p-6 shadow-2xl backdrop-blur-2xl sm:p-8 dark:border-white/10 dark:bg-slate-900/80">
+                <div className="overflow-hidden rounded-3xl border border-white/25 bg-card/85 p-6 shadow-2xl backdrop-blur-2xl sm:p-8 dark:border-white/10 dark:bg-card/85">
                     <div className="mb-6 space-y-1.5 text-center">
                         <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
                             {title}

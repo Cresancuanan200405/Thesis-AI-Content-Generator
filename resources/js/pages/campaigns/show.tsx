@@ -1052,7 +1052,7 @@ export default function CampaignShowPage({
                     {/* Section 2: Recreated, Classy Details & Functions Section */}
                     <div
                         id="campaign-modal-details"
-                        className="relative z-30 w-full border-t border-white/20 bg-slate-950/98 px-4 pt-8 pb-16 backdrop-blur-3xl sm:px-8"
+                        className="relative z-30 w-full border-t border-white/20 bg-background/98 px-4 pt-8 pb-16 backdrop-blur-3xl sm:px-8"
                     >
                         <div className="mx-auto max-w-3xl space-y-6">
                             <div className="flex flex-col gap-3 border-b border-white/15 pb-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1087,7 +1087,7 @@ export default function CampaignShowPage({
                             </div>
 
                             {previewDesign.tagline && (
-                                <div className="group relative overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-r from-primary/30 via-slate-900/95 to-primary/20 p-5 shadow-xl shadow-primary/10 backdrop-blur-2xl transition-all hover:border-primary sm:p-6">
+                                <div className="group relative overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-r from-primary/30 via-card/95 to-primary/20 p-5 shadow-xl shadow-primary/10 backdrop-blur-2xl transition-all hover:border-primary sm:p-6">
                                     <div className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-[11px] font-extrabold tracking-wider text-primary-foreground uppercase shadow-sm">
                                         <Tag className="h-3.5 w-3.5" />
                                         Catchy Tagline & Hook
@@ -1098,7 +1098,7 @@ export default function CampaignShowPage({
                                 </div>
                             )}
 
-                            <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-5 shadow-lg backdrop-blur-2xl transition-all duration-300 hover:border-white/30">
+                            <div className="group rounded-2xl border border-white/20 bg-card/90 p-5 shadow-lg backdrop-blur-2xl transition-all duration-300 hover:border-white/30">
                                 <div className="inline-block rounded bg-white/15 px-2.5 py-0.5 text-[11px] font-extrabold tracking-wider text-white uppercase">
                                     AI Prompt & Concept
                                 </div>
@@ -1109,7 +1109,7 @@ export default function CampaignShowPage({
                             </div>
 
                             <div className="grid gap-3 sm:grid-cols-3">
-                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 shadow-md backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
+                                <div className="group rounded-2xl border border-white/20 bg-card/90 p-4 shadow-md backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
                                     <div className="flex items-center gap-1.5 text-xs font-extrabold tracking-wider text-white/70 uppercase">
                                         <Tag className="h-3.5 w-3.5 text-primary" />
                                         Product
@@ -1125,7 +1125,7 @@ export default function CampaignShowPage({
                                     )}
                                 </div>
 
-                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 shadow-md backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
+                                <div className="group rounded-2xl border border-white/20 bg-card/90 p-4 shadow-md backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
                                     <div className="flex items-center gap-1.5 text-xs font-extrabold tracking-wider text-white/70 uppercase">
                                         <Layers className="h-3.5 w-3.5 text-primary" />
                                         Campaign
@@ -1135,7 +1135,7 @@ export default function CampaignShowPage({
                                     </p>
                                 </div>
 
-                                <div className="group rounded-2xl border border-white/20 bg-slate-900/90 p-4 shadow-md backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
+                                <div className="group rounded-2xl border border-white/20 bg-card/90 p-4 shadow-md backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
                                     <div className="flex items-center gap-1.5 text-xs font-extrabold tracking-wider text-white/70 uppercase">
                                         <CalendarDays className="h-3.5 w-3.5 text-primary" />
                                         Created

@@ -418,7 +418,7 @@ export default function Dashboard({
                     {/* =====================================================
                         1. WELCOME & QUICK ACTION HERO (Glassmorphism Banner)
                     ====================================================== */}
-                    <section className="relative overflow-hidden rounded-3xl border border-white/25 bg-card/85 p-6 shadow-xl shadow-black/5 backdrop-blur-2xl md:p-8 dark:border-white/10 dark:bg-slate-900/80 dark:shadow-black/40">
+                    <section className="relative overflow-hidden rounded-3xl border border-white/25 bg-card/85 p-6 shadow-xl shadow-black/5 backdrop-blur-2xl md:p-8 dark:border-white/10 dark:bg-card/85 dark:shadow-black/40">
                         {/* Ambient Light Orbs */}
                         <div className="pointer-events-none absolute -top-16 -right-16 h-64 w-64 rounded-full bg-primary/15 blur-[90px]" />
                         <div className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-blue-500/10 blur-[90px]" />
@@ -498,7 +498,7 @@ export default function Dashboard({
                                     key={metric.label}
                                     href={metric.href}
                                     className={cn(
-                                        'group relative block flex cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-white/25 bg-card/80 p-5 shadow-lg backdrop-blur-xl transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl dark:border-white/10 dark:bg-slate-900/75',
+                                        'group relative block flex cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-white/25 bg-card/80 p-5 shadow-lg backdrop-blur-xl transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl dark:border-white/10 dark:bg-card/80',
                                         metric.borderColor,
                                     )}
                                 >
@@ -536,7 +536,7 @@ export default function Dashboard({
                     ====================================================== */}
                     <div className="grid gap-6 lg:grid-cols-3">
                         {/* CHART 1: Creative & Campaign Output Activity (Dual Bar / Trend Visualizer) */}
-                        <Card className="flex flex-col justify-between rounded-3xl border-white/25 bg-card/85 p-6 shadow-xl backdrop-blur-2xl lg:col-span-2 dark:border-white/10 dark:bg-slate-900/80">
+                        <Card className="flex flex-col justify-between rounded-3xl border-white/25 bg-card/85 p-6 shadow-xl backdrop-blur-2xl lg:col-span-2 dark:border-white/10 dark:bg-card/85">
                             <div>
                                 <div className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
@@ -742,7 +742,7 @@ export default function Dashboard({
                         {/* CHART 2 & 3: Pipeline Distribution & Catalog Readiness */}
                         <div className="space-y-6">
                             {/* Campaign Pipeline Status Breakdown */}
-                            <Card className="rounded-3xl border-white/25 bg-card/85 p-5 shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/80">
+                            <Card className="rounded-3xl border-white/25 bg-card/85 p-5 shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-card/85">
                                 <div className="flex items-center justify-between border-b border-border/60 pb-3">
                                     <div className="flex items-center gap-2">
                                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
@@ -856,7 +856,7 @@ export default function Dashboard({
                             </Card>
 
                             {/* Catalog Marketing Coverage Gauge */}
-                            <Card className="rounded-3xl border-white/25 bg-card/85 p-5 shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/80">
+                            <Card className="rounded-3xl border-white/25 bg-card/85 p-5 shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-card/85">
                                 <div className="flex items-center justify-between border-b border-border/60 pb-3">
                                     <div className="flex items-center gap-2">
                                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
@@ -922,7 +922,7 @@ export default function Dashboard({
                             </div>
 
                             {recent_designs.length === 0 ? (
-                                <Card className="rounded-3xl border-white/25 bg-card/85 p-8 text-center shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/80">
+                                <Card className="rounded-3xl border-white/25 bg-card/85 p-8 text-center shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-card/85">
                                     <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                                         <ImageIcon className="h-6 w-6" />
                                     </div>
@@ -954,7 +954,7 @@ export default function Dashboard({
                                                 setPreviewDesign(design);
                                                 setIsZoomed(false);
                                             }}
-                                            className="group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-white/25 bg-card/80 shadow-lg backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl dark:border-white/10 dark:bg-slate-900/75"
+                                            className="group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-white/25 bg-card/80 shadow-lg backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl dark:border-white/10 dark:bg-card/80"
                                         >
                                             <div className="relative h-44 w-full overflow-hidden bg-muted">
                                                 {design.image_url ? (
@@ -1018,7 +1018,7 @@ export default function Dashboard({
                             </div>
 
                             {upcoming_events.length === 0 ? (
-                                <Card className="rounded-3xl border-white/25 bg-card/85 p-6 text-center shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/80">
+                                <Card className="rounded-3xl border-white/25 bg-card/85 p-6 text-center shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-card/85">
                                     <CalendarDays className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
                                     <p className="text-xs text-muted-foreground">
                                         No upcoming dates scheduled in next 30
@@ -1040,7 +1040,7 @@ export default function Dashboard({
                                     {upcoming_events.map((evt: any) => (
                                         <div
                                             key={evt.id}
-                                            className="group flex flex-col justify-between gap-2 rounded-2xl border border-white/25 bg-card/80 p-4 shadow-lg backdrop-blur-xl transition-all hover:border-primary/40 hover:shadow-2xl dark:border-white/10 dark:bg-slate-900/75"
+                                            className="group flex flex-col justify-between gap-2 rounded-2xl border border-white/25 bg-card/80 p-4 shadow-lg backdrop-blur-xl transition-all hover:border-primary/40 hover:shadow-2xl dark:border-white/10 dark:bg-card/80"
                                         >
                                             <div className="flex items-start justify-between gap-2">
                                                 <div>
@@ -1186,7 +1186,7 @@ export default function Dashboard({
                 open={isCreateCampaignOpen}
                 onOpenChange={setIsCreateCampaignOpen}
             >
-                <DialogContent className="rounded-3xl border-white/25 bg-card/95 p-6 shadow-2xl backdrop-blur-2xl sm:max-w-md dark:border-white/10 dark:bg-slate-900/95">
+                <DialogContent className="rounded-3xl border-white/25 bg-card/95 p-6 shadow-2xl backdrop-blur-2xl sm:max-w-md dark:border-white/10 dark:bg-card/95">
                     <DialogHeader>
                         <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">

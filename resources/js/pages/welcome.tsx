@@ -81,7 +81,7 @@ const sampleProducts: SampleProduct[] = [
         price: '₱480',
         tagline: 'Authentic purple yam sponge with silky velvet cream.',
         tone: 'Indulgent & Celebratory',
-        gradient: 'from-purple-950 via-purple-900 to-slate-900',
+        gradient: 'from-purple-950 via-purple-900 to-zinc-950',
         bgPattern:
             'bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-600/30 via-transparent to-transparent',
     },
@@ -92,7 +92,7 @@ const sampleProducts: SampleProduct[] = [
         price: '₱1,250',
         tagline: 'Breathable tropical weave handcrafted in Laguna.',
         tone: 'Minimalist & Sophisticated',
-        gradient: 'from-sky-950 via-slate-900 to-stone-900',
+        gradient: 'from-sky-950 via-zinc-900 to-zinc-950',
         bgPattern:
             'bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-600/25 via-transparent to-transparent',
     },
@@ -103,7 +103,7 @@ const sampleProducts: SampleProduct[] = [
         price: '₱690',
         tagline: 'Natural vitamin C antioxidant brightening essence.',
         tone: 'Fresh & Clean Botanical',
-        gradient: 'from-emerald-950 via-teal-900 to-slate-900',
+        gradient: 'from-emerald-950 via-teal-900 to-zinc-950',
         bgPattern:
             'bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-600/25 via-transparent to-transparent',
     },
@@ -333,7 +333,7 @@ export default function Welcome() {
                     TOP STICKY NAVIGATION HEADER (GLASSMORPHISM)
                 =========================================================== */}
 
-                <header className="sticky top-0 z-50 w-full border-b border-white/20 bg-background/80 shadow-lg shadow-black/5 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/75">
+                <header className="sticky top-0 z-50 w-full border-b border-white/20 bg-background/80 shadow-lg shadow-black/5 backdrop-blur-2xl dark:border-white/10 dark:bg-background/80">
                     <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
                         {/* Brand Logo with Glow */}
                         <Link
@@ -356,7 +356,7 @@ export default function Welcome() {
                         </Link>
 
                         {/* Desktop Navigation Links */}
-                        <nav className="hidden items-center gap-1.5 rounded-full border border-white/20 bg-card/60 p-1 text-xs font-semibold text-muted-foreground shadow-xs backdrop-blur-md md:flex dark:border-white/10 dark:bg-slate-900/60">
+                        <nav className="hidden items-center gap-1.5 rounded-full border border-white/20 bg-card/60 p-1 text-xs font-semibold text-muted-foreground shadow-xs backdrop-blur-md md:flex dark:border-white/10 dark:bg-card/60">
                             <a
                                 href="#hero-studio"
                                 className="rounded-full px-3.5 py-1.5 transition-all hover:bg-muted/80 hover:text-foreground"
@@ -632,7 +632,7 @@ export default function Welcome() {
 
                                 {/* Right Column: Interactive Live AI Studio Sandbox (Glassmorphic) */}
                                 <div className="lg:col-span-6 xl:col-span-7">
-                                    <div className="overflow-hidden rounded-3xl border border-white/25 bg-card/85 shadow-2xl backdrop-blur-2xl transition-all duration-300 dark:border-white/10 dark:bg-slate-900/80">
+                                    <div className="overflow-hidden rounded-3xl border border-white/25 bg-card/85 shadow-2xl backdrop-blur-2xl transition-all duration-300 dark:border-white/10 dark:bg-card/85">
                                         {/* Sandbox Top Window Bar */}
                                         <div className="flex items-center justify-between border-b border-border/80 bg-muted/40 px-5 py-3.5">
                                             <div className="flex items-center gap-2.5">
@@ -1074,7 +1074,7 @@ export default function Welcome() {
                                         return (
                                             <div
                                                 key={item.step}
-                                                className="group relative flex flex-col justify-between rounded-3xl border border-white/25 bg-card/85 p-5 shadow-lg backdrop-blur-2xl transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl dark:border-white/10 dark:bg-slate-900/80"
+                                                className="group relative flex flex-col justify-between rounded-3xl border border-white/25 bg-card/85 p-5 shadow-lg backdrop-blur-2xl transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl dark:border-white/10 dark:bg-card/85"
                                             >
                                                 <div>
                                                     <div className="mb-3 flex items-center justify-between">

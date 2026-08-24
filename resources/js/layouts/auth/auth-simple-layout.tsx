@@ -65,7 +65,7 @@ export default function AuthSimpleLayout({
                 <div className="absolute -bottom-32 -left-32 h-[450px] w-[450px] rounded-full bg-purple-500/12 blur-[130px] dark:bg-purple-500/15" />
             </div>
 
-            <div className="mx-auto grid w-full max-w-5xl overflow-hidden rounded-3xl border border-white/25 bg-card/85 shadow-2xl backdrop-blur-2xl lg:grid-cols-[0.95fr_1.05fr] dark:border-white/10 dark:bg-slate-900/80">
+            <div className="mx-auto grid w-full max-w-5xl overflow-hidden rounded-3xl border border-white/25 bg-card/85 shadow-2xl backdrop-blur-2xl lg:grid-cols-[0.95fr_1.05fr] dark:border-white/10 dark:bg-card/85">
                 {/* ============================================================
                     LEFT PANEL — Hero-matched Glassmorphic Overview Panel
                 ============================================================= */}
@@ -73,7 +73,7 @@ export default function AuthSimpleLayout({
                     className="relative hidden flex-col justify-between overflow-hidden border-r border-white/15 p-7 lg:flex dark:border-white/10"
                     style={{
                         background:
-                            'linear-gradient(145deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 15, 30, 0.98) 60%, rgba(2, 6, 23, 1) 100%)',
+                            'linear-gradient(145deg, rgba(24, 24, 27, 0.95) 0%, rgba(18, 18, 20, 0.98) 60%, rgba(9, 9, 11, 1) 100%)',
                     }}
                 >
                     {/* Inner Ambient Glows */}
@@ -140,7 +140,7 @@ export default function AuthSimpleLayout({
                             </span>
                         </h1>
 
-                        <p className="text-xs leading-relaxed text-slate-300/80">
+                        <p className="text-xs leading-relaxed text-zinc-300/80">
                             Connect your product catalog with official
                             Philippine national holidays, retail payday cycles,
                             and custom brand guidelines.
@@ -209,7 +209,7 @@ export default function AuthSimpleLayout({
                             <div className="text-xs font-extrabold text-white">
                                 Official
                             </div>
-                            <div className="mt-0.5 text-[9px] text-slate-400">
+                            <div className="mt-0.5 text-[9px] text-zinc-400">
                                 PH Holidays
                             </div>
                         </div>
@@ -217,7 +217,7 @@ export default function AuthSimpleLayout({
                             <div className="text-xs font-extrabold text-white">
                                 &lt; 15s
                             </div>
-                            <div className="mt-0.5 text-[9px] text-slate-400">
+                            <div className="mt-0.5 text-[9px] text-zinc-400">
                                 Generation
                             </div>
                         </div>
@@ -225,7 +225,7 @@ export default function AuthSimpleLayout({
                             <div className="text-xs font-extrabold text-white">
                                 PNG & SVG
                             </div>
-                            <div className="mt-0.5 text-[9px] text-slate-400">
+                            <div className="mt-0.5 text-[9px] text-zinc-400">
                                 Vector Scale
                             </div>
                         </div>

@@ -1356,7 +1356,7 @@ export default function MarketingCalendarPage({
                     </aside>
                 ) : (
                     /* EXPANDED FULL RIGHT SIDEBAR */
-                    <aside className="sticky top-11 z-20 flex h-[calc(100vh-2.75rem)] w-80 shrink-0 flex-col justify-between overflow-y-auto border-l border-border/80 bg-card/75 p-5 backdrop-blur-2xl transition-all duration-300 sm:top-12 sm:h-[calc(100vh-3rem)] lg:w-[320px] dark:bg-slate-900/80">
+                    <aside className="sticky top-11 z-20 flex h-[calc(100vh-2.75rem)] w-80 shrink-0 flex-col justify-between overflow-y-auto border-l border-border/80 bg-card/75 p-5 backdrop-blur-2xl transition-all duration-300 sm:top-12 sm:h-[calc(100vh-3rem)] lg:w-[320px] dark:bg-card/85">
                         <div className="space-y-4">
                             {/* Sidebar Header */}
                             <div className="flex items-center justify-between border-b border-border/60 pb-3">

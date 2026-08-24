@@ -297,7 +297,7 @@ export default function NotificationsIndex({
                 </div>
 
                 {/* SEARCH & FILTERS BAR */}
-                <div className="flex flex-col gap-3 rounded-2xl border border-white/25 bg-card/85 p-4 shadow-lg backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:bg-slate-900/80">
+                <div className="flex flex-col gap-3 rounded-2xl border border-white/25 bg-card/85 p-4 shadow-lg backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:bg-card/85">
                     {/* TABS */}
                     <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto">
                         {filterTabs.map((tab) => {
@@ -343,7 +343,7 @@ export default function NotificationsIndex({
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search alerts..."
-                            className="h-9 rounded-xl bg-background/80 pr-8 pl-9 text-xs backdrop-blur-md dark:bg-slate-950/60"
+                            className="h-9 rounded-xl bg-background/80 pr-8 pl-9 text-xs backdrop-blur-md dark:bg-background/80"
                         />
                         {search && (
                             <button
@@ -370,7 +370,7 @@ export default function NotificationsIndex({
                                     className={`group overflow-hidden rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl ${
                                         !notification.is_read
                                             ? 'border-primary/40 bg-primary/10 shadow-md backdrop-blur-xl dark:bg-primary/15'
-                                            : 'border-white/20 bg-card/80 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/75'
+                                            : 'border-white/20 bg-card/80 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-card/80'
                                     }`}
                                 >
                                     <CardContent className="p-4 sm:p-5">

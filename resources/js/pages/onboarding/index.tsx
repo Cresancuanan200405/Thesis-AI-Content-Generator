@@ -692,7 +692,7 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                 <div className="pointer-events-none absolute top-1/2 left-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-[80px]" />
 
                 {/* Main onboarding card */}
-                <div className="relative z-10 flex w-full max-w-[680px] flex-col overflow-hidden rounded-[26px] border border-white/30 bg-card/80 shadow-2xl shadow-black/10 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/80 dark:shadow-black/40">
+                <div className="relative z-10 flex w-full max-w-[680px] flex-col overflow-hidden rounded-[26px] border border-white/30 bg-card/80 shadow-2xl shadow-black/10 backdrop-blur-2xl dark:border-white/10 dark:bg-card/85 dark:shadow-black/40">
                     {/* --------------------------------------------------
                         HEADER
                     -------------------------------------------------- */}
