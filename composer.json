@@ -48,8 +48,9 @@
         "setup": [
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
-            "@php artisan key:generate",
-            "@php artisan migrate --force",
+            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
+            "@php artisan key:generate --ansi --no-interaction",
+            "@php artisan migrate --force --no-interaction",
             "npm install",
             "npm run build"
         ],
@@ -58,10 +59,10 @@
             "npx concurrently -c \"#93c5fd,#c4b5fd,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1 --timeout=0\" \"npm run dev\" --names='server,queue,vite'"
         ],
         "lint": [
-            "pint --parallel"
+            "vendor/bin/pint"
         ],
         "lint:check": [
-            "pint --parallel --test"
+            "vendor/bin/pint --test"
         ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
