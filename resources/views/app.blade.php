@@ -5,29 +5,31 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        {{-- Inline script to detect system dark mode preference and apply it immediately --}}
+        {{-- Inline script to detect appearance and apply dark class immediately --}}
         <script>
             (function() {
-                const appearance = '{{ $appearance ?? "system" }}';
-
-                if (appearance === 'system') {
-                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-                    if (prefersDark) {
+                try {
+                    const stored = localStorage.getItem('appearance') || '{{ $appearance ?? "system" }}';
+                    const isDark = stored === 'dark' || (stored === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                    if (isDark) {
                         document.documentElement.classList.add('dark');
+                        document.documentElement.style.colorScheme = 'dark';
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                        document.documentElement.style.colorScheme = 'light';
                     }
-                }
+                } catch (e) {}
             })();
         </script>
 
-        {{-- Inline style to set the HTML background color based on our theme in app.css --}}
+        {{-- Inline style to set the HTML background color matching app.css --}}
         <style>
             html {
-                background-color: oklch(1 0 0);
+                background-color: #f4f4f5;
             }
 
             html.dark {
-                background-color: oklch(0.145 0 0);
+                background-color: #09090b;
             }
         </style>
 
