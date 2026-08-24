@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
     Calendar,
+    Check,
     ChevronDown,
     ChevronLeft,
     ChevronRight,
@@ -55,7 +56,7 @@ export default function ProductsIndexPage({
     // View preference saved in localStorage
     const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
         if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('products_view_mode');
+            const saved = localStorage.getItem('marketpilot_products_view_mode');
 
             if (saved === 'grid' || saved === 'list') {
                 return saved;
@@ -69,7 +70,7 @@ export default function ProductsIndexPage({
         setViewMode(mode);
 
         if (typeof window !== 'undefined') {
-            localStorage.setItem('products_view_mode', mode);
+            localStorage.setItem('marketpilot_products_view_mode', mode);
         }
     };
 
@@ -318,37 +319,70 @@ export default function ProductsIndexPage({
                                     {count === 1 ? 'product' : 'products'}
                                 </span>
 
-                                {/* View Switcher */}
-                                <div className="flex items-center rounded-lg border border-border/80 bg-muted/40 p-0.5">
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            handleSetViewMode('grid')
-                                        }
-                                        className={`flex h-7 w-7 items-center justify-center rounded-md transition-all ${
-                                            viewMode === 'grid'
-                                                ? 'bg-card font-semibold text-foreground shadow-xs'
-                                                : 'text-muted-foreground hover:text-foreground'
-                                        }`}
-                                        aria-label="Grid view"
+                                {/* VIEW MODE DROPDOWN (ICON-ONLY BUTTON) */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8 w-8 rounded-xl p-0 shadow-none text-muted-foreground hover:text-foreground"
+                                            title={`Current view: ${
+                                                viewMode === 'grid'
+                                                    ? 'Grid'
+                                                    : 'List'
+                                            }`}
+                                            aria-label="Toggle View Mode"
+                                        >
+                                            {viewMode === 'grid' ? (
+                                                <LayoutGrid className="h-4 w-4" />
+                                            ) : (
+                                                <List className="h-4 w-4" />
+                                            )}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                        align="end"
+                                        className="w-32 rounded-xl p-1 shadow-md"
                                     >
-                                        <LayoutGrid className="h-3.5 w-3.5" />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            handleSetViewMode('list')
-                                        }
-                                        className={`flex h-7 w-7 items-center justify-center rounded-md transition-all ${
-                                            viewMode === 'list'
-                                                ? 'bg-card font-semibold text-foreground shadow-xs'
-                                                : 'text-muted-foreground hover:text-foreground'
-                                        }`}
-                                        aria-label="List view"
-                                    >
-                                        <List className="h-3.5 w-3.5" />
-                                    </button>
-                                </div>
+                                        <DropdownMenuItem
+                                            onClick={() =>
+                                                handleSetViewMode('grid')
+                                            }
+                                            className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
+                                                viewMode === 'grid'
+                                                    ? 'bg-primary/10 font-semibold text-primary'
+                                                    : 'text-foreground hover:bg-muted'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <LayoutGrid className="h-3.5 w-3.5" />
+                                                <span>Grid</span>
+                                            </div>
+                                            {viewMode === 'grid' && (
+                                                <Check className="h-3.5 w-3.5 text-primary" />
+                                            )}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() =>
+                                                handleSetViewMode('list')
+                                            }
+                                            className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
+                                                viewMode === 'list'
+                                                    ? 'bg-primary/10 font-semibold text-primary'
+                                                    : 'text-foreground hover:bg-muted'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <List className="h-3.5 w-3.5" />
+                                                <span>List</span>
+                                            </div>
+                                            {viewMode === 'list' && (
+                                                <Check className="h-3.5 w-3.5 text-primary" />
+                                            )}
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                         </div>
                     </div>
@@ -921,16 +955,16 @@ export default function ProductsIndexPage({
                     {/* Section 2: Recreated, Classy Details & Functions Section */}
                     <div
                         id="product-modal-details"
-                        className="relative z-30 w-full border-t border-white/20 bg-background/98 px-4 pt-8 pb-16 backdrop-blur-3xl sm:px-8"
+                        className="relative z-30 w-full border-t border-border/80 bg-card/98 px-4 pt-8 pb-16 text-foreground backdrop-blur-3xl sm:px-8"
                     >
                         <div className="mx-auto max-w-3xl space-y-6">
-                            <div className="flex flex-col gap-3 border-b border-white/15 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <div className="inline-flex items-center gap-2 rounded-full bg-primary px-3.5 py-1.5 text-xs font-black tracking-wider text-primary-foreground uppercase shadow-lg ring-1 shadow-primary/40 ring-white/20">
-                                        <Sparkles className="h-3.5 w-3.5 text-primary-foreground" />
+                                    <div className="inline-flex items-center gap-2 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold tracking-wider text-primary-foreground uppercase shadow-md shadow-primary/20">
+                                        <Sparkles className="h-3.5 w-3.5" />
                                         Product Details
                                     </div>
-                                    <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-white drop-shadow-md sm:text-3xl">
+                                    <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
                                         {previewProduct.name}
                                     </h3>
                                 </div>
@@ -939,7 +973,7 @@ export default function ProductsIndexPage({
                                     <Button
                                         asChild
                                         size="sm"
-                                        className="h-9 cursor-pointer gap-2 bg-primary px-4 text-xs font-bold text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-105 hover:bg-primary/90"
+                                        className="h-9 cursor-pointer gap-2 bg-primary px-4 text-xs font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:scale-105 hover:bg-primary/90"
                                     >
                                         <Link
                                             href={`/generator?product_name=${encodeURIComponent(previewProduct.name)}&price=${encodeURIComponent(previewProduct.price || '')}`}
@@ -953,7 +987,7 @@ export default function ProductsIndexPage({
                                         asChild
                                         variant="outline"
                                         size="sm"
-                                        className="h-9 cursor-pointer gap-1.5 border-white/20 bg-white/10 px-4 text-xs text-white transition-all hover:bg-white/20"
+                                        className="h-9 cursor-pointer gap-1.5 border-border bg-card px-4 text-xs font-semibold text-foreground transition-all hover:bg-muted"
                                     >
                                         <Link
                                             href={
@@ -969,24 +1003,24 @@ export default function ProductsIndexPage({
                             </div>
 
                             <div className="grid gap-3 sm:grid-cols-2">
-                                <div className="group rounded-2xl border border-white/20 bg-card/90 p-4 shadow-md backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
-                                    <div className="flex items-center gap-1.5 text-xs font-extrabold tracking-wider text-white/70 uppercase">
+                                <div className="group rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all hover:-translate-y-0.5 hover:border-primary/40 sm:p-5">
+                                    <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
                                         <Tag className="h-3.5 w-3.5 text-primary" />
                                         Retail Price
                                     </div>
-                                    <p className="mt-2 text-lg font-extrabold text-emerald-400">
+                                    <p className="mt-2 text-lg font-extrabold text-emerald-600 dark:text-emerald-400">
                                         {previewProduct.price
                                             ? `₱${Number(previewProduct.price).toLocaleString()}`
                                             : 'Price not set'}
                                     </p>
                                 </div>
 
-                                <div className="group rounded-2xl border border-white/20 bg-card/90 p-4 shadow-md backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
-                                    <div className="flex items-center gap-1.5 text-xs font-extrabold tracking-wider text-white/70 uppercase">
+                                <div className="group rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all hover:-translate-y-0.5 hover:border-primary/40 sm:p-5">
+                                    <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
                                         <Calendar className="h-3.5 w-3.5 text-primary" />
                                         Added to Catalog
                                     </div>
-                                    <p className="mt-2 truncate text-base font-bold text-white">
+                                    <p className="mt-2 truncate text-base font-bold text-foreground">
                                         {previewProduct.created_at ||
                                             'Catalog Product'}
                                     </p>
@@ -994,8 +1028,8 @@ export default function ProductsIndexPage({
                             </div>
 
                             {previewProduct.image_url && (
-                                <div className="flex flex-wrap items-center gap-2 border-t border-white/15 pt-4">
-                                    <span className="mr-1 text-xs font-bold text-white/80">
+                                <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
+                                    <span className="mr-1 text-xs font-bold text-muted-foreground">
                                         Download:
                                     </span>
                                     <Button
@@ -1009,7 +1043,7 @@ export default function ProductsIndexPage({
                                                 'png',
                                             )
                                         }
-                                        className="cursor-pointer gap-1.5 border-white/20 bg-white/10 text-xs text-white shadow-none transition-all hover:scale-105 hover:bg-white/20"
+                                        className="cursor-pointer gap-1.5 border-border bg-card text-xs font-semibold text-foreground shadow-none transition-all hover:bg-muted"
                                     >
                                         <Download className="h-3.5 w-3.5 text-primary" />
                                         PNG
@@ -1025,9 +1059,9 @@ export default function ProductsIndexPage({
                                                 'jpeg',
                                             )
                                         }
-                                        className="cursor-pointer gap-1.5 border-white/20 bg-white/10 text-xs text-white shadow-none transition-all hover:scale-105 hover:bg-white/20"
+                                        className="cursor-pointer gap-1.5 border-border bg-card text-xs font-semibold text-foreground shadow-none transition-all hover:bg-muted"
                                     >
-                                        <Download className="h-3.5 w-3.5 text-blue-400" />
+                                        <Download className="h-3.5 w-3.5 text-blue-500" />
                                         JPEG
                                     </Button>
                                 </div>

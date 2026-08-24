@@ -13,7 +13,6 @@ import {
     ImageIcon,
     Landmark,
     Layers,
-    Palette,
     Plane,
     ShoppingBag,
     ShoppingCart,
@@ -26,7 +25,6 @@ import type { LucideIcon } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
@@ -47,10 +45,6 @@ type BusinessForm = {
 
 type DescriptionForm = {
     description: string;
-};
-
-type PreferencesForm = {
-    marketing_preferences: string[];
 };
 
 type LogoForm = {
@@ -235,41 +229,6 @@ const industryIcons: Record<string, LucideIcon> = {
     Other: Layers,
 };
 
-const visualStyleOptions = [
-    {
-        title: 'Studio Pedestal',
-        description: 'Clean studio lighting with minimal geometric staging.',
-    },
-    {
-        title: 'Lifestyle & In-Situ',
-        description: 'Natural settings with authentic warm lighting.',
-    },
-    {
-        title: 'Editorial & Vogue',
-        description: 'Dramatic lighting with elegant premium styling.',
-    },
-    {
-        title: 'Minimalist Commercial',
-        description: 'Simple composition focused on the product.',
-    },
-    {
-        title: 'Cinematic Atmosphere',
-        description: 'Rich depth with warm cinematic lighting.',
-    },
-    {
-        title: 'Modern Flat Lay',
-        description: 'Top-down composition with themed elements.',
-    },
-    {
-        title: '3D Clean Render',
-        description: 'Crisp digital 3D visuals with soft reflections.',
-    },
-    {
-        title: 'Vibrant Pop Commercial',
-        description: 'Energetic colors and dynamic commercial visuals.',
-    },
-];
-
 const steps = [
     {
         id: 1,
@@ -285,12 +244,6 @@ const steps = [
     },
     {
         id: 3,
-        title: 'Visuals',
-        description: 'Brand direction',
-        icon: Palette,
-    },
-    {
-        id: 4,
         title: 'Logo',
         description: 'Brand identity',
         icon: ImageIcon,
@@ -307,7 +260,7 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
     const { errors } = usePage().props as any;
 
     const [currentStep, setCurrentStep] = useState(
-        Math.min(Math.max(step, 1), 4),
+        Math.min(Math.max(step, 1), 3),
     );
 
     const [businessPage, setBusinessPage] = useState(() => {
@@ -338,10 +291,6 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
         description: business?.description ?? '',
     });
 
-    const [preferencesForm, setPreferencesForm] = useState<PreferencesForm>({
-        marketing_preferences: [],
-    });
-
     const logoInputRef = useRef<HTMLInputElement | null>(null);
 
     const [logoForm, setLogoForm] = useState<LogoForm>({
@@ -366,15 +315,13 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
     const progress =
         currentStep === 1
             ? businessPage === 1
-                ? 15
+                ? 20
                 : businessPage === 2
-                  ? 28
-                  : 40
+                  ? 40
+                  : 55
             : currentStep === 2
-              ? 60
-              : currentStep === 3
-                ? 80
-                : 100;
+              ? 80
+              : 100;
 
     /*
     |--------------------------------------------------------------------------
@@ -441,26 +388,6 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
             ...current,
             category: category === 'Other' ? '' : category,
         }));
-    };
-
-    /*
-    |--------------------------------------------------------------------------
-    | Preferences
-    |--------------------------------------------------------------------------
-    */
-
-    const togglePreference = (title: string) => {
-        setPreferencesForm((current) => {
-            const selected = current.marketing_preferences.includes(title);
-
-            return {
-                marketing_preferences: selected
-                    ? current.marketing_preferences.filter(
-                          (item) => item !== title,
-                      )
-                    : [...current.marketing_preferences, title],
-            };
-        });
     };
 
     /*
@@ -546,11 +473,6 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
 
         const formData = new FormData();
 
-        formData.append(
-            'marketing_preferences',
-            JSON.stringify(preferencesForm.marketing_preferences),
-        );
-
         if (logoForm.logo) {
             formData.append('logo', logoForm.logo);
         }
@@ -609,12 +531,6 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
         }
 
         if (currentStep === 3) {
-            setCurrentStep(4);
-
-            return;
-        }
-
-        if (currentStep === 4) {
             finishSetup();
         }
     };
@@ -664,10 +580,6 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
 
         if (currentStep === 2) {
             return 'Save & Continue';
-        }
-
-        if (currentStep === 3) {
-            return 'Continue';
         }
 
         return 'Finish Setup';
@@ -731,7 +643,7 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                                         <div
                                             key={item.id}
                                             className={cn(
-                                                'flex h-7 items-center gap-1.5 rounded-full px-2 transition-all duration-300',
+                                                'flex h-7 items-center gap-1.5 rounded-full px-2.5 transition-all duration-300',
                                                 active &&
                                                     'bg-primary text-primary-foreground shadow-md shadow-primary/20',
                                                 completed &&
@@ -749,8 +661,9 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
 
                                             <span
                                                 className={cn(
-                                                    'hidden text-[10px] font-semibold sm:inline',
-                                                    active && 'inline',
+                                                    'text-[10px] font-semibold',
+                                                    !active &&
+                                                        'hidden sm:inline',
                                                 )}
                                             >
                                                 {item.title}
@@ -761,12 +674,8 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                             </div>
                         </div>
 
-                        {/* Progress line */}
-                        <div className="mt-3">
-                            <Progress
-                                value={progress}
-                                className="h-1 bg-muted/60"
-                            />
+                        <div className="mt-2.5">
+                            <Progress value={progress} className="h-1" />
                         </div>
                     </div>
 
@@ -774,62 +683,56 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                         CONTENT
                     -------------------------------------------------- */}
 
-                    <div className="min-h-[410px] px-4 py-5 sm:px-7 sm:py-6">
+                    <div className="p-4 sm:p-6">
                         {/* ============================
-                            STEP 1
+                            STEP 1: BUSINESS
                         ============================ */}
 
                         {currentStep === 1 && (
-                            <div className="animate-in duration-300 fade-in-50">
-                                {/* Mini step */}
-                                <div className="mb-4 flex items-center justify-between">
+                            <div className="space-y-4">
+                                {/* Page tracker */}
+                                <div className="flex items-center justify-between text-xs text-muted-foreground">
                                     <div className="flex items-center gap-2">
-                                        <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[9px] font-bold tracking-wider text-primary uppercase">
-                                            Business Profile
+                                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                                            {businessPage}
                                         </span>
 
-                                        <span className="text-[10px] text-muted-foreground">
-                                            {businessPage}/3
+                                        <span className="text-[11px] font-medium">
+                                            {businessPage === 1 &&
+                                                'Select your industry'}
+
+                                            {businessPage === 2 &&
+                                                'Choose category'}
+
+                                            {businessPage === 3 &&
+                                                'Business name'}
                                         </span>
                                     </div>
 
-                                    <div className="flex gap-1">
-                                        {[1, 2, 3].map((page) => (
-                                            <div
-                                                key={page}
-                                                className={cn(
-                                                    'h-1 rounded-full transition-all',
-                                                    businessPage === page
-                                                        ? 'w-5 bg-primary'
-                                                        : businessPage > page
-                                                          ? 'w-2 bg-primary/40'
-                                                          : 'w-2 bg-muted',
-                                                )}
-                                            />
-                                        ))}
-                                    </div>
+                                    <span className="text-[10px] font-medium text-muted-foreground">
+                                        Step 1 of 3
+                                    </span>
                                 </div>
 
                                 {/* Industry */}
                                 {businessPage === 1 && (
-                                    <div>
+                                    <div className="animate-in duration-300 fade-in-50">
                                         <div className="mb-4">
                                             <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-                                                What does your business do?
+                                                What industry are you in?
                                             </h1>
 
                                             <p className="mt-1 text-xs text-muted-foreground">
-                                                This helps MarketPilot tailor
-                                                AI-generated marketing content
-                                                to your business.
+                                                Select the industry that best
+                                                matches your business.
                                             </p>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                                             {industryOptions.map((industry) => {
                                                 const Icon =
                                                     industryIcons[industry] ??
-                                                    Layers;
+                                                    Building2;
 
                                                 const selected =
                                                     businessForm.industry ===
@@ -845,33 +748,31 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                                                             )
                                                         }
                                                         className={cn(
-                                                            'group relative flex h-[58px] items-center gap-2 rounded-xl border px-2.5 text-left transition-all duration-200',
+                                                            'group relative flex items-center gap-2.5 rounded-xl border p-3 text-left transition-all duration-200',
                                                             'hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 hover:shadow-md',
-                                                            'active:scale-[0.97]',
+                                                            'active:scale-[0.98]',
                                                             selected
-                                                                ? 'border-primary/60 bg-primary/10 shadow-sm ring-1 ring-primary/20'
-                                                                : 'border-border/70 bg-background/30',
+                                                                ? 'border-primary/60 bg-primary/10 font-bold text-primary shadow-xs ring-1 ring-primary/20'
+                                                                : 'border-border/70 bg-background/30 text-foreground',
                                                         )}
                                                     >
                                                         <div
                                                             className={cn(
-                                                                'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all',
+                                                                'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all duration-200',
                                                                 selected
                                                                     ? 'bg-primary text-primary-foreground shadow-sm'
-                                                                    : 'bg-muted/70 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary',
+                                                                    : 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground',
                                                             )}
                                                         >
                                                             <Icon className="h-3.5 w-3.5" />
                                                         </div>
 
-                                                        <span className="min-w-0 truncate text-[11px] font-semibold">
+                                                        <span className="truncate text-xs font-semibold">
                                                             {industry}
                                                         </span>
 
                                                         {selected && (
-                                                            <div className="absolute top-1.5 right-1.5">
-                                                                <Check className="h-3 w-3 text-primary" />
-                                                            </div>
+                                                            <Check className="ml-auto h-3.5 w-3.5 shrink-0 text-primary" />
                                                         )}
                                                     </button>
                                                 );
@@ -882,117 +783,121 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
 
                                 {/* Category */}
                                 {businessPage === 2 && (
-                                    <div>
+                                    <div className="animate-in duration-300 fade-in-50">
                                         <div className="mb-4">
-                                            <div className="mb-1 text-[10px] font-medium text-muted-foreground">
-                                                Industry
+                                            <div className="flex items-center gap-2">
+                                                <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[9px] font-bold text-primary">
+                                                    {businessForm.industry}
+                                                </span>
                                             </div>
 
-                                            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-                                                Choose your category
+                                            <h1 className="mt-2 text-xl font-bold tracking-tight sm:text-2xl">
+                                                Select your specialization
                                             </h1>
 
                                             <p className="mt-1 text-xs text-muted-foreground">
-                                                Select the category that best
-                                                describes your business.
+                                                Choose a category or enter your
+                                                own.
                                             </p>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                                            {availableCategories.map(
-                                                (category) => {
-                                                    const selected =
-                                                        businessForm.category ===
-                                                        category;
+                                        <div className="space-y-3">
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {availableCategories.map(
+                                                    (category) => {
+                                                        const selected =
+                                                            !customCategoryMode &&
+                                                            businessForm.category ===
+                                                                category;
 
-                                                    return (
-                                                        <button
-                                                            key={category}
-                                                            type="button"
-                                                            onClick={() =>
-                                                                handleSelectCategory(
-                                                                    category,
-                                                                )
-                                                            }
-                                                            className={cn(
-                                                                'group flex h-12 items-center justify-between rounded-xl border px-3 text-left transition-all duration-200',
-                                                                'hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 hover:shadow-sm',
-                                                                'active:scale-[0.97]',
-                                                                selected
-                                                                    ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/20'
-                                                                    : 'border-border/70 bg-background/30',
-                                                            )}
-                                                        >
-                                                            <span className="truncate text-[11px] font-semibold">
-                                                                {category}
-                                                            </span>
-
-                                                            <div
+                                                        return (
+                                                            <button
+                                                                key={category}
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    handleSelectCategory(
+                                                                        category,
+                                                                    )
+                                                                }
                                                                 className={cn(
-                                                                    'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-all',
+                                                                    'flex items-center justify-between rounded-xl border p-3 text-left transition-all duration-200',
+                                                                    'hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 hover:shadow-md',
+                                                                    'active:scale-[0.98]',
                                                                     selected
-                                                                        ? 'border-primary bg-primary text-primary-foreground'
-                                                                        : 'border-muted-foreground/20 group-hover:border-primary/50',
+                                                                        ? 'border-primary/60 bg-primary/10 font-bold text-primary shadow-xs ring-1 ring-primary/20'
+                                                                        : 'border-border/70 bg-background/30 text-foreground',
                                                                 )}
                                                             >
+                                                                <span className="text-xs font-medium">
+                                                                    {category}
+                                                                </span>
+
                                                                 {selected && (
-                                                                    <Check className="h-2.5 w-2.5" />
+                                                                    <Check className="h-3.5 w-3.5 text-primary" />
                                                                 )}
-                                                            </div>
-                                                        </button>
-                                                    );
-                                                },
-                                            )}
-                                        </div>
-
-                                        {customCategoryMode && (
-                                            <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
-                                                <Label
-                                                    htmlFor="custom-category"
-                                                    className="text-[10px] font-bold tracking-wider uppercase"
-                                                >
-                                                    Custom Category
-                                                </Label>
-
-                                                <Input
-                                                    id="custom-category"
-                                                    value={
-                                                        businessForm.category
-                                                    }
-                                                    onChange={(e) =>
-                                                        setBusinessForm(
-                                                            (curr) => ({
-                                                                ...curr,
-                                                                category:
-                                                                    e.target
-                                                                        .value,
-                                                            }),
-                                                        )
-                                                    }
-                                                    placeholder="Enter your category"
-                                                    className="mt-1.5 h-9 rounded-lg bg-background/70 text-xs"
-                                                    autoFocus
-                                                />
+                                                            </button>
+                                                        );
+                                                    },
+                                                )}
                                             </div>
-                                        )}
+
+                                            <div className="relative">
+                                                <div className="absolute inset-0 flex items-center">
+                                                    <span className="w-full border-t border-border/60" />
+                                                </div>
+
+                                                <div className="relative flex justify-center text-[9px] uppercase">
+                                                    <span className="bg-card px-2 text-muted-foreground">
+                                                        or enter custom
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <Input
+                                                value={businessForm.category}
+                                                onChange={(e) => {
+                                                    setCustomCategoryMode(true);
+
+                                                    setBusinessForm(
+                                                        (current) => ({
+                                                            ...current,
+                                                            category:
+                                                                e.target.value,
+                                                        }),
+                                                    );
+                                                }}
+                                                placeholder="e.g. Specialty Matcha Cafe"
+                                                className="h-10 rounded-xl bg-background/50 text-xs"
+                                            />
+                                        </div>
                                     </div>
                                 )}
 
                                 {/* Business Name */}
                                 {businessPage === 3 && (
-                                    <div className="mx-auto max-w-md py-6">
-                                        <div className="mb-5 text-center">
-                                            <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                                                <Building2 className="h-5 w-5" />
+                                    <div className="animate-in duration-300 fade-in-50">
+                                        <div className="mb-5">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-bold text-primary">
+                                                    {businessForm.industry}
+                                                </span>
+
+                                                <span className="text-[10px] text-muted-foreground">
+                                                    /
+                                                </span>
+
+                                                <span className="rounded-full bg-muted px-2 py-0.5 text-[9px] font-semibold text-muted-foreground">
+                                                    {businessForm.category}
+                                                </span>
                                             </div>
 
-                                            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-                                                What's your business name?
+                                            <h1 className="mt-3 text-xl font-bold tracking-tight sm:text-2xl">
+                                                What is your business name?
                                             </h1>
 
                                             <p className="mt-1 text-xs text-muted-foreground">
-                                                Use the name customers recognize
-                                                your brand by.
+                                                This name will appear across
+                                                your promotional graphics.
                                             </p>
                                         </div>
 
@@ -1008,13 +913,16 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                                                 id="business-name"
                                                 value={businessForm.name}
                                                 onChange={(e) =>
-                                                    setBusinessForm((curr) => ({
-                                                        ...curr,
-                                                        name: e.target.value,
-                                                    }))
+                                                    setBusinessForm(
+                                                        (current) => ({
+                                                            ...current,
+                                                            name: e.target
+                                                                .value,
+                                                        }),
+                                                    )
                                                 }
-                                                placeholder="e.g. Brew & Co."
-                                                className="h-11 rounded-xl bg-background/50 text-sm"
+                                                placeholder="e.g. BrewCraft Coffee Studio"
+                                                className="h-11 rounded-xl bg-background/50 text-sm font-semibold"
                                                 autoFocus
                                             />
 
@@ -1023,24 +931,6 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                                                     {errors.name}
                                                 </p>
                                             )}
-
-                                            <div className="mt-3 flex items-center gap-2 rounded-xl border border-border/60 bg-muted/30 px-3 py-2.5">
-                                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                                    <Layers className="h-3.5 w-3.5" />
-                                                </div>
-
-                                                <div className="min-w-0 text-[10px] text-muted-foreground">
-                                                    <span className="font-semibold text-foreground">
-                                                        {businessForm.industry}
-                                                    </span>
-
-                                                    <span className="mx-1">
-                                                        •
-                                                    </span>
-
-                                                    {businessForm.category}
-                                                </div>
-                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -1048,7 +938,7 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                         )}
 
                         {/* ============================
-                            STEP 2
+                            STEP 2: ABOUT / DESCRIPTION
                         ============================ */}
 
                         {currentStep === 2 && (
@@ -1117,95 +1007,10 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                         )}
 
                         {/* ============================
-                            STEP 3
+                            STEP 3: LOGO
                         ============================ */}
 
                         {currentStep === 3 && (
-                            <div className="animate-in duration-300 fade-in-50">
-                                <div className="mb-4">
-                                    <div className="flex items-center justify-between">
-                                        <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[9px] font-bold tracking-wider text-primary uppercase">
-                                            Visual Direction
-                                        </span>
-
-                                        <span className="text-[9px] text-muted-foreground">
-                                            Optional preferences
-                                        </span>
-                                    </div>
-
-                                    <h1 className="mt-3 text-xl font-bold tracking-tight sm:text-2xl">
-                                        What should your visuals feel like?
-                                    </h1>
-
-                                    <p className="mt-1 text-xs text-muted-foreground">
-                                        Select one or more styles for your
-                                        AI-generated marketing visuals.
-                                    </p>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                                    {visualStyleOptions.map((style) => {
-                                        const selected =
-                                            preferencesForm.marketing_preferences.includes(
-                                                style.title,
-                                            );
-
-                                        return (
-                                            <button
-                                                key={style.title}
-                                                type="button"
-                                                onClick={() =>
-                                                    togglePreference(
-                                                        style.title,
-                                                    )
-                                                }
-                                                className={cn(
-                                                    'group relative flex min-h-[82px] flex-col justify-between rounded-xl border p-3 text-left transition-all duration-200',
-                                                    'hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 hover:shadow-md',
-                                                    'active:scale-[0.97]',
-                                                    selected
-                                                        ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/20'
-                                                        : 'border-border/70 bg-background/30',
-                                                )}
-                                            >
-                                                <div className="flex items-start justify-between gap-2">
-                                                    <span className="text-[10px] leading-tight font-bold">
-                                                        {style.title}
-                                                    </span>
-
-                                                    <Checkbox
-                                                        checked={selected}
-                                                        onCheckedChange={() =>
-                                                            togglePreference(
-                                                                style.title,
-                                                            )
-                                                        }
-                                                        onClick={(e) =>
-                                                            e.stopPropagation()
-                                                        }
-                                                        className="h-3.5 w-3.5"
-                                                    />
-                                                </div>
-
-                                                <p className="mt-2 line-clamp-2 text-[9px] leading-relaxed text-muted-foreground">
-                                                    {style.description}
-                                                </p>
-
-                                                {selected && (
-                                                    <div className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-primary" />
-                                                )}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ============================
-                            STEP 4
-                        ============================ */}
-
-                        {currentStep === 4 && (
                             <div className="mx-auto max-w-md animate-in duration-300 fade-in-50">
                                 <div className="mb-5 text-center">
                                     <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -1351,7 +1156,7 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                             </Button>
 
                             <div className="flex items-center gap-2">
-                                {currentStep === 4 && (
+                                {currentStep === 3 && (
                                     <Button
                                         type="button"
                                         variant="ghost"
@@ -1372,13 +1177,13 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                                     className="group h-8 rounded-lg px-4 text-[10px] font-bold shadow-md shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.97]"
                                 >
                                     {isSubmitting
-                                        ? currentStep === 4
+                                        ? currentStep === 3
                                             ? 'Finalizing...'
                                             : 'Saving...'
                                         : getContinueLabel()}
 
                                     {!isSubmitting &&
-                                        (currentStep === 4 ? (
+                                        (currentStep === 3 ? (
                                             <Check className="ml-1.5 h-3 w-3 transition-transform group-hover:scale-110" />
                                         ) : (
                                             <ArrowRight className="ml-1.5 h-3 w-3 transition-transform group-hover:translate-x-0.5" />

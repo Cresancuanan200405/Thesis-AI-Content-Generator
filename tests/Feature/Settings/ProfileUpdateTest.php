@@ -63,7 +63,7 @@ test('user can delete their account', function () {
 
     $response
         ->assertSessionHasNoErrors()
-        ->assertRedirect(route('home'));
+        ->assertRedirect('/');
 
     $this->assertGuest();
     expect($user->fresh())->toBeNull();
@@ -92,7 +92,6 @@ test('my profile page is displayed with onboarding and business setup info', fun
         'user_id' => $user->id,
         'name' => 'Acme Creative Studio',
         'industry' => 'Fashion & Apparel',
-        'content_style' => json_encode(['Lifestyle', 'Seasonal']),
     ]);
 
     $response = $this
@@ -108,4 +107,32 @@ test('my profile page is displayed with onboarding and business setup info', fun
             ->where('business.industry', 'Fashion & Apparel')
             ->has('stats')
         );
+});
+
+test('user can update business identity and setup details', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Original Name',
+        'industry' => 'Retail',
+    ]);
+
+    $response = $this
+        ->actingAs($user)
+        ->post(route('profile.business.update'), [
+            'name' => 'Updated Studio Labs',
+            'industry' => 'Technology',
+            'category' => 'SaaS Business',
+            'description' => 'A cutting-edge SaaS platform for creators.',
+        ]);
+
+    $response
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('profile.show'));
+
+    $business->refresh();
+    expect($business->name)->toBe('Updated Studio Labs')
+        ->and($business->industry)->toBe('Technology')
+        ->and($business->category)->toBe('SaaS Business')
+        ->and($business->description)->toBe('A cutting-edge SaaS platform for creators.');
 });

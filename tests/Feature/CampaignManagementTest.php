@@ -196,6 +196,7 @@ it('user cannot delete another users campaign', function () {
 it('campaign product ownership is validated', function () {
     $user = User::factory()->create(['onboarding_completed' => true]);
     $ownerBusiness = Business::factory()->create(['user_id' => $user->id]);
+    $event = Event::factory()->create(['user_id' => $user->id, 'type' => 'holiday']);
     $otherBusiness = Business::factory()->create();
     $otherProduct = Product::factory()->create(['business_id' => $otherBusiness->id]);
 
@@ -203,11 +204,11 @@ it('campaign product ownership is validated', function () {
         ->post('/campaigns', [
             'name' => 'Wrong Product',
             'product_id' => $otherProduct->id,
-            'event_id' => null,
+            'event_id' => $event->id,
             'objective' => 'Boost awareness',
             'start_date' => now()->toDateString(),
             'end_date' => now()->addDay()->toDateString(),
-            'status' => 'draft',
+            'status' => 'active',
         ])
         ->assertSessionHasErrors('product_id');
 });
@@ -226,9 +227,55 @@ it('global event can be used by a campaign', function () {
             'objective' => 'Drive holiday demand',
             'start_date' => now()->toDateString(),
             'end_date' => now()->addDays(7)->toDateString(),
-            'status' => 'draft',
+            'status' => 'active',
         ])
         ->assertRedirect('/campaigns');
+});
+
+it('user can archive and unarchive a campaign', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'status' => 'active',
+    ]);
+
+    $this->actingAs($user)
+        ->post('/campaigns/'.$campaign->id.'/archive')
+        ->assertRedirect();
+
+    expect($campaign->fresh()->status)->toBe('archived');
+
+    $this->actingAs($user)
+        ->post('/campaigns/'.$campaign->id.'/unarchive')
+        ->assertRedirect();
+
+    expect($campaign->fresh()->status)->toBe('active');
+});
+
+it('auto-archives completed campaigns older than 2 days', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+
+    $oldCompleted = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'status' => 'completed',
+        'end_date' => now()->subDays(3)->toDateString(),
+    ]);
+
+    $recentCompleted = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'status' => 'completed',
+        'end_date' => now()->subDay()->toDateString(),
+    ]);
+
+    $this->actingAs($user)->get('/campaigns')->assertOk();
+
+    expect($oldCompleted->fresh()->status)->toBe('archived');
+    expect($recentCompleted->fresh()->status)->toBe('completed');
 });
 
 it('campaign detail displays associated designs', function () {

@@ -9,6 +9,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\UserProfileController;
+use App\Models\Event;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
@@ -61,6 +62,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function () {
     Route::get('profile', [UserProfileController::class, 'show'])->name('profile.show');
+    Route::match(['post', 'patch'], 'profile/business', [UserProfileController::class, 'updateBusiness'])->name('profile.business.update');
 
     Route::get('dashboard', function (Request $request) {
         $user = $request->user();
@@ -97,7 +99,40 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
         $totalDesigns = $user->designs()->count();
         $activeCampaigns = $user->campaigns()->whereIn('status', ['active', 'scheduled'])->count();
         $totalProducts = $user->business?->products()->count() ?? 0;
-        $upcomingEventsCount = $user->events()->where('date', '>=', now()->toDateString())->count();
+
+        $events = Event::query()
+            ->where(fn ($query) => $query->where('user_id', $user->id)->orWhere('is_global', true))
+            ->orderBy('date')
+            ->get()
+            ->map(fn ($event): array => [
+                'id' => $event->id,
+                'name' => $event->name,
+                'date' => $event->date?->format('Y-m-d'),
+                'type' => $event->type,
+            ])
+            ->values()
+            ->all();
+
+        $upcomingEvents = Event::query()
+            ->where(fn ($query) => $query->where('user_id', $user->id)->orWhere('is_global', true))
+            ->where('date', '>=', now()->toDateString())
+            ->orderBy('date')
+            ->limit(5)
+            ->get()
+            ->map(fn ($event) => [
+                'id' => $event->id,
+                'name' => $event->name,
+                'date' => $event->date ? $event->date->format('M j, Y') : null,
+                'category' => $event->type,
+                'days' => $event->date ? now()->diffInDays($event->date, false).' days left' : null,
+            ])
+            ->values()
+            ->all();
+
+        $upcomingEventsCount = Event::query()
+            ->where(fn ($query) => $query->where('user_id', $user->id)->orWhere('is_global', true))
+            ->where('date', '>=', now()->toDateString())
+            ->count();
 
         // 6-Month Monthly Activity Data for interactive chart
         $monthlyActivity = collect(range(5, 0))->map(function ($monthsAgo) use ($user) {
@@ -148,8 +183,8 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
         $campaignsByStatus = [
             'active' => $user->campaigns()->where('status', 'active')->count(),
             'scheduled' => $user->campaigns()->where('status', 'scheduled')->count(),
-            'draft' => $user->campaigns()->where('status', 'draft')->count(),
             'completed' => $user->campaigns()->where('status', 'completed')->count(),
+            'archived' => $user->campaigns()->where('status', 'archived')->count(),
         ];
 
         // Catalog coverage
@@ -158,13 +193,8 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
 
         return inertia('dashboard', [
             'campaigns' => $campaigns,
-            'upcoming_events' => $user->events()->where('date', '>=', now()->toDateString())->orderBy('date')->limit(5)->get()->map(fn ($event) => [
-                'id' => $event->id,
-                'name' => $event->name,
-                'date' => $event->date ? $event->date->format('M j, Y') : null,
-                'category' => $event->type,
-                'days' => $event->date ? now()->diffInDays($event->date, false).' days left' : null,
-            ])->values()->all(),
+            'events' => $events,
+            'upcoming_events' => $upcomingEvents,
             'recent_designs' => $recentDesigns,
             'stats' => [
                 'total_designs' => $totalDesigns,
@@ -206,6 +236,8 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
     Route::post('campaigns', [CampaignController::class, 'store'])->name('campaigns.store');
     Route::get('campaigns/{campaign}', [CampaignController::class, 'show'])->name('campaigns.show');
     Route::post('campaigns/{campaign}/attach-designs', [CampaignController::class, 'attachDesigns'])->name('campaigns.attach-designs');
+    Route::post('campaigns/{campaign}/archive', [CampaignController::class, 'archive'])->name('campaigns.archive');
+    Route::post('campaigns/{campaign}/unarchive', [CampaignController::class, 'unarchive'])->name('campaigns.unarchive');
     Route::put('campaigns/{campaign}', [CampaignController::class, 'update'])->name('campaigns.update');
     Route::delete('campaigns/{campaign}', [CampaignController::class, 'destroy'])->name('campaigns.destroy');
 

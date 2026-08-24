@@ -21,9 +21,9 @@ class StoreCampaignRequest extends FormRequest
             'product_id' => $this->filled('product_id') ? (int) $this->input('product_id') : null,
             'event_id' => $this->filled('event_id') ? (int) $this->input('event_id') : null,
             'design_id' => $this->filled('design_id') ? (int) $this->input('design_id') : null,
-            'start_date' => $this->filled('start_date') ? $this->input('start_date') : null,
-            'end_date' => $this->filled('end_date') ? $this->input('end_date') : null,
-            'status' => $this->filled('status') ? $this->input('status') : 'draft',
+            'start_date' => $this->filled('start_date') ? $this->input('start_date') : now()->toDateString(),
+            'end_date' => $this->filled('end_date') ? $this->input('end_date') : ($this->filled('start_date') ? $this->input('start_date') : now()->toDateString()),
+            'status' => $this->filled('status') ? $this->input('status') : 'active',
         ]);
     }
 
@@ -36,13 +36,13 @@ class StoreCampaignRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'product_id' => ['nullable', 'exists:products,id'],
-            'event_id' => ['nullable', 'exists:events,id'],
+            'event_id' => ['required', 'exists:events,id'],
             'design_id' => ['nullable', 'exists:designs,id'],
             'objective' => ['nullable', 'string', 'max:2000'],
             'target_audience' => ['nullable', 'string', 'max:255'],
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'status' => ['nullable', 'in:draft,scheduled,active,completed'],
+            'start_date' => ['required', 'date'],
+            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+            'status' => ['required', 'in:active,scheduled,completed,archived'],
         ];
     }
 

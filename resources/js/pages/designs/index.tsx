@@ -84,7 +84,20 @@ export default function DesignsPage({
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('marketpilot_designs_view_mode');
+            if (saved === 'grid' || saved === 'list') return saved;
+        }
+        return 'grid';
+    });
+
+    const handleSetViewMode = (mode: 'grid' | 'list') => {
+        setViewMode(mode);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('marketpilot_designs_view_mode', mode);
+        }
+    };
 
     const isAllSelected =
         designList.length > 0 && selectedIds.length === designList.length;
@@ -1022,33 +1035,70 @@ export default function DesignsPage({
                                         : 'visuals'}
                                 </div>
 
-                                {/* View Switcher */}
-                                <div className="ml-auto flex items-center rounded-lg border border-border bg-muted/40 p-0.5">
-                                    <button
-                                        type="button"
-                                        onClick={() => setViewMode('grid')}
-                                        className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-md transition-all ${
-                                            viewMode === 'grid'
-                                                ? 'bg-card font-medium text-foreground shadow-xs'
-                                                : 'text-muted-foreground hover:text-foreground'
-                                        }`}
-                                        aria-label="Grid view"
+                                {/* VIEW MODE DROPDOWN (ICON-ONLY BUTTON) */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="ml-auto h-8 w-8 rounded-xl p-0 shadow-none text-muted-foreground hover:text-foreground"
+                                            title={`Current view: ${
+                                                viewMode === 'grid'
+                                                    ? 'Grid'
+                                                    : 'List'
+                                            }`}
+                                            aria-label="Toggle View Mode"
+                                        >
+                                            {viewMode === 'grid' ? (
+                                                <LayoutGrid className="h-4 w-4" />
+                                            ) : (
+                                                <List className="h-4 w-4" />
+                                            )}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                        align="end"
+                                        className="w-32 rounded-xl p-1 shadow-md"
                                     >
-                                        <LayoutGrid className="h-3.5 w-3.5" />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setViewMode('list')}
-                                        className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-md transition-all ${
-                                            viewMode === 'list'
-                                                ? 'bg-card font-medium text-foreground shadow-xs'
-                                                : 'text-muted-foreground hover:text-foreground'
-                                        }`}
-                                        aria-label="List view"
-                                    >
-                                        <List className="h-3.5 w-3.5" />
-                                    </button>
-                                </div>
+                                        <DropdownMenuItem
+                                            onClick={() =>
+                                                handleSetViewMode('grid')
+                                            }
+                                            className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
+                                                viewMode === 'grid'
+                                                    ? 'bg-primary/10 font-semibold text-primary'
+                                                    : 'text-foreground hover:bg-muted'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <LayoutGrid className="h-3.5 w-3.5" />
+                                                <span>Grid</span>
+                                            </div>
+                                            {viewMode === 'grid' && (
+                                                <Check className="h-3.5 w-3.5 text-primary" />
+                                            )}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() =>
+                                                handleSetViewMode('list')
+                                            }
+                                            className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
+                                                viewMode === 'list'
+                                                    ? 'bg-primary/10 font-semibold text-primary'
+                                                    : 'text-foreground hover:bg-muted'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <List className="h-3.5 w-3.5" />
+                                                <span>List</span>
+                                            </div>
+                                            {viewMode === 'list' && (
+                                                <Check className="h-3.5 w-3.5 text-primary" />
+                                            )}
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                         </div>
                     </div>
@@ -2096,20 +2146,20 @@ export default function DesignsPage({
                         </button>
                     </div>
 
-                    {/* Section 2: Recreated, Classy Details & Functions Section (Scroll down) */}
+                    {/* Section 2: Recreated, Classy Details & Functions Section */}
                     <div
                         id="design-modal-details"
-                        className="relative z-30 w-full border-t border-white/20 bg-background/98 px-4 pt-8 pb-16 backdrop-blur-3xl sm:px-8"
+                        className="relative z-30 w-full border-t border-border/80 bg-card/98 px-4 pt-8 pb-16 text-foreground backdrop-blur-3xl sm:px-8"
                     >
                         <div className="mx-auto max-w-3xl space-y-6">
                             {/* Header / Title block */}
-                            <div className="flex flex-col gap-3 border-b border-white/15 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <div className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-xs font-black tracking-wider text-primary-foreground uppercase shadow-lg shadow-primary/30">
+                                    <div className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold tracking-wider text-primary-foreground uppercase shadow-md shadow-primary/20">
                                         <Sparkles className="h-4 w-4" />
                                         Visual Creative Details
                                     </div>
-                                    <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-white drop-shadow-md sm:text-3xl">
+                                    <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
                                         {previewDesign.product_name ||
                                             'Design Visual'}
                                     </h3>
@@ -2119,7 +2169,7 @@ export default function DesignsPage({
                                     <Button
                                         asChild
                                         size="sm"
-                                        className="h-9 cursor-pointer gap-2 bg-primary px-4 text-xs font-bold text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-105 hover:bg-primary/90"
+                                        className="h-9 cursor-pointer gap-2 bg-primary px-4 text-xs font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:scale-105 hover:bg-primary/90"
                                     >
                                         <Link
                                             href={`/generator?product_name=${encodeURIComponent(previewDesign.product_name || '')}&price=${encodeURIComponent(previewDesign.price || '')}&campaign_id=${encodeURIComponent(previewDesign.campaign_id || '')}&event_id=${encodeURIComponent(previewDesign.event_id || '')}&tagline=${encodeURIComponent(previewDesign.tagline || '')}&prompt=${encodeURIComponent(previewDesign.prompt || '')}&aspect_ratio=${encodeURIComponent(previewDesign.aspect_ratio || '1:1')}`}
@@ -2133,23 +2183,23 @@ export default function DesignsPage({
 
                             {/* Tagline Card (Ultra-visible, high-contrast primary card) */}
                             {previewDesign.tagline && (
-                                <div className="group relative overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-r from-primary/30 via-card/95 to-primary/20 p-5 shadow-xl shadow-primary/10 backdrop-blur-2xl transition-all hover:border-primary sm:p-6">
-                                    <div className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1 text-[11px] font-extrabold tracking-wider text-primary-foreground uppercase shadow-sm">
+                                <div className="group relative overflow-hidden rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-xs transition-all hover:border-primary/50 sm:p-6">
+                                    <div className="inline-flex items-center gap-1.5 rounded-md bg-primary/15 px-2.5 py-1 text-[11px] font-bold tracking-wider text-primary uppercase">
                                         <Tag className="h-3.5 w-3.5" />
                                         Catchy Tagline & Hook
                                     </div>
-                                    <p className="mt-3 text-lg leading-snug font-bold text-white italic drop-shadow-md sm:text-xl">
+                                    <p className="mt-3 text-lg leading-snug font-bold text-foreground italic sm:text-xl">
                                         "{previewDesign.tagline}"
                                     </p>
                                 </div>
                             )}
 
                             {/* Prompt & Visual Concept (with hover effect) */}
-                            <div className="group rounded-2xl border border-white/20 bg-card/90 p-5 shadow-lg backdrop-blur-2xl transition-all duration-300 hover:border-white/30">
-                                <div className="inline-block rounded bg-white/15 px-2.5 py-0.5 text-[11px] font-extrabold tracking-wider text-white uppercase">
+                            <div className="group rounded-2xl border border-border/80 bg-muted/30 p-5 shadow-xs transition-all duration-300 hover:border-border">
+                                <div className="inline-block rounded-md bg-muted px-2.5 py-1 text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
                                     AI Prompt & Concept
                                 </div>
-                                <p className="mt-2.5 text-sm leading-relaxed font-medium text-white/95 sm:text-base">
+                                <p className="mt-2.5 text-sm leading-relaxed font-medium text-foreground sm:text-base">
                                     {previewDesign.prompt ||
                                         'AI marketing creative tailored for maximum visual impact, tuned to your brand theme and offering.'}
                                 </p>
@@ -2157,39 +2207,39 @@ export default function DesignsPage({
 
                             {/* Metadata Grid (3 columns with hover cards) */}
                             <div className="grid gap-3 sm:grid-cols-3">
-                                <div className="group rounded-2xl border border-white/20 bg-card/90 p-4 shadow-md backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
-                                    <div className="flex items-center gap-1.5 text-xs font-extrabold tracking-wider text-white/70 uppercase">
+                                <div className="group rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 sm:p-5">
+                                    <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
                                         <Tag className="h-3.5 w-3.5 text-primary" />
                                         Product
                                     </div>
-                                    <p className="mt-2 truncate text-base font-bold text-white">
+                                    <p className="mt-2 truncate text-base font-bold text-foreground">
                                         {previewDesign.product_name ||
                                             'Standard Offering'}
                                     </p>
                                     {previewDesign.price && (
-                                        <p className="mt-0.5 text-xs font-extrabold text-emerald-400">
+                                        <p className="mt-0.5 text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
                                             ₱{previewDesign.price}
                                         </p>
                                     )}
                                 </div>
 
-                                <div className="group rounded-2xl border border-white/20 bg-card/90 p-4 shadow-md backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
-                                    <div className="flex items-center gap-1.5 text-xs font-extrabold tracking-wider text-white/70 uppercase">
+                                <div className="group rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 sm:p-5">
+                                    <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
                                         <Layers className="h-3.5 w-3.5 text-primary" />
                                         Campaign
                                     </div>
-                                    <p className="mt-2 truncate text-base font-bold text-white">
+                                    <p className="mt-2 truncate text-base font-bold text-foreground">
                                         {previewDesign.campaign_name ||
                                             'Direct Creative'}
                                     </p>
                                 </div>
 
-                                <div className="group rounded-2xl border border-white/20 bg-card/90 p-4 shadow-md backdrop-blur-2xl transition-all duration-300 hover:-translate-y-0.5 hover:border-white/30 sm:p-5">
-                                    <div className="flex items-center gap-1.5 text-xs font-extrabold tracking-wider text-white/70 uppercase">
+                                <div className="group rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 sm:p-5">
+                                    <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
                                         <CalendarDays className="h-3.5 w-3.5 text-primary" />
                                         Created / Event
                                     </div>
-                                    <p className="mt-2 truncate text-base font-bold text-white">
+                                    <p className="mt-2 truncate text-base font-bold text-foreground">
                                         {previewDesign.event_name ||
                                             previewDesign.created_at}
                                     </p>
@@ -2197,9 +2247,9 @@ export default function DesignsPage({
                             </div>
 
                             {/* Actions Bar (Download formats + Delete) */}
-                            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/15 pt-4">
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <span className="mr-1 text-xs font-bold text-white/80">
+                                    <span className="mr-1 text-xs font-bold text-muted-foreground">
                                         Download as:
                                     </span>
                                     <Button
@@ -2209,7 +2259,7 @@ export default function DesignsPage({
                                         onClick={() =>
                                             handleDownload(previewDesign, 'png')
                                         }
-                                        className="cursor-pointer gap-1.5 border-white/20 bg-white/10 text-xs text-white shadow-none transition-all hover:scale-105 hover:bg-white/20"
+                                        className="cursor-pointer gap-1.5 border-border bg-card text-xs font-semibold text-foreground shadow-none transition-all hover:bg-muted"
                                     >
                                         <Download className="h-3.5 w-3.5 text-primary" />
                                         PNG
@@ -2224,9 +2274,9 @@ export default function DesignsPage({
                                                 'jpeg',
                                             )
                                         }
-                                        className="cursor-pointer gap-1.5 border-white/20 bg-white/10 text-xs text-white shadow-none transition-all hover:scale-105 hover:bg-white/20"
+                                        className="cursor-pointer gap-1.5 border-border bg-card text-xs font-semibold text-foreground shadow-none transition-all hover:bg-muted"
                                     >
-                                        <Download className="h-3.5 w-3.5 text-blue-400" />
+                                        <Download className="h-3.5 w-3.5 text-blue-500" />
                                         JPEG
                                     </Button>
                                     <Button
@@ -2236,9 +2286,9 @@ export default function DesignsPage({
                                         onClick={() =>
                                             handleDownload(previewDesign, 'svg')
                                         }
-                                        className="cursor-pointer gap-1.5 border-white/20 bg-white/10 text-xs text-white shadow-none transition-all hover:scale-105 hover:bg-white/20"
+                                        className="cursor-pointer gap-1.5 border-border bg-card text-xs font-semibold text-foreground shadow-none transition-all hover:bg-muted"
                                     >
-                                        <Download className="h-3.5 w-3.5 text-emerald-400" />
+                                        <Download className="h-3.5 w-3.5 text-emerald-500" />
                                         SVG
                                     </Button>
                                 </div>

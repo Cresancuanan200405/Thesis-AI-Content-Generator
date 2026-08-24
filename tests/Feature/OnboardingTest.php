@@ -58,21 +58,6 @@ it('business information is saved correctly', function () {
         ->and($business->category)->toBe('Coffee Shop');
 });
 
-it('marketing preferences are saved correctly', function () {
-    $user = User::factory()->create();
-
-    $this->actingAs($user)
-        ->post('/onboarding/preferences', [
-            'marketing_preferences' => ['Social Media', 'Email Campaigns'],
-        ])
-        ->assertRedirect('/onboarding?step=4');
-
-    $business = $user->fresh()->business;
-
-    expect($business)->not->toBeNull()
-        ->and($business->marketing_preferences)->toBe('["Social Media","Email Campaigns"]');
-});
-
 it('optional business logo can be saved during onboarding', function () {
     $user = User::factory()->create();
     $user->business()->create([
@@ -82,15 +67,12 @@ it('optional business logo can be saved during onboarding', function () {
     ]);
 
     $this->actingAs($user)
-        ->post('/onboarding/logo', [
-            'marketing_preferences' => ['Social Media', 'Email Campaigns'],
-        ])
+        ->post('/onboarding/logo', [])
         ->assertRedirect('/dashboard');
 
     $user->refresh();
 
-    expect($user->business->marketing_preferences)->toBe('["Social Media","Email Campaigns"]')
-        ->and($user->business->logo_path)->toBeNull();
+    expect($user->onboarding_completed)->toBeTrue();
 });
 
 it('user cannot modify another users business record', function () {

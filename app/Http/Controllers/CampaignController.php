@@ -23,6 +23,26 @@ class CampaignController extends Controller
         /** @var User $user */
         $user = $request->user();
 
+        // Automatically archive completed campaigns older than 2 days
+        $twoDaysAgo = now()->subDays(2);
+        $user->campaigns()
+            ->where('status', 'completed')
+            ->where(function ($q) use ($twoDaysAgo) {
+                $q->where('end_date', '<=', $twoDaysAgo->toDateString())
+                    ->orWhere(function ($sub) use ($twoDaysAgo) {
+                        $sub->whereNull('end_date')
+                            ->where('updated_at', '<=', $twoDaysAgo);
+                    });
+            })
+            ->update(['status' => 'archived']);
+
+        $user->campaigns()
+            ->where('status', 'completed')
+            ->whereHas('event', function ($query) use ($twoDaysAgo) {
+                $query->where('date', '<=', $twoDaysAgo->toDateString());
+            })
+            ->update(['status' => 'archived']);
+
         $query = $user->campaigns()
             ->with(['business', 'event', 'product', 'designs'])
             ->latest('updated_at');
@@ -101,6 +121,8 @@ class CampaignController extends Controller
                 'total' => (clone $allUserCampaigns)->count(),
                 'active' => (clone $allUserCampaigns)->where('status', 'active')->count(),
                 'scheduled' => (clone $allUserCampaigns)->where('status', 'scheduled')->count(),
+                'completed' => (clone $allUserCampaigns)->where('status', 'completed')->count(),
+                'archived' => (clone $allUserCampaigns)->where('status', 'archived')->count(),
                 'designs' => $user->designs()->whereNotNull('campaign_id')->count(),
             ],
             'filters' => [
@@ -259,7 +281,7 @@ class CampaignController extends Controller
             'target_audience' => $request->input('target_audience') ?: null,
             'start_date' => $startDate,
             'end_date' => $endDate,
-            'status' => $request->input('status', 'draft') ?: 'draft',
+            'status' => $request->input('status', 'active') ?: 'active',
         ]);
 
         if ($request->filled('design_id')) {
@@ -371,5 +393,57 @@ class CampaignController extends Controller
         }
 
         return redirect()->route('campaigns.index')->with('success', 'Campaign deleted successfully.');
+    }
+
+    public function archive(Request $request, Campaign $campaign): \Symfony\Component\HttpFoundation\Response
+    {
+        $this->authorize('update', $campaign);
+
+        $campaign->update(['status' => 'archived']);
+
+        if ($user = $request->user()) {
+            NotificationService::notify(
+                $user,
+                'campaign_archived',
+                "Campaign Archived: {$campaign->name}",
+                "Campaign \"{$campaign->name}\" was moved to archive.",
+                route('campaigns.index', ['status' => 'archived'])
+            );
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Campaign archived successfully.',
+            ]);
+        }
+
+        return redirect()->back(fallback: route('campaigns.index'))->with('success', 'Campaign archived successfully.');
+    }
+
+    public function unarchive(Request $request, Campaign $campaign): \Symfony\Component\HttpFoundation\Response
+    {
+        $this->authorize('update', $campaign);
+
+        $campaign->update(['status' => 'active']);
+
+        if ($user = $request->user()) {
+            NotificationService::notify(
+                $user,
+                'campaign_restored',
+                "Campaign Restored: {$campaign->name}",
+                "Campaign \"{$campaign->name}\" was restored to active.",
+                route('campaigns.show', $campaign)
+            );
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Campaign restored to active successfully.',
+            ]);
+        }
+
+        return redirect()->back(fallback: route('campaigns.index'))->with('success', 'Campaign restored to active successfully.');
     }
 }

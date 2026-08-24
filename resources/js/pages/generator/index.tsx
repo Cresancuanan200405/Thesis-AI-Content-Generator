@@ -2707,9 +2707,10 @@ export default function GeneratorPage() {
                 </div>
 
                 {/* =====================================================
-                    DOCKED RIGHT SIDEBAR: BRIEF SUMMARY (ATTACHED TO SYSTEM HEADER)
+                    DOCKED RIGHT SIDEBAR: BRIEF SUMMARY (ONLY IN FORM EDIT MODE)
                 ====================================================== */}
-                {isSummaryCollapsed ? (
+                {generationState === 'idle' && (
+                    isSummaryCollapsed ? (
                     /* COLLAPSED VERTICAL RAIL BOX (LIKE LEFT SIDEBAR RAIL) */
                     <aside
                         onClick={() => handleSetSummaryCollapsed(false)}
@@ -2913,7 +2914,7 @@ export default function GeneratorPage() {
                             <span>MarketPilot AI Creative Engine</span>
                         </div>
                     </aside>
-                )}
+                ))}
             </div>
 
             {/* =============================================================

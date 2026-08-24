@@ -77,6 +77,7 @@ type ActivityPoint = {
 type Props = {
     auth?: any;
     campaigns?: any[];
+    events?: any[];
     upcoming_events?: any[];
     recent_designs?: any[];
     stats?: {
@@ -93,6 +94,7 @@ type Props = {
         scheduled?: number;
         draft?: number;
         completed?: number;
+        archived?: number;
     };
     business?: {
         name?: string;
@@ -107,6 +109,7 @@ type Props = {
 export default function Dashboard({
     auth,
     campaigns = [],
+    events = [],
     upcoming_events = [],
     recent_designs = [],
     stats = {},
@@ -155,14 +158,40 @@ export default function Dashboard({
         event_id: '',
         start_date: new Date().toISOString().split('T')[0],
         end_date: new Date().toISOString().split('T')[0],
+        status: 'active',
     });
 
     const handleCreateCampaign = (e: React.FormEvent) => {
         e.preventDefault();
-        setCampaignFormErrors({});
+        const errors: Record<string, string> = {};
 
         if (!campaignFormData.name.trim()) {
-            setCampaignFormErrors({ name: 'Campaign name is required' });
+            errors.name = 'Campaign name is required';
+        }
+
+        if (!campaignFormData.event_id) {
+            errors.event_id = 'Marketing event or holiday is required';
+        }
+
+        if (!campaignFormData.start_date) {
+            errors.start_date = 'Start date is required';
+        }
+
+        if (!campaignFormData.end_date) {
+            errors.end_date = 'End date is required';
+        }
+
+        if (
+            campaignFormData.start_date &&
+            campaignFormData.end_date &&
+            campaignFormData.start_date > campaignFormData.end_date
+        ) {
+            errors.end_date = 'End date cannot be earlier than start date';
+        }
+
+        if (Object.keys(errors).length > 0) {
+            setCampaignFormErrors(errors);
+            toast.error('Please fill in all required campaign fields.');
 
             return;
         }
@@ -177,6 +206,7 @@ export default function Dashboard({
                     event_id: '',
                     start_date: new Date().toISOString().split('T')[0],
                     end_date: new Date().toISOString().split('T')[0],
+                    status: 'active',
                 });
                 toast.success('Campaign created successfully!');
             },
@@ -184,7 +214,9 @@ export default function Dashboard({
                 setCampaignFormErrors(errors as Record<string, string>);
                 toast.error('Failed to create campaign. Please check inputs.');
             },
-            onFinish: () => setIsSubmittingCampaign(false),
+            onFinish: () => {
+                setIsSubmittingCampaign(false);
+            },
         });
     };
 
@@ -310,12 +342,12 @@ export default function Dashboard({
         scheduled:
             campaign_status_breakdown.scheduled ??
             campaigns.filter((c) => c.status === 'scheduled').length,
-        draft:
-            campaign_status_breakdown.draft ??
-            campaigns.filter((c) => c.status === 'draft').length,
         completed:
             campaign_status_breakdown.completed ??
             campaigns.filter((c) => c.status === 'completed').length,
+        archived:
+            campaign_status_breakdown.archived ??
+            campaigns.filter((c) => c.status === 'archived').length,
     };
     const totalCampaignsTracked =
         Object.values(statusCounts).reduce((a, b) => a + b, 0) || 1;
@@ -779,17 +811,17 @@ export default function Dashboard({
                                         />
                                         <div
                                             style={{
-                                                width: `${(statusCounts.draft / totalCampaignsTracked) * 100}%`,
-                                            }}
-                                            className="rounded-full bg-amber-500 transition-all duration-500"
-                                            title={`Draft: ${statusCounts.draft}`}
-                                        />
-                                        <div
-                                            style={{
                                                 width: `${(statusCounts.completed / totalCampaignsTracked) * 100}%`,
                                             }}
                                             className="rounded-full bg-purple-500 transition-all duration-500"
                                             title={`Completed: ${statusCounts.completed}`}
+                                        />
+                                        <div
+                                            style={{
+                                                width: `${(statusCounts.archived / totalCampaignsTracked) * 100}%`,
+                                            }}
+                                            className="rounded-full bg-zinc-500 transition-all duration-500"
+                                            title={`Archived: ${statusCounts.archived}`}
                                         />
                                     </div>
 
@@ -824,17 +856,17 @@ export default function Dashboard({
                                             </span>
                                         </Link>
                                         <Link
-                                            href="/campaigns"
+                                            href="/campaigns?status=archived"
                                             className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/30 p-2 transition-colors hover:bg-muted/60"
                                         >
                                             <div className="flex items-center gap-1.5">
-                                                <span className="h-2 w-2 rounded-full bg-amber-500" />
+                                                <span className="h-2 w-2 rounded-full bg-zinc-500" />
                                                 <span className="font-medium text-muted-foreground">
-                                                    Drafts
+                                                    Archived
                                                 </span>
                                             </div>
                                             <span className="font-bold text-foreground">
-                                                {statusCounts.draft}
+                                                {statusCounts.archived || 0}
                                             </span>
                                         </Link>
                                         <Link
@@ -1241,64 +1273,70 @@ export default function Dashboard({
                         </div>
 
                         {/* Event Selection */}
-                        {upcoming_events.length > 0 && (
-                            <div className="space-y-1.5">
-                                <Label
-                                    htmlFor="campaign-event"
-                                    className="text-xs font-semibold text-foreground"
+                        <div className="space-y-1.5">
+                            <Label
+                                htmlFor="campaign-event"
+                                className="text-xs font-semibold text-foreground"
+                            >
+                                Target Retail Event / Holiday{' '}
+                                <span className="text-destructive">*</span>
+                            </Label>
+                            <Select
+                                value={campaignFormData.event_id || ''}
+                                onValueChange={(val) => {
+                                    const eventId = val;
+                                    const selectableEvents =
+                                        events.length > 0
+                                            ? events
+                                            : upcoming_events;
+                                    const found = selectableEvents.find(
+                                        (e: any) => String(e.id) === eventId,
+                                    );
+                                    setCampaignFormData((prev) => ({
+                                        ...prev,
+                                        event_id: eventId,
+                                        start_date: found?.date || prev.start_date,
+                                        end_date: found?.date || prev.end_date,
+                                        name:
+                                            prev.name ||
+                                            (found
+                                                ? `${found.name} Campaign`
+                                                : prev.name),
+                                    }));
+                                }}
+                            >
+                                <SelectTrigger
+                                    id="campaign-event"
+                                    className={`h-10 rounded-xl bg-background/80 text-xs ${
+                                        campaignFormErrors.event_id
+                                            ? 'border-destructive'
+                                            : ''
+                                    }`}
                                 >
-                                    Target Retail Event / Holiday{' '}
-                                    <span className="font-normal text-muted-foreground">
-                                        (Optional)
-                                    </span>
-                                </Label>
-                                <Select
-                                    value={campaignFormData.event_id || 'none'}
-                                    onValueChange={(val) => {
-                                        const eventId =
-                                            val === 'none' ? '' : val;
-                                        const found = upcoming_events.find(
-                                            (e: any) =>
-                                                String(e.id) === eventId,
-                                        );
-                                        setCampaignFormData((prev) => ({
-                                            ...prev,
-                                            event_id: eventId,
-                                            name:
-                                                prev.name ||
-                                                (found
-                                                    ? `${found.name} Campaign`
-                                                    : prev.name),
-                                        }));
-                                    }}
-                                >
-                                    <SelectTrigger
-                                        id="campaign-event"
-                                        className="h-10 rounded-xl bg-background/80 text-xs"
-                                    >
-                                        <SelectValue placeholder="Select an upcoming date..." />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-white/20 backdrop-blur-xl dark:border-white/10">
+                                    <SelectValue placeholder="Select a marketing event or holiday..." />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-[300px] rounded-2xl border-white/20 backdrop-blur-xl dark:border-white/10">
+                                    {(events.length > 0
+                                        ? events
+                                        : upcoming_events
+                                    ).map((evt: any) => (
                                         <SelectItem
-                                            value="none"
-                                            className="text-xs"
+                                            key={evt.id}
+                                            value={String(evt.id)}
+                                            className="text-xs font-medium"
                                         >
-                                            No specific event
+                                            {evt.name} ({evt.date || 'Upcoming'}
+                                            )
                                         </SelectItem>
-                                        {upcoming_events.map((evt: any) => (
-                                            <SelectItem
-                                                key={evt.id}
-                                                value={String(evt.id)}
-                                                className="text-xs font-medium"
-                                            >
-                                                {evt.name} (
-                                                {evt.date || 'Upcoming'})
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )}
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            {campaignFormErrors.event_id && (
+                                <p className="text-[11px] font-medium text-destructive">
+                                    {campaignFormErrors.event_id}
+                                </p>
+                            )}
+                        </div>
 
                         {/* Dates */}
                         <div className="grid grid-cols-2 gap-3">
@@ -1307,7 +1345,8 @@ export default function Dashboard({
                                     htmlFor="start-date"
                                     className="text-xs font-semibold text-foreground"
                                 >
-                                    Start Date
+                                    Start Date{' '}
+                                    <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
                                     id="start-date"
@@ -1319,8 +1358,17 @@ export default function Dashboard({
                                             start_date: e.target.value,
                                         }))
                                     }
-                                    className="h-10 rounded-xl text-xs"
+                                    className={`h-10 rounded-xl text-xs ${
+                                        campaignFormErrors.start_date
+                                            ? 'border-destructive'
+                                            : ''
+                                    }`}
                                 />
+                                {campaignFormErrors.start_date && (
+                                    <p className="text-[11px] font-medium text-destructive">
+                                        {campaignFormErrors.start_date}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="space-y-1.5">
@@ -1328,7 +1376,8 @@ export default function Dashboard({
                                     htmlFor="end-date"
                                     className="text-xs font-semibold text-foreground"
                                 >
-                                    End Date
+                                    End Date{' '}
+                                    <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
                                     id="end-date"
@@ -1340,9 +1389,65 @@ export default function Dashboard({
                                             end_date: e.target.value,
                                         }))
                                     }
-                                    className="h-10 rounded-xl text-xs"
+                                    className={`h-10 rounded-xl text-xs ${
+                                        campaignFormErrors.end_date
+                                            ? 'border-destructive'
+                                            : ''
+                                    }`}
                                 />
+                                {campaignFormErrors.end_date && (
+                                    <p className="text-[11px] font-medium text-destructive">
+                                        {campaignFormErrors.end_date}
+                                    </p>
+                                )}
                             </div>
+                        </div>
+
+                        {/* Campaign Status (No Draft) */}
+                        <div className="space-y-1.5">
+                            <Label
+                                htmlFor="campaign-status"
+                                className="text-xs font-semibold text-foreground"
+                            >
+                                Status{' '}
+                                <span className="text-destructive">*</span>
+                            </Label>
+                            <Select
+                                value={campaignFormData.status || 'active'}
+                                onValueChange={(val) =>
+                                    setCampaignFormData((prev) => ({
+                                        ...prev,
+                                        status: val,
+                                    }))
+                                }
+                            >
+                                <SelectTrigger
+                                    id="campaign-status"
+                                    className="h-10 rounded-xl bg-background/80 text-xs"
+                                >
+                                    <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-2xl border-white/20 backdrop-blur-xl dark:border-white/10">
+                                    <SelectItem
+                                        value="active"
+                                        className="text-xs font-medium"
+                                    >
+                                        Active (Promotion running)
+                                    </SelectItem>
+                                    <SelectItem
+                                        value="scheduled"
+                                        className="text-xs font-medium"
+                                    >
+                                        Scheduled (Upcoming)
+                                    </SelectItem>
+                                    <SelectItem
+                                        value="completed"
+                                        className="text-xs font-medium"
+                                    >
+                                        Completed (Ended)
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <DialogFooter className="gap-2 pt-3 sm:gap-0">
