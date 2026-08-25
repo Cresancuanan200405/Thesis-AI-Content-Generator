@@ -639,6 +639,12 @@ export default function GeneratorPage() {
         campaigns = [],
     } = pageProps;
 
+    const ai_usage = pageProps.ai_usage;
+    const isQuotaExceeded =
+        Boolean(ai_usage?.is_limit_reached) ||
+        Number(ai_usage?.total_spent ?? 0) >=
+            Number(ai_usage?.budget_limit ?? 20.0);
+
     const [currentStep, setCurrentStep] = useState<Step>(1);
     const [generationState, setGenerationState] =
         useState<GenerationState>('idle');
@@ -1267,6 +1273,14 @@ export default function GeneratorPage() {
 
     // Generation Flow - Real OpenAI Generator Preview
     const generateMarketingImage = async () => {
+        if (isQuotaExceeded) {
+            toast.error(
+                'You have reached your $20.00 AI generation limit quota. Visual generation is disabled.',
+            );
+
+            return;
+        }
+
         if (!form.product_name.trim() || !form.image_prompt.trim()) {
             toast.error('Please provide a product name and image prompt.');
 
@@ -1698,7 +1712,7 @@ export default function GeneratorPage() {
     const stepOneValid =
         form.product_name.trim().length > 0 &&
         form.image_prompt.trim().length > 0;
-    const canGenerate = stepOneValid;
+    const canGenerate = stepOneValid && !isQuotaExceeded;
 
     // Filter events in event modal
     const availableYears = useMemo(() => {
@@ -2549,6 +2563,29 @@ export default function GeneratorPage() {
                                     },
                                 )}
                             </div>
+
+                            {/* QUOTA LIMIT WARNING BANNER */}
+                            {isQuotaExceeded && (
+                                <div className="mb-5 flex items-start gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-xs text-destructive shadow-xs">
+                                    <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+                                    <div className="flex-1 space-y-1">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="text-sm font-bold text-destructive">
+                                                AI Budget Quota Limit Reached ($20.00 Limit)
+                                            </p>
+                                            <Badge
+                                                variant="outline"
+                                                className="border-destructive/40 bg-destructive/20 font-mono text-[10px] font-bold text-destructive"
+                                            >
+                                                ${Number(ai_usage?.total_spent ?? 20).toFixed(2)} / $20.00
+                                            </Badge>
+                                        </div>
+                                        <p className="text-[11px] leading-relaxed text-destructive/90">
+                                            You have hit your <strong>$20.00 total generation quota limit</strong>. Image generation has been halted to prevent unexpected overages.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* STEPPED CREATION FORM CARD */}
                             <Card className="overflow-hidden rounded-3xl border-border bg-card shadow-sm">
@@ -3655,10 +3692,23 @@ export default function GeneratorPage() {
                                                 type="button"
                                                 onClick={generateMarketingImage}
                                                 disabled={!canGenerate}
-                                                className="gap-2 text-xs font-semibold shadow-sm"
+                                                className={`gap-2 text-xs font-semibold shadow-sm ${
+                                                    isQuotaExceeded
+                                                        ? 'border border-destructive/30 bg-destructive/15 text-destructive hover:bg-destructive/20'
+                                                        : ''
+                                                }`}
                                             >
-                                                <Sparkles className="h-4 w-4" />
-                                                Generate Visual Creative
+                                                {isQuotaExceeded ? (
+                                                    <>
+                                                        <AlertTriangle className="h-4 w-4" />
+                                                        Quota Limit Reached ($20.00)
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Sparkles className="h-4 w-4" />
+                                                        Generate Visual Creative
+                                                    </>
+                                                )}
                                             </Button>
                                         )}
                                     </div>
@@ -4637,6 +4687,14 @@ export default function GeneratorPage() {
                         <Button
                             type="button"
                             onClick={() => {
+                                if (isQuotaExceeded) {
+                                    toast.error(
+                                        'You have reached your $20.00 AI generation limit quota. Visual generation is disabled.',
+                                    );
+                                    setIsRegenerateConfirmOpen(false);
+
+                                    return;
+                                }
                                 setIsRegenerateConfirmOpen(false);
                                 setIsSavedToDesigns(false);
                                 setSavedDesign(null);

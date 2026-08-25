@@ -170,16 +170,19 @@ Generate a stunning, fully rendered SVG graphic for a commercial marketing adver
 OUTPUT ONLY RAW SVG CODE starting with `<svg viewBox="0 0 {$width} {$height}" xmlns="http://www.w3.org/2000/svg">` and ending with `</svg>`.
 Do NOT wrap the output in markdown code blocks, backticks, or any conversational text.
 Use rich gradients, drop shadows, crisp modern typography, elegant lighting layers, and polished commercial layouts.
+LOGO & BRANDING DIRECTIVE: If a logo or brand badge is included, ensure it seamlessly matches the aesthetic style, color theme, and brand identity of the design. Place it in a tasteful, secondary corner position (such as an upper or lower corner). Keep it refined, moderately scaled, and never oversized, ensuring it does not compete with or distract from the hero product as the primary center of attention.
 PROMPT;
 
         $productName = $options['product_name'] ?? 'Product';
         $tagline = $options['tagline'] ?? '';
         $businessName = $options['business_name'] ?? 'Brand';
+        $includeLogo = ! empty($options['include_logo']);
 
         $userPrompt = "Create a premium commercial marketing banner for:\n"
             ."Product: {$productName}\n"
             ."Business: {$businessName}\n"
             .($tagline ? "Tagline: {$tagline}\n" : '')
+            .($includeLogo ? "Logo: Include brand logo matching design aesthetics, placed subtly in a discreet corner without competing with the product.\n" : '')
             ."Brief: {$prompt}\n"
             ."Dimensions: {$width}x{$height} (aspect ratio {$aspectRatio}).";
 
@@ -251,6 +254,10 @@ PROMPT;
 
         if (! empty($options['event_name'])) {
             $parts[] = 'Holiday / Event context: '.$options['event_name'].'.';
+        }
+
+        if (! empty($options['include_logo'])) {
+            $parts[] = 'Brand logo placement: Seamlessly harmonize the business logo with the overall color scheme, studio lighting, and brand identity. Position the logo in a subtle, tasteful corner area (e.g. upper or lower corner) with elegant, moderate scaling so that it does not become the center of attention or overpower the hero product.';
         }
 
         if (! empty($options['render_style'])) {

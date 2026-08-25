@@ -470,10 +470,16 @@ class DesignController extends Controller
     {
         $this->authorize('regenerate', $design);
 
+        /** @var User $user */
+        $user = auth()->user();
+        if ($user && $user->hasReachedAiBudgetLimit(20.00)) {
+            return redirect()->route('designs.index')->with('error', 'You have reached your $20.00 AI generation limit quota. Visual regeneration is disabled.');
+        }
+
         try {
             $newDesign = $this->designRegenerationService->regenerate($design);
         } catch (RuntimeException $exception) {
-            return redirect()->route('designs.index')->with('error', 'Unable to regenerate the design right now.');
+            return redirect()->route('designs.index')->with('error', $exception->getMessage() ?: 'Unable to regenerate the design right now.');
         }
 
         return redirect()->route('designs.show', $newDesign)->with('success', 'Design regenerated successfully.');

@@ -124,6 +124,11 @@ class GeneratorController extends Controller
 
         /** @var User $user */
         $user = $request->user();
+
+        if ($user->hasReachedAiBudgetLimit(20.00)) {
+            return redirect()->route('generator.index')->with('error', 'You have reached your $20.00 AI generation limit quota. Visual generation is disabled.');
+        }
+
         /** @var Business $business */
         $business = $user->business()->firstOrFail();
         $payload = $request->validated();
@@ -267,6 +272,15 @@ class GeneratorController extends Controller
 
         /** @var User $user */
         $user = $request->user();
+
+        if ($user->hasReachedAiBudgetLimit(20.00)) {
+            return response()->json([
+                'success' => false,
+                'quota_exceeded' => true,
+                'message' => 'You have reached your $20.00 AI generation limit quota. Visual generation is disabled.',
+            ], 403);
+        }
+
         /** @var Business $business */
         $business = $user->business()->firstOrFail();
 

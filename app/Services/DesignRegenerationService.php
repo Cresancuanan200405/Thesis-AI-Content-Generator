@@ -17,6 +17,11 @@ class DesignRegenerationService
     public function regenerate(Design $design): Design
     {
         $user = $design->user;
+
+        if ($user && $user->hasReachedAiBudgetLimit(20.00)) {
+            throw new RuntimeException('You have reached your $20.00 AI generation limit quota. Visual regeneration is disabled.');
+        }
+
         $business = $design->business ?? $user->business()->firstOrFail();
         $campaign = $design->campaign;
 

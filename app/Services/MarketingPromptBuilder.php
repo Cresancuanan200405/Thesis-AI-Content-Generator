@@ -58,6 +58,10 @@ class MarketingPromptBuilder
             $lines[] = 'Tagline: '.$payload['tagline'];
         }
 
+        if (! empty($payload['include_logo'] ?? null)) {
+            $lines[] = 'Logo integration: Include the business logo in the design, ensuring it seamlessly matches the aesthetic style, color palette, and business identity. Position the logo in a subtle, secondary corner (such as an upper or lower corner) with refined, non-intrusive scaling so that it does not compete with or distract from the hero product as the primary center of attention.';
+        }
+
         if (! empty($payload['notes'] ?? null)) {
             $lines[] = 'Additional notes: '.$payload['notes'];
         }

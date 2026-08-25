@@ -162,4 +162,64 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(AppNotification::class);
     }
+
+    /**
+     * Calculate total spent across all generated AI designs.
+     */
+    public function getAiTotalSpent(): float
+    {
+        return round((float) $this->designs()->get()->sum(function (Design $design): float {
+            $model = $design->generation_metadata['model'] ?? 'gpt-image-1';
+            $quality = $design->generation_metadata['quality'] ?? 'medium';
+
+            return match ($model) {
+                'gpt-image-1-mini' => match ($quality) {
+                    'low' => 0.005,
+                    'high' => 0.036,
+                    default => 0.011,
+                },
+                'chatgpt-image-latest' => match ($quality) {
+                    'low' => 0.009,
+                    'high' => 0.133,
+                    default => 0.034,
+                },
+                'gpt-image-1' => match ($quality) {
+                    'low' => 0.011,
+                    'high' => 0.167,
+                    default => 0.042,
+                },
+                'gpt-image-1.5' => match ($quality) {
+                    'low' => 0.020,
+                    'high' => 0.080,
+                    default => 0.040,
+                },
+                'gpt-image-2' => match ($quality) {
+                    'low' => 0.006,
+                    'high' => 0.211,
+                    default => 0.053,
+                },
+                default => match ($quality) {
+                    'low' => 0.011,
+                    'high' => 0.167,
+                    default => 0.042,
+                },
+            };
+        }), 3);
+    }
+
+    /**
+     * Check if the user has reached or exceeded the AI generation budget limit.
+     */
+    public function hasReachedAiBudgetLimit(float $limit = 20.00): bool
+    {
+        return $this->getAiTotalSpent() >= $limit;
+    }
+
+    /**
+     * Get remaining AI generation budget.
+     */
+    public function getAiRemainingBudget(float $limit = 20.00): float
+    {
+        return max(0.0, round($limit - $this->getAiTotalSpent(), 3));
+    }
 }
