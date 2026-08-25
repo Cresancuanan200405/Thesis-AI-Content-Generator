@@ -10,8 +10,8 @@ use App\Models\Event;
 use App\Models\GenerationRequest;
 use App\Models\Product;
 use App\Models\User;
-use App\Services\GeminiImageService;
 use App\Services\MarketingPromptBuilder;
+use App\Services\OpenAIImageService;
 use App\Services\PhilippineHolidayService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
@@ -174,7 +174,7 @@ class GeneratorController extends Controller
         ]);
 
         try {
-            $generatedImagePath = app(GeminiImageService::class)->generate($prompt, [
+            $generatedImagePath = app(OpenAIImageService::class)->generate($prompt, [
                 // Step 1 — Product & Campaign
                 'product_name' => $payload['product_name'],
                 'product_description' => $product?->description,
@@ -188,12 +188,14 @@ class GeneratorController extends Controller
                 // Step 2 — Style & Tone
                 'brand_tone' => $payload['brand_tone'] ?? [],
                 'visual_theme' => $payload['content_style'] ?? [],
+                'render_style' => $payload['render_style'] ?? 'Studio Product Still',
 
                 // Step 3 — Canvas
                 'tagline' => $payload['tagline'] ?? null,
                 'tagline_mode' => $payload['tagline_mode'] ?? 'ai',
                 'include_logo' => $includeLogo,
                 'aspect_ratio' => $payload['aspect_ratio'] ?? '1:1',
+                'image_model' => $payload['image_model'] ?? 'gpt-image-1',
 
                 // Onboarding / Business Context
                 'business_name' => $business->name,
@@ -209,7 +211,7 @@ class GeneratorController extends Controller
                 'logo_path' => $logoPath,
             ]);
         } catch (RuntimeException $exception) {
-            Log::error('Gemini image generation failed.', [
+            Log::error('OpenAI image generation failed.', [
                 'user_id' => $user->id,
                 'business_id' => $business->id,
                 'generation_request_id' => $generationRequest->id,
@@ -243,8 +245,10 @@ class GeneratorController extends Controller
             'reference_image_path' => $referenceImagePath,
             'generated_image_path' => $generatedImagePath,
             'generation_metadata' => [
-                'source' => 'gemini',
-                'model' => config('services.gemini.model', 'gemini-2.5-flash-image'),
+                'source' => 'openai',
+                'model' => $payload['image_model'] ?? config('services.openai.image_model', 'dall-e-3'),
+                'quality' => $payload['image_quality'] ?? 'medium',
+                'render_style' => $payload['render_style'] ?? 'Studio Product Still',
                 'generation_request_id' => $generationRequest->id,
             ],
             'status' => 'completed',
@@ -256,7 +260,7 @@ class GeneratorController extends Controller
     /**
      * Generate visual creative preview without automatically creating a permanent Design record in My Designs.
      */
-    public function generatePreview(Request $request, GeminiImageService $geminiService, MarketingPromptBuilder $promptBuilder): JsonResponse
+    public function generatePreview(Request $request, OpenAIImageService $openAIService, MarketingPromptBuilder $promptBuilder): JsonResponse
     {
         @set_time_limit(120);
         @ini_set('max_execution_time', '120');
@@ -303,7 +307,7 @@ class GeneratorController extends Controller
                 $visualTheme = explode(',', $visualTheme);
             }
 
-            $generatedImagePath = $geminiService->generate($prompt, [
+            $generatedImagePath = $openAIService->generate($prompt, [
                 'product_name' => (string) $request->input('product_name'),
                 'product_description' => $product?->description,
                 'product_category' => $business->category,
@@ -314,10 +318,12 @@ class GeneratorController extends Controller
                 'price' => $request->input('price'),
                 'brand_tone' => $brandTone,
                 'visual_theme' => $visualTheme,
+                'render_style' => $request->input('render_style', 'Studio Product Still'),
                 'tagline' => $request->input('tagline'),
                 'tagline_mode' => $request->input('tagline_mode', 'ai'),
                 'include_logo' => $includeLogo,
                 'aspect_ratio' => $request->input('aspect_ratio', '1:1'),
+                'image_model' => $request->input('image_model', 'gpt-image-1'),
                 'business_name' => $business->name,
                 'business_industry' => $business->industry,
                 'business_description' => $business->description,
@@ -337,11 +343,14 @@ class GeneratorController extends Controller
                 'product_name' => $request->input('product_name'),
                 'tagline' => $request->input('tagline'),
                 'price' => $request->input('price'),
+                'render_style' => $request->input('render_style', 'Studio Product Still'),
                 'aspect_ratio' => $request->input('aspect_ratio', '1:1'),
+                'image_model' => $request->input('image_model', 'gpt-image-1'),
+                'image_quality' => $request->input('image_quality', 'medium'),
                 'message' => 'Visual creative generated successfully.',
             ]);
         } catch (\Throwable $e) {
-            Log::error('Gemini image generation preview failed: '.$e->getMessage());
+            Log::error('OpenAI image generation preview failed: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,

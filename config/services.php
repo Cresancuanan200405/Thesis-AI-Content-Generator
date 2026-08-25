@@ -37,21 +37,17 @@ return [
 
     'openai' => [
         'api_key' => env('OPENAI_API_KEY'),
-        'model' => env('OPENAI_IMAGE_MODEL', 'gpt-image-1'),
+        'organization' => env('OPENAI_ORGANIZATION'),
+        'image_model' => env('OPENAI_IMAGE_MODEL', 'dall-e-3'),
+        'chat_model' => env('OPENAI_CHAT_MODEL', 'gpt-4o-mini'),
         'size' => env('OPENAI_IMAGE_SIZE', '1024x1024'),
-        'quality' => env('OPENAI_IMAGE_QUALITY', 'high'),
-        'format' => env('OPENAI_IMAGE_FORMAT', 'b64_json'),
+        'quality' => env('OPENAI_IMAGE_QUALITY', 'standard'),
     ],
 
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
-    ],
-
-    'gemini' => [
-        'api_key' => env('GEMINI_API_KEY'),
-        'model' => env('GEMINI_IMAGE_MODEL', 'gemini-2.5-flash-image'),
     ],
 
     'facebook' => [

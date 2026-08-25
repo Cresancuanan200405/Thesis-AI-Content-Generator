@@ -11,7 +11,7 @@ class DesignRegenerationService
 {
     public function __construct(
         protected MarketingPromptBuilder $marketingPromptBuilder,
-        protected GeminiImageService $geminiImageService,
+        protected OpenAIImageService $openAIImageService,
     ) {}
 
     public function regenerate(Design $design): Design
@@ -60,7 +60,7 @@ class DesignRegenerationService
         ]);
 
         try {
-            $generatedImagePath = $this->geminiImageService->generate($prompt, [
+            $generatedImagePath = $this->openAIImageService->generate($prompt, [
                 'product_name' => $design->product_name,
                 'tagline' => $design->tagline,
                 'brand_tone' => $brandTone,
@@ -104,8 +104,8 @@ class DesignRegenerationService
             'reference_image_path' => $design->reference_image_path,
             'generated_image_path' => $generatedImagePath,
             'generation_metadata' => [
-                'source' => 'gemini',
-                'model' => config('services.gemini.model', 'gemini-2.5-flash-image'),
+                'source' => 'openai',
+                'model' => config('services.openai.image_model', 'dall-e-3'),
                 'regenerated_from_design_id' => $design->id,
                 'generation_request_id' => $generationRequest->id,
             ],

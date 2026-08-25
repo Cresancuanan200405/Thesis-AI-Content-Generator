@@ -9,8 +9,8 @@ use App\Models\Event;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\DesignRegenerationService;
-use App\Services\GeminiImageService;
 use App\Services\NotificationService;
+use App\Services\OpenAIImageService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,7 +25,7 @@ class DesignController extends Controller
 {
     public function __construct(
         protected DesignRegenerationService $designRegenerationService,
-        protected GeminiImageService $geminiImageService
+        protected OpenAIImageService $openAIImageService
     ) {}
 
     public function index(Request $request): Response
@@ -138,10 +138,14 @@ class DesignController extends Controller
                 'event_id' => $design->event_id,
                 'tagline' => $design->tagline,
                 'prompt' => $design->prompt,
-                'price' => $design->price,
-                'aspect_ratio' => $design->aspect_ratio ?? '1:1',
-                'content_style' => $design->content_style,
+                'aspect_ratio' => $design->aspect_ratio ?? ($design->generation_metadata['aspect_ratio'] ?? '1:1'),
+                'content_style' => $design->content_style ?? $design->visual_theme,
+                'visual_theme' => $design->visual_theme ?? $design->content_style,
                 'brand_tone' => $design->brand_tone,
+                'render_style' => $design->generation_metadata['render_style'] ?? null,
+                'image_model' => $design->generation_metadata['model'] ?? 'gpt-image-1',
+                'image_quality' => $design->generation_metadata['quality'] ?? 'medium',
+                'generation_metadata' => $design->generation_metadata,
                 'status' => $design->status,
                 'is_favorite' => (bool) $design->is_favorite,
                 'created_at' => $design->created_at?->format('M j, Y'),
@@ -251,7 +255,7 @@ class DesignController extends Controller
         if ($request->filled('generated_image_path')) {
             $generatedImagePath = (string) $request->input('generated_image_path');
         } else {
-            $generatedImagePath = $this->geminiImageService->generate($prompt, [
+            $generatedImagePath = $this->openAIImageService->generate($prompt, [
                 // Step 1 — Product & Campaign
                 'product_name' => (string) $request->input('product_name'),
                 'product_description' => $product?->description,
@@ -302,8 +306,10 @@ class DesignController extends Controller
             'reference_image_path' => $referenceImagePath,
             'generated_image_path' => $generatedImagePath,
             'generation_metadata' => [
-                'source' => 'gemini',
-                'model' => config('services.gemini.model', 'gemini-2.5-flash-image'),
+                'source' => 'openai',
+                'model' => $request->input('image_model') ?: config('services.openai.image_model', 'gpt-image-1'),
+                'quality' => $request->input('image_quality', 'medium'),
+                'render_style' => $request->input('render_style', 'Studio Product Still'),
                 'include_logo' => $includeLogo,
                 'aspect_ratio' => $aspectRatio,
             ],

@@ -104,7 +104,7 @@ it('authenticated user can create a generator request', function () {
         ->and(Storage::disk('public')->exists($design->generated_image_path))->toBeTrue();
 });
 
-it('generates fallback visual when Gemini API key is missing', function () {
+it('generates fallback visual when OpenAI API key is missing', function () {
     $user = User::factory()->create([
         'onboarding_completed' => true,
     ]);
@@ -124,7 +124,7 @@ it('generates fallback visual when Gemini API key is missing', function () {
         'name' => 'Spring Launch',
     ]);
 
-    config()->set('services.gemini.api_key', null);
+    config()->set('services.openai.api_key', null);
 
     $this->actingAs($user)
         ->post('/generator', [
@@ -141,4 +141,22 @@ it('generates fallback visual when Gemini API key is missing', function () {
         'user_id' => $user->id,
         'status' => 'completed',
     ]);
+});
+
+it('validates image quality input', function () {
+    $user = User::factory()->create([
+        'onboarding_completed' => true,
+    ]);
+
+    $business = Business::factory()->create([
+        'user_id' => $user->id,
+    ]);
+
+    $this->actingAs($user)
+        ->post('/generator', [
+            'product_name' => 'Signature Latte',
+            'marketing_goal' => 'Drive sales',
+            'image_quality' => 'ultra-extreme',
+        ])
+        ->assertSessionHasErrors(['image_quality']);
 });

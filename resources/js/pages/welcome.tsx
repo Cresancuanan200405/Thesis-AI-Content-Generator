@@ -924,7 +924,7 @@ export default function Welcome() {
                                                 <div className="space-y-3.5 rounded-2xl border border-white/20 bg-card/80 p-5 shadow-lg dark:border-white/10">
                                                     <div>
                                                         <p className="text-xs font-bold text-foreground">
-                                                            Generated Gemini
+                                                            Generated AI
                                                             Prompt Directive:
                                                         </p>
                                                         <p className="mt-1.5 rounded-xl border border-border/80 bg-muted/50 p-3.5 font-mono text-xs leading-relaxed text-muted-foreground">
@@ -1052,7 +1052,7 @@ export default function Welcome() {
                                         },
                                         {
                                             step: '03',
-                                            title: 'Gemini AI Studio',
+                                            title: 'OpenAI Studio',
                                             desc: 'Synthesize tailored promotional creatives with customizable vibes, styles, and dimensions.',
                                             icon: Sparkles,
                                             color: 'text-primary',

@@ -4,6 +4,8 @@ import {
     Calendar,
     Check,
     CheckCheck,
+    Coins,
+    Info,
     Megaphone,
     Monitor,
     Moon,
@@ -14,6 +16,7 @@ import {
 import * as React from 'react';
 
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -96,13 +99,30 @@ export function AppSidebarHeader({
     breadcrumbs?: BreadcrumbItemType[];
 }) {
     const { appearance, updateAppearance } = useAppearance();
-    const { unread_notifications_count, recent_notifications } = usePage<{
-        unread_notifications_count?: number;
-        recent_notifications?: NotificationItem[];
-    }>().props;
+    const { unread_notifications_count, recent_notifications, ai_usage } =
+        usePage<{
+            unread_notifications_count?: number;
+            recent_notifications?: NotificationItem[];
+            ai_usage?: {
+                budget_limit: number;
+                total_spent: number;
+                remaining_budget: number;
+                total_generations: number;
+                model_counts?: Record<string, number>;
+            };
+        }>().props;
     const { url } = usePage();
     const unreadCount = Number(unread_notifications_count || 0);
     const notifications = recent_notifications || [];
+
+    const budgetLimit = Number(ai_usage?.budget_limit ?? 20.0);
+    const totalSpent = Number(ai_usage?.total_spent ?? 0.0);
+    const remainingBudget = Number(ai_usage?.remaining_budget ?? 20.0);
+    const totalGenerations = Number(ai_usage?.total_generations ?? 0);
+    const percentageUsed = Math.min(
+        100,
+        Math.max(0, Math.round((totalSpent / budgetLimit) * 100)),
+    );
 
     const handleNotificationClick = (item: NotificationItem) => {
         if (!item.read_at) {
@@ -182,6 +202,263 @@ export function AppSidebarHeader({
                 RIGHT ACTIONS
             ============================================================= */}
             <div className="flex items-center gap-1">
+                {/* ========================================================
+                    AI TOKEN & BILLING USAGE DROPDOWN
+                ========================================================= */}
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            aria-label="AI Token & Quota Usage"
+                            title="AI Token & Quota Usage ($20.00 Limit)"
+                            className="h-8 gap-1.5 rounded-full px-2.5 text-xs font-semibold text-muted-foreground shadow-2xs transition-all duration-200 hover:scale-105 hover:bg-primary/10 hover:text-primary hover:ring-1 hover:ring-primary/25 active:scale-95 data-[state=open]:scale-105 data-[state=open]:bg-primary/15 data-[state=open]:text-primary data-[state=open]:ring-2 data-[state=open]:ring-primary/40"
+                        >
+                            <Coins className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                            <span className="hidden font-mono text-[11px] font-bold sm:inline-block">
+                                ${totalSpent.toFixed(2)}
+                                <span className="font-normal text-muted-foreground">
+                                    /$20
+                                </span>
+                            </span>
+                        </Button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent
+                        align="end"
+                        sideOffset={8}
+                        collisionPadding={16}
+                        avoidCollisions={true}
+                        className="w-[calc(100vw-2rem)] max-w-sm sm:max-w-md max-h-[82vh] overflow-y-auto rounded-2xl border border-border bg-popover p-0 shadow-2xl shadow-black/20 duration-200 fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 dark:shadow-black/50"
+                    >
+                        {/* Usage Header */}
+                        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-popover/98 px-4 py-3 backdrop-blur-md">
+                            <div>
+                                <p className="text-xs font-bold text-foreground">
+                                    AI Token & Quota Usage
+                                </p>
+                                <p className="text-[10px] text-muted-foreground">
+                                    OpenAI Synthesis Balance Tracker
+                                </p>
+                            </div>
+                            <Badge
+                                variant="outline"
+                                className="border-emerald-500/30 bg-emerald-500/10 font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400"
+                            >
+                                Limit: $20.00
+                            </Badge>
+                        </div>
+
+                        <div className="space-y-3.5 p-4">
+                            {/* Budget Progress Bar Card */}
+                            <div className="space-y-2.5 rounded-xl border border-border/70 bg-muted/20 p-3">
+                                <div className="flex items-center justify-between text-xs">
+                                    <span className="font-semibold text-foreground">
+                                        Budget Utilization
+                                    </span>
+                                    <span className="font-mono text-xs font-bold text-foreground">
+                                        ${totalSpent.toFixed(2)}{' '}
+                                        <span className="font-normal text-muted-foreground">
+                                            / $20.00 ({percentageUsed}%)
+                                        </span>
+                                    </span>
+                                </div>
+
+                                {/* Custom Progress Bar */}
+                                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                                    <div
+                                        className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-primary to-blue-500 transition-all duration-500"
+                                        style={{
+                                            width: `${Math.max(4, percentageUsed)}%`,
+                                        }}
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-between pt-0.5 text-[11px] text-muted-foreground">
+                                    <span>
+                                        Remaining:{' '}
+                                        <strong className="font-mono text-emerald-600 dark:text-emerald-400">
+                                            ${remainingBudget.toFixed(2)}
+                                        </strong>
+                                    </span>
+                                    <span>
+                                        Generated:{' '}
+                                        <strong className="font-mono text-foreground">
+                                            {totalGenerations} Visual
+                                            {totalGenerations === 1 ? '' : 's'}
+                                        </strong>
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Estimated Remaining Visuals */}
+                            <div className="space-y-1 rounded-xl border border-border/70 bg-muted/10 p-3 text-xs">
+                                <p className="font-semibold text-foreground">
+                                    Estimated Visuals Remaining
+                                </p>
+                                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                                    With your remaining{' '}
+                                    <strong>
+                                        ${remainingBudget.toFixed(2)}
+                                    </strong>{' '}
+                                    balance, you can generate approximately{' '}
+                                    <strong className="font-mono font-bold text-primary">
+                                        ~{Math.floor(remainingBudget / 0.042)}
+                                    </strong>{' '}
+                                    standard commercial marketing images (
+                                    <span className="font-mono">
+                                        gpt-image-1 Medium
+                                    </span>
+                                    ) or up to{' '}
+                                    <strong className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                        ~{Math.floor(remainingBudget / 0.005)}
+                                    </strong>{' '}
+                                    drafts (
+                                    <span className="font-mono">
+                                        gpt-image-1-mini Low
+                                    </span>
+                                    ).
+                                </p>
+                            </div>
+
+                            {/* Cost Per Image vs Total Images on $20 Table */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
+                                        Cost Per Image vs. Total on $20
+                                    </p>
+                                    <span className="font-mono text-[10px] text-muted-foreground">
+                                        5 OpenAI Models
+                                    </span>
+                                </div>
+                                <div className="divide-y divide-border/40 overflow-hidden rounded-xl border border-border/70 bg-card text-xs">
+                                    {[
+                                        {
+                                            model: 'gpt-image-1-mini',
+                                            sub: 'Fastest & Cheapest',
+                                            low: '$0.005',
+                                            med: '$0.011',
+                                            high: '$0.036',
+                                            totalLow: '4,000',
+                                            totalMed: '1,818',
+                                            totalHigh: '555',
+                                        },
+                                        {
+                                            model: 'chatgpt-image-latest',
+                                            sub: 'Standard ChatGPT View',
+                                            low: '$0.009',
+                                            med: '$0.034',
+                                            high: '$0.133',
+                                            totalLow: '2,222',
+                                            totalMed: '588',
+                                            totalHigh: '150',
+                                        },
+                                        {
+                                            model: 'gpt-image-1',
+                                            sub: 'Deprecating Oct 2026',
+                                            low: '$0.011',
+                                            med: '$0.042',
+                                            high: '$0.167',
+                                            totalLow: '1,818',
+                                            totalMed: '476',
+                                            totalHigh: '119',
+                                            isRecommended: true,
+                                        },
+                                        {
+                                            model: 'gpt-image-1.5',
+                                            sub: 'Previous Flagship',
+                                            low: '$0.020',
+                                            med: '$0.040',
+                                            high: '$0.080',
+                                            totalLow: '1,000',
+                                            totalMed: '500',
+                                            totalHigh: '250',
+                                        },
+                                        {
+                                            model: 'gpt-image-2',
+                                            sub: 'Flagship Photorealism',
+                                            low: '$0.006',
+                                            med: '$0.053',
+                                            high: '$0.211',
+                                            totalLow: '3,333',
+                                            totalMed: '377',
+                                            totalHigh: '94',
+                                        },
+                                    ].map((row) => (
+                                        <div
+                                            key={row.model}
+                                            className={`p-2.5 space-y-1.5 transition-colors ${row.isRecommended ? 'bg-primary/5' : ''}`}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="font-mono text-xs font-bold text-foreground">
+                                                        {row.model}
+                                                    </span>
+                                                    {row.isRecommended && (
+                                                        <span className="rounded bg-primary/10 px-1 py-0.2 text-[9px] font-bold text-primary">
+                                                            Recommended
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <span className="text-[10px] italic text-muted-foreground">
+                                                    ({row.sub})
+                                                </span>
+                                            </div>
+
+                                            {/* 3-Tier Grid */}
+                                            <div className="grid grid-cols-3 gap-1 pt-0.5 text-[10px]">
+                                                <div className="rounded-lg bg-muted/40 p-1.5 text-center">
+                                                    <span className="block text-[9px] font-semibold text-amber-600 dark:text-amber-400">
+                                                        Low
+                                                    </span>
+                                                    <span className="font-mono font-bold text-foreground">
+                                                        {row.low}
+                                                    </span>
+                                                    <span className="block text-[9px] text-muted-foreground">
+                                                        {row.totalLow} imgs
+                                                    </span>
+                                                </div>
+                                                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-1.5 text-center">
+                                                    <span className="block text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                        Medium (Std)
+                                                    </span>
+                                                    <span className="font-mono font-bold text-emerald-700 dark:text-emerald-300">
+                                                        {row.med}
+                                                    </span>
+                                                    <span className="block text-[9px] text-emerald-600/80 dark:text-emerald-400/80">
+                                                        {row.totalMed} imgs
+                                                    </span>
+                                                </div>
+                                                <div className="rounded-lg bg-muted/40 p-1.5 text-center">
+                                                    <span className="block text-[9px] font-semibold text-purple-600 dark:text-purple-400">
+                                                        High (HD)
+                                                    </span>
+                                                    <span className="font-mono font-bold text-foreground">
+                                                        {row.high}
+                                                    </span>
+                                                    <span className="block text-[9px] text-muted-foreground">
+                                                        {row.totalHigh} imgs
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Plan & API Usage Info Footer */}
+                            <div className="flex items-start gap-2 rounded-lg bg-muted/40 p-2.5 text-[10px] leading-relaxed text-muted-foreground">
+                                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                                <span>
+                                    Usage is dynamically tracked against your{' '}
+                                    <strong>$20.00 budget limit</strong> using exact
+                                    OpenAI generation rates and quality tier capacity.
+                                </span>
+                            </div>
+                        </div>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+
                 {/* ========================================================
                     THEME DROPDOWN
                 ========================================================= */}

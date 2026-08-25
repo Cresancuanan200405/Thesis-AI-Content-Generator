@@ -37,6 +37,7 @@ class MarketingPromptBuilder
             'Marketing goal: '.($payload['marketing_goal'] ?? 'Increase awareness and engagement'),
             'Content style: '.($contentStyle ? implode(', ', $contentStyle) : 'Not specified'),
             'Brand tone: '.($brandTone ? implode(', ', $brandTone) : 'Not specified'),
+            'Render style: '.($payload['render_style'] ?? 'Studio Product Still'),
             'Target audience: '.($payload['target_audience'] ?? $business->target_audience ?? 'General audience'),
             'Unique selling point: '.($payload['unique_selling_point'] ?? $business->unique_selling_point ?? 'Strong value proposition'),
         ];

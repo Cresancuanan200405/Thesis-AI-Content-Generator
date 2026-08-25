@@ -1258,12 +1258,6 @@ export default function DesignsPage({
                                                             {design.product_name ||
                                                                 'Untitled design'}
                                                         </p>
-
-                                                        <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
-                                                            {design.event_name ||
-                                                                design.campaign_name ||
-                                                                'General marketing'}
-                                                        </p>
                                                     </div>
 
                                                     {/* Card Footer */}
@@ -1540,11 +1534,6 @@ export default function DesignsPage({
                                                     <p className="truncate text-sm font-semibold text-foreground transition-colors group-hover:text-primary">
                                                         {design.product_name ||
                                                             'Untitled design'}
-                                                    </p>
-                                                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                                                        {design.event_name ||
-                                                            design.campaign_name ||
-                                                            'General marketing'}
                                                     </p>
                                                 </div>
 
@@ -1901,6 +1890,16 @@ export default function DesignsPage({
                                 {previewDesign.product_name || 'Design Visual'}
                             </h2>
 
+                            <Badge
+                                variant="outline"
+                                className="border-primary/40 bg-primary/20 font-mono text-[10px] font-bold text-primary"
+                            >
+                                <Sparkles className="mr-1 inline h-2.5 w-2.5" />
+                                {previewDesign.generation_metadata?.model ||
+                                    previewDesign.model ||
+                                    'gpt-image-1'}
+                            </Badge>
+
                             {previewDesign.campaign_name && (
                                 <Badge
                                     variant="outline"
@@ -2172,7 +2171,7 @@ export default function DesignsPage({
                                         className="h-9 cursor-pointer gap-2 bg-primary px-4 text-xs font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:scale-105 hover:bg-primary/90"
                                     >
                                         <Link
-                                            href={`/generator?product_name=${encodeURIComponent(previewDesign.product_name || '')}&price=${encodeURIComponent(previewDesign.price || '')}&campaign_id=${encodeURIComponent(previewDesign.campaign_id || '')}&event_id=${encodeURIComponent(previewDesign.event_id || '')}&tagline=${encodeURIComponent(previewDesign.tagline || '')}&prompt=${encodeURIComponent(previewDesign.prompt || '')}&aspect_ratio=${encodeURIComponent(previewDesign.aspect_ratio || '1:1')}`}
+                                            href={`/generator?product_name=${encodeURIComponent(previewDesign.product_name || '')}&price=${encodeURIComponent(previewDesign.price || '')}&campaign_id=${encodeURIComponent(previewDesign.campaign_id || '')}&event_id=${encodeURIComponent(previewDesign.event_id || '')}&tagline=${encodeURIComponent(previewDesign.tagline || '')}&prompt=${encodeURIComponent(previewDesign.prompt || '')}&aspect_ratio=${encodeURIComponent(previewDesign.aspect_ratio || '1:1')}&content_style=${encodeURIComponent(Array.isArray(previewDesign.content_style) ? previewDesign.content_style.join(',') : previewDesign.content_style || previewDesign.visual_theme || '')}&brand_tone=${encodeURIComponent(Array.isArray(previewDesign.brand_tone) ? previewDesign.brand_tone.join(',') : previewDesign.brand_tone || '')}&render_style=${encodeURIComponent(previewDesign.render_style || previewDesign.generation_metadata?.render_style || 'Studio Product Still')}&image_model=${encodeURIComponent(previewDesign.generation_metadata?.model || previewDesign.model || 'gpt-image-1')}&image_quality=${encodeURIComponent(previewDesign.generation_metadata?.quality || 'medium')}`}
                                         >
                                             <Sparkles className="h-4 w-4" />
                                             Edit in AI Studio
@@ -2205,8 +2204,115 @@ export default function DesignsPage({
                                 </p>
                             </div>
 
-                            {/* Metadata Grid (3 columns with hover cards) */}
-                            <div className="grid gap-3 sm:grid-cols-3">
+                            {/* Creative Styling: Themes, Brand Tones & Render Style */}
+                            <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
+                                <h4 className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
+                                    Creative Direction & Styling
+                                </h4>
+                                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                                    {/* Render Style */}
+                                    <div className="space-y-1.5 rounded-xl border border-border/60 bg-muted/20 p-3">
+                                        <span className="text-[11px] font-semibold text-muted-foreground">
+                                            Render Style
+                                        </span>
+                                        <div>
+                                            <span className="inline-block rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
+                                                {previewDesign.render_style ||
+                                                    previewDesign
+                                                        .generation_metadata
+                                                        ?.render_style ||
+                                                    'Studio Product Still'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Content Style / Themes */}
+                                    <div className="space-y-1.5 rounded-xl border border-border/60 bg-muted/20 p-3">
+                                        <span className="text-[11px] font-semibold text-muted-foreground">
+                                            Visual Themes
+                                        </span>
+                                        <div className="flex flex-wrap gap-1">
+                                            {(() => {
+                                                const styles =
+                                                    previewDesign.content_style ||
+                                                    previewDesign.visual_theme;
+                                                const list = Array.isArray(
+                                                    styles,
+                                                )
+                                                    ? styles
+                                                    : styles
+                                                      ? String(styles)
+                                                            .split(',')
+                                                            .map((s) =>
+                                                                s.trim(),
+                                                            )
+                                                      : [];
+                                                if (!list.length) {
+                                                    return (
+                                                        <span className="text-xs text-muted-foreground">
+                                                            Product-focused (Auto)
+                                                        </span>
+                                                    );
+                                                }
+                                                return list.map(
+                                                    (item: string) => (
+                                                        <span
+                                                            key={item}
+                                                            className="rounded-md border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[10px] font-semibold text-primary"
+                                                        >
+                                                            {item}
+                                                        </span>
+                                                    ),
+                                                );
+                                            })()}
+                                        </div>
+                                    </div>
+
+                                    {/* Brand Tones */}
+                                    <div className="space-y-1.5 rounded-xl border border-border/60 bg-muted/20 p-3">
+                                        <span className="text-[11px] font-semibold text-muted-foreground">
+                                            Brand Tone
+                                        </span>
+                                        <div className="flex flex-wrap gap-1">
+                                            {(() => {
+                                                const tones =
+                                                    previewDesign.brand_tone;
+                                                const list = Array.isArray(
+                                                    tones,
+                                                )
+                                                    ? tones
+                                                    : tones
+                                                      ? String(tones)
+                                                            .split(',')
+                                                            .map((s) =>
+                                                                s.trim(),
+                                                            )
+                                                      : [];
+                                                if (!list.length) {
+                                                    return (
+                                                        <span className="text-xs text-muted-foreground">
+                                                            Professional (Auto)
+                                                        </span>
+                                                    );
+                                                }
+                                                return list.map(
+                                                    (item: string) => (
+                                                        <span
+                                                            key={item}
+                                                            className="rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-foreground"
+                                                        >
+                                                            {item}
+                                                        </span>
+                                                    ),
+                                                );
+                                            })()}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Metadata Grid (4 columns with hover cards) */}
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                                 <div className="group rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 sm:p-5">
                                     <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
                                         <Tag className="h-3.5 w-3.5 text-primary" />
@@ -2242,6 +2348,50 @@ export default function DesignsPage({
                                     <p className="mt-2 truncate text-base font-bold text-foreground">
                                         {previewDesign.event_name ||
                                             previewDesign.created_at}
+                                    </p>
+                                </div>
+
+                                <div className="group rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 sm:p-5">
+                                    <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
+                                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                                        AI Engine & Quality
+                                    </div>
+                                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                        <p className="truncate font-mono text-sm font-bold text-foreground">
+                                            {previewDesign.generation_metadata
+                                                ?.model ||
+                                                previewDesign.model ||
+                                                'gpt-image-1'}
+                                        </p>
+                                        <span
+                                            className={`rounded border px-1.5 py-0.2 text-[9px] font-bold uppercase ${
+                                                (previewDesign
+                                                    .generation_metadata
+                                                    ?.quality || 'medium') ===
+                                                'high'
+                                                    ? 'border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400'
+                                                    : (previewDesign
+                                                            .generation_metadata
+                                                            ?.quality ||
+                                                          'medium') === 'low'
+                                                      ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                                                      : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                            }`}
+                                        >
+                                            {previewDesign.generation_metadata
+                                                ?.quality || 'medium'}
+                                        </span>
+                                    </div>
+                                    <p className="mt-0.5 text-[10px] text-muted-foreground">
+                                        OpenAI Synthesis •{' '}
+                                        {(previewDesign.generation_metadata
+                                            ?.quality || 'medium') === 'high'
+                                            ? '2.0× HD Studio'
+                                            : (previewDesign.generation_metadata
+                                                    ?.quality || 'medium') ===
+                                                'low'
+                                              ? '0.5× Draft'
+                                              : '1.0× Standard'}
                                     </p>
                                 </div>
                             </div>

@@ -35,7 +35,10 @@ class GeneratorRequest extends FormRequest
             'target_audience' => ['nullable', 'string', 'max:255'],
             'unique_selling_point' => ['nullable', 'string', 'max:2000'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'render_style' => ['nullable', 'string', 'max:255'],
             'aspect_ratio' => ['nullable', 'string', 'max:20'],
+            'image_model' => ['nullable', 'string', 'max:50'],
+            'image_quality' => ['nullable', 'string', 'in:low,medium,high'],
             'include_logo' => ['nullable', 'boolean'],
             'reference_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];

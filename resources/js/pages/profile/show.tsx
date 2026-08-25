@@ -570,7 +570,7 @@ export default function ProfileShowPage({
                             </div>
                             <div className="mt-3">
                                 <p className="text-sm font-bold tracking-tight text-foreground">
-                                    Gemini & Imagen
+                                    OpenAI & DALL-E
                                 </p>
                                 <p className="mt-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
                                     {business.logo_url
@@ -963,7 +963,7 @@ export default function ProfileShowPage({
                                             Model
                                         </span>
                                         <span className="font-semibold text-foreground">
-                                            Gemini 2.5 Flash
+                                            OpenAI GPT-4o
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between">
@@ -971,7 +971,7 @@ export default function ProfileShowPage({
                                             Image Model
                                         </span>
                                         <span className="font-semibold text-foreground">
-                                            Imagen 3.0
+                                            OpenAI DALL-E 3
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between">

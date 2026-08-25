@@ -165,7 +165,7 @@ export default function AuthSimpleLayout({
                                 },
                                 {
                                     step: '03',
-                                    title: 'Gemini AI Studio',
+                                    title: 'OpenAI Studio',
                                     icon: Sparkles,
                                     color: 'text-blue-400',
                                     bg: 'bg-blue-500/15 border-blue-400/20',
