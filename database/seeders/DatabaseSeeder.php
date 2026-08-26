@@ -8,6 +8,7 @@ use App\Models\Design;
 use App\Models\Event;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\PhilippineHolidayService;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -71,35 +72,11 @@ class DatabaseSeeder extends Seeder
 
     protected function seedGlobalEvents(): void
     {
-        $eventDefinitions = [
-            ['New Year', 'holiday', '01-01'],
-            ['Valentine\'s Day', 'holiday', '02-14'],
-            ['Chinese New Year', 'holiday', '01-29'],
-            ["International Women's Day", 'holiday', '03-08'],
-            ['Easter', 'holiday', '04-20'],
-            ["Mother's Day", 'holiday', '05-11'],
-            ["Father's Day", 'holiday', '06-15'],
-            ['Halloween', 'holiday', '10-31'],
-            ['Black Friday', 'commercial', '11-28'],
-            ['Cyber Monday', 'commercial', '12-02'],
-            ['Christmas', 'holiday', '12-25'],
-        ];
-
+        $holidayService = app(PhilippineHolidayService::class);
         $year = now()->year;
 
-        foreach ($eventDefinitions as [$name, $type, $dateString]) {
-            Event::query()->firstOrCreate(
-                [
-                    'name' => $name,
-                    'date' => sprintf('%s-%s', $year, $dateString),
-                    'type' => $type,
-                    'is_global' => true,
-                ],
-                [
-                    'user_id' => null,
-                    'description' => 'Global marketing opportunity for seasonal and promotional content.',
-                ],
-            );
+        foreach ([$year - 1, $year, $year + 1, $year + 2] as $y) {
+            $holidayService->ensureYearSynced((int) $y);
         }
     }
 }

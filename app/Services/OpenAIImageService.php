@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
-use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class OpenAIImageService
 {
@@ -41,191 +41,104 @@ class OpenAIImageService
         $apiKey = config('services.openai.api_key');
 
         if (blank($apiKey)) {
-            Log::info('OpenAI API key is not configured yet. Generating high-resolution commercial mockup visual.');
+            if (app()->environment('testing')) {
+                return app(MockupImageService::class)->generate(array_merge($options, ['prompt' => $prompt]));
+            }
 
-            return app(MockupImageService::class)->generate(array_merge($options, ['prompt' => $prompt]));
+            throw new RuntimeException('OpenAI API key is not configured. Please add your OPENAI_API_KEY in your .env file to generate visual creatives.');
         }
 
-        // -----------------------------------------------------------------
-        // Attempt 1: OpenAI Image Generation (DALL-E 3 / GPT Image models)
-        // -----------------------------------------------------------------
-        $imagePath = $this->tryDallEImageGeneration($apiKey, $prompt, $options);
-        if ($imagePath !== null) {
-            return $imagePath;
-        }
-
-        // -----------------------------------------------------------------
-        // Attempt 2: OpenAI GPT-4o / GPT-4o-mini Creative SVG Generation
-        // -----------------------------------------------------------------
-        $aiVisualPath = $this->tryOpenAiSvgGeneration($apiKey, $prompt, $options);
-        if ($aiVisualPath !== null) {
-            return $aiVisualPath;
-        }
-
-        // -----------------------------------------------------------------
-        // Fallback: Local High-Resolution Mockup Visual
-        // -----------------------------------------------------------------
-        return app(MockupImageService::class)->generate(array_merge($options, ['prompt' => $prompt]));
+        return $this->executeDallEImageGeneration($apiKey, $prompt, $options);
     }
 
     /**
-     * Generate an image with OpenAI Image Models.
+     * Generate a real commercial marketing visual with OpenAI Image Models (DALL-E 3).
      */
-    protected function tryDallEImageGeneration(string $apiKey, string $prompt, array $options): ?string
+    protected function executeDallEImageGeneration(string $apiKey, string $prompt, array $options): string
     {
-        $requestedModel = $options['image_model'] ?? config('services.openai.image_model', 'dall-e-3');
+        $requestedModel = $options['image_model'] ?? config('services.openai.image_model', 'chatgpt-image-latest');
         $model = match ($requestedModel) {
-            'gpt-image-1-mini', 'gpt-image-1', 'chatgpt-image-latest', 'gpt-image-1.5', 'gpt-image-2' => 'dall-e-3',
-            default => $requestedModel,
+            'gpt-image-1-mini' => 'gpt-image-1-mini',
+            'gpt-image-1' => 'gpt-image-1',
+            'chatgpt-image-latest' => 'chatgpt-image-latest',
+            'gpt-image-1.5' => 'gpt-image-1.5',
+            'gpt-image-2' => 'gpt-image-2',
+            'dall-e-2' => 'dall-e-2',
+            'dall-e-3' => 'dall-e-3',
+            default => 'chatgpt-image-latest',
         };
         $aspectRatio = $options['aspect_ratio'] ?? '1:1';
 
-        // Map aspect ratio to supported DALL-E dimensions
+        // Map aspect ratio to supported dimensions
         $size = match ($aspectRatio) {
-            '16:9' => $model === 'dall-e-3' ? '1792x1024' : '1024x1024',
-            '9:16' => $model === 'dall-e-3' ? '1024x1792' : '1024x1024',
+            '16:9' => in_array($model, ['dall-e-3', 'chatgpt-image-latest', 'gpt-image-1', 'gpt-image-1.5', 'gpt-image-2'], true) ? '1792x1024' : '1024x1024',
+            '9:16' => in_array($model, ['dall-e-3', 'chatgpt-image-latest', 'gpt-image-1', 'gpt-image-1.5', 'gpt-image-2'], true) ? '1024x1792' : '1024x1024',
             default => '1024x1024',
         };
 
-        $quality = config('services.openai.quality', 'standard');
-        $fullPrompt = $this->buildCommercialPrompt($prompt, $options);
-
-        try {
-            $headers = [
-                'Authorization' => 'Bearer '.$apiKey,
-                'Content-Type' => 'application/json',
-            ];
-
-            if ($org = config('services.openai.organization')) {
-                $headers['OpenAI-Organization'] = $org;
-            }
-
-            $payload = [
-                'model' => $model,
-                'prompt' => Str::limit($fullPrompt, 3900),
-                'n' => 1,
-                'size' => $size,
-                'response_format' => 'b64_json',
-            ];
-
-            if ($model === 'dall-e-3') {
-                $payload['quality'] = $quality;
-            }
-
-            $response = Http::withHeaders($headers)
-                ->timeout(60)
-                ->post('https://api.openai.com/v1/images/generations', $payload);
-
-            if ($response->successful()) {
-                $data = $response->json();
-                $b64 = $data['data'][0]['b64_json'] ?? null;
-                $url = $data['data'][0]['url'] ?? null;
-
-                $binary = null;
-                if (! empty($b64)) {
-                    $binary = base64_decode($b64);
-                } elseif (! empty($url)) {
-                    $imgRes = Http::timeout(30)->get($url);
-                    if ($imgRes->successful()) {
-                        $binary = $imgRes->body();
-                    }
-                }
-
-                if (! empty($binary)) {
-                    $filename = 'designs/openai_'.Str::uuid().'.png';
-                    Storage::disk('public')->put($filename, $binary);
-                    Log::info("OpenAI DALL-E visual generated successfully ({$model}): {$filename}");
-
-                    return $filename;
-                }
-            } else {
-                Log::warning('OpenAI DALL-E image generation request failed: '.$response->body());
-            }
-        } catch (Exception $e) {
-            Log::warning('OpenAI DALL-E generation exception: '.$e->getMessage());
-        }
-
-        return null;
-    }
-
-    /**
-     * Generate an advanced SVG design using OpenAI Chat Completions (GPT-4o / GPT-4o-mini).
-     */
-    protected function tryOpenAiSvgGeneration(string $apiKey, string $prompt, array $options): ?string
-    {
-        $model = config('services.openai.chat_model', 'gpt-4o-mini');
-        $aspectRatio = $options['aspect_ratio'] ?? '1:1';
-
-        [$width, $height] = match ($aspectRatio) {
-            '9:16' => [1080, 1920],
-            '16:9' => [1920, 1080],
-            '4:5' => [1080, 1350],
-            '4:3' => [1200, 900],
-            default => [1024, 1024],
+        $requestedQuality = $options['image_quality'] ?? config('services.openai.quality', 'standard');
+        $quality = match ($requestedQuality) {
+            'high' => 'hd',
+            default => 'standard',
         };
 
-        $systemPrompt = <<<PROMPT
-You are a world-class graphic designer and SVG artist specializing in commercial advertising.
-Generate a stunning, fully rendered SVG graphic for a commercial marketing advertisement.
-OUTPUT ONLY RAW SVG CODE starting with `<svg viewBox="0 0 {$width} {$height}" xmlns="http://www.w3.org/2000/svg">` and ending with `</svg>`.
-Do NOT wrap the output in markdown code blocks, backticks, or any conversational text.
-Use rich gradients, drop shadows, crisp modern typography, elegant lighting layers, and polished commercial layouts.
-LOGO & BRANDING DIRECTIVE: If a logo or brand badge is included, ensure it seamlessly matches the aesthetic style, color theme, and brand identity of the design. Place it in a tasteful, secondary corner position (such as an upper or lower corner). Keep it refined, moderately scaled, and never oversized, ensuring it does not compete with or distract from the hero product as the primary center of attention.
-PROMPT;
+        $fullPrompt = $this->buildCommercialPrompt($prompt, $options);
 
-        $productName = $options['product_name'] ?? 'Product';
-        $tagline = $options['tagline'] ?? '';
-        $businessName = $options['business_name'] ?? 'Brand';
-        $includeLogo = ! empty($options['include_logo']);
+        $headers = [
+            'Authorization' => 'Bearer '.$apiKey,
+            'Content-Type' => 'application/json',
+        ];
 
-        $userPrompt = "Create a premium commercial marketing banner for:\n"
-            ."Product: {$productName}\n"
-            ."Business: {$businessName}\n"
-            .($tagline ? "Tagline: {$tagline}\n" : '')
-            .($includeLogo ? "Logo: Include brand logo matching design aesthetics, placed subtly in a discreet corner without competing with the product.\n" : '')
-            ."Brief: {$prompt}\n"
-            ."Dimensions: {$width}x{$height} (aspect ratio {$aspectRatio}).";
-
-        try {
-            $headers = [
-                'Authorization' => 'Bearer '.$apiKey,
-                'Content-Type' => 'application/json',
-            ];
-
-            if ($org = config('services.openai.organization')) {
-                $headers['OpenAI-Organization'] = $org;
-            }
-
-            $response = Http::withHeaders($headers)
-                ->timeout(45)
-                ->post('https://api.openai.com/v1/chat/completions', [
-                    'model' => $model,
-                    'messages' => [
-                        ['role' => 'system', 'content' => $systemPrompt],
-                        ['role' => 'user', 'content' => $userPrompt],
-                    ],
-                    'temperature' => 0.7,
-                ]);
-
-            if ($response->successful()) {
-                $data = $response->json();
-                $content = $data['choices'][0]['message']['content'] ?? '';
-
-                // Extract SVG content
-                if (preg_match('/<svg[\s\S]*?<\/svg>/i', $content, $matches)) {
-                    $svgContent = $matches[0];
-                    $filename = 'designs/openai_svg_'.Str::uuid().'.svg';
-                    Storage::disk('public')->put($filename, $svgContent);
-                    Log::info("OpenAI GPT SVG visual generated successfully: {$filename}");
-
-                    return $filename;
-                }
-            }
-        } catch (Exception $e) {
-            Log::warning('OpenAI SVG generation exception: '.$e->getMessage());
+        if ($org = config('services.openai.organization')) {
+            $headers['OpenAI-Organization'] = $org;
         }
 
-        return null;
+        $payload = [
+            'model' => $model,
+            'prompt' => Str::limit($fullPrompt, 3900),
+            'n' => 1,
+            'size' => $size,
+        ];
+
+        if ($model === 'dall-e-3') {
+            $payload['quality'] = $quality;
+        }
+
+        $response = Http::withHeaders($headers)
+            ->timeout(90)
+            ->post('https://api.openai.com/v1/images/generations', $payload);
+
+        if (! $response->successful()) {
+            $errorBody = $response->json();
+            $errorMessage = $errorBody['error']['message'] ?? ('OpenAI generation failed (HTTP '.$response->status().').');
+            Log::error('OpenAI image generation error: '.$errorMessage);
+
+            throw new RuntimeException($errorMessage);
+        }
+
+        $data = $response->json();
+        $b64 = $data['data'][0]['b64_json'] ?? null;
+        $url = $data['data'][0]['url'] ?? null;
+
+        $binary = null;
+        if (! empty($b64)) {
+            $binary = base64_decode($b64);
+        } elseif (! empty($url)) {
+            $imgRes = Http::timeout(60)->get($url);
+            if ($imgRes->successful()) {
+                $binary = $imgRes->body();
+            }
+        }
+
+        if (empty($binary)) {
+            throw new RuntimeException('Failed to process image data from OpenAI response.');
+        }
+
+        $filename = 'designs/openai_'.Str::uuid().'.png';
+        Storage::disk('public')->put($filename, $binary);
+        Log::info("OpenAI DALL-E image generated successfully ({$model}): {$filename}");
+
+        return $filename;
     }
 
     /**
@@ -234,45 +147,66 @@ PROMPT;
     protected function buildCommercialPrompt(string $prompt, array $options): string
     {
         $parts = [];
-        $parts[] = 'Ultra-high-definition, commercial advertising photography.';
+        $parts[] = 'Create a masterpiece, luxury commercial advertising poster and campaign visual.';
 
+        // 1. Brand Logo & Identity
+        if (! empty($options['include_logo']) || ! empty($options['business_name'])) {
+            $bizName = $options['business_name'] ?? 'Brand';
+            $parts[] = 'TOP BRAND EMBLEM: Prominently feature the brand logo and emblem for "'.$bizName.'" at the top center or top-left corner with vibrant brand colors, subtle luminous glow, and high-end commercial branding presence.';
+        }
+
+        // 2. Campaign Headline & Event Banner
+        if (! empty($options['tagline']) || ! empty($options['event_name'])) {
+            $taglineText = ! empty($options['tagline']) ? $options['tagline'] : (! empty($options['event_name']) ? 'CELEBRATE '.$options['event_name'] : '');
+            $parts[] = 'CAMPAIGN HEADLINE: "'.$taglineText.'". Render this headline in elegant, luxury serif or clean editorial typography with generous letter-spacing, beautiful gold or white metallic accents, centered near the upper section. Typography must have at least 15% padding from the top canvas border so it never gets clipped.';
+        }
+
+        // 3. Hero Product & Introduction
         if (! empty($options['product_name'])) {
-            $parts[] = 'Hero subject: '.$options['product_name'].'.';
+            $desc = ! empty($options['product_description']) ? $options['product_description'] : 'Rich, premium, crafted to perfection.';
+            $parts[] = 'HERO PRODUCT CENTERPIECE: "'.$options['product_name'].'". Placed gracefully on a sleek dark pedestal with elegant flowing metallic ribbons and warm volumetric studio light beams. Display a refined subtitle: "INTRODUCING '.strtoupper($options['product_name']).' — '.$desc.'" in clean, crisp advertising typography.';
         }
 
-        if (! empty($options['product_description'])) {
-            $parts[] = 'Product details: '.$options['product_description'].'.';
-        }
-
-        if (! empty($options['business_name'])) {
-            $parts[] = 'Brand: '.$options['business_name'].'.';
-        }
-
-        if (! empty($options['tagline'])) {
-            $parts[] = 'Campaign message: "'.$options['tagline'].'".';
+        // 4. Promotional Price Seal & Event Badge
+        if (! empty($options['price'])) {
+            $parts[] = 'PROMOTIONAL PRICE SEAL: Feature an iconic circular gold double-ring seal badge in the lower-left corner displaying "ONLY '.$options['price'].'" with crisp, bold, readable digits and luxury typography.';
         }
 
         if (! empty($options['event_name'])) {
-            $parts[] = 'Holiday / Event context: '.$options['event_name'].'.';
+            $parts[] = 'EVENT CELEBRATION BADGE: In the lower-right or background, incorporate an elegant themed celebration crest/shield for "'.$options['event_name'].'" and rich thematic celebratory background depth (e.g. ambient monument lighting, celebratory accents, golden shimmer).';
         }
 
-        if (! empty($options['include_logo'])) {
-            $parts[] = 'Brand logo placement: Seamlessly harmonize the business logo with the overall color scheme, studio lighting, and brand identity. Position the logo in a subtle, tasteful corner area (e.g. upper or lower corner) with elegant, moderate scaling so that it does not become the center of attention or overpower the hero product.';
-        }
+        // 5. Bottom Feature Highlight Bar
+        $parts[] = 'BOTTOM FEATURE HIGHLIGHT BAR: At the very bottom of the poster, include a clean minimalist row of 3-4 delicate gold outline icons with benefit labels highlighting product quality (e.g., Rich Flavor, Premium Quality, Creamy & Smooth, Special Celebration).';
 
+        // 6. Visual Theme & Render Style
         if (! empty($options['render_style'])) {
             $renderStyleDesc = match ($options['render_style']) {
-                'Studio Product Still' => 'Render style: Studio Product Still — forces sharp focus, clean solid backdrops, and balanced high-end studio lighting.',
-                'Cinematic Marketing' => 'Render style: Cinematic Marketing — adds dynamic volumetric lighting, dramatic depth of field, and a premium editorial look.',
-                'Lifestyle Capture' => 'Render style: Lifestyle Capture — simulates realistic environmental context and natural lighting as if taken by a professional on location.',
-                'Minimalist Graphic Vec' => 'Render style: Minimalist Graphic Vector — simplifies elements into modern flat illustrations, stark layouts, and sharp vector geometries.',
-                default => 'Render style: '.$options['render_style'].'.',
+                'Studio Product Still' => 'Visual Execution: Studio Product Still — pristine solid background, balanced three-point studio lighting, ultra-sharp focus.',
+                'Cinematic Marketing' => 'Visual Execution: Cinematic Marketing — dynamic volumetric rim lighting, rich color grading, shallow depth of field, dramatic editorial polish.',
+                'Lifestyle Capture' => 'Visual Execution: Lifestyle Capture — authentic environmental setting, warm natural sunlight, candid lifestyle depth.',
+                'Minimalist Graphic Vec' => 'Visual Execution: Minimalist Graphic Vector — clean modern layout, sharp vector geometry, bold graphic color contrast.',
+                default => 'Visual Execution: '.$options['render_style'].'.',
             };
             $parts[] = $renderStyleDesc;
         }
 
-        $parts[] = 'Creative direction: '.$prompt;
-        $parts[] = 'Lighting: Professional studio lighting, soft shadows, sharp focus, 8k resolution, vibrant commercial aesthetics, award-winning advertising quality.';
+        // 7. Aspect Ratio & Composition
+        if (! empty($options['aspect_ratio'])) {
+            $ratio = $options['aspect_ratio'];
+            if (! in_array($ratio, ['1:1', '16:9', '9:16'])) {
+                $parts[] = "CUSTOM ASPECT RATIO COMPOSITION: Compose and structure this commercial poster specifically for a {$ratio} aspect ratio layout, keeping all typography, subject, and badges centered with ample padding for clean {$ratio} framing.";
+            }
+        }
+
+        // 8. Composition & Safe Margins
+        $parts[] = 'POSTER COMPOSITION & SAFETY: Masterfully structured visual hierarchy from top to bottom. All text, headline, logo, price seals, and icons must remain strictly inside the inner safe margin (15% margin from top, bottom, and side borders) with 100% crystal-clear readability and zero edge clipping.';
+
+        if (! empty($prompt)) {
+            $parts[] = 'Creative Direction: '.$prompt;
+        }
+
+        $parts[] = 'Lighting & Quality: Flawless commercial advertising photography, dramatic spotlights, opulent reflections, razor-sharp 8k details, luxury magazine cover aesthetic.';
 
         return implode(' ', $parts);
     }

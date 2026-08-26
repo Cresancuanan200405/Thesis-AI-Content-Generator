@@ -37,23 +37,25 @@ return [
 
     'openai' => [
         'api_key' => env('OPENAI_API_KEY'),
+        'admin_key' => env('OPENAI_ADMIN_KEY', env('OPENAI_API_KEY')),
         'organization' => env('OPENAI_ORGANIZATION'),
         'image_model' => env('OPENAI_IMAGE_MODEL', 'dall-e-3'),
         'chat_model' => env('OPENAI_CHAT_MODEL', 'gpt-4o-mini'),
         'size' => env('OPENAI_IMAGE_SIZE', '1024x1024'),
         'quality' => env('OPENAI_IMAGE_QUALITY', 'standard'),
+        'budget_limit' => (float) env('OPENAI_BUDGET_LIMIT', 10.00),
     ],
 
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL', 'http://127.0.0.1:8000').'/auth/google/callback'),
     ],
 
     'facebook' => [
         'client_id' => env('FACEBOOK_CLIENT_ID'),
         'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
-        'redirect' => env('FACEBOOK_REDIRECT_URI', '/auth/facebook/callback'),
+        'redirect' => env('FACEBOOK_REDIRECT_URI', env('APP_URL', 'http://127.0.0.1:8000').'/auth/facebook/callback'),
     ],
 
 ];

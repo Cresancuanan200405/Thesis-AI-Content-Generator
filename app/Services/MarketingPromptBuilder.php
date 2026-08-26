@@ -25,15 +25,17 @@ class MarketingPromptBuilder
             }
         }
 
+        $price = ! empty($payload['price'])
+            ? $payload['price']
+            : ($product && $product->price > 0 ? '$'.number_format((float) $product->price, 2, '.', ',') : null);
+
         $lines = [
-            'Create a marketing asset for the following brief.',
+            'Create a professional marketing asset for the following brief.',
             'Business: '.$business->name,
             'Industry: '.($business->industry ?? 'General'),
             'Category: '.($business->category ?? 'General'),
-            'PRODUCT: '.$productName,
-            'Name: '.$productName,
+            'HERO PRODUCT: '.$productName,
             'Description: '.($product ? $product->description : 'No product description provided.'),
-            'Price: '.($product ? '$'.number_format((float) $product->price, 2, '.', ',') : '$0.00'),
             'Marketing goal: '.($payload['marketing_goal'] ?? 'Increase awareness and engagement'),
             'Content style: '.($contentStyle ? implode(', ', $contentStyle) : 'Not specified'),
             'Brand tone: '.($brandTone ? implode(', ', $brandTone) : 'Not specified'),
@@ -41,6 +43,10 @@ class MarketingPromptBuilder
             'Target audience: '.($payload['target_audience'] ?? $business->target_audience ?? 'General audience'),
             'Unique selling point: '.($payload['unique_selling_point'] ?? $business->unique_selling_point ?? 'Strong value proposition'),
         ];
+
+        if ($price) {
+            $lines[] = 'PRICE TAG: Feature a modern, stylish price badge displaying: '.$price.' cleanly positioned near the product.';
+        }
 
         if (! empty($payload['campaign_name'] ?? null)) {
             $lines[] = 'Campaign name: '.$payload['campaign_name'];
@@ -55,12 +61,14 @@ class MarketingPromptBuilder
         }
 
         if (! empty($payload['tagline'] ?? null)) {
-            $lines[] = 'Tagline: '.$payload['tagline'];
+            $lines[] = 'TAGLINE: "'.$payload['tagline'].'". All typography must be kept within the inner safe zone (15% margin from top and sides) so no letters or words get cropped or clipped.';
         }
 
         if (! empty($payload['include_logo'] ?? null)) {
-            $lines[] = 'Logo integration: Include the business logo in the design, ensuring it seamlessly matches the aesthetic style, color palette, and business identity. Position the logo in a subtle, secondary corner (such as an upper or lower corner) with refined, non-intrusive scaling so that it does not compete with or distract from the hero product as the primary center of attention.';
+            $lines[] = 'BRAND LOGO EMBLEM: Place a sharp, well-defined brand emblem for "'.$business->name.'" in the top-right or top-left corner with clean contrast, ensuring it is cleanly framed without touching the outer canvas borders.';
         }
+
+        $lines[] = 'COMPOSITION & MARGINS: Ensure the hero product is centered with ample breathing room. All text, badges, and logos must remain strictly inside the safe viewing area and never bleed off the canvas edges.';
 
         if (! empty($payload['notes'] ?? null)) {
             $lines[] = 'Additional notes: '.$payload['notes'];

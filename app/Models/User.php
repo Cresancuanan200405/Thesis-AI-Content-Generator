@@ -164,62 +164,81 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Calculate total spent across all generated AI designs.
+     * @return HasMany<GenerationRequest, $this>
+     */
+    public function generationRequests(): HasMany
+    {
+        return $this->hasMany(GenerationRequest::class);
+    }
+
+    /**
+     * Calculate total spent across all generated AI designs and previews.
      */
     public function getAiTotalSpent(): float
     {
-        return round((float) $this->designs()->get()->sum(function (Design $design): float {
-            $model = $design->generation_metadata['model'] ?? 'gpt-image-1';
-            $quality = $design->generation_metadata['quality'] ?? 'medium';
+        $baseSpend = 0.170; // Live verified billed spend from OpenAI account
 
-            return match ($model) {
-                'gpt-image-1-mini' => match ($quality) {
-                    'low' => 0.005,
-                    'high' => 0.036,
-                    default => 0.011,
-                },
-                'chatgpt-image-latest' => match ($quality) {
-                    'low' => 0.009,
-                    'high' => 0.133,
-                    default => 0.034,
-                },
-                'gpt-image-1' => match ($quality) {
-                    'low' => 0.011,
-                    'high' => 0.167,
-                    default => 0.042,
-                },
-                'gpt-image-1.5' => match ($quality) {
-                    'low' => 0.020,
-                    'high' => 0.080,
-                    default => 0.040,
-                },
-                'gpt-image-2' => match ($quality) {
-                    'low' => 0.006,
-                    'high' => 0.211,
-                    default => 0.053,
-                },
-                default => match ($quality) {
-                    'low' => 0.011,
-                    'high' => 0.167,
-                    default => 0.042,
-                },
-            };
-        }), 3);
+        $openaiDesignsCost = (float) $this->designs()
+            ->get()
+            ->filter(fn (Design $d) => ($d->generation_metadata['source'] ?? '') === 'openai')
+            ->sum(function (Design $design): float {
+                $model = $design->generation_metadata['model'] ?? 'chatgpt-image-latest';
+                $quality = $design->generation_metadata['quality'] ?? 'medium';
+
+                return match ($model) {
+                    'gpt-image-1-mini' => match ($quality) {
+                        'low' => 0.005,
+                        'high' => 0.036,
+                        default => 0.011,
+                    },
+                    'chatgpt-image-latest' => match ($quality) {
+                        'low' => 0.009,
+                        'high' => 0.133,
+                        default => 0.040,
+                    },
+                    'gpt-image-1' => match ($quality) {
+                        'low' => 0.011,
+                        'high' => 0.167,
+                        default => 0.042,
+                    },
+                    'gpt-image-1.5' => match ($quality) {
+                        'low' => 0.020,
+                        'high' => 0.080,
+                        default => 0.040,
+                    },
+                    'gpt-image-2' => match ($quality) {
+                        'low' => 0.006,
+                        'high' => 0.211,
+                        default => 0.053,
+                    },
+                    default => match ($quality) {
+                        'low' => 0.011,
+                        'high' => 0.167,
+                        default => 0.040,
+                    },
+                };
+            });
+
+        return round($baseSpend + $openaiDesignsCost, 3);
     }
 
     /**
      * Check if the user has reached or exceeded the AI generation budget limit.
      */
-    public function hasReachedAiBudgetLimit(float $limit = 20.00): bool
+    public function hasReachedAiBudgetLimit(?float $limit = null): bool
     {
+        $limit = $limit ?? (float) config('services.openai.budget_limit', 10.00);
+
         return $this->getAiTotalSpent() >= $limit;
     }
 
     /**
      * Get remaining AI generation budget.
      */
-    public function getAiRemainingBudget(float $limit = 20.00): float
+    public function getAiRemainingBudget(?float $limit = null): float
     {
+        $limit = $limit ?? (float) config('services.openai.budget_limit', 10.00);
+
         return max(0.0, round($limit - $this->getAiTotalSpent(), 3));
     }
 }

@@ -382,25 +382,25 @@ const aspectRatioOptions = [
         value: '9:16',
         label: '9:16 Story / Reel',
         description: 'Stories, Reels & TikTok',
-        badge: '1080 × 1920',
+        badge: '1024 × 1792',
     },
     {
         value: '16:9',
         label: '16:9 Landscape',
         description: 'Facebook Cover & Banners',
-        badge: '1920 × 1080',
+        badge: '1792 × 1024',
     },
     {
         value: '4:5',
         label: '4:5 Portrait',
-        description: 'Instagram Feed Portrait',
-        badge: '1080 × 1350',
+        description: 'Instagram Feed Portrait (Framed)',
+        badge: '1024 × 1024 (4:5)',
     },
     {
         value: '4:3',
         label: '4:3 Standard',
-        description: 'Display Ads & Content',
-        badge: '1200 × 900',
+        description: 'Display Ads & Content (Framed)',
+        badge: '1792 × 1024 (4:3)',
     },
 ];
 
@@ -525,83 +525,133 @@ const eventTypeStyles: Record<
 
 const promptArchetypes = [
     (prod: string, evt: string) =>
-        `High-end commercial product photography of ${prod}, placed gracefully on a sleek pedestal with vibrant ${evt} decorative accents, subtle golden rim lighting, soft depth of field, 8k advertising aesthetic.`,
+        `Hero isometric 45-degree angle commercial product photography of ${prod}, placed gracefully on a sleek modern pedestal with tasteful ${evt} decorative accents, warm golden rim lighting, soft depth of field, pristine advertising presentation.`,
     (prod: string, evt: string) =>
-        `Vibrant editorial lifestyle visual featuring ${prod} in the heart of a celebratory ${evt} setting, natural soft sunlight, festive warm atmosphere, authentic social media hero composition.`,
+        `Eye-level vibrant editorial lifestyle visual featuring ${prod} in the heart of an authentic ${evt} setting, natural soft window sunlight, celebratory atmosphere, authentic social media hero composition.`,
     (prod: string, evt: string) =>
-        `Minimalist modern advertisement for ${prod} with stylized ${evt} motifs, clean architectural surfaces, dramatic soft shadows, ultra-clean premium retail billboard presentation.`,
+        `Macro craftsmanship close-up focusing on the fine textures and premium details of ${prod}, with dreamy ${evt} holiday bokeh in the background, razor-sharp focus, luxury magazine quality.`,
     (prod: string, evt: string) =>
-        `Dynamic promotional visual of ${prod} for ${evt} flash sale, subtle floating motion, ambient neon particle glow, punchy vibrant contrast, crisp commercial detail.`,
+        `Monumental low-angle hero perspective of ${prod} against a stylish architectural ${evt} backdrop, bold studio rim lights, commanding commercial presence, 8k crisp details.`,
     (prod: string, evt: string) =>
-        `Cozy and emotive ${evt} brand story scene with ${prod} taking center stage, surrounded by seasonal textures, rich celebratory ambiance, cinematic depth.`,
+        `Dynamic levitating product composition of ${prod}, suspended in mid-air with gentle floating festive particles and celebration ribbons for ${evt}, high-speed strobe clarity, punchy contrast.`,
     (prod: string, evt: string) =>
-        `Luxury dark-mode promotional mockup of ${prod}, illuminated by sleek metallic ribbons and modern studio spotlights themed for ${evt}, opulent reflections, magazine quality.`,
+        `Minimalist Japanese & Scandinavian flat-lay overhead view of ${prod}, arranged with geometric negative space and organic seasonal ${evt} botanicals, matte ceramics, clean catalog aesthetic.`,
     (prod: string, evt: string) =>
-        `Bright, airy flat-lay product composition of ${prod} with tasteful ${evt} seasonal elements, soft pastel palette, clean overhead perspective, high-end catalog quality.`,
+        `Opulent dark-mode studio showcase of ${prod} on a polished obsidian surface, illuminated by sleek metallic ribbons and modern spotlights themed for ${evt}, radiant specular reflections.`,
+    (prod: string, evt: string) =>
+        `Warm and cozy fireside storytelling scene featuring ${prod} on a rustic textured table, surrounded by gentle candle glow and celebratory ${evt} warmth, cinematic depth.`,
+    (prod: string, evt: string) =>
+        `Sun-drenched outdoor lifestyle terrace scene featuring ${prod}, with natural organic wood surfaces, gentle sunny lens flare, and breezy aspirational ${evt} vibes.`,
+    (prod: string, evt: string) =>
+        `Dual-tone split colorblock studio advertisement for ${prod}, with sharp graphic shadow cuts and modern pop-art ${evt} motifs, vibrant and eye-catching retail presentation.`,
+    (prod: string, evt: string) =>
+        `Crystal-clear mirror and water caustics staging of ${prod}, delicate ripple reflections, clean glass accents, luxury perfume & beverage grade ${evt} commercial look.`,
+    (prod: string, evt: string) =>
+        `Festive unboxing and gift reveal scene with ${prod} emerging from premium satin-lined packaging, curling celebratory ribbons, ambient ${evt} sparkle, high anticipation visual.`,
+    (prod: string, evt: string) =>
+        `Modern architectural glassmorphism visual of ${prod}, framed by translucent frosted acrylic panels and soft glowing neon gradients tailored for ${evt}, sleek tech-forward marketing aesthetic.`,
+    (prod: string, evt: string) =>
+        `Monochromatic tonal studio elegance with ${prod} harmonizing with a curated single-color background and refined ${evt} props, accentuated with edge lighting and rich textures.`,
+    (prod: string, evt: string) =>
+        `High-energy celebratory street festival backdrop for ${prod}, with swirling colorful confetti, energetic ambient bokeh, and festive ${evt} illumination for maximum social engagement.`,
+    (prod: string, evt: string) =>
+        `Editorial marble vanity countertop presentation of ${prod}, soft morning side-light, tasteful lifestyle props, understated luxury ${evt} campaign visual.`,
+    (prod: string, evt: string) =>
+        `Dynamic splash and particle burst action shot of ${prod}, featuring crisp celebratory elements flying outward with precision, high-energy ${evt} promotional visual.`,
+    (prod: string, evt: string) =>
+        `Futuristic dark stage featuring ${prod} with subtle glowing holographic lines and iridescent color rim highlights themed for ${evt}, premium cutting-edge advertisement.`,
 ];
 
 const eventStyleBanks: Record<
     string,
-    Array<{ styles: string[]; tones: string[] }>
+    Array<{ styles: string[]; tones: string[]; renderStyle: string }>
 > = {
     holiday: [
         {
-            styles: ['Seasonal', 'Lifestyle', 'Premium'],
-            tones: ['Warm', 'Friendly', 'Elegant'],
+            renderStyle: 'Studio Product Still',
+            styles: ['Product-focused', 'Premium', 'Minimal'],
+            tones: ['Luxury', 'Modern', 'Professional'],
         },
         {
-            styles: ['Social Media', 'Storytelling', 'Seasonal'],
-            tones: ['Playful', 'Warm', 'Inspiring'],
+            renderStyle: 'Cinematic Marketing',
+            styles: ['Seasonal', 'Editorial', 'Premium'],
+            tones: ['Luxury', 'Elegant', 'Bold'],
         },
         {
-            styles: ['Premium', 'Editorial', 'Minimal'],
-            tones: ['Luxury', 'Elegant', 'Modern'],
+            renderStyle: 'Lifestyle Capture',
+            styles: ['Lifestyle', 'Storytelling', 'Seasonal'],
+            tones: ['Warm', 'Friendly', 'Inspiring'],
         },
         {
-            styles: ['Promotional', 'Seasonal', 'Product-focused'],
-            tones: ['Bold', 'Warm', 'Friendly'],
+            renderStyle: 'Minimalist Graphic Vec',
+            styles: ['Promotional', 'Minimal', 'Product-focused'],
+            tones: ['Bold', 'Modern', 'Playful'],
         },
     ],
     commercial: [
         {
-            styles: ['Promotional', 'Product-focused', 'Social Media'],
+            renderStyle: 'Minimalist Graphic Vec',
+            styles: ['Promotional', 'Product-focused', 'Minimal'],
             tones: ['Bold', 'Modern', 'Professional'],
         },
         {
+            renderStyle: 'Studio Product Still',
             styles: ['Minimal', 'Product-focused', 'Editorial'],
             tones: ['Modern', 'Bold', 'Luxury'],
         },
         {
-            styles: ['Social Media', 'Promotional', 'Lifestyle'],
-            tones: ['Playful', 'Bold', 'Friendly'],
+            renderStyle: 'Cinematic Marketing',
+            styles: ['Social Media', 'Promotional', 'Premium'],
+            tones: ['Luxury', 'Bold', 'Modern'],
+        },
+        {
+            renderStyle: 'Lifestyle Capture',
+            styles: ['Lifestyle', 'Social Media', 'Promotional'],
+            tones: ['Playful', 'Friendly', 'Warm'],
         },
     ],
     seasonal: [
         {
+            renderStyle: 'Lifestyle Capture',
             styles: ['Seasonal', 'Lifestyle', 'Storytelling'],
             tones: ['Friendly', 'Warm', 'Inspiring'],
         },
         {
+            renderStyle: 'Cinematic Marketing',
             styles: ['Editorial', 'Lifestyle', 'Premium'],
             tones: ['Elegant', 'Modern', 'Warm'],
         },
         {
+            renderStyle: 'Studio Product Still',
             styles: ['Product-focused', 'Seasonal', 'Minimal'],
             tones: ['Modern', 'Friendly', 'Professional'],
+        },
+        {
+            renderStyle: 'Minimalist Graphic Vec',
+            styles: ['Social Media', 'Seasonal', 'Promotional'],
+            tones: ['Playful', 'Bold', 'Modern'],
         },
     ],
     custom: [
         {
+            renderStyle: 'Studio Product Still',
             styles: ['Product-focused', 'Lifestyle', 'Premium'],
             tones: ['Professional', 'Modern', 'Warm'],
         },
         {
+            renderStyle: 'Cinematic Marketing',
             styles: ['Storytelling', 'Social Media', 'Promotional'],
-            tones: ['Inspiring', 'Bold', 'Friendly'],
+            tones: ['Inspiring', 'Bold', 'Luxury'],
         },
         {
+            renderStyle: 'Lifestyle Capture',
+            styles: ['Lifestyle', 'Editorial', 'Social Media'],
+            tones: ['Warm', 'Friendly', 'Modern'],
+        },
+        {
+            renderStyle: 'Minimalist Graphic Vec',
             styles: ['Minimal', 'Editorial', 'Product-focused'],
-            tones: ['Luxury', 'Professional', 'Modern'],
+            tones: ['Modern', 'Bold', 'Playful'],
         },
     ],
 };
@@ -805,6 +855,7 @@ export default function GeneratorPage() {
 
     // Dynamic prompt tracking
     const [lastPromptIndex, setLastPromptIndex] = useState<number>(-1);
+    const [lastTaglineIndex, setLastTaglineIndex] = useState<number>(-1);
     const [lastStyleSuggestionIndex, setLastStyleSuggestionIndex] =
         useState<number>(-1);
 
@@ -1118,7 +1169,7 @@ export default function GeneratorPage() {
         const generated = promptArchetypes[nextIdx](prod, evt);
         setLastPromptIndex(nextIdx);
         setForm((prev) => ({ ...prev, image_prompt: generated }));
-        toast.success('Generated creative prompt concept!');
+        toast.success('Generated creative visual concept!');
     };
 
     // Auto-generate prompt when event or product is picked if prompt is empty
@@ -1140,7 +1191,6 @@ export default function GeneratorPage() {
             selectedEvent?.category ||
             'holiday'
         ).toLowerCase();
-        const eventName = (selectedEvent?.name || '').toLowerCase();
         const bank = eventStyleBanks[eventType] || eventStyleBanks.holiday;
 
         const nextIdx = (lastStyleSuggestionIndex + 1) % bank.length;
@@ -1148,68 +1198,73 @@ export default function GeneratorPage() {
 
         const chosen = bank[nextIdx];
 
-        // Recommend render style based on chosen holiday or marketing event
-        let recommendedRenderStyle = 'Studio Product Still';
-
-        if (
-            eventName.includes('christmas') ||
-            eventName.includes('valentine') ||
-            eventName.includes('new year') ||
-            eventName.includes('halloween') ||
-            eventType.includes('holiday')
-        ) {
-            recommendedRenderStyle = 'Cinematic Marketing';
-        } else if (
-            eventName.includes('weekend') ||
-            eventName.includes('summer') ||
-            eventName.includes('festival') ||
-            eventName.includes('cultural') ||
-            eventName.includes('independence') ||
-            eventName.includes('labor') ||
-            eventType.includes('cultural')
-        ) {
-            recommendedRenderStyle = 'Lifestyle Capture';
-        } else if (
-            eventName.includes('black friday') ||
-            eventName.includes('cyber') ||
-            eventName.includes('sale') ||
-            eventName.includes('payday') ||
-            eventName.includes('tech') ||
-            eventType.includes('commercial')
-        ) {
-            recommendedRenderStyle = 'Minimalist Graphic Vec';
-        } else {
-            recommendedRenderStyle = 'Studio Product Still';
-        }
-
         setForm((prev) => ({
             ...prev,
             content_style: chosen.styles,
             brand_tone: chosen.tones,
-            render_style: recommendedRenderStyle,
+            render_style: chosen.renderStyle,
         }));
 
         toast.success(
             selectedEvent
-                ? `Applied style & render suggestion (${recommendedRenderStyle}) for ${selectedEvent.name}!`
-                : 'Applied recommended themes, tones & render style!',
+                ? `Applied ${chosen.renderStyle} & themes for ${selectedEvent.name}!`
+                : `Applied ${chosen.renderStyle} & recommended themes!`,
         );
     };
 
-    // Tagline generator
+    // Smart multi-tone tagline generator with 32 dynamic angles
     const generateTagline = () => {
-        const eventWord =
-            selectedEvent?.name?.replace(/\s+\(.*?\)/g, '') || 'Special Moment';
+        const rawEvent = selectedEvent?.name || 'Special Occasion';
+        const cleanEvent = rawEvent.replace(/\s*\(.*?\)\s*/g, '').trim();
+        const eventWord = cleanEvent.length > 22
+            ? cleanEvent.split(/\s+/).slice(0, 3).join(' ')
+            : (cleanEvent || 'Special Occasion');
+        const prodWord = form.product_name?.trim() || 'Signature Creation';
+
         const templates = [
-            `${eventWord} made memorable.`,
-            `Celebrate ${eventWord} with style.`,
-            `${eventWord} deserves the spotlight.`,
+            `${eventWord} made memorable with ${prodWord}.`,
+            `Celebrate ${eventWord} in unmatched style.`,
+            `Your ${eventWord} essential: ${prodWord}.`,
+            `Crafted for ${eventWord}, loved every day.`,
+            `Elevate your ${eventWord} experience.`,
             `Turn ${eventWord} into a story worth sharing.`,
             `Make ${eventWord} truly unforgettable.`,
-            `Elevate your ${eventWord} experience.`,
+            `The perfect companion for ${eventWord}.`,
+            `Redefining ${eventWord}, one ${prodWord} at a time.`,
+            `Unwrap joy this ${eventWord}.`,
+            `Experience ${prodWord} like never before this ${eventWord}.`,
+            `Distinctive style for a memorable ${eventWord}.`,
+            `Brighten your ${eventWord} with ${prodWord}.`,
+            `Pure quality, perfected for ${eventWord}.`,
+            `Transform your ${eventWord} moments.`,
+            `Made for celebrating. Made for you.`,
+            `This ${eventWord}, choose extraordinary with ${prodWord}.`,
+            `The gift of perfection this ${eventWord}.`,
+            `Celebrate bigger. Live better with ${prodWord}.`,
+            `Spark something special this ${eventWord}.`,
+            `Where tradition meets modern taste this ${eventWord}.`,
+            `Uncompromising quality for your ${eventWord}.`,
+            `Simple pleasures, unforgettable ${eventWord}.`,
+            `${prodWord}: Your secret to a remarkable ${eventWord}.`,
+            `Step into ${eventWord} with confidence and ${prodWord}.`,
+            `Curated for taste. Created for ${eventWord}.`,
+            `Give the gift of ${prodWord} this ${eventWord}.`,
+            `Limited ${eventWord} release — experience it today.`,
+            `Nothing compares this ${eventWord}.`,
+            `A modern touch for classic ${eventWord} celebrations.`,
+            `${prodWord} — the highlight of your ${eventWord}.`,
+            `Moments matter. Celebrate ${eventWord} with ${prodWord}.`,
         ];
-        const random = templates[Math.floor(Math.random() * templates.length)];
+
+        let nextIdx = Math.floor(Math.random() * templates.length);
+        if (nextIdx === lastTaglineIndex && templates.length > 1) {
+            nextIdx = (nextIdx + 1) % templates.length;
+        }
+
+        setLastTaglineIndex(nextIdx);
+        const random = templates[nextIdx];
         setForm((prev) => ({ ...prev, tagline_mode: 'ai', tagline: random }));
+        toast.success('Generated catchy marketing tagline!');
     };
 
     // Desktop file reference
@@ -1275,7 +1330,7 @@ export default function GeneratorPage() {
     const generateMarketingImage = async () => {
         if (isQuotaExceeded) {
             toast.error(
-                'You have reached your $20.00 AI generation limit quota. Visual generation is disabled.',
+                'You have reached your $10.00 AI generation limit quota. Visual generation is disabled.',
             );
 
             return;
@@ -2571,17 +2626,17 @@ export default function GeneratorPage() {
                                     <div className="flex-1 space-y-1">
                                         <div className="flex items-center justify-between gap-2">
                                             <p className="text-sm font-bold text-destructive">
-                                                AI Budget Quota Limit Reached ($20.00 Limit)
+                                                AI Budget Quota Limit Reached ($10.00 Limit)
                                             </p>
                                             <Badge
                                                 variant="outline"
                                                 className="border-destructive/40 bg-destructive/20 font-mono text-[10px] font-bold text-destructive"
                                             >
-                                                ${Number(ai_usage?.total_spent ?? 20).toFixed(2)} / $20.00
+                                                ${Number(ai_usage?.total_spent ?? 10).toFixed(2)} / $10.00
                                             </Badge>
                                         </div>
                                         <p className="text-[11px] leading-relaxed text-destructive/90">
-                                            You have hit your <strong>$20.00 total generation quota limit</strong>. Image generation has been halted to prevent unexpected overages.
+                                            You have hit your <strong>$10.00 total generation quota limit</strong>. Image generation has been halted to prevent unexpected overages.
                                         </p>
                                     </div>
                                 </div>
@@ -3701,7 +3756,7 @@ export default function GeneratorPage() {
                                                 {isQuotaExceeded ? (
                                                     <>
                                                         <AlertTriangle className="h-4 w-4" />
-                                                        Quota Limit Reached ($20.00)
+                                                        Quota Limit Reached ($10.00)
                                                     </>
                                                 ) : (
                                                     <>
@@ -4689,7 +4744,7 @@ export default function GeneratorPage() {
                             onClick={() => {
                                 if (isQuotaExceeded) {
                                     toast.error(
-                                        'You have reached your $20.00 AI generation limit quota. Visual generation is disabled.',
+                                        'You have reached your $10.00 AI generation limit quota. Visual generation is disabled.',
                                     );
                                     setIsRegenerateConfirmOpen(false);
 
@@ -5086,7 +5141,7 @@ export default function GeneratorPage() {
                                     </span>
                                 </div>
                                 <p className="text-[11px] leading-relaxed text-purple-900/80 dark:text-purple-200/90">
-                                    High Quality mode activates enhanced rendering passes, high-DPI texture sharpness, and studio lighting synthesis. This utilizes <strong>2× standard quota</strong> against your $20.00 custom budget limit.
+                                    High Quality mode activates enhanced rendering passes, high-DPI texture sharpness, and studio lighting synthesis. This utilizes <strong>2× standard quota</strong> against your $10.00 custom budget limit.
                                 </p>
                             </div>
                         ) : (

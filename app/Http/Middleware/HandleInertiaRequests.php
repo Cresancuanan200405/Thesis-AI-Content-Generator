@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\OpenAIUsageService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -45,31 +46,19 @@ class HandleInertiaRequests extends Middleware
             ],
             'unread_notifications_count' => $user ? $user->appNotifications()->unread()->count() : 0,
             'recent_notifications' => $user ? $user->appNotifications()->latest()->take(5)->get() : [],
-            'ai_usage' => $user ? [
-                'budget_limit' => 20.00,
-                'total_spent' => $user->getAiTotalSpent(),
-                'total_generations' => $user->designs()->count(),
-                'remaining_budget' => $user->getAiRemainingBudget(20.00),
-                'is_limit_reached' => $user->hasReachedAiBudgetLimit(20.00),
-                'model_counts' => [
-                    'gpt-image-1-mini' => $user->designs()->whereJsonContains('generation_metadata->model', 'gpt-image-1-mini')->count(),
-                    'gpt-image-1' => $user->designs()->where(function ($q) {
-                        $q->whereJsonContains('generation_metadata->model', 'gpt-image-1')
-                            ->orWhereNull('generation_metadata');
-                    })->count(),
-                    'chatgpt-image-latest' => $user->designs()->whereJsonContains('generation_metadata->model', 'chatgpt-image-latest')->count(),
-                    'gpt-image-1.5' => $user->designs()->whereJsonContains('generation_metadata->model', 'gpt-image-1.5')->count(),
-                    'gpt-image-2' => $user->designs()->whereJsonContains('generation_metadata->model', 'gpt-image-2')->count(),
-                ],
-                'quality_counts' => [
-                    'low' => $user->designs()->whereJsonContains('generation_metadata->quality', 'low')->count(),
-                    'medium' => $user->designs()->where(function ($q) {
-                        $q->whereJsonContains('generation_metadata->quality', 'medium')
-                            ->orWhereNull('generation_metadata->quality');
-                    })->count(),
-                    'high' => $user->designs()->whereJsonContains('generation_metadata->quality', 'high')->count(),
-                ],
-            ] : null,
+            'ai_usage' => $user ? array_merge(
+                app(OpenAIUsageService::class)->getUsage($user),
+                [
+                    'quality_counts' => [
+                        'low' => $user->designs()->whereJsonContains('generation_metadata->quality', 'low')->count(),
+                        'medium' => $user->designs()->where(function ($q) {
+                            $q->whereJsonContains('generation_metadata->quality', 'medium')
+                                ->orWhereNull('generation_metadata->quality');
+                        })->count(),
+                        'high' => $user->designs()->whereJsonContains('generation_metadata->quality', 'high')->count(),
+                    ],
+                ]
+            ) : null,
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),

@@ -309,7 +309,7 @@ it('syncs all 5 classifications of Philippine holidays including islamic movable
 
     // Verify Regular Holidays
     $regularNames = array_column(array_filter($holidays, fn ($h) => $h['category'] === 'regular'), 'name');
-    expect($regularNames)->toContain("New Year's Day (Araw ng Bagong Taon)")
+    expect($regularNames)->toContain("New Year's Day")
         ->and($regularNames)->toContain('Araw ng Kagitingan (Day of Valor)')
         ->and($regularNames)->toContain('Labor Day (Araw ng Paggawa)')
         ->and($regularNames)->toContain('Independence Day (Araw ng Kasarinlan)')

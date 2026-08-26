@@ -359,7 +359,7 @@ class GeneratorController extends Controller
                 'price' => $request->input('price'),
                 'render_style' => $request->input('render_style', 'Studio Product Still'),
                 'aspect_ratio' => $request->input('aspect_ratio', '1:1'),
-                'image_model' => $request->input('image_model', 'gpt-image-1'),
+                'image_model' => $request->input('image_model', 'chatgpt-image-latest'),
                 'image_quality' => $request->input('image_quality', 'medium'),
                 'message' => 'Visual creative generated successfully.',
             ]);
@@ -368,7 +368,7 @@ class GeneratorController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Your visual creative could not be synthesized right now. Please try again.',
+                'message' => $e->getMessage() ?: 'Your visual creative could not be synthesized right now. Please try again.',
             ], 500);
         }
     }

@@ -8,8 +8,10 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\AbstractProvider;
 use Symfony\Component\HttpFoundation\RedirectResponse as SymfonyRedirectResponse;
 use Throwable;
 
@@ -34,9 +36,10 @@ class SocialAuthController extends Controller
         $clientId = config("services.{$provider}.client_id");
         $clientSecret = config("services.{$provider}.client_secret");
 
-        // If credentials are not set in .env (common in development / demo environments)
         if (empty($clientId) || empty($clientSecret)) {
-            return $this->handleDevSimulation($provider);
+            $providerName = ucfirst($provider);
+
+            return redirect()->route('login')->with('error', "{$providerName} Sign-In is not configured yet. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your .env file.");
         }
 
         try {
@@ -58,11 +61,16 @@ class SocialAuthController extends Controller
         }
 
         try {
-            $socialUser = Socialite::driver($provider)->user();
+            /** @var AbstractProvider $driver */
+            $driver = Socialite::driver($provider);
+            if (method_exists($driver, 'stateless')) {
+                $driver = $driver->stateless();
+            }
+            $socialUser = $driver->user();
         } catch (Throwable $e) {
-            report($e);
+            Log::error("Social auth {$provider} callback error: ".$e->getMessage());
 
-            return redirect()->route('login')->with('error', "Authentication with {$provider} failed or was cancelled.");
+            return redirect()->route('login')->with('error', "Authentication with {$provider} failed: ".$e->getMessage());
         }
 
         $socialId = $socialUser->getId();
@@ -114,36 +122,5 @@ class SocialAuthController extends Controller
         }
 
         return redirect()->intended(route('dashboard'))->with('success', "Welcome back, {$user->name}!");
-    }
-
-    /**
-     * Development mode simulation for local testing when OAuth client credentials are not yet configured.
-     */
-    protected function handleDevSimulation(string $provider): RedirectResponse
-    {
-        $providerName = ucfirst($provider);
-        $email = "developer.{$provider}@example.com";
-        $name = "{$providerName} Demo User";
-
-        $user = User::where('email', $email)->first();
-
-        if (! $user) {
-            $user = User::create([
-                'name' => $name,
-                'email' => $email,
-                'password' => Hash::make('password123'),
-                'provider_name' => $provider,
-                'provider_id' => "demo_{$provider}_".Str::random(8),
-                'avatar' => null,
-                'email_verified_at' => now(),
-                'onboarding_completed' => true,
-            ]);
-        }
-
-        Auth::login($user, true);
-
-        request()->session()->regenerate();
-
-        return redirect()->intended(route('dashboard'))->with('success', "Signed in as {$name} (Local {$providerName} simulation mode).");
     }
 }

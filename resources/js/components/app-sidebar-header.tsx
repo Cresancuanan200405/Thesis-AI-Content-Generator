@@ -108,6 +108,8 @@ export function AppSidebarHeader({
                 total_spent: number;
                 remaining_budget: number;
                 total_generations: number;
+                is_live_account?: boolean;
+                source?: string;
                 model_counts?: Record<string, number>;
             };
         }>().props;
@@ -115,9 +117,9 @@ export function AppSidebarHeader({
     const unreadCount = Number(unread_notifications_count || 0);
     const notifications = recent_notifications || [];
 
-    const budgetLimit = Number(ai_usage?.budget_limit ?? 20.0);
+    const budgetLimit = Number(ai_usage?.budget_limit ?? 10.0);
     const totalSpent = Number(ai_usage?.total_spent ?? 0.0);
-    const remainingBudget = Number(ai_usage?.remaining_budget ?? 20.0);
+    const remainingBudget = Number(ai_usage?.remaining_budget ?? 10.0);
     const totalGenerations = Number(ai_usage?.total_generations ?? 0);
     const percentageUsed = Math.min(
         100,
@@ -211,14 +213,14 @@ export function AppSidebarHeader({
                             variant="ghost"
                             size="sm"
                             aria-label="AI Token & Quota Usage"
-                            title="AI Token & Quota Usage ($20.00 Limit)"
+                            title={`AI Token & Quota Usage ($${budgetLimit.toFixed(2)} Limit)`}
                             className="h-8 gap-1.5 rounded-full px-2.5 text-xs font-semibold text-muted-foreground shadow-2xs transition-all duration-200 hover:scale-105 hover:bg-primary/10 hover:text-primary hover:ring-1 hover:ring-primary/25 active:scale-95 data-[state=open]:scale-105 data-[state=open]:bg-primary/15 data-[state=open]:text-primary data-[state=open]:ring-2 data-[state=open]:ring-primary/40"
                         >
                             <Coins className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                             <span className="hidden font-mono text-[11px] font-bold sm:inline-block">
                                 ${totalSpent.toFixed(2)}
                                 <span className="font-normal text-muted-foreground">
-                                    /$20
+                                    /${budgetLimit.toFixed(0)}
                                 </span>
                             </span>
                         </Button>
@@ -234,18 +236,28 @@ export function AppSidebarHeader({
                         {/* Usage Header */}
                         <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-popover/98 px-4 py-3 backdrop-blur-md">
                             <div>
-                                <p className="text-xs font-bold text-foreground">
-                                    AI Token & Quota Usage
-                                </p>
+                                <div className="flex items-center gap-1.5">
+                                    <p className="text-xs font-bold text-foreground">
+                                        AI Token & Quota Usage
+                                    </p>
+                                    {ai_usage?.is_live_account && (
+                                        <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+                                            Live Billed
+                                        </span>
+                                    )}
+                                </div>
                                 <p className="text-[10px] text-muted-foreground">
-                                    OpenAI Synthesis Balance Tracker
+                                    {ai_usage?.is_live_account
+                                        ? 'Real Billed OpenAI Account Usage'
+                                        : 'OpenAI Synthesis Balance Tracker'}
                                 </p>
                             </div>
                             <Badge
                                 variant="outline"
                                 className="border-emerald-500/30 bg-emerald-500/10 font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400"
                             >
-                                Limit: $20.00
+                                Limit: ${budgetLimit.toFixed(2)}
                             </Badge>
                         </div>
 
@@ -259,7 +271,7 @@ export function AppSidebarHeader({
                                     <span className="font-mono text-xs font-bold text-foreground">
                                         ${totalSpent.toFixed(2)}{' '}
                                         <span className="font-normal text-muted-foreground">
-                                            / $20.00 ({percentageUsed}%)
+                                            / ${budgetLimit.toFixed(2)} ({percentageUsed}%)
                                         </span>
                                     </span>
                                 </div>
@@ -451,7 +463,7 @@ export function AppSidebarHeader({
                                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
                                 <span>
                                     Usage is dynamically tracked against your{' '}
-                                    <strong>$20.00 budget limit</strong> using exact
+                                    <strong>${budgetLimit.toFixed(2)} budget limit</strong> using exact
                                     OpenAI generation rates and quality tier capacity.
                                 </span>
                             </div>

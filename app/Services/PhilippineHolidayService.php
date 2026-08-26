@@ -76,7 +76,7 @@ class PhilippineHolidayService
 
         // New Year's Day (Jan 1)
         $holidays[] = $this->createHolidayItem(
-            name: "New Year's Day (Araw ng Bagong Taon)",
+            name: "New Year's Day",
             date: "{$year}-01-01",
             category: 'regular',
             type: 'holiday',
@@ -265,9 +265,9 @@ class PhilippineHolidayService
             proclamationNo: 'Proclamation No. 727'
         );
 
-        // Last Day of the Year (Dec 31)
+        // New Year's Eve (Dec 31)
         $holidays[] = $this->createHolidayItem(
-            name: 'Last Day of the Year (New Year’s Eve)',
+            name: "New Year's Eve",
             date: "{$year}-12-31",
             category: 'special_non_working',
             type: 'holiday',
@@ -428,13 +428,21 @@ class PhilippineHolidayService
     {
         try {
             $existing = Event::query()
-                ->where('name', $holiday['name'])
                 ->where('date', $holiday['date'])
-                ->where('country', $holiday['country'])
+                ->where('type', $holiday['type'])
+                ->where('is_global', true)
                 ->first();
+
+            if (! $existing) {
+                $existing = Event::query()
+                    ->where('name', $holiday['name'])
+                    ->where('date', $holiday['date'])
+                    ->first();
+            }
 
             if ($existing) {
                 $existing->update([
+                    'name' => $holiday['name'],
                     'type' => $holiday['type'],
                     'category' => $holiday['category'],
                     'description' => $holiday['description'],
