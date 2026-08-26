@@ -487,7 +487,7 @@ export default function ProductsIndexPage({
                                                                 e.preventDefault();
                                                                 e.stopPropagation();
                                                                 router.visit(
-                                                                    `/generator?product_name=${encodeURIComponent(product.name)}&price=${encodeURIComponent(product.price || '')}`,
+                                                                    `/generator?product_id=${product.id}&product_name=${encodeURIComponent(product.name)}&price=${encodeURIComponent(product.price || '')}`,
                                                                 );
                                                             }}
                                                             className="cursor-pointer gap-2 text-xs font-medium"
@@ -644,7 +644,7 @@ export default function ProductsIndexPage({
                                                 className="hidden h-7 rounded-lg text-[11px] font-semibold shadow-none sm:inline-flex"
                                             >
                                                 <Link
-                                                    href={`/generator?product_name=${encodeURIComponent(product.name)}&price=${encodeURIComponent(product.price || '')}`}
+                                                    href={`/generator?product_id=${product.id}&product_name=${encodeURIComponent(product.name)}&price=${encodeURIComponent(product.price || '')}`}
                                                 >
                                                     <Sparkles className="mr-1 h-3 w-3 text-primary" />
                                                     Generate
@@ -976,7 +976,7 @@ export default function ProductsIndexPage({
                                         className="h-9 cursor-pointer gap-2 bg-primary px-4 text-xs font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:scale-105 hover:bg-primary/90"
                                     >
                                         <Link
-                                            href={`/generator?product_name=${encodeURIComponent(previewProduct.name)}&price=${encodeURIComponent(previewProduct.price || '')}`}
+                                            href={`/generator?product_id=${previewProduct.id}&product_name=${encodeURIComponent(previewProduct.name)}&price=${encodeURIComponent(previewProduct.price || '')}`}
                                         >
                                             <Sparkles className="h-4 w-4" />
                                             Generate AI Visuals

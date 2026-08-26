@@ -239,8 +239,7 @@ it('marketing prompt builder includes product information', function () {
         'brand_tone' => ['Warm'],
     ], $business);
 
-    expect($prompt)->toContain('PRODUCT:')
-        ->and($prompt)->toContain('Name: Signature Candle')
+    expect($prompt)->toContain('Hero Product: Signature Candle')
         ->and($prompt)->toContain('Description: Premium soy candle with cedar notes.')
         ->and($prompt)->toContain('Price: $49.99');
 });

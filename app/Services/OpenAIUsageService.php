@@ -37,7 +37,7 @@ class OpenAIUsageService
         }
 
         try {
-            return Cache::remember('openai_live_org_usage', 60, function () use ($user, $budgetLimit): array {
+            return Cache::remember('openai_live_org_usage_'.$user->id, 60, function () use ($user, $budgetLimit): array {
                 $localSpent = $user->getAiTotalSpent();
                 $openaiDesignsCount = $user->designs()
                     ->get()

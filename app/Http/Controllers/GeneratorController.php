@@ -125,8 +125,9 @@ class GeneratorController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        if ($user->hasReachedAiBudgetLimit(20.00)) {
-            return redirect()->route('generator.index')->with('error', 'You have reached your $20.00 AI generation limit quota. Visual generation is disabled.');
+        $budgetLimit = (float) config('services.openai.budget_limit', 10.00);
+        if ($user->hasReachedAiBudgetLimit($budgetLimit)) {
+            return redirect()->route('generator.index')->with('error', 'You have reached your $'.number_format($budgetLimit, 2).' AI generation limit quota. Visual generation is disabled.');
         }
 
         /** @var Business $business */
@@ -178,8 +179,10 @@ class GeneratorController extends Controller
             'status' => 'processing',
         ]);
 
+        $openAIService = app(OpenAIImageService::class);
+
         try {
-            $generatedImagePath = app(OpenAIImageService::class)->generate($prompt, [
+            $generatedImagePath = $openAIService->generate($prompt, [
                 // Step 1 — Product & Campaign
                 'product_name' => $payload['product_name'],
                 'product_description' => $product?->description,
@@ -200,7 +203,7 @@ class GeneratorController extends Controller
                 'tagline_mode' => $payload['tagline_mode'] ?? 'ai',
                 'include_logo' => $includeLogo,
                 'aspect_ratio' => $payload['aspect_ratio'] ?? '1:1',
-                'image_model' => $payload['image_model'] ?? 'gpt-image-1',
+                'image_model' => $payload['image_model'] ?? 'gpt-image-2',
 
                 // Onboarding / Business Context
                 'business_name' => $business->name,
@@ -243,6 +246,7 @@ class GeneratorController extends Controller
             'product_id' => $payload['product_id'] ?? null,
             'product_name' => $payload['product_name'],
             'prompt' => $prompt,
+            'price' => ! empty($payload['price']) ? (float) preg_replace('/[^0-9.]/', '', (string) $payload['price']) : null,
             'brand_tone' => $payload['brand_tone'] ? implode(', ', $payload['brand_tone']) : null,
             'visual_theme' => $payload['content_style'] ? implode(', ', $payload['content_style']) : null,
             'tagline' => $payload['tagline'] ?? null,
@@ -251,10 +255,17 @@ class GeneratorController extends Controller
             'generated_image_path' => $generatedImagePath,
             'generation_metadata' => [
                 'source' => 'openai',
-                'model' => $payload['image_model'] ?? config('services.openai.image_model', 'dall-e-3'),
+                'model' => $payload['image_model'] ?? 'gpt-image-2',
                 'quality' => $payload['image_quality'] ?? 'medium',
                 'render_style' => $payload['render_style'] ?? 'Studio Product Still',
+                'aspect_ratio' => $payload['aspect_ratio'] ?? '1:1',
+                'include_logo' => $includeLogo,
+                'generation_mode' => 'PRODUCT_PRESERVING',
+                'prompt_version' => 'modular_v3',
+                'generation_meta' => $openAIService->getLastGenerationMetadata(),
+                'reference_blueprint' => $openAIService->getLastReferenceBlueprint(),
                 'generation_request_id' => $generationRequest->id,
+                'timestamp' => now()->toIso8601String(),
             ],
             'status' => 'completed',
         ]);
@@ -273,11 +284,12 @@ class GeneratorController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        if ($user->hasReachedAiBudgetLimit(20.00)) {
+        $budgetLimit = (float) config('services.openai.budget_limit', 10.00);
+        if ($user->hasReachedAiBudgetLimit($budgetLimit)) {
             return response()->json([
                 'success' => false,
                 'quota_exceeded' => true,
-                'message' => 'You have reached your $20.00 AI generation limit quota. Visual generation is disabled.',
+                'message' => 'You have reached your $'.number_format($budgetLimit, 2).' AI generation limit quota. Visual generation is disabled.',
             ], 403);
         }
 
@@ -337,7 +349,7 @@ class GeneratorController extends Controller
                 'tagline_mode' => $request->input('tagline_mode', 'ai'),
                 'include_logo' => $includeLogo,
                 'aspect_ratio' => $request->input('aspect_ratio', '1:1'),
-                'image_model' => $request->input('image_model', 'gpt-image-1'),
+                'image_model' => $request->input('image_model', 'gpt-image-2'),
                 'business_name' => $business->name,
                 'business_industry' => $business->industry,
                 'business_description' => $business->description,
@@ -349,6 +361,9 @@ class GeneratorController extends Controller
                 'logo_path' => $logoPath,
             ]);
 
+            $blueprint = $openAIService->getLastReferenceBlueprint();
+            $genMeta = $openAIService->getLastGenerationMetadata();
+
             return response()->json([
                 'success' => true,
                 'image_url' => asset('storage/'.$generatedImagePath),
@@ -359,8 +374,10 @@ class GeneratorController extends Controller
                 'price' => $request->input('price'),
                 'render_style' => $request->input('render_style', 'Studio Product Still'),
                 'aspect_ratio' => $request->input('aspect_ratio', '1:1'),
-                'image_model' => $request->input('image_model', 'chatgpt-image-latest'),
+                'image_model' => $request->input('image_model', 'gpt-image-2'),
                 'image_quality' => $request->input('image_quality', 'medium'),
+                'reference_blueprint' => $blueprint,
+                'generation_meta' => $genMeta,
                 'message' => 'Visual creative generated successfully.',
             ]);
         } catch (\Throwable $e) {

@@ -18,8 +18,9 @@ class DesignRegenerationService
     {
         $user = $design->user;
 
-        if ($user && $user->hasReachedAiBudgetLimit(20.00)) {
-            throw new RuntimeException('You have reached your $20.00 AI generation limit quota. Visual regeneration is disabled.');
+        $budgetLimit = (float) config('services.openai.budget_limit', 10.00);
+        if ($user && $user->hasReachedAiBudgetLimit($budgetLimit)) {
+            throw new RuntimeException('You have reached your $'.number_format($budgetLimit, 2).' AI generation limit quota. Visual regeneration is disabled.');
         }
 
         $business = $design->business ?? $user->business()->firstOrFail();

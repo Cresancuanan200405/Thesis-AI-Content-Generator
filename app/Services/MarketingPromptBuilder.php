@@ -8,6 +8,8 @@ use App\Models\Product;
 class MarketingPromptBuilder
 {
     /**
+     * Build the user content brief from form payload and business information.
+     *
      * @param  array<string, mixed>  $payload
      */
     public function build(array $payload, Business $business): string
@@ -15,12 +17,12 @@ class MarketingPromptBuilder
         $contentStyle = is_array($payload['content_style'] ?? null) ? array_values($payload['content_style']) : [];
         $brandTone = is_array($payload['brand_tone'] ?? null) ? array_values($payload['brand_tone']) : [];
 
-        $productName = 'Custom product';
+        $productName = $payload['product_name'] ?? 'Product';
         $product = null;
 
         if (! empty($payload['product_id'])) {
             $product = Product::query()->whereKey($payload['product_id'])->first();
-            if ($product) {
+            if ($product && empty($payload['product_name'])) {
                 $productName = $product->name;
             }
         }
@@ -29,49 +31,43 @@ class MarketingPromptBuilder
             ? $payload['price']
             : ($product && $product->price > 0 ? '$'.number_format((float) $product->price, 2, '.', ',') : null);
 
-        $lines = [
-            'Create a professional marketing asset for the following brief.',
-            'Business: '.$business->name,
-            'Industry: '.($business->industry ?? 'General'),
-            'Category: '.($business->category ?? 'General'),
-            'HERO PRODUCT: '.$productName,
-            'Description: '.($product ? $product->description : 'No product description provided.'),
-            'Marketing goal: '.($payload['marketing_goal'] ?? 'Increase awareness and engagement'),
-            'Content style: '.($contentStyle ? implode(', ', $contentStyle) : 'Not specified'),
-            'Brand tone: '.($brandTone ? implode(', ', $brandTone) : 'Not specified'),
-            'Render style: '.($payload['render_style'] ?? 'Studio Product Still'),
-            'Target audience: '.($payload['target_audience'] ?? $business->target_audience ?? 'General audience'),
-            'Unique selling point: '.($payload['unique_selling_point'] ?? $business->unique_selling_point ?? 'Strong value proposition'),
-        ];
+        $lines = [];
+        $lines[] = 'PROMOTIONAL ADVERTISEMENT BRIEF:';
+        $lines[] = '• Hero Product: '.$productName;
 
-        if ($price) {
-            $lines[] = 'PRICE TAG: Feature a modern, stylish price badge displaying: '.$price.' cleanly positioned near the product.';
+        $desc = $payload['product_description'] ?? ($product ? $product->description : null);
+        if (! empty($desc)) {
+            $lines[] = '• Description: '.$desc;
         }
 
-        if (! empty($payload['campaign_name'] ?? null)) {
-            $lines[] = 'Campaign name: '.$payload['campaign_name'];
+        if (! empty($price)) {
+            $lines[] = '• Price: '.$price;
         }
 
-        if (! empty($payload['campaign_objective'] ?? null)) {
-            $lines[] = 'Campaign objective: '.$payload['campaign_objective'];
-        }
-
-        if (! empty($payload['campaign_target_audience'] ?? null)) {
-            $lines[] = 'Campaign target audience: '.$payload['campaign_target_audience'];
+        if (! empty($payload['event_name'] ?? null)) {
+            $lines[] = '• Event/Holiday: '.$payload['event_name'];
         }
 
         if (! empty($payload['tagline'] ?? null)) {
-            $lines[] = 'TAGLINE: "'.$payload['tagline'].'". All typography must be kept within the inner safe zone (15% margin from top and sides) so no letters or words get cropped or clipped.';
+            $lines[] = '• Headline/Tagline: "'.$payload['tagline'].'"';
         }
 
-        if (! empty($payload['include_logo'] ?? null)) {
-            $lines[] = 'BRAND LOGO EMBLEM: Place a sharp, well-defined brand emblem for "'.$business->name.'" in the top-right or top-left corner with clean contrast, ensuring it is cleanly framed without touching the outer canvas borders.';
+        if (! empty($payload['campaign_name'] ?? null)) {
+            $lines[] = '• Campaign: '.$payload['campaign_name'];
         }
 
-        $lines[] = 'COMPOSITION & MARGINS: Ensure the hero product is centered with ample breathing room. All text, badges, and logos must remain strictly inside the safe viewing area and never bleed off the canvas edges.';
+        $lines[] = '• Brand: '.$business->name.($business->industry ? ' ('.$business->industry.')' : '');
+
+        if (! empty($contentStyle)) {
+            $lines[] = '• Content Style Tags: '.implode(', ', $contentStyle);
+        }
+
+        if (! empty($brandTone)) {
+            $lines[] = '• Brand Tone: '.implode(', ', $brandTone);
+        }
 
         if (! empty($payload['notes'] ?? null)) {
-            $lines[] = 'Additional notes: '.$payload['notes'];
+            $lines[] = '• Specific User Instructions: '.$payload['notes'];
         }
 
         return implode("\n", $lines);

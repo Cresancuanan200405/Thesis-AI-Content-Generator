@@ -176,7 +176,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getAiTotalSpent(): float
     {
-        $baseSpend = 0.170; // Live verified billed spend from OpenAI account
+        $baseSpend = (float) config('services.openai.baseline_spend', 0.85);
 
         $openaiDesignsCost = (float) $this->designs()
             ->get()

@@ -305,14 +305,23 @@ class DesignController extends Controller
             'tagline_mode' => $request->input('tagline_mode', 'ai'),
             'reference_image_path' => $referenceImagePath,
             'generated_image_path' => $generatedImagePath,
-            'generation_metadata' => [
-                'source' => 'openai',
-                'model' => $request->input('image_model') ?: config('services.openai.image_model', 'gpt-image-1'),
-                'quality' => $request->input('image_quality', 'medium'),
-                'render_style' => $request->input('render_style', 'Studio Product Still'),
-                'include_logo' => $includeLogo,
-                'aspect_ratio' => $aspectRatio,
-            ],
+            'generation_metadata' => array_merge(
+                [
+                    'source' => 'openai',
+                    'model' => $request->input('image_model') ?: config('services.openai.image_model', 'gpt-image-2'),
+                    'model_name' => ($request->input('image_model') === 'gpt-image-2' || ! $request->input('image_model')) ? 'GPT-Image-2' : $request->input('image_model'),
+                    'generation_method' => $referenceImagePath ? 'image_to_image_edit' : 'text_to_image',
+                    'generation_mode' => 'PRODUCT_PRESERVING',
+                    'prompt_version' => 'marketing-pipeline-v1',
+                    'product_preserved' => (bool) $referenceImagePath,
+                    'quality' => $request->input('image_quality', 'medium'),
+                    'render_style' => $request->input('render_style', 'Studio Product Still'),
+                    'include_logo' => $includeLogo,
+                    'aspect_ratio' => $aspectRatio,
+                    'status' => 'completed',
+                ],
+                $this->openAIImageService->getLastGenerationMetadata() ?: []
+            ),
             'status' => 'completed',
         ]);
 
@@ -472,8 +481,9 @@ class DesignController extends Controller
 
         /** @var User $user */
         $user = auth()->user();
-        if ($user && $user->hasReachedAiBudgetLimit(20.00)) {
-            return redirect()->route('designs.index')->with('error', 'You have reached your $20.00 AI generation limit quota. Visual regeneration is disabled.');
+        $budgetLimit = (float) config('services.openai.budget_limit', 10.00);
+        if ($user && $user->hasReachedAiBudgetLimit($budgetLimit)) {
+            return redirect()->route('designs.index')->with('error', 'You have reached your $'.number_format($budgetLimit, 2).' AI generation limit quota. Visual regeneration is disabled.');
         }
 
         try {

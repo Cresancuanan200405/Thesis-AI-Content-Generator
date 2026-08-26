@@ -171,10 +171,56 @@ export const EXACT_MODEL_QUALITY_PRICING: Record<
 
 const imageModelOptions: ImageModelOption[] = [
     {
+        value: 'gpt-image-2',
+        label: 'GPT-Image-2',
+        tag: 'Recommended',
+        speed: 'Typical (~6-9s)',
+        quality: 'Photorealistic Pro',
+        price: '$0.053 / gen',
+        pricePhp: '~₱3.05',
+        description:
+            'OpenAI flagship engine for photorealistic campaigns, billboard visuals, and luxury lookbooks with direct image input support.',
+        outcome:
+            'Flawless commercial realism, fine typography synthesis, ray-traced shadows, and studio finish.',
+        badgeColor:
+            'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+        isRecommended: true,
+    },
+    {
+        value: 'gpt-image-1.5',
+        label: 'GPT-Image-1.5',
+        tag: 'Previous',
+        speed: 'Typical (~5-7s)',
+        quality: 'High Detail',
+        price: '$0.040 / gen',
+        pricePhp: '~₱2.30',
+        description:
+            'Previous generation rendering for intricate textures, micro-details, and elegant depth.',
+        outcome:
+            'Studio reflections (glass, metal, fabric) and fine textured depth-of-field.',
+        badgeColor:
+            'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    },
+    {
+        value: 'gpt-image-1',
+        label: 'GPT-Image-1',
+        tag: 'Previous',
+        speed: 'Typical (~4-6s)',
+        quality: 'Commercial Standard',
+        price: '$0.042 / gen',
+        pricePhp: '~₱2.42',
+        description:
+            'Previous commercial benchmark for product showcases, seasonal sales, and branded ads.',
+        outcome:
+            'Sharp product focal points, balanced commercial lighting, and brand colors.',
+        badgeColor:
+            'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+    },
+    {
         value: 'gpt-image-1-mini',
-        label: 'gpt-image-1-mini',
-        tag: 'Fastest & Cheapest',
-        speed: 'Ultra Fast (~3s)',
+        label: 'GPT-Image-1 Mini',
+        tag: 'Previous / Fast',
+        speed: 'Fast (~2-4s)',
         quality: 'Standard Crisp',
         price: '$0.011 / gen',
         pricePhp: '~₱0.63',
@@ -186,26 +232,10 @@ const imageModelOptions: ImageModelOption[] = [
             'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
     },
     {
-        value: 'gpt-image-1',
-        label: 'gpt-image-1',
-        tag: 'Deprecating Oct 2026',
-        speed: 'Balanced (~5s)',
-        quality: 'Commercial Standard',
-        price: '$0.042 / gen',
-        pricePhp: '~₱2.42',
-        description:
-            'Commercial benchmark for product showcases, seasonal sales, and branded ads.',
-        outcome:
-            'Sharp product focal points, balanced commercial lighting, and brand colors.',
-        badgeColor:
-            'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-        isRecommended: true,
-    },
-    {
         value: 'chatgpt-image-latest',
-        label: 'chatgpt-image-latest',
-        tag: 'Standard ChatGPT View',
-        speed: 'Adaptive (~6s)',
+        label: 'ChatGPT Image Latest',
+        tag: 'Previous',
+        speed: 'Adaptive (~4-7s)',
         quality: 'Creative Fidelity',
         price: '$0.034 / gen',
         pricePhp: '~₱1.96',
@@ -215,36 +245,6 @@ const imageModelOptions: ImageModelOption[] = [
             'Contextual scene lighting, natural lifestyle framing, and creative compositions.',
         badgeColor:
             'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
-    },
-    {
-        value: 'gpt-image-1.5',
-        label: 'gpt-image-1.5',
-        tag: 'Previous Flagship',
-        speed: 'Enhanced (~7s)',
-        quality: 'High Detail',
-        price: '$0.040 / gen',
-        pricePhp: '~₱2.30',
-        description:
-            'Next-generation rendering for intricate textures, micro-details, and elegant depth.',
-        outcome:
-            'Studio reflections (glass, metal, fabric) and fine textured depth-of-field.',
-        badgeColor:
-            'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-    },
-    {
-        value: 'gpt-image-2',
-        label: 'gpt-image-2',
-        tag: 'Flagship Photorealism',
-        speed: 'Deep Studio (~9s)',
-        quality: 'Photorealistic Pro',
-        price: '$0.053 / gen',
-        pricePhp: '~₱3.05',
-        description:
-            'OpenAI flagship engine for photorealistic campaigns, billboard visuals, and luxury lookbooks.',
-        outcome:
-            'Flawless commercial realism, fine typography synthesis, ray-traced shadows, and studio finish.',
-        badgeColor:
-            'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
     },
 ];
 
@@ -723,7 +723,7 @@ export default function GeneratorPage() {
         const initialBrandTone = parseList(urlParams?.get('brand_tone')) || [];
         const initialRenderStyle =
             urlParams?.get('render_style') || 'Studio Product Still';
-        const initialModel = urlParams?.get('image_model') || 'gpt-image-1';
+        const initialModel = urlParams?.get('image_model') || 'gpt-image-2';
         const initialQuality =
             (urlParams?.get('image_quality') as ImageQuality) || 'medium';
         const initialPrompt =
@@ -958,6 +958,9 @@ export default function GeneratorPage() {
     const [isRegenerateConfirmOpen, setIsRegenerateConfirmOpen] =
         useState(false);
 
+    // Technical details accordion state for thesis demonstration
+    const [isTechDetailsExpanded, setIsTechDetailsExpanded] = useState(false);
+
     // Quality selection confirmation & warning modal
     const [pendingQuality, setPendingQuality] = useState<ImageQuality | null>(
         null,
@@ -1037,13 +1040,14 @@ export default function GeneratorPage() {
         );
     }, [campaigns, form.campaign_id, initialCampaign]);
 
-    // Set URL query params on load (e.g. from My Designs "Edit in AI Studio" or Campaign Visuals)
+    // Set URL query params on load (e.g. from My Designs "Edit in AI Studio", Products Catalog, or Campaign Visuals)
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
             const campaignIdParam =
                 params.get('campaign_id') || params.get('campaign');
             const eventIdParam = params.get('event_id') || params.get('event');
+            const productIdParam = params.get('product_id');
             const productParam =
                 params.get('product_name') || params.get('product');
             const priceParam = params.get('price');
@@ -1058,9 +1062,26 @@ export default function GeneratorPage() {
             let matchedEventId = eventIdParam
                 ? String(eventIdParam)
                 : undefined;
+            let matchedProductId = productIdParam
+                ? String(productIdParam)
+                : undefined;
             let matchedProductName = productParam
                 ? String(productParam)
                 : undefined;
+
+            // Find catalog product if product_id or product_name provided
+            let matchedCatalogProduct: ProductItem | undefined = undefined;
+            if (matchedProductId) {
+                matchedCatalogProduct = products.find(
+                    (p: ProductItem) => String(p.id) === String(matchedProductId),
+                );
+            } else if (matchedProductName) {
+                matchedCatalogProduct = products.find(
+                    (p: ProductItem) =>
+                        p.name.toLowerCase() ===
+                        matchedProductName?.toLowerCase(),
+                );
+            }
 
             if (campaignIdParam) {
                 const foundCamp =
@@ -1076,7 +1097,26 @@ export default function GeneratorPage() {
                     if (!matchedProductName && foundCamp.product_name) {
                         matchedProductName = String(foundCamp.product_name);
                     }
+
+                    if (!matchedProductId && foundCamp.product_id) {
+                        matchedProductId = String(foundCamp.product_id);
+                    }
+
+                    if (!matchedCatalogProduct && matchedProductId) {
+                        matchedCatalogProduct = products.find(
+                            (p: ProductItem) =>
+                                String(p.id) === String(matchedProductId),
+                        );
+                    }
                 }
+            }
+
+            if (matchedCatalogProduct) {
+                setSelectedProduct(matchedCatalogProduct);
+                matchedProductId = String(matchedCatalogProduct.id);
+                matchedProductName = matchedCatalogProduct.name;
+                setReferenceImageSource('product');
+                setReferenceImagePreview(matchedCatalogProduct.image_url ?? null);
             }
 
             setForm((prev) => ({
@@ -1085,10 +1125,20 @@ export default function GeneratorPage() {
                     ? { campaign_id: String(campaignIdParam) }
                     : {}),
                 ...(matchedEventId ? { event_id: matchedEventId } : {}),
+                ...(matchedProductId ? { product_id: matchedProductId } : {}),
                 ...(matchedProductName
                     ? { product_name: matchedProductName }
                     : {}),
-                ...(priceParam ? { price: String(priceParam) } : {}),
+                ...(priceParam
+                    ? { price: String(priceParam) }
+                    : matchedCatalogProduct?.price
+                      ? {
+                            price: String(matchedCatalogProduct.price)
+                                .replace(/[^0-9.]/g, '')
+                                .replace(/\.0+$/, '')
+                                .replace(/(\.[0-9]*[1-9])0+$/, '$1'),
+                        }
+                      : {}),
                 ...(taglineParam
                     ? {
                           tagline: String(taglineParam),
@@ -1111,7 +1161,7 @@ export default function GeneratorPage() {
                     : {}),
             }));
         }
-    }, [campaigns, initialCampaign]);
+    }, [campaigns, initialCampaign, products]);
 
     // Unsaved navigation blocker
     useEffect(() => {
@@ -1328,6 +1378,10 @@ export default function GeneratorPage() {
 
     // Generation Flow - Real OpenAI Generator Preview
     const generateMarketingImage = async () => {
+        if (generationState === 'generating') {
+            return;
+        }
+
         if (isQuotaExceeded) {
             toast.error(
                 'You have reached your $10.00 AI generation limit quota. Visual generation is disabled.',
@@ -3315,7 +3369,7 @@ export default function GeneratorPage() {
                                                                     m.value ===
                                                                     form.image_model,
                                                             ) ||
-                                                            imageModelOptions[1];
+                                                            imageModelOptions[0];
 
                                                         return (
                                                             <div className="flex items-center gap-1.5">
@@ -3347,7 +3401,7 @@ export default function GeneratorPage() {
                                                                             m.value ===
                                                                             form.image_model,
                                                                     ) ||
-                                                                    imageModelOptions[1];
+                                                                    imageModelOptions[0];
 
                                                                 return (
                                                                     <div className="flex w-full items-center justify-between gap-3">
