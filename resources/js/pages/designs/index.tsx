@@ -90,20 +90,28 @@ export default function DesignsPage({
     const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('marketpilot_designs_view_mode');
-            if (saved === 'grid' || saved === 'list') return saved;
+
+            if (saved === 'grid' || saved === 'list') {
+return saved;
+}
         }
+
         return 'grid';
     });
 
     const handleSetViewMode = (mode: 'grid' | 'list') => {
         setViewMode(mode);
+
         if (typeof window !== 'undefined') {
             localStorage.setItem('marketpilot_designs_view_mode', mode);
         }
     };
 
     const getEditStudioUrl = (design: any) => {
-        if (!design) return '/generator';
+        if (!design) {
+return '/generator';
+}
+
         const meta = design.generation_metadata || {};
         const contentStyle = Array.isArray(design.content_style)
             ? design.content_style.join(',')
@@ -118,16 +126,45 @@ export default function DesignsPage({
         const includeBusiness = meta.include_business_name !== false ? '1' : '0';
 
         const params = new URLSearchParams();
-        if (design.product_name) params.set('product_name', design.product_name);
-        if (design.product_id) params.set('product_id', String(design.product_id));
-        if (design.price) params.set('price', String(design.price));
-        if (design.campaign_id) params.set('campaign_id', String(design.campaign_id));
-        if (design.event_id) params.set('event_id', String(design.event_id));
-        if (design.tagline) params.set('tagline', design.tagline);
-        if (design.prompt) params.set('prompt', design.prompt);
+
+        if (design.product_name) {
+params.set('product_name', design.product_name);
+}
+
+        if (design.product_id) {
+params.set('product_id', String(design.product_id));
+}
+
+        if (design.price) {
+params.set('price', String(design.price));
+}
+
+        if (design.campaign_id) {
+params.set('campaign_id', String(design.campaign_id));
+}
+
+        if (design.event_id) {
+params.set('event_id', String(design.event_id));
+}
+
+        if (design.tagline) {
+params.set('tagline', design.tagline);
+}
+
+        if (design.prompt) {
+params.set('prompt', design.prompt);
+}
+
         params.set('aspect_ratio', aspectRatio);
-        if (contentStyle) params.set('content_style', contentStyle);
-        if (brandTone) params.set('brand_tone', brandTone);
+
+        if (contentStyle) {
+params.set('content_style', contentStyle);
+}
+
+        if (brandTone) {
+params.set('brand_tone', brandTone);
+}
+
         params.set('render_style', renderStyle);
         params.set('image_model', imageModel);
         params.set('image_quality', quality);
@@ -2330,6 +2367,7 @@ export default function DesignsPage({
                                                                 s.trim(),
                                                             )
                                                       : [];
+
                                                 if (!list.length) {
                                                     return (
                                                         <span className="text-xs text-muted-foreground">
@@ -2337,6 +2375,7 @@ export default function DesignsPage({
                                                         </span>
                                                     );
                                                 }
+
                                                 return list.map(
                                                     (item: string) => (
                                                         <span
@@ -2371,6 +2410,7 @@ export default function DesignsPage({
                                                                 s.trim(),
                                                             )
                                                       : [];
+
                                                 if (!list.length) {
                                                     return (
                                                         <span className="text-xs text-muted-foreground">
@@ -2378,6 +2418,7 @@ export default function DesignsPage({
                                                         </span>
                                                     );
                                                 }
+
                                                 return list.map(
                                                     (item: string) => (
                                                         <span
@@ -2794,7 +2835,9 @@ export default function DesignsPage({
             <Dialog
                 open={Boolean(designToRegenerate)}
                 onOpenChange={(open) => {
-                    if (!open) setDesignToRegenerate(null);
+                    if (!open) {
+setDesignToRegenerate(null);
+}
                 }}
             >
                 <DialogContent className="rounded-3xl sm:max-w-md">

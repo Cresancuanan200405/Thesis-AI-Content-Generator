@@ -796,10 +796,12 @@ export default function GeneratorPage() {
     } = pageProps;
 
     const ai_usage = pageProps.ai_usage;
+    const budgetLimit = Number(
+        ai_usage?.budget_limit ?? ai_usage?.application_configured_limit ?? 20.0,
+    );
+    const totalSpent = Number(ai_usage?.total_spent ?? 0.0);
     const isQuotaExceeded =
-        Boolean(ai_usage?.is_limit_reached) ||
-        Number(ai_usage?.total_spent ?? 0) >=
-            Number(ai_usage?.budget_limit ?? 20.0);
+        Boolean(ai_usage?.is_limit_reached) || totalSpent >= budgetLimit;
 
     const [currentStep, setCurrentStep] = useState<Step>(1);
     const [generationState, setGenerationState] =
@@ -809,6 +811,7 @@ export default function GeneratorPage() {
     // Form State
     const [form, setForm] = useState<GeneratorForm>(() => {
         let urlParams: URLSearchParams | null = null;
+
         if (typeof window !== 'undefined') {
             urlParams = new URLSearchParams(window.location.search);
         }
@@ -863,6 +866,7 @@ export default function GeneratorPage() {
                 : '');
 
         let initialIncludeBusinessName = true;
+
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem(
                 'ai_studio_include_business_name',
@@ -1089,6 +1093,7 @@ export default function GeneratorPage() {
         // Medium is standard — no warning needed to return to standard
         if (newQuality === 'medium') {
             setForm((prev) => ({ ...prev, image_quality: 'medium' }));
+
             return;
         }
 
@@ -1100,6 +1105,7 @@ export default function GeneratorPage() {
 
         if (isDismissed) {
             setForm((prev) => ({ ...prev, image_quality: newQuality }));
+
             return;
         }
 
@@ -1187,6 +1193,7 @@ export default function GeneratorPage() {
 
             // Find catalog product if product_id or product_name provided
             let matchedCatalogProduct: ProductItem | undefined = undefined;
+
             if (matchedProductId) {
                 matchedCatalogProduct = products.find(
                     (p: ProductItem) =>
@@ -1431,6 +1438,7 @@ export default function GeneratorPage() {
         ];
 
         let nextIdx = Math.floor(Math.random() * templates.length);
+
         if (nextIdx === lastTaglineIndex && templates.length > 1) {
             nextIdx = (nextIdx + 1) % templates.length;
         }
@@ -1601,6 +1609,7 @@ export default function GeneratorPage() {
                 'include_business_name',
                 form.include_business_name ? '1' : '0',
             );
+
             if (
                 form.include_business_name &&
                 (form.business_name || business?.name)
@@ -1750,6 +1759,7 @@ export default function GeneratorPage() {
                 'include_business_name',
                 form.include_business_name ? '1' : '0',
             );
+
             if (
                 form.include_business_name &&
                 (form.business_name || business?.name)
@@ -2704,6 +2714,7 @@ export default function GeneratorPage() {
                                                                 .toISOString()
                                                                 .split('T')[0],
                                                     });
+
                                                     if (
                                                         eligibleCampaigns.length >
                                                         0
@@ -2719,6 +2730,7 @@ export default function GeneratorPage() {
                                                             '',
                                                         );
                                                     }
+
                                                     setIsCampaignModalOpen(
                                                         true,
                                                     );
@@ -2809,10 +2821,8 @@ export default function GeneratorPage() {
                                                                 Method
                                                             </p>
                                                             <p className="mt-0.5 font-semibold text-foreground">
-                                                                {Boolean(
-                                                                    referenceImagePreview ||
-                                                                    form.product_id,
-                                                                )
+                                                                {referenceImagePreview ||
+                                                                    form.product_id
                                                                     ? 'Image-to-Image Edit'
                                                                     : 'Text-to-Image'}
                                                             </p>
@@ -2991,23 +3001,19 @@ export default function GeneratorPage() {
                                         <div className="flex items-center justify-between gap-2">
                                             <p className="text-sm font-bold text-destructive">
                                                 AI Budget Quota Limit Reached
-                                                ($10.00 Limit)
+                                                (${budgetLimit.toFixed(2)} Limit)
                                             </p>
                                             <Badge
                                                 variant="outline"
                                                 className="border-destructive/40 bg-destructive/20 font-mono text-[10px] font-bold text-destructive"
                                             >
-                                                $
-                                                {Number(
-                                                    ai_usage?.total_spent ?? 10,
-                                                ).toFixed(2)}{' '}
-                                                / $10.00
+                                                ${totalSpent.toFixed(2)} / ${budgetLimit.toFixed(2)}
                                             </Badge>
                                         </div>
                                         <p className="text-[11px] leading-relaxed text-destructive/90">
                                             You have hit your{' '}
                                             <strong>
-                                                $10.00 total generation quota
+                                                ${budgetLimit.toFixed(2)} total generation quota
                                                 limit
                                             </strong>
                                             . Image generation has been halted
@@ -3976,6 +3982,7 @@ export default function GeneratorPage() {
                                                                         form.image_model,
                                                                         form.image_quality,
                                                                     );
+
                                                                 return (
                                                                     <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
                                                                         {currentCost.usd}
@@ -4082,6 +4089,7 @@ export default function GeneratorPage() {
                                                                             const isSelected =
                                                                                 form.aspect_ratio ===
                                                                                 opt.value;
+
                                                                             return (
                                                                                 <DropdownMenuItem
                                                                                     key={opt.value}
@@ -4211,6 +4219,7 @@ export default function GeneratorPage() {
                                                                                 const isSelected =
                                                                                     form.image_model ===
                                                                                     model.value;
+
                                                                                 return (
                                                                                     <DropdownMenuItem
                                                                                         key={model.value}
@@ -4750,6 +4759,7 @@ export default function GeneratorPage() {
                                                             m.value ===
                                                             form.image_model,
                                                     ) || imageModelOptions[1];
+
                                                 return (
                                                     <div className="flex items-center gap-1 text-right">
                                                         <span className="font-mono text-[11px] font-bold text-foreground">
@@ -4782,6 +4792,7 @@ export default function GeneratorPage() {
                                                         form.image_model,
                                                         form.image_quality,
                                                     );
+
                                                 return (
                                                     <div className="flex items-center gap-1.5 text-right">
                                                         <span className="text-[11px] font-semibold text-foreground">
@@ -5259,6 +5270,7 @@ export default function GeneratorPage() {
                         }`}
                         onClick={(e) => {
                             e.stopPropagation();
+
                             if (savedDesign?.image_url) {
                                 setIsPreviewZoomed(!isPreviewZoomed);
                             }
@@ -5575,6 +5587,7 @@ export default function GeneratorPage() {
 
                                     return;
                                 }
+
                                 setIsRegenerateConfirmOpen(false);
                                 setIsSavedToDesigns(false);
                                 setSavedDesign(null);

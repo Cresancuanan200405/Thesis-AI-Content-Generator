@@ -266,15 +266,18 @@ export default function CampaignsPage({
             const saved = localStorage.getItem(
                 'marketpilot_campaigns_view_mode',
             );
+
             if (saved === 'grid' || saved === 'list') {
                 return saved;
             }
         }
+
         return 'grid';
     });
 
     const handleSetViewMode = (mode: 'grid' | 'list') => {
         setViewMode(mode);
+
         if (typeof window !== 'undefined') {
             localStorage.setItem('marketpilot_campaigns_view_mode', mode);
         }

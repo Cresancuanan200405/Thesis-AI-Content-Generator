@@ -28,7 +28,9 @@ class NotificationController extends Controller
         } elseif ($filter === 'security') {
             $query->where(function ($q) {
                 $q->where('type', 'security')
-                    ->orWhere('type', 'like', '%security%');
+                    ->orWhere('type', 'like', '%security%')
+                    ->orWhere('title', 'like', '%sign%')
+                    ->orWhere('title', 'like', '%password%');
             });
         } elseif ($filter === 'ai') {
             $query->where(function ($q) {
@@ -36,6 +38,12 @@ class NotificationController extends Controller
                     ->orWhere('type', 'like', '%ai%')
                     ->orWhere('type', 'like', '%generation%')
                     ->orWhere('type', 'like', '%design%');
+            });
+        } elseif ($filter === 'campaigns') {
+            $query->where(function ($q) {
+                $q->where('type', 'campaign')
+                    ->orWhere('type', 'like', '%campaign%')
+                    ->orWhere('title', 'like', '%campaign%');
             });
         } elseif ($filter === 'usage') {
             $query->where(function ($q) {
@@ -88,8 +96,9 @@ class NotificationController extends Controller
         $categoryCounts = [
             'all' => $totalCount,
             'unread' => $unreadCount,
-            'security' => $user->appNotifications()->where(fn ($q) => $q->where('type', 'security')->orWhere('type', 'like', '%security%'))->count(),
+            'security' => $user->appNotifications()->where(fn ($q) => $q->where('type', 'security')->orWhere('type', 'like', '%security%')->orWhere('title', 'like', '%sign%'))->count(),
             'ai' => $user->appNotifications()->where(fn ($q) => $q->where('type', 'ai')->orWhere('type', 'like', '%ai%')->orWhere('type', 'like', '%generation%')->orWhere('type', 'like', '%design%'))->count(),
+            'campaigns' => $user->appNotifications()->where(fn ($q) => $q->where('type', 'campaign')->orWhere('type', 'like', '%campaign%')->orWhere('title', 'like', '%campaign%'))->count(),
             'usage' => $user->appNotifications()->where(fn ($q) => $q->where('type', 'usage')->orWhere('type', 'like', '%budget%')->orWhere('type', 'like', '%limit%'))->count(),
             'billing' => $user->appNotifications()->where(fn ($q) => $q->where('type', 'billing')->orWhere('type', 'like', '%subscription%')->orWhere('type', 'like', '%plan%'))->count(),
             'system' => $user->appNotifications()->where(fn ($q) => $q->where('type', 'system')->orWhere('type', 'like', '%announcement%')->orWhere('type', 'like', '%maintenance%'))->count(),

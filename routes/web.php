@@ -8,8 +8,10 @@ use App\Http\Controllers\GeneratorController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\UserProfileController;
 use App\Models\Event;
+use App\Services\OpenAIUsageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
@@ -100,6 +102,14 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
         $activeCampaigns = $user->campaigns()->whereIn('status', ['active', 'scheduled'])->count();
         $totalProducts = $user->business?->products()->count() ?? 0;
 
+        $productsWithVisuals = $user->business
+            ? $user->business->products()->where(function ($query) use ($user) {
+                $query->has('designs')->orWhereIn('name', $user->designs()->whereNotNull('product_name')->select('product_name'));
+            })->count()
+            : 0;
+        $productsWithoutVisuals = max(0, $totalProducts - $productsWithVisuals);
+        $catalogCoveragePercent = $totalProducts > 0 ? (int) min(100, round(($productsWithVisuals / $totalProducts) * 100)) : 0;
+
         $events = Event::query()
             ->where(fn ($query) => $query->where('user_id', $user->id)->orWhere('is_global', true))
             ->orderBy('date')
@@ -183,13 +193,22 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
         $campaignsByStatus = [
             'active' => $user->campaigns()->where('status', 'active')->count(),
             'scheduled' => $user->campaigns()->where('status', 'scheduled')->count(),
+            'draft' => $user->campaigns()->where('status', 'draft')->count(),
             'completed' => $user->campaigns()->where('status', 'completed')->count(),
             'archived' => $user->campaigns()->where('status', 'archived')->count(),
         ];
 
-        // Catalog coverage
-        $productsWithDesigns = $user->designs()->whereNotNull('product_name')->distinct('product_name')->count();
-        $catalogCoveragePercent = $totalProducts > 0 ? min(100, round(($productsWithDesigns / $totalProducts) * 100)) : 0;
+        // Authentic workspace pipeline status
+        $hasOpenAiConfigured = (bool) (config('services.openai.api_key') || config('services.openai.admin_key'));
+        $hasEvents = Event::count() > 0;
+        $hasBusiness = $user->business !== null;
+
+        $systemHealth = [
+            'ai_generation' => $hasOpenAiConfigured ? 'operational' : 'attention_required',
+            'event_calendar' => $hasEvents ? 'operational' : 'attention_required',
+            'product_catalog' => $hasBusiness ? 'operational' : 'attention_required',
+            'campaign_engine' => ($hasBusiness && $hasEvents) ? 'operational' : 'attention_required',
+        ];
 
         return inertia('dashboard', [
             'campaigns' => $campaigns,
@@ -201,11 +220,14 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
                 'active_campaigns' => $activeCampaigns,
                 'total_products' => $totalProducts,
                 'upcoming_events' => $upcomingEventsCount,
+                'products_with_visuals' => $productsWithVisuals,
+                'products_without_visuals' => $productsWithoutVisuals,
                 'catalog_coverage' => $catalogCoveragePercent,
             ],
             'monthly_activity' => $monthlyActivity,
             'weekly_activity' => $weeklyActivity,
             'campaign_status_breakdown' => $campaignsByStatus,
+            'system_health' => $systemHealth,
             'business' => [
                 'name' => $user->business?->name,
                 'industry' => $user->business?->industry,
@@ -249,6 +271,18 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
     Route::get('products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
     Route::put('products/{product}', [ProductController::class, 'update'])->name('products.update');
     Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+
+    Route::get('profile', [UserProfileController::class, 'show'])->name('profile.show');
+    Route::get('profile/business', [UserProfileController::class, 'showBusiness'])->name('profile.business');
+    Route::match(['post', 'patch'], 'profile/business', [UserProfileController::class, 'updateBusiness'])->name('profile.business.update');
+
+    Route::get('subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
+
+    Route::post('telemetry/openai/refresh', function (Request $request) {
+        app(OpenAIUsageService::class)->getUsage($request->user(), null, true);
+
+        return back()->with('success', 'OpenAI telemetry refreshed.');
+    })->name('telemetry.openai.refresh');
 
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');

@@ -8,7 +8,6 @@ import {
     Mail,
     Settings,
     Shield,
-    Sparkles,
 } from 'lucide-react';
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -72,18 +71,6 @@ export default function MyProfilePage({
                             <p className="text-xs text-muted-foreground sm:text-sm">
                                 Overview of your personal account credentials, workspace role, and commercial profile.
                             </p>
-                        </div>
-
-                        <div className="flex items-center gap-2.5">
-                            <Button
-                                asChild
-                                className="h-10 gap-2 rounded-xl text-xs font-semibold shadow-xs"
-                            >
-                                <Link href="/generator">
-                                    <Sparkles className="h-3.5 w-3.5" />
-                                    AI Studio
-                                </Link>
-                            </Button>
                         </div>
                     </div>
 

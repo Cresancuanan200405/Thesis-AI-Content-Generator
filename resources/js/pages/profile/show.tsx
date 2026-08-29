@@ -228,7 +228,10 @@ export default function ProfileShowPage({
     }, [formData, initialValues]);
 
     const availableCategories = useMemo(() => {
-        if (!formData.industry) return [];
+        if (!formData.industry) {
+return [];
+}
+
         return industryCategories[formData.industry] ?? [];
     }, [formData.industry]);
 
@@ -246,10 +249,12 @@ export default function ProfileShowPage({
             ...prev,
             [field]: value,
         }));
+
         if (formErrors[field]) {
             setFormErrors((prev) => {
                 const next = { ...prev };
                 delete next[field];
+
                 return next;
             });
         }
@@ -267,6 +272,7 @@ export default function ProfileShowPage({
         if (!formData.name.trim()) {
             setFormErrors({ name: 'Business name is required.' });
             toast.error('Please enter your business name.');
+
             return;
         }
 

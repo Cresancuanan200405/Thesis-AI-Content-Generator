@@ -10,7 +10,9 @@ export type AppVariant = 'header' | 'sidebar';
 
 export type FlashToast = {
     type: 'success' | 'info' | 'warning' | 'error';
+    title?: string;
     message: string;
+    action_url?: string;
 };
 
 export type AuthLayoutProps = {
@@ -34,6 +36,7 @@ export type OpenAIUsageTelemetry = {
     total_requests?: number | null;
     total_requests_formatted?: string;
     total_images?: number | null;
+    total_generations?: number | null;
     images_generated_formatted?: string;
     api_credit_balance?: number | null;
     api_credit_balance_formatted?: string;
@@ -55,4 +58,11 @@ export type OpenAIUsageTelemetry = {
     organization_id?: string | null;
     organization_name?: string | null;
     error_message?: string | null;
+    active_model?: {
+        id: string;
+        display_name: string;
+        tag?: string;
+        badge?: string;
+        quality_label?: string;
+    } | null;
 };

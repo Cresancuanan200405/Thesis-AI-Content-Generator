@@ -117,8 +117,7 @@ class NotificationService
     {
         // Prevent duplicate login notifications generated within 10 seconds
         $recent = AppNotification::where('user_id', $user->id)
-            ->where('type', 'security')
-            ->where('title', 'New Login Detected')
+            ->where('title', 'Signed in successfully')
             ->where('created_at', '>=', Carbon::now()->subSeconds(10))
             ->first();
 
@@ -145,8 +144,8 @@ class NotificationService
 
         return self::notify(
             user: $user,
-            type: 'security',
-            title: 'New Login Detected',
+            type: 'success',
+            title: 'Signed in successfully',
             message: "Your account was successfully signed in from {$device}.",
             actionUrl: '/settings/security',
             data: [
@@ -164,8 +163,7 @@ class NotificationService
     {
         // Prevent duplicate logout notifications within 10 seconds
         $recent = AppNotification::where('user_id', $user->id)
-            ->where('type', 'security')
-            ->where('title', 'Logged Out')
+            ->where('title', 'Signed out successfully')
             ->where('created_at', '>=', Carbon::now()->subSeconds(10))
             ->first();
 
@@ -173,16 +171,18 @@ class NotificationService
             return $recent;
         }
 
-        return self::notify(
-            user: $user,
-            type: 'security',
-            title: 'Logged Out',
-            message: 'Your account was signed out successfully.',
-            actionUrl: '/settings/security',
-            data: [
+        // Stored with read_at set so it does not queue as an unread popup on future login
+        return AppNotification::create([
+            'user_id' => $user->id,
+            'type' => 'success',
+            'title' => 'Signed out successfully',
+            'message' => 'Your account was signed out successfully.',
+            'action_url' => null,
+            'data' => [
                 'timestamp' => Carbon::now()->toIso8601String(),
-            ]
-        );
+            ],
+            'read_at' => Carbon::now(),
+        ]);
     }
 
     /**

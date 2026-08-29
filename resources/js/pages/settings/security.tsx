@@ -63,6 +63,7 @@ export default function SecuritySettings(props: Props) {
 
         if (!logoutPassword) {
             setLogoutPasswordError('Please enter your current password.');
+
             return;
         }
 
@@ -80,6 +81,7 @@ export default function SecuritySettings(props: Props) {
             },
             onError: (errors) => {
                 setIsLoggingOutOthers(false);
+
                 if (errors.password) {
                     setLogoutPasswordError(errors.password);
                 } else {
@@ -128,6 +130,7 @@ export default function SecuritySettings(props: Props) {
                                 if (errors.password) {
                                     passwordInput.current?.focus();
                                 }
+
                                 if (errors.current_password) {
                                     currentPasswordInput.current?.focus();
                                 }

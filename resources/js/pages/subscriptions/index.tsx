@@ -164,24 +164,40 @@ export default function SubscriptionsIndexPage({
     ];
 
     // Telemetry values from authoritative OpenAI telemetry
-    const totalSpent = ai_usage?.total_spent_formatted || '$2.35';
+    const totalSpent =
+        ai_usage?.total_spent_formatted ||
+        (ai_usage?.total_spent !== undefined && ai_usage?.total_spent !== null
+            ? `$${Number(ai_usage.total_spent).toFixed(2)}`
+            : '$0.00');
     const configuredLimit =
         ai_usage?.application_configured_limit_formatted ||
-        `$${(quota.application_configured_limit ?? 10.0).toFixed(2)}`;
-    const remainingLimit = ai_usage?.remaining_app_limit_formatted || '$7.65';
-    const inputTokens = ai_usage?.input_tokens_formatted || '142,377';
-    const totalRequests = ai_usage?.total_requests_formatted || '78';
+        `$${(quota.application_configured_limit ?? ai_usage?.budget_limit ?? 10.0).toFixed(2)}`;
+    const remainingLimit =
+        ai_usage?.remaining_app_limit_formatted ||
+        (ai_usage?.remaining_budget !== undefined && ai_usage?.remaining_budget !== null
+            ? `$${Number(ai_usage.remaining_budget).toFixed(2)}`
+            : configuredLimit);
+    const inputTokens =
+        ai_usage?.input_tokens_formatted ||
+        (ai_usage?.input_tokens ? Number(ai_usage.input_tokens).toLocaleString() : '0');
+    const totalRequests =
+        ai_usage?.total_requests_formatted ||
+        (ai_usage?.total_requests ? Number(ai_usage.total_requests).toLocaleString() : '0');
     const creditBalance = ai_usage?.api_credit_balance_formatted || '—';
     const creditStatus = ai_usage?.credit_balance_status || 'unavailable';
     const creditMessage =
         ai_usage?.credit_balance_message || 'Unavailable through API';
-    const budgetPercent = Math.min(100, Math.max(0, ai_usage?.budget_percentage ?? 23.5));
+    const budgetPercent = Math.min(
+        100,
+        Math.max(0, ai_usage?.budget_percentage ?? ai_usage?.percentage_used ?? 0),
+    );
 
     const scrollToTelemetryOrOpen = () => {
         // Trigger the OpenAI Usage telemetry dropdown in the header
         const telemetryTrigger = document.querySelector<HTMLButtonElement>(
             '[data-telemetry-trigger="true"]',
         );
+
         if (telemetryTrigger) {
             telemetryTrigger.click();
             telemetryTrigger.scrollIntoView({ behavior: 'smooth' });
@@ -306,6 +322,7 @@ export default function SubscriptionsIndexPage({
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     {features.map((feature, index) => {
                                         const Icon = feature.icon;
+
                                         return (
                                             <div
                                                 key={index}

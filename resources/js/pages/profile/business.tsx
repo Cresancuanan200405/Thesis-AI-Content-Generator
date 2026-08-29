@@ -9,10 +9,8 @@ import {
     RotateCcw,
     Save,
     Settings,
-    Sparkles,
     Store,
     Tag,
-    User,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -214,7 +212,10 @@ export default function BusinessProfilePage({
     }, [formData, initialValues]);
 
     const availableCategories = useMemo(() => {
-        if (!formData.industry) return [];
+        if (!formData.industry) {
+return [];
+}
+
         return industryCategories[formData.industry] ?? [];
     }, [formData.industry]);
 
@@ -232,10 +233,12 @@ export default function BusinessProfilePage({
             ...prev,
             [field]: value,
         }));
+
         if (formErrors[field]) {
             setFormErrors((prev) => {
                 const next = { ...prev };
                 delete next[field];
+
                 return next;
             });
         }
@@ -253,6 +256,7 @@ export default function BusinessProfilePage({
         if (!formData.name.trim()) {
             setFormErrors({ name: 'Business name is required.' });
             toast.error('Please enter your business name.');
+
             return;
         }
 
@@ -314,28 +318,6 @@ export default function BusinessProfilePage({
                             <p className="text-xs text-muted-foreground sm:text-sm">
                                 Persistent commercial context used by the AI engine to calibrate authentic visual generation.
                             </p>
-                        </div>
-
-                        <div className="flex items-center gap-2.5">
-                            <Button
-                                asChild
-                                variant="outline"
-                                className="h-10 gap-2 rounded-xl border-border bg-card text-xs font-semibold text-muted-foreground shadow-xs hover:bg-muted hover:text-foreground"
-                            >
-                                <Link href="/profile">
-                                    <User className="h-3.5 w-3.5" />
-                                    My Profile
-                                </Link>
-                            </Button>
-                            <Button
-                                asChild
-                                className="h-10 gap-2 rounded-xl text-xs font-semibold shadow-xs"
-                            >
-                                <Link href="/generator">
-                                    <Sparkles className="h-3.5 w-3.5" />
-                                    AI Studio
-                                </Link>
-                            </Button>
                         </div>
                     </div>
 

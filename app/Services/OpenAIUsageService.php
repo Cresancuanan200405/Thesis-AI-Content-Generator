@@ -157,6 +157,9 @@ class OpenAIUsageService
             'credit_balance_available' => $creditBalance !== null,
         ]);
 
+        $activeModelConfig = (string) config('services.openai.image_model', 'gpt-image-2');
+        $activeModelSpec = app(OpenAIModelRegistry::class)->getModel($activeModelConfig);
+
         return [
             'status' => 'active',
             'application_configured_limit' => $budgetLimit,
@@ -174,6 +177,12 @@ class OpenAIUsageService
             'percentage_used' => $percentageUsed,
             'is_limit_reached' => $totalCost >= $budgetLimit,
             'is_live_account' => true,
+            'active_model' => [
+                'id' => $activeModelSpec['id'] ?? $activeModelConfig,
+                'display_name' => $activeModelSpec['display_name'] ?? 'GPT-Image-2',
+                'tag' => $activeModelSpec['tag'] ?? 'Flagship Photorealism',
+                'badge' => $activeModelSpec['badge'] ?? 'Recommended',
+            ],
             'source' => 'openai_organization_api',
             'reporting_period' => $periodLabel,
             'last_synced_at' => Carbon::now()->toIso8601String(),
@@ -443,6 +452,9 @@ class OpenAIUsageService
      */
     protected function getUnavailableUsage(float $budgetLimit, string $errorMessage): array
     {
+        $activeModelConfig = (string) config('services.openai.image_model', 'gpt-image-2');
+        $activeModelSpec = app(OpenAIModelRegistry::class)->getModel($activeModelConfig);
+
         return [
             'status' => 'unavailable',
             'budget_limit' => $budgetLimit,
@@ -459,6 +471,12 @@ class OpenAIUsageService
             'percentage_used' => null,
             'is_limit_reached' => false,
             'is_live_account' => false,
+            'active_model' => [
+                'id' => $activeModelSpec['id'] ?? $activeModelConfig,
+                'display_name' => $activeModelSpec['display_name'] ?? 'GPT-Image-2',
+                'tag' => $activeModelSpec['tag'] ?? 'Flagship Photorealism',
+                'badge' => $activeModelSpec['badge'] ?? 'Recommended',
+            ],
             'source' => 'unavailable',
             'reporting_period' => Carbon::now()->format('F Y'),
             'last_synced_at' => Carbon::now()->toIso8601String(),
