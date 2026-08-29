@@ -113,37 +113,50 @@
 9. **Image Persistence**: Binary response is decoded and saved as `storage/app/public/designs/openai_{uuid}.png`.
 10. **Deterministic Content Compositing**: Price, Tagline, and Logo are placed using deterministic rules.
 11. **Safe-Margin Enforcement**: Dynamic 20% margin bounds are applied based on canvas aspect ratio.
-12. **Live Preview**: Generated visual URL is returned to the frontend modal.
-13. **Regeneration**: Re-running generation retains the product asset while exploring atmospheric variations.
 14. **Save**: Design record is written to database with campaign links and generation metadata.
 
 ---
 
-## 3. Prompt Architecture & Hierarchy
+## 3. Prompt Architecture & Hierarchy (Current 10-Priority Engine)
 
-| Priority | Module | Direct Function | Rationale |
-|---|---|---|---|
-| **Priority 1** | **Primary Product Image & Product Preservation** | Sets catalog image as source of truth; enforces identity, proportion, color, and packaging preservation. | Prevents AI hallucination of unrelated or synthetic replacement products. |
-| **Priority 2** | **Exact Marketing Content** | Specifies exact price (`₱149`) and exact tagline (`"..."`) without modification. | Ensures zero typographic paraphrasing. |
-| **Priority 3** | **Campaign Objectives** | States campaign name and business goal (e.g., drive dine-in orders). | Directs marketing intent and call-to-action tone. |
-| **Priority 4** | **Philippine Event Direction** | Injects structured mood, environment, lighting, and decorative cues. | Contextualizes holiday celebration without overwhelming product focus. |
-| **Priority 5** | **Brand Identity & Tone** | Connects business name, category, and visual personality. | Calibrates mood harmony across brand collateral. |
-| **Priority 6** | **Render Style** | Strictly activates **one** style (`Studio Product Still`, `Cinematic Marketing`, `Lifestyle Capture`, `Minimalist Graphic`). | Eliminates style confusion and prompt conflicts. |
-| **Priority 7** | **Visual Theme** | Sets environmental backdrop styling (e.g., `Cozy Cafe Vibe`). | Enriches background scene consistency. |
-| **Priority 8** | **Composition & Safe Margins** | Enforces product dominance, contact shadows, and typography breathing room. | Prevents cropped edges and ensures professional advertising layout. |
+The current generation pipeline employs a structured 10-priority prompt orchestration hierarchy compiled by `ModularPromptOrchestrator` and powered by `IndustryCategoryArtDirectionService`:
+
+| Priority / Module | Direct Function | Current Implementation & Behavior | Status |
+|---|---|---|:---:|
+| **Root Objective & Anti-Logo Mandate** | Top-level directive forbidding logos, emblems, badges, and invented brand marks. | Enforces strict prohibition against generating any logo, emblem, cup/bean logo, or watermark. | ✅ ACTIVE |
+| **Priority 1: Primary Product & Preservation** | Sets catalog product image as primary source of truth (or generative prompt in no-reference mode). | In Reference Mode: locks physical product container, geometry, liquid layers, and label. In Generative Mode: specifies product name and category. | ✅ ACTIVE |
+| **Priority 2: User Scene / Visual Direction** | Integrates explicit user scene notes or prompt instructions. | Directly sets the physical setting, props, and lighting atmosphere around the product. | ✅ ACTIVE |
+| **Priority 3: Marketing Content** | Handles exact Product Name, Price (`₱149`), and Tagline. | Enforces exact price formatting and verbatim tagline string retention. | ✅ ACTIVE |
+| **Priority 4: Campaign Objective** | States campaign name and business goal. | Contextualizes promotional intent (e.g. drive in-store foot traffic). | ✅ ACTIVE |
+| **Priority 5: Event / Philippine Holiday** | Localized holiday direction (Mood, Environment, Lighting, Decor, Spatial Staging). | Adapts spatial depth and festive props dynamically to canvas aspect ratio. | ✅ ACTIVE |
+| **Priority 6: Industry & Category Art Direction** | Dedicated commercial staging, authentic materials, lighting, and restrained props. | Translates business industry and category into active visual guidance (e.g. café surfaces, automotive lighting, skincare vanity, tech studios). | ✅ ACTIVE |
+| **Priority 7: Brand Identity & Brand Tone** | Business / Shop Name with Creative Typographic Integration + Tone + Supplemental Context. | Formats business name as creative typography without logos. Incorporates target audience appeal, USP, and business description as supplemental context. | ✅ ACTIVE |
+| **Priority 8: Render Style** | Strictly activates **one** active render style (e.g. `Studio Product Still`, `Cinematic Marketing`). | Eliminates style confusion and prompt collisions. | ✅ ACTIVE |
+| **Priority 9: Visual Theme** | Sets environmental backdrop textures (e.g. `Cozy Cafe Vibe`, `Warm Seasonal`). | Enriches peripheral environment outside product boundary. | ✅ ACTIVE |
+| **Priority 10: Responsive Composition & Safe Area** | Ratio-specific composition profile (`1:1`, `9:16`, `16:9`, `4:5`, `4:3`) + Invisible Safe Area. | Directs ratio-tailored product scale, copy zones, and forbidden overlay rules. | ✅ ACTIVE |
 
 ---
 
-## 4. Model Selection & Registry
+## 4. Model Selection & Canvas Format Support
 
-| Model ID | Display Name | Supports Image Input | Editing Endpoint | UI Status | Recommended Status |
-|---|---|:---:|:---:|:---:|:---:|
-| `gpt-image-2` | **GPT-Image-2** | **YES** | `/v1/images/edits` | **Active** | **Recommended (Default)** |
-| `gpt-image-1.5` | **GPT-Image-1.5** | **YES** | `/v1/images/edits` | Active | Previous Version |
-| `gpt-image-1` | **GPT-Image-1** | **YES** | `/v1/images/edits` | Active | Previous Version |
-| `gpt-image-1-mini` | **GPT-Image-1 Mini** | **YES** | `/v1/images/edits` | Active | Fast / Lightweight |
-| `chatgpt-image-latest`| **ChatGPT Image Latest**| **YES** | `/v1/images/edits` | Active | Previous Version |
-| `dall-e-3` | **DALL-E 3** | NO | `/v1/images/generations` | Active | Legacy (Text-Only) |
+### Supported Models
+| Model ID | Display Name | Supports Image Input | Editing Endpoint | Recommended Status |
+|---|---|:---:|:---:|:---:|
+| `gpt-image-2` | **GPT-Image-2** | **YES** | `/v1/images/edits` | **Recommended (Default)** |
+| `gpt-image-1.5` | **GPT-Image-1.5** | **YES** | `/v1/images/edits` | Active |
+| `gpt-image-1` | **GPT-Image-1** | **YES** | `/v1/images/edits` | Active |
+| `gpt-image-1-mini` | **GPT-Image-1 Mini** | **YES** | `/v1/images/edits` | Fast / Lightweight |
+| `chatgpt-image-latest`| **ChatGPT Image Latest**| **YES** | `/v1/images/edits` | Active |
+| `dall-e-3` | **DALL-E 3** | NO | `/v1/images/generations` | Legacy (Text-Only) |
+
+### Supported Aspect Ratios & Responsive Composition Engine
+| Ratio | Target Format | Canvas Dimensions | Responsive Composition Architecture |
+|---|---|---|---|
+| **`1:1`** | Square Feed / Catalog | `1024x1024` | Symmetrical square canvas, central/offset hero (40–55% area), 360° breathing room. |
+| **`9:16`** | Mobile Story / Reel / TikTok | `1024x1792` | Vertical hierarchy (Headline → Hero Product → Price/Tagline), vertical depth, no landscape squeeze. |
+| **`16:9`** | Wide Landscape Banner | `1792x1024` | Lateral rule-of-thirds hero placement (30–45% width), dedicated copy lateral third, wide depth. |
+| **`4:5`** | Portrait Social Media Feed | `1024x1792` | High-impact vertical centerpiece (45–60% height) with wide horizontal margin breathing room. |
+| **`4:3`** | Standard Landscape Display | `1792x1024` | Balanced traditional commercial landscape with lateral/upper copy zones. |
 
 ---
 
@@ -212,26 +225,30 @@ Supports:
 | Requirement | Test Method | Expected Result | Actual Result | Status |
 |---|---|---|---|:---:|
 | **Authentication & Tenant Isolation** | Automated Pest Feature Test | User B cannot view or modify User A assets | Cross-tenant access returns 403/404 | **VERIFIED** |
-| **Product Image Preservation** | Live GPT-Image-2 Generation | Catalog drink image preserved in 3 variations | Exact glass facets, ice, straw, layers kept | **VERIFIED** |
+| **Product Image Preservation** | Live GPT-Image-2 Generation | Catalog drink image preserved in variations | Exact glass facets, ice, straw, layers kept | **VERIFIED** |
 | **Exact Price Handling** | Automated QA + Live Generation | Exact `₱149` preserved with currency glyph | `₱149` displayed accurately in output | **VERIFIED** |
-| **Exact Tagline Handling** | Automated QA + Live Generation | Exact tagline preserved without modification | Output displays exact string | **VERIFIED** |
-| **20% Dynamic Safe Margins** | Mathematical Compositor Test | 20% margin on 1:1, 16:9, and 9:16 canvases | Safe area calculated dynamically per ratio | **VERIFIED** |
+| **Exact Tagline Handling & Normalization** | Unit & Feature Pest Tests | Pure, deterministic tagline normalization stripping outer quotes, trailing periods, dangling connectors (&, -, —, /, \|) while preserving intentional ! and ? | Dedicated `TaglineNormalizationService` with universal pipeline parity | **VERIFIED** |
+| **Industry & Category Art Direction** | Service & Orchestrator Pest Tests | Active environmental staging, lighting, materials, and props per industry/category | Dedicated art-direction vectors for F&B, Beauty, Auto, Tech, Fashion, Real Estate | **VERIFIED** |
+| **5 Responsive Aspect Ratios** | Orchestrator String Assertion + Pint | Dedicated composition profiles for 1:1, 9:16, 16:9, 4:5, 4:3 | 5 distinct composition architectures confirmed | **VERIFIED** |
+| **Strict Anti-Logo Enforcement** | Orchestrator Prompt Assertion | Zero logo/emblem/badge generation | Strict anti-logo & plain typography rules | **VERIFIED** |
+| **Creative Typographic Integration** | Orchestrator Prompt Assertion | Styled typography permitted without logos | Natural typographic integration confirmed | **VERIFIED** |
 | **Render Style Exclusivity** | Orchestrator String Assertion | Exactly 1 style active per prompt compilation | Single active render style confirmed | **VERIFIED** |
 | **Philippine Holiday Direction** | Holiday Service + Generator Test | Holiday provides structured mood/lighting | Mother's Day decor generated cleanly | **VERIFIED** |
-| **Historical Design Retention** | Database Cascade Test | Deleting product preserves saved design record | Design history retained with metadata | **VERIFIED** |
-| **Automated Test Suite** | Pest PHP CLI Execution | 149 tests execute with zero failures | 149 passed / 149 total (525 assertions) | **VERIFIED** |
+| **Regeneration Input Fidelity** | Pest Feature Test | All 14+ creative inputs & 5 ratios restored | Complete regeneration fidelity confirmed | **VERIFIED** |
+| **Automated Test Suite** | Pest PHP CLI Execution | 204 tests execute with zero failures | 204 passed / 204 total (933 assertions) | **VERIFIED** |
 | **Code Formatting** | Laravel Pint CLI | 100% PSR-12 / Laravel guideline compliance | Clean pass (`pint --format agent`) | **VERIFIED** |
 
 ---
 
 ## 10. Production Acceptance Summary
 
-- **Automated Tests**: **149 / 149 Passing** (100% Pass Rate)
-- **Assertions**: **525 Assertions**
+- **Automated Tests**: **204 / 204 Passing** (100% Pass Rate)
+- **Assertions**: **933 Assertions**
 - **Critical Defects**: **0**
 - **High Defects**: **0**
 - **Medium Defects**: **0**
-- **Low / Documentation Defects**: **0**
+- **Industry & Category Art Direction Engine**: **ACTIVE & VERIFIED** (`IndustryCategoryArtDirectionService`)
+- **Tagline Normalization Engine**: **ACTIVE & VERIFIED** (`TaglineNormalizationService`)
 - **Production Acceptance Decision**: **ACCEPTED**
 
 ---

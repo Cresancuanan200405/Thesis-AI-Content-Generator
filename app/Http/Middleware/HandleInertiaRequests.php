@@ -46,19 +46,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'unread_notifications_count' => $user ? $user->appNotifications()->unread()->count() : 0,
             'recent_notifications' => $user ? $user->appNotifications()->latest()->take(5)->get() : [],
-            'ai_usage' => $user ? array_merge(
-                app(OpenAIUsageService::class)->getUsage($user),
-                [
-                    'quality_counts' => [
-                        'low' => $user->designs()->whereJsonContains('generation_metadata->quality', 'low')->count(),
-                        'medium' => $user->designs()->where(function ($q) {
-                            $q->whereJsonContains('generation_metadata->quality', 'medium')
-                                ->orWhereNull('generation_metadata->quality');
-                        })->count(),
-                        'high' => $user->designs()->whereJsonContains('generation_metadata->quality', 'high')->count(),
-                    ],
-                ]
-            ) : null,
+            'ai_usage' => $user ? app(OpenAIUsageService::class)->getUsage($user) : null,
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),

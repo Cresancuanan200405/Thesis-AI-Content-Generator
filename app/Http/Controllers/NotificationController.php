@@ -25,19 +25,37 @@ class NotificationController extends Controller
 
         if ($filter === 'unread') {
             $query->unread();
-        } elseif ($filter === 'campaigns') {
-            $query->where('type', 'like', '%campaign%');
-        } elseif ($filter === 'designs') {
-            $query->where('type', 'like', '%design%');
-        } elseif ($filter === 'products') {
-            $query->where('type', 'like', '%product%');
+        } elseif ($filter === 'security') {
+            $query->where(function ($q) {
+                $q->where('type', 'security')
+                    ->orWhere('type', 'like', '%security%');
+            });
+        } elseif ($filter === 'ai') {
+            $query->where(function ($q) {
+                $q->where('type', 'ai')
+                    ->orWhere('type', 'like', '%ai%')
+                    ->orWhere('type', 'like', '%generation%')
+                    ->orWhere('type', 'like', '%design%');
+            });
+        } elseif ($filter === 'usage') {
+            $query->where(function ($q) {
+                $q->where('type', 'usage')
+                    ->orWhere('type', 'like', '%budget%')
+                    ->orWhere('type', 'like', '%limit%')
+                    ->orWhere('type', 'like', '%telemetry%');
+            });
+        } elseif ($filter === 'billing') {
+            $query->where(function ($q) {
+                $q->where('type', 'billing')
+                    ->orWhere('type', 'like', '%subscription%')
+                    ->orWhere('type', 'like', '%plan%')
+                    ->orWhere('type', 'like', '%invoice%');
+            });
         } elseif ($filter === 'system') {
             $query->where(function ($q) {
-                $q->where('type', 'like', '%logo%')
-                    ->orWhere('type', 'like', '%profile%')
-                    ->orWhere('type', 'like', '%security%')
-                    ->orWhere('type', 'like', '%event%')
-                    ->orWhere('type', 'system');
+                $q->where('type', 'system')
+                    ->orWhere('type', 'like', '%announcement%')
+                    ->orWhere('type', 'like', '%maintenance%');
             });
         }
 
@@ -66,10 +84,22 @@ class NotificationController extends Controller
         $unreadCount = $user->appNotifications()->unread()->count();
         $totalCount = $user->appNotifications()->count();
 
+        // Categorized counts for UI tab indicators
+        $categoryCounts = [
+            'all' => $totalCount,
+            'unread' => $unreadCount,
+            'security' => $user->appNotifications()->where(fn ($q) => $q->where('type', 'security')->orWhere('type', 'like', '%security%'))->count(),
+            'ai' => $user->appNotifications()->where(fn ($q) => $q->where('type', 'ai')->orWhere('type', 'like', '%ai%')->orWhere('type', 'like', '%generation%')->orWhere('type', 'like', '%design%'))->count(),
+            'usage' => $user->appNotifications()->where(fn ($q) => $q->where('type', 'usage')->orWhere('type', 'like', '%budget%')->orWhere('type', 'like', '%limit%'))->count(),
+            'billing' => $user->appNotifications()->where(fn ($q) => $q->where('type', 'billing')->orWhere('type', 'like', '%subscription%')->orWhere('type', 'like', '%plan%'))->count(),
+            'system' => $user->appNotifications()->where(fn ($q) => $q->where('type', 'system')->orWhere('type', 'like', '%announcement%')->orWhere('type', 'like', '%maintenance%'))->count(),
+        ];
+
         return Inertia::render('notifications/index', [
             'notifications' => $notifications,
             'unread_count' => $unreadCount,
             'total_count' => $totalCount,
+            'category_counts' => $categoryCounts,
             'current_filter' => $filter,
             'search_query' => $search,
         ]);

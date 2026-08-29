@@ -52,6 +52,8 @@ type CalendarEvent = {
     days?: string | null;
     is_global?: boolean;
     user_id?: number | null;
+    has_design?: boolean;
+    is_missed?: boolean;
 };
 
 const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -126,6 +128,13 @@ const categoryStyles: Record<
         text: 'text-rose-700 dark:text-rose-300',
         border: 'border-rose-500/25',
         label: 'Regular Holiday',
+    },
+    missed: {
+        dot: 'bg-slate-400 dark:bg-slate-500',
+        bg: 'bg-slate-500/10 dark:bg-slate-500/15',
+        text: 'text-slate-600 dark:text-slate-400',
+        border: 'border-slate-500/25',
+        label: 'Missed Event',
     },
 };
 
@@ -274,6 +283,10 @@ export default function MarketingCalendarPage({
 
             if (activeFilter === 'custom') {
                 return evt.type === 'custom' || evt.category === 'custom';
+            }
+
+            if (activeFilter === 'missed') {
+                return isEventPast(evt.date) && !evt.has_design;
             }
 
             return true;
@@ -604,17 +617,19 @@ export default function MarketingCalendarPage({
                                         title={`Filter: ${
                                             activeFilter === 'all'
                                                 ? 'All Events & Holidays'
-                                                : activeFilter === 'regular'
-                                                  ? 'Regular Holidays'
-                                                  : activeFilter ===
-                                                      'special_non_working'
-                                                    ? 'Special Non-Working'
-                                                    : activeFilter === 'islamic'
-                                                      ? 'Islamic Holidays'
-                                                      : activeFilter ===
-                                                          'commercial'
-                                                        ? 'Sales & Events'
-                                                        : 'Custom Events'
+                                                : activeFilter === 'missed'
+                                                  ? 'Missed Events & Holidays'
+                                                  : activeFilter === 'regular'
+                                                    ? 'Regular Holidays'
+                                                    : activeFilter ===
+                                                        'special_non_working'
+                                                      ? 'Special Non-Working'
+                                                      : activeFilter === 'islamic'
+                                                        ? 'Islamic Holidays'
+                                                        : activeFilter ===
+                                                            'commercial'
+                                                          ? 'Sales & Events'
+                                                          : 'Custom Events'
                                         }`}
                                         aria-label="Filter events and holidays"
                                     >
@@ -637,6 +652,15 @@ export default function MarketingCalendarPage({
                                                 <span>
                                                     All Events & Holidays
                                                 </span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem
+                                            value="missed"
+                                            className="text-xs"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <span className="h-2 w-2 rounded-full bg-slate-400" />
+                                                <span>Missed Events & Holidays</span>
                                             </div>
                                         </SelectItem>
                                         <SelectItem
@@ -932,6 +956,8 @@ export default function MarketingCalendarPage({
                                                 const isPast = isEventPast(
                                                     evt.date,
                                                 );
+                                                const isMissed =
+                                                    isPast && !evt.has_design;
                                                 const styleKey =
                                                     evt.category ||
                                                     evt.type ||
@@ -981,15 +1007,21 @@ export default function MarketingCalendarPage({
                                                                             baseStyle.label
                                                                         }
                                                                     </Badge>
-                                                                    {isPast && (
+                                                                    {isMissed ? (
+                                                                        <Badge
+                                                                            variant="secondary"
+                                                                            className="border border-slate-500/30 bg-slate-500/10 font-mono text-[10px] text-slate-400"
+                                                                        >
+                                                                            Missed
+                                                                        </Badge>
+                                                                    ) : isPast ? (
                                                                         <Badge
                                                                             variant="secondary"
                                                                             className="bg-muted/80 font-mono text-[10px] text-muted-foreground"
                                                                         >
-                                                                            Past
-                                                                            Event
+                                                                            Past Event
                                                                         </Badge>
-                                                                    )}
+                                                                    ) : null}
                                                                     {evt.is_long_weekend && (
                                                                         <Badge
                                                                             variant="secondary"
@@ -1008,21 +1040,30 @@ export default function MarketingCalendarPage({
                                                             </div>
                                                         </div>
 
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                router.visit(
-                                                                    `/generator?event_id=${evt.id}`,
-                                                                );
-                                                            }}
-                                                            className="h-8 gap-1.5 text-xs shadow-none"
-                                                        >
-                                                            <Sparkles className="h-3.5 w-3.5 text-primary" />
-                                                            Generate Visuals
-                                                        </Button>
+                                                        {isMissed ? (
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="h-7 border-slate-500/30 bg-slate-500/10 px-2.5 font-mono text-[10px] text-slate-400 shadow-none"
+                                                            >
+                                                                No Visual Created
+                                                            </Badge>
+                                                        ) : (
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    router.visit(
+                                                                        `/generator?event_id=${evt.id}`,
+                                                                    );
+                                                                }}
+                                                                className="h-8 gap-1.5 text-xs shadow-none"
+                                                            >
+                                                                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                                                                Generate Visuals
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 );
                                             })}
@@ -1178,6 +1219,9 @@ export default function MarketingCalendarPage({
                                                                         isEventPast(
                                                                             evt.date,
                                                                         );
+                                                                    const isMissed =
+                                                                        isPast &&
+                                                                        !evt.has_design;
                                                                     const styleKey =
                                                                         evt.category ||
                                                                         evt.type ||
@@ -1254,21 +1298,30 @@ export default function MarketingCalendarPage({
                                                                                 </div>
                                                                             </div>
 
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={(
-                                                                                    e,
-                                                                                ) => {
-                                                                                    e.stopPropagation();
-                                                                                    router.visit(
-                                                                                        `/generator?event_id=${evt.id}`,
-                                                                                    );
-                                                                                }}
-                                                                                className="shrink-0 rounded-lg border border-primary/20 bg-primary/10 p-1.5 text-primary transition-all hover:bg-primary hover:text-primary-foreground"
-                                                                                title="Generate Visuals"
-                                                                            >
-                                                                                <Sparkles className="h-3.5 w-3.5" />
-                                                                            </button>
+                                                                            {isMissed ? (
+                                                                                <span
+                                                                                    className="shrink-0 rounded-md border border-slate-500/20 bg-slate-500/10 px-1.5 py-0.5 text-[9px] font-mono text-slate-400"
+                                                                                    title="Missed Event (No Visual Created)"
+                                                                                >
+                                                                                    Missed
+                                                                                </span>
+                                                                            ) : (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={(
+                                                                                        e,
+                                                                                    ) => {
+                                                                                        e.stopPropagation();
+                                                                                        router.visit(
+                                                                                            `/generator?event_id=${evt.id}`,
+                                                                                        );
+                                                                                    }}
+                                                                                    className="shrink-0 rounded-lg border border-primary/20 bg-primary/10 p-1.5 text-primary transition-all hover:bg-primary hover:text-primary-foreground"
+                                                                                    title="Generate Visuals"
+                                                                                >
+                                                                                    <Sparkles className="h-3.5 w-3.5" />
+                                                                                </button>
+                                                                            )}
                                                                         </div>
                                                                     );
                                                                 },
@@ -1465,6 +1518,8 @@ export default function MarketingCalendarPage({
                                     const isPast = isEventPast(
                                         selectedEvent.date,
                                     );
+                                    const isMissed =
+                                        isPast && !selectedEvent.has_design;
                                     const styleKey =
                                         selectedEvent.category ||
                                         selectedEvent.type ||
@@ -1481,7 +1536,14 @@ export default function MarketingCalendarPage({
                                             >
                                                 {style.label}
                                             </Badge>
-                                            {isPast ? (
+                                            {isMissed ? (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="border-slate-500/30 bg-slate-500/10 font-mono text-[10px] font-semibold text-slate-400"
+                                                >
+                                                    Missed (No Visuals)
+                                                </Badge>
+                                            ) : isPast ? (
                                                 <Badge
                                                     variant="secondary"
                                                     className="bg-muted font-mono text-[10px] text-muted-foreground"
@@ -1524,34 +1586,62 @@ export default function MarketingCalendarPage({
                             </div>
                         )}
 
-                        <DialogFooter className="mt-4 flex-col gap-2 sm:flex-row">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                    router.visit(
-                                        `/generator?event_id=${selectedEvent.id}`,
-                                    );
-                                }}
-                                className="w-full gap-1.5 text-xs font-semibold shadow-none sm:w-auto"
-                            >
-                                <Sparkles className="h-3.5 w-3.5 text-primary" />
-                                Generate Visuals
-                            </Button>
+                        {isEventPast(selectedEvent.date) &&
+                            !selectedEvent.has_design && (
+                                <div className="rounded-2xl border border-slate-500/20 bg-slate-500/5 p-3.5 text-xs text-muted-foreground">
+                                    <span className="font-semibold text-foreground">
+                                        Missed Event:
+                                    </span>{' '}
+                                    This event date has passed without an AI
+                                    marketing visual being generated.
+                                </div>
+                            )}
 
-                            <Button
-                                type="button"
-                                size="sm"
-                                onClick={() => {
-                                    router.visit(
-                                        `/campaigns?create=true&event_id=${selectedEvent.id}`,
-                                    );
-                                }}
-                                className="w-full text-xs font-semibold shadow-xs sm:w-auto"
-                            >
-                                Create Campaign
-                            </Button>
+                        <DialogFooter className="mt-4 flex-col gap-2 sm:flex-row">
+                            {!(
+                                isEventPast(selectedEvent.date) &&
+                                !selectedEvent.has_design
+                            ) ? (
+                                <>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            router.visit(
+                                                `/generator?event_id=${selectedEvent.id}`,
+                                            );
+                                        }}
+                                        className="w-full gap-1.5 text-xs font-semibold shadow-none sm:w-auto"
+                                    >
+                                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                                        Generate Visuals
+                                    </Button>
+
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        onClick={() => {
+                                            router.visit(
+                                                `/campaigns?create=true&event_id=${selectedEvent.id}`,
+                                            );
+                                        }}
+                                        className="w-full text-xs font-semibold shadow-xs sm:w-auto"
+                                    >
+                                        Create Campaign
+                                    </Button>
+                                </>
+                            ) : (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setSelectedEvent(null)}
+                                    className="w-full text-xs font-semibold shadow-none sm:w-auto"
+                                >
+                                    Close
+                                </Button>
+                            )}
 
                             {(() => {
                                 const isRegularOrGlobal = Boolean(

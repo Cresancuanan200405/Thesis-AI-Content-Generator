@@ -1,5 +1,11 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { Bell, CreditCard, LogOut, Settings, User } from 'lucide-react';
+import {
+    Bell,
+    CreditCard,
+    LogOut,
+    Settings,
+    User,
+} from 'lucide-react';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -9,7 +15,6 @@ import {
 import { UserInfo } from '@/components/user-info';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { logout } from '@/routes';
-import { edit } from '@/routes/profile';
 import type { User as UserType } from '@/types';
 
 type Props = {
@@ -78,14 +83,15 @@ export function UserMenuContent({ user }: Props) {
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                    <button
-                        type="button"
-                        className="flex w-full items-center"
+                    <Link
+                        className="block w-full cursor-pointer"
+                        href="/subscriptions"
+                        prefetch
                         onClick={cleanup}
                     >
                         <CreditCard className="mr-2 h-4 w-4" />
-                        Subscription
-                    </button>
+                        Subscriptions
+                    </Link>
                 </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
@@ -98,7 +104,7 @@ export function UserMenuContent({ user }: Props) {
                     data-test="logout-button"
                 >
                     <LogOut className="mr-2 h-4 w-4" />
-                    Log Out
+                    Sign Out
                 </Link>
             </DropdownMenuItem>
         </>

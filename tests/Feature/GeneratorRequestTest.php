@@ -82,7 +82,6 @@ it('authenticated user can create a generator request', function () {
             'brand_tone' => ['Professional', 'Warm'],
             'tagline' => 'Fresh flavor, daily joy.',
             'tagline_mode' => 'manual',
-            'target_audience' => 'Young professionals',
             'unique_selling_point' => 'Small-batch roasting and seasonal ingredients',
             'notes' => 'Use warm studio lighting and clean copy.',
         ])
@@ -94,7 +93,7 @@ it('authenticated user can create a generator request', function () {
         'product_id' => $product->id,
         'event_id' => $event->id,
         'marketing_goal' => 'Drive early spring sales',
-        'tagline' => 'Fresh flavor, daily joy.',
+        'tagline' => 'Fresh flavor, daily joy',
         'status' => 'completed',
     ]);
 
@@ -159,4 +158,35 @@ it('validates image quality input', function () {
             'image_quality' => 'ultra-extreme',
         ])
         ->assertSessionHasErrors(['image_quality']);
+});
+
+it('normalizes tagline during preview generation', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'North Star Coffee',
+    ]);
+
+    config()->set('services.openai.api_key', 'test-key');
+    Http::fake([
+        'https://api.openai.com/v1/images/generations' => Http::response([
+            'data' => [
+                ['b64_json' => base64_encode('fake-preview-image')],
+            ],
+        ], 200),
+    ]);
+
+    $response = $this->actingAs($user)
+        ->postJson('/generator/preview', [
+            'product_name' => 'Signature Latte',
+            'tagline' => '“Fresh Flavor Daily...” &',
+            'marketing_goal' => 'Drive sales',
+            'aspect_ratio' => '1:1',
+        ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'success' => true,
+            'tagline' => 'Fresh Flavor Daily',
+        ]);
 });

@@ -25,7 +25,15 @@ export default function Appearance() {
 Appearance.layout = {
     breadcrumbs: [
         {
-            title: 'Appearance settings',
+            title: 'Dashboard',
+            href: '/dashboard',
+        },
+        {
+            title: 'Account Settings',
+            href: '/settings/profile',
+        },
+        {
+            title: 'Appearance',
             href: editAppearance(),
         },
     ],

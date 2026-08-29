@@ -33,5 +33,6 @@
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
         <env name="OPENAI_API_KEY" value=""/>
+        <env name="OPENAI_ADMIN_KEY" value=""/>
     </php>
 </phpunit>

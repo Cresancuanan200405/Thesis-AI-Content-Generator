@@ -107,8 +107,8 @@ class OpenAIImageService
 
         // 1. Resolve Aspect Ratio to supported dimensions
         $size = match ($aspectRatio) {
-            '16:9' => in_array($apiModel, ['gpt-image-2', 'chatgpt-image-latest', 'gpt-image-1.5', 'gpt-image-1', 'dall-e-3'], true) ? '1792x1024' : '1024x1024',
-            '9:16' => in_array($apiModel, ['gpt-image-2', 'chatgpt-image-latest', 'gpt-image-1.5', 'gpt-image-1', 'dall-e-3'], true) ? '1024x1792' : '1024x1024',
+            '16:9', '4:3' => in_array($apiModel, ['gpt-image-2', 'chatgpt-image-latest', 'gpt-image-1.5', 'gpt-image-1', 'dall-e-3'], true) ? '1792x1024' : '1024x1024',
+            '9:16', '4:5' => in_array($apiModel, ['gpt-image-2', 'chatgpt-image-latest', 'gpt-image-1.5', 'gpt-image-1', 'dall-e-3'], true) ? '1024x1792' : '1024x1024',
             default => '1024x1024',
         };
 
@@ -172,7 +172,7 @@ class OpenAIImageService
         if (empty($binary)) {
             $payload = [
                 'model' => $apiModel,
-                'prompt' => Str::limit($fullPrompt, 3900),
+                'prompt' => $apiModel === 'dall-e-3' ? Str::limit($fullPrompt, 4000) : $fullPrompt,
                 'n' => 1,
                 'size' => $size,
             ];
@@ -206,17 +206,22 @@ class OpenAIImageService
         Storage::disk('public')->put($filename, $binary);
 
         $duration = round(microtime(true) - $startTime, 2);
+        $modelPolicy = $this->modelRegistry->getModelPolicy($requestedModel);
 
         $this->lastGenerationMetadata = [
             'model' => $apiModel,
             'model_name' => $modelSpec['display_name'],
+            'is_recommended' => (bool) ($modelSpec['is_recommended'] ?? false),
+            'product_preservation_capability' => $modelPolicy['product_preservation_capability'],
             'generation_method' => $generationMethod,
             'generation_mode' => $generationMode,
             'size' => $size,
             'aspect_ratio' => $aspectRatio,
             'prompt' => $fullPrompt,
             'prompt_version' => 'marketing-pipeline-v1',
-            'product_preserved' => $hasImageInput,
+            'product_preserved' => $hasImageInput && (bool) ($modelSpec['supports_image_input'] ?? false),
+            'supports_image_editing' => (bool) ($modelSpec['supports_image_editing'] ?? false),
+            'business_name' => $options['business_name'] ?? null,
             'duration_seconds' => $duration,
             'status' => 'completed',
             'timestamp' => now()->toIso8601String(),

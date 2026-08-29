@@ -8,7 +8,6 @@ use App\Models\Campaign;
 use App\Models\Design;
 use App\Models\Event;
 use App\Models\User;
-use App\Services\NotificationService;
 use Carbon\CarbonInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -298,14 +297,6 @@ class CampaignController extends Controller
             }
         }
 
-        NotificationService::notify(
-            $user,
-            'campaign_created',
-            "Campaign Created: {$campaign->name}",
-            "New campaign \"{$campaign->name}\" was successfully created.",
-            route('campaigns.show', $campaign)
-        );
-
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
@@ -343,16 +334,6 @@ class CampaignController extends Controller
             'status' => $request->input('status', $campaign->status),
         ]);
 
-        if ($user = $request->user()) {
-            NotificationService::notify(
-                $user,
-                'campaign_updated',
-                "Campaign Updated: {$campaign->name}",
-                "Campaign \"{$campaign->name}\" details have been updated.",
-                route('campaigns.show', $campaign)
-            );
-        }
-
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
@@ -382,16 +363,6 @@ class CampaignController extends Controller
 
         $campaign->delete();
 
-        if ($user) {
-            NotificationService::notify(
-                $user,
-                'campaign_deleted',
-                "Campaign Deleted: {$campaignName}",
-                "Campaign \"{$campaignName}\" was deleted.",
-                route('campaigns.index')
-            );
-        }
-
         return redirect()->route('campaigns.index')->with('success', 'Campaign deleted successfully.');
     }
 
@@ -400,16 +371,6 @@ class CampaignController extends Controller
         $this->authorize('update', $campaign);
 
         $campaign->update(['status' => 'archived']);
-
-        if ($user = $request->user()) {
-            NotificationService::notify(
-                $user,
-                'campaign_archived',
-                "Campaign Archived: {$campaign->name}",
-                "Campaign \"{$campaign->name}\" was moved to archive.",
-                route('campaigns.index', ['status' => 'archived'])
-            );
-        }
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -426,16 +387,6 @@ class CampaignController extends Controller
         $this->authorize('update', $campaign);
 
         $campaign->update(['status' => 'active']);
-
-        if ($user = $request->user()) {
-            NotificationService::notify(
-                $user,
-                'campaign_restored',
-                "Campaign Restored: {$campaign->name}",
-                "Campaign \"{$campaign->name}\" was restored to active.",
-                route('campaigns.show', $campaign)
-            );
-        }
 
         if ($request->wantsJson()) {
             return response()->json([

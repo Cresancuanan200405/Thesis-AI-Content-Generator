@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Design;
 use App\Models\Event;
 use App\Models\User;
 use App\Services\PhilippineHolidayService;
@@ -337,4 +338,50 @@ it('syncs all 5 classifications of Philippine holidays including islamic movable
     $maundyThursday = array_values(array_filter($holidays, fn ($h) => str_contains($h['name'], 'Maundy Thursday')))[0];
     expect($maundyThursday['is_long_weekend'])->toBeTrue()
         ->and($maundyThursday['long_weekend_details'])->toContain('Long Weekend');
+});
+
+it('calendar filters missed events where user did not generate visuals', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    $pastMissedEvent = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Past Missed Promo',
+        'date' => now()->subDays(10)->toDateString(),
+        'type' => 'custom',
+        'is_global' => false,
+    ]);
+
+    $pastGeneratedEvent = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Past Handled Promo',
+        'date' => now()->subDays(5)->toDateString(),
+        'type' => 'custom',
+        'is_global' => false,
+    ]);
+
+    Design::factory()->create([
+        'user_id' => $user->id,
+        'event_id' => $pastGeneratedEvent->id,
+    ]);
+
+    $upcomingEvent = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Upcoming Event',
+        'date' => now()->addDays(5)->toDateString(),
+        'type' => 'custom',
+        'is_global' => false,
+    ]);
+
+    $response = $this->actingAs($user)
+        ->get('/calendar?filter=missed')
+        ->assertOk();
+
+    $pageEvents = collect($response->original->getData()['page']['props']['events']);
+    expect($pageEvents->pluck('id'))->toContain($pastMissedEvent->id)
+        ->and($pageEvents->pluck('id'))->not->toContain($pastGeneratedEvent->id)
+        ->and($pageEvents->pluck('id'))->not->toContain($upcomingEvent->id);
+
+    $missedEventData = $pageEvents->firstWhere('id', $pastMissedEvent->id);
+    expect($missedEventData['is_missed'])->toBeTrue()
+        ->and($missedEventData['has_design'])->toBeFalse();
 });

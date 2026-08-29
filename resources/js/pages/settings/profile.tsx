@@ -1,5 +1,14 @@
 import { Form, Head, Link, usePage } from '@inertiajs/react';
-import { CheckCircle2, Mail } from 'lucide-react';
+import {
+    CheckCircle2,
+    Laptop,
+    Mail,
+    Monitor,
+    Moon,
+    ShieldAlert,
+    Sun,
+    User as UserIcon,
+} from 'lucide-react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/delete-user';
 import InputError from '@/components/input-error';
@@ -8,6 +17,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useAppearance } from '@/hooks/use-appearance';
+import { cn } from '@/lib/utils';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 import type { Auth } from '@/types';
@@ -16,7 +27,7 @@ type PageProps = {
     auth: Auth;
 };
 
-export default function Profile({
+export default function ProfileAndPreferencesSettings({
     mustVerifyEmail,
     status,
 }: {
@@ -25,15 +36,7 @@ export default function Profile({
 }) {
     const { auth } = usePage<PageProps>().props;
     const user = auth.user;
-
-    const initials = user.name
-        ? user.name
-              .split(' ')
-              .map((n: string) => n[0])
-              .join('')
-              .toUpperCase()
-              .slice(0, 2)
-        : 'U';
+    const { appearance, updateAppearance } = useAppearance();
 
     const providerName = (user as any).provider_name
         ? (user as any).provider_name.charAt(0).toUpperCase() +
@@ -42,97 +45,44 @@ export default function Profile({
 
     return (
         <>
-            <Head title="Profile Settings" />
+            <Head title="Profile & Preferences" />
 
-            <div className="max-w-4xl space-y-6">
-                {/* Section Header */}
-                <div className="border-b border-border/70 pb-4">
-                    <h1 className="text-xl font-bold text-foreground">
-                        Profile & Account Settings
-                    </h1>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                        Manage your personal account credentials, email
-                        verification, and security.
-                    </p>
-                </div>
-
-                {/* Profile Overview Banner */}
-                <Card className="rounded-2xl border-border bg-card p-5 shadow-xs">
-                    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-lg font-bold text-primary-foreground shadow-xs">
-                                {initials}
-                            </div>
-
-                            <div className="space-y-1">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <h2 className="text-base font-bold text-foreground">
-                                        {user.name}
-                                    </h2>
-                                    {user.email_verified_at ? (
-                                        <Badge
-                                            variant="outline"
-                                            className="gap-1 border-emerald-500/30 bg-emerald-500/10 py-0 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"
-                                        >
-                                            <CheckCircle2 className="h-2.5 w-2.5" />
-                                            Verified
-                                        </Badge>
-                                    ) : (
-                                        <Badge
-                                            variant="outline"
-                                            className="border-amber-500/30 bg-amber-500/10 py-0 text-[10px] font-semibold text-amber-600 dark:text-amber-400"
-                                        >
-                                            Unverified
-                                        </Badge>
-                                    )}
-                                    <Badge
-                                        variant="secondary"
-                                        className="py-0 text-[10px]"
-                                    >
-                                        {providerName}
-                                    </Badge>
-                                </div>
-
-                                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                    <Mail className="h-3 w-3" />
-                                    {user.email}
+            <div className="space-y-8">
+                {/* 1. Personal Information Card */}
+                <Card className="rounded-3xl border-border/80 bg-card shadow-xs">
+                    <CardHeader className="border-b border-border/60 p-6 pb-4">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <CardTitle className="text-base font-bold text-foreground">
+                                    Personal Information
+                                </CardTitle>
+                                <p className="text-xs text-muted-foreground">
+                                    Update your personal name and primary account contact email.
                                 </p>
                             </div>
+                            <Badge
+                                variant="secondary"
+                                className="text-[11px] font-medium"
+                            >
+                                {providerName}
+                            </Badge>
                         </div>
-
-                        <Button
-                            asChild
-                            variant="outline"
-                            size="sm"
-                            className="self-start text-xs font-semibold shadow-none sm:self-center"
-                        >
-                            <Link href="/profile">View My Profile →</Link>
-                        </Button>
-                    </div>
-                </Card>
-
-                {/* Edit Personal Information Form */}
-                <Card className="rounded-2xl border-border bg-card shadow-xs">
-                    <CardHeader className="border-b border-border/60 p-5 pb-3">
-                        <CardTitle className="text-sm font-bold text-foreground">
-                            Personal Information
-                        </CardTitle>
                     </CardHeader>
 
-                    <CardContent className="p-5">
+                    <CardContent className="p-6">
                         <Form
                             {...ProfileController.update.form()}
                             options={{
                                 preserveScroll: true,
                             }}
-                            className="space-y-4"
+                            className="space-y-5"
                         >
                             {({ processing, errors }) => (
                                 <>
-                                    <div className="space-y-1.5">
+                                    <div className="space-y-2">
                                         <Label
                                             htmlFor="name"
-                                            className="text-xs font-medium"
+                                            className="text-xs font-bold text-foreground"
                                         >
                                             Full Name
                                         </Label>
@@ -143,21 +93,33 @@ export default function Profile({
                                             required
                                             autoComplete="name"
                                             placeholder="Your full name"
-                                            className="h-9 max-w-lg text-xs"
+                                            className="h-11 rounded-xl text-sm"
                                         />
                                         <InputError
                                             message={errors.name}
-                                            className="text-xs"
+                                            className="text-xs font-semibold text-destructive"
                                         />
                                     </div>
 
-                                    <div className="space-y-1.5">
-                                        <Label
-                                            htmlFor="email"
-                                            className="text-xs font-medium"
-                                        >
-                                            Email Address
-                                        </Label>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <Label
+                                                htmlFor="email"
+                                                className="text-xs font-bold text-foreground"
+                                            >
+                                                Email Address
+                                            </Label>
+                                            {user.email_verified_at ? (
+                                                <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                    <CheckCircle2 className="h-3 w-3" />
+                                                    Verified
+                                                </span>
+                                            ) : (
+                                                <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                                                    Unverified
+                                                </span>
+                                            )}
+                                        </div>
                                         <Input
                                             id="email"
                                             type="email"
@@ -166,51 +128,43 @@ export default function Profile({
                                             required
                                             autoComplete="username"
                                             placeholder="you@example.com"
-                                            className="h-9 max-w-lg text-xs"
+                                            className="h-11 rounded-xl text-sm"
                                         />
                                         <InputError
                                             message={errors.email}
-                                            className="text-xs"
+                                            className="text-xs font-semibold text-destructive"
                                         />
                                     </div>
 
-                                    {mustVerifyEmail &&
-                                        user.email_verified_at === null && (
-                                            <div className="max-w-lg rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
-                                                <p className="text-xs text-amber-800 dark:text-amber-300">
-                                                    Your email address is
-                                                    unverified.{' '}
-                                                    <Link
-                                                        href={send()}
-                                                        as="button"
-                                                        className="font-semibold underline underline-offset-2 transition-colors hover:text-foreground"
-                                                    >
-                                                        Click here to re-send
-                                                        verification link.
-                                                    </Link>
+                                    {mustVerifyEmail && user.email_verified_at === null && (
+                                        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs">
+                                            <p className="text-amber-800 dark:text-amber-300">
+                                                Your email address is currently unverified.{' '}
+                                                <Link
+                                                    href={send()}
+                                                    as="button"
+                                                    className="font-bold underline underline-offset-2 hover:text-foreground"
+                                                >
+                                                    Click here to re-send verification link.
+                                                </Link>
+                                            </p>
+
+                                            {status === 'verification-link-sent' && (
+                                                <p className="mt-2 font-medium text-emerald-600 dark:text-emerald-400">
+                                                    A new verification link has been sent to your email address.
                                                 </p>
+                                            )}
+                                        </div>
+                                    )}
 
-                                                {status ===
-                                                    'verification-link-sent' && (
-                                                    <p className="mt-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                                                        A new verification email
-                                                        has been sent.
-                                                    </p>
-                                                )}
-                                            </div>
-                                        )}
-
-                                    <div className="pt-2">
+                                    <div className="flex justify-end pt-2">
                                         <Button
                                             type="submit"
-                                            size="sm"
                                             disabled={processing}
                                             data-test="update-profile-button"
-                                            className="text-xs font-semibold shadow-xs"
+                                            className="h-10 min-w-32 rounded-xl px-5 text-xs font-bold shadow-xs"
                                         >
-                                            {processing
-                                                ? 'Saving...'
-                                                : 'Save Changes'}
+                                            {processing ? 'Saving...' : 'Save Profile'}
                                         </Button>
                                     </div>
                                 </>
@@ -219,33 +173,74 @@ export default function Profile({
                     </CardContent>
                 </Card>
 
-                {/* Account Security Quick Links */}
-                <Card className="space-y-3 rounded-2xl border-border bg-card p-5 shadow-xs">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h3 className="text-sm font-bold text-foreground">
-                                Password & Security
-                            </h3>
-                            <p className="mt-0.5 text-xs text-muted-foreground">
-                                Update your password and manage two-factor
-                                authentication.
-                            </p>
-                        </div>
+                {/* 2. Application Preferences (Theme & Appearance) */}
+                <Card className="rounded-3xl border-border/80 bg-card shadow-xs">
+                    <CardHeader className="border-b border-border/60 p-6 pb-4">
+                        <CardTitle className="text-base font-bold text-foreground">
+                            Application Appearance
+                        </CardTitle>
+                        <p className="text-xs text-muted-foreground">
+                            Choose how the studio interface appears across your browser sessions.
+                        </p>
+                    </CardHeader>
 
-                        <Button
-                            asChild
-                            variant="outline"
-                            size="sm"
-                            className="text-xs shadow-none"
-                        >
-                            <Link href="/settings/security">
-                                Security Settings →
-                            </Link>
-                        </Button>
-                    </div>
+                    <CardContent className="p-6">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                            <button
+                                type="button"
+                                onClick={() => updateAppearance('light')}
+                                className={cn(
+                                    'flex flex-col items-center justify-between gap-3 rounded-2xl border p-4 text-center transition-all',
+                                    appearance === 'light'
+                                        ? 'border-primary bg-primary/5 text-primary shadow-xs ring-2 ring-primary/20'
+                                        : 'border-border/80 bg-card hover:bg-muted text-muted-foreground'
+                                )}
+                            >
+                                <Sun className="h-6 w-6" />
+                                <div className="space-y-0.5">
+                                    <p className="text-xs font-bold text-foreground">Light Mode</p>
+                                    <p className="text-[11px] text-muted-foreground">Bright, clean theme</p>
+                                </div>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => updateAppearance('dark')}
+                                className={cn(
+                                    'flex flex-col items-center justify-between gap-3 rounded-2xl border p-4 text-center transition-all',
+                                    appearance === 'dark'
+                                        ? 'border-primary bg-primary/5 text-primary shadow-xs ring-2 ring-primary/20'
+                                        : 'border-border/80 bg-card hover:bg-muted text-muted-foreground'
+                                )}
+                            >
+                                <Moon className="h-6 w-6" />
+                                <div className="space-y-0.5">
+                                    <p className="text-xs font-bold text-foreground">Dark Mode</p>
+                                    <p className="text-[11px] text-muted-foreground">Sleek, low-glare theme</p>
+                                </div>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => updateAppearance('system')}
+                                className={cn(
+                                    'flex flex-col items-center justify-between gap-3 rounded-2xl border p-4 text-center transition-all',
+                                    appearance === 'system'
+                                        ? 'border-primary bg-primary/5 text-primary shadow-xs ring-2 ring-primary/20'
+                                        : 'border-border/80 bg-card hover:bg-muted text-muted-foreground'
+                                )}
+                            >
+                                <Monitor className="h-6 w-6" />
+                                <div className="space-y-0.5">
+                                    <p className="text-xs font-bold text-foreground">System Match</p>
+                                    <p className="text-[11px] text-muted-foreground">Syncs with OS theme</p>
+                                </div>
+                            </button>
+                        </div>
+                    </CardContent>
                 </Card>
 
-                {/* Danger Zone: Account Deletion */}
+                {/* 3. Danger Zone Card */}
                 <div className="pt-2">
                     <DeleteUser />
                 </div>
@@ -254,10 +249,14 @@ export default function Profile({
     );
 }
 
-Profile.layout = {
+ProfileAndPreferencesSettings.layout = {
     breadcrumbs: [
         {
-            title: 'Profile settings',
+            title: 'Dashboard',
+            href: '/dashboard',
+        },
+        {
+            title: 'Account Settings',
             href: edit(),
         },
     ],

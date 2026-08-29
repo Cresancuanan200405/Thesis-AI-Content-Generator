@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Onboarding\SaveBusinessOnboardingRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -35,8 +34,6 @@ class OnboardingController extends Controller
             'industry' => $business ? $business->industry : '',
             'category' => $business ? $business->category : '',
             'description' => $business ? $business->description : '',
-            'logo_path' => $business?->logo_path,
-            'logo_url' => $business && $business->logo_path ? Storage::url($business->logo_path) : null,
         ];
 
         return Inertia::render('onboarding/index', [
@@ -68,7 +65,7 @@ class OnboardingController extends Controller
     {
         $user = $request->user();
 
-        $business = $user->business()->firstOrCreate(
+        $user->business()->firstOrCreate(
             ['user_id' => $user->id],
             [
                 'user_id' => $user->id,
@@ -78,15 +75,6 @@ class OnboardingController extends Controller
                 'description' => '',
             ]
         );
-
-        $request->validate([
-            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:2048'],
-        ]);
-
-        if ($request->hasFile('logo')) {
-            $path = $request->file('logo')->store('business-logos', 'public');
-            $business->update(['logo_path' => $path]);
-        }
 
         $user->forceFill([
             'onboarding_completed' => true,

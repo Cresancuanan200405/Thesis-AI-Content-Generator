@@ -7,7 +7,12 @@ use App\Models\Business;
 class ImageCompositorService
 {
     /**
-     * Build an exact deterministic vector compositing overlay.
+     * @var array<string, mixed>|null
+     */
+    protected ?array $lastCompositingResult = null;
+
+    /**
+     * Build an exact deterministic marketing compositing overlay manifest.
      *
      * @param  array{
      *     width?: int,
@@ -15,9 +20,7 @@ class ImageCompositorService
      *     product_name?: string|null,
      *     price?: string|null,
      *     tagline?: string|null,
-     *     logo_path?: string|null,
      *     business_name?: string|null,
-     *     include_logo?: bool|null,
      *     aspect_ratio?: string|null,
      * }  $params
      */
@@ -27,6 +30,8 @@ class ImageCompositorService
         [$width, $height] = match ($aspectRatio) {
             '16:9' => [1792, 1024],
             '9:16' => [1024, 1792],
+            '4:5' => [1024, 1280],
+            '4:3' => [1365, 1024],
             default => [1024, 1024],
         };
 
@@ -37,14 +42,9 @@ class ImageCompositorService
         $safeHeight = $height - ($safeMarginY * 2);
 
         $price = ! empty($params['price']) ? trim((string) $params['price']) : null;
-        $tagline = ! empty($params['tagline']) ? trim((string) $params['tagline']) : null;
+        $tagline = TaglineNormalizationService::normalize($params['tagline'] ?? null);
         $productName = $params['product_name'] ?? 'Product';
         $brandName = $params['business_name'] ?? $business?->name ?? 'Brand';
-
-        $logoUrl = null;
-        if (! empty($params['include_logo']) && ! empty($params['logo_path'])) {
-            $logoUrl = asset('storage/'.$params['logo_path']);
-        }
 
         return [
             'canvas' => [
@@ -66,8 +66,17 @@ class ImageCompositorService
                 'price' => $price,
                 'tagline' => $tagline,
                 'brand_name' => $brandName,
-                'logo_url' => $logoUrl,
             ],
         ];
+    }
+
+    /**
+     * Get the last compositing result manifest.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function getLastCompositingResult(): ?array
+    {
+        return $this->lastCompositingResult;
     }
 }

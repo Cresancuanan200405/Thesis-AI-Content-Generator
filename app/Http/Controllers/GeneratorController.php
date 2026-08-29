@@ -11,8 +11,10 @@ use App\Models\GenerationRequest;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\MarketingPromptBuilder;
+use App\Services\NotificationService;
 use App\Services\OpenAIImageService;
 use App\Services\PhilippineHolidayService;
+use App\Services\TaglineNormalizationService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -65,8 +67,6 @@ class GeneratorController extends Controller
                 'description' => $business->description,
                 'target_audience' => $business->target_audience,
                 'unique_selling_point' => $business->unique_selling_point,
-                'logo_path' => $business->logo_path,
-                'logo_url' => $business->logo_path ? asset('storage/'.$business->logo_path) : null,
                 'content_style' => $this->decodeJsonList($business->content_style),
                 'default_tagline_behavior' => $business->default_tagline_behavior,
             ] : null,
@@ -133,6 +133,7 @@ class GeneratorController extends Controller
         /** @var Business $business */
         $business = $user->business()->firstOrFail();
         $payload = $request->validated();
+        $payload['tagline'] = TaglineNormalizationService::normalize($payload['tagline'] ?? null);
 
         $referenceImagePath = null;
         if ($request->hasFile('reference_image')) {
@@ -147,14 +148,17 @@ class GeneratorController extends Controller
         /** @var Event|null $event */
         $event = ! empty($payload['event_id']) ? Event::query()->where('id', $payload['event_id'])->first() : null;
 
-        // Resolve product image as reference (catalog selection)
-        if (! $referenceImagePath && $product?->image_path) {
-            $referenceImagePath = $product->image_path;
+        $includeBusinessName = $request->has('include_business_name')
+            ? filter_var($request->input('include_business_name'), FILTER_VALIDATE_BOOLEAN)
+            : true;
+
+        $businessName = null;
+        if ($includeBusinessName) {
+            $businessName = ! empty($payload['business_name']) ? trim((string) $payload['business_name']) : $business->name;
         }
 
-        // Resolve logo if opted in
-        $includeLogo = ! empty($payload['include_logo']);
-        $logoPath = ($includeLogo && $business->logo_path) ? $business->logo_path : null;
+        $payload['include_business_name'] = $includeBusinessName;
+        $payload['business_name'] = $businessName;
         $productImageUrl = $product?->image_path ? asset('storage/'.$product->image_path) : null;
 
         $prompt = app(MarketingPromptBuilder::class)->build($payload, $business);
@@ -171,7 +175,6 @@ class GeneratorController extends Controller
             'brand_tone' => $payload['brand_tone'] ?? [],
             'tagline' => $payload['tagline'] ?? null,
             'tagline_mode' => $payload['tagline_mode'] ?? 'auto',
-            'target_audience' => $payload['target_audience'] ?? null,
             'unique_selling_point' => $payload['unique_selling_point'] ?? null,
             'reference_image_path' => $referenceImagePath,
             'notes' => $payload['notes'] ?? null,
@@ -186,7 +189,8 @@ class GeneratorController extends Controller
                 // Step 1 — Product & Campaign
                 'product_name' => $payload['product_name'],
                 'product_description' => $product?->description,
-                'product_category' => $business->category,
+                'product_category' => $product?->category ?? $business->category,
+                'business_category' => $business->category,
                 'product_image_url' => $productImageUrl,
                 'campaign_name' => $campaign?->name,
                 'campaign_objective' => $campaign?->objective,
@@ -201,22 +205,22 @@ class GeneratorController extends Controller
                 // Step 3 — Canvas
                 'tagline' => $payload['tagline'] ?? null,
                 'tagline_mode' => $payload['tagline_mode'] ?? 'ai',
-                'include_logo' => $includeLogo,
                 'aspect_ratio' => $payload['aspect_ratio'] ?? '1:1',
                 'image_model' => $payload['image_model'] ?? 'gpt-image-2',
 
                 // Onboarding / Business Context
-                'business_name' => $business->name,
+                'business_name' => $businessName,
                 'business_industry' => $business->industry,
                 'business_description' => $business->description,
-                'business_target_audience' => $business->target_audience,
                 'business_usp' => $business->unique_selling_point,
                 'business_content_style' => $business->content_style,
                 'business_marketing_prefs' => $business->marketing_preferences,
 
                 // Reference image (uploaded file or catalog product image)
                 'reference_image_path' => $referenceImagePath,
-                'logo_path' => $logoPath,
+                'scene_prompt' => $payload['image_prompt'] ?? $payload['scene_prompt'] ?? $payload['prompt'] ?? $payload['notes'] ?? null,
+                'user_prompt' => $payload['image_prompt'] ?? $payload['scene_prompt'] ?? $payload['prompt'] ?? $payload['notes'] ?? null,
+                'notes' => $payload['notes'] ?? null,
             ]);
         } catch (RuntimeException $exception) {
             Log::error('OpenAI image generation failed.', [
@@ -230,6 +234,14 @@ class GeneratorController extends Controller
                 'status' => 'failed',
                 'notes' => 'Your design could not be generated right now. Please try again.',
             ]);
+
+            NotificationService::notifyAi(
+                $user,
+                'AI Generation Failed',
+                'Your design could not be generated: '.($exception->getMessage() ?: 'An unexpected error occurred during generation.'),
+                route('generator.index'),
+                ['error' => $exception->getMessage()]
+            );
 
             return redirect()->route('generator.index')->with('error', 'Your design could not be generated right now. Please try again.');
         }
@@ -259,9 +271,9 @@ class GeneratorController extends Controller
                 'quality' => $payload['image_quality'] ?? 'medium',
                 'render_style' => $payload['render_style'] ?? 'Studio Product Still',
                 'aspect_ratio' => $payload['aspect_ratio'] ?? '1:1',
-                'include_logo' => $includeLogo,
+                'business_name' => $businessName,
                 'generation_mode' => 'PRODUCT_PRESERVING',
-                'prompt_version' => 'modular_v3',
+                'prompt_version' => 'marketing-pipeline-v1',
                 'generation_meta' => $openAIService->getLastGenerationMetadata(),
                 'reference_blueprint' => $openAIService->getLastReferenceBlueprint(),
                 'generation_request_id' => $generationRequest->id,
@@ -317,11 +329,23 @@ class GeneratorController extends Controller
             $referenceImagePath = $product->image_path;
         }
 
-        $includeLogo = (bool) $request->boolean('include_logo', false);
-        $logoPath = ($includeLogo && $business->logo_path) ? $business->logo_path : null;
-        $productImageUrl = $product?->image_path ? asset('storage/'.$product->image_path) : null;
+        $includeBusinessName = $request->has('include_business_name')
+            ? filter_var($request->input('include_business_name'), FILTER_VALIDATE_BOOLEAN)
+            : true;
 
-        $prompt = (string) ($request->input('image_prompt') ?: $request->input('prompt') ?: $promptBuilder->build($request->all(), $business));
+        $businessName = null;
+        if ($includeBusinessName) {
+            $businessName = $request->filled('business_name') ? trim((string) $request->input('business_name')) : $business->name;
+        }
+        $productImageUrl = $product?->image_path ? asset('storage/'.$product->image_path) : null;
+        $normalizedTagline = TaglineNormalizationService::normalize($request->input('tagline'));
+
+        $previewPayload = $request->all();
+        $previewPayload['tagline'] = $normalizedTagline;
+        $previewPayload['include_business_name'] = $includeBusinessName;
+        $previewPayload['business_name'] = $businessName;
+
+        $prompt = (string) ($request->input('image_prompt') ?: $request->input('prompt') ?: $promptBuilder->build($previewPayload, $business));
 
         try {
             $brandTone = $request->input('brand_tone') ?? [];
@@ -336,7 +360,8 @@ class GeneratorController extends Controller
             $generatedImagePath = $openAIService->generate($prompt, [
                 'product_name' => (string) $request->input('product_name'),
                 'product_description' => $product?->description,
-                'product_category' => $business->category,
+                'product_category' => $product?->category ?? $business->category,
+                'business_category' => $business->category,
                 'product_image_url' => $productImageUrl,
                 'campaign_name' => $campaign?->name,
                 'campaign_objective' => $campaign?->objective,
@@ -345,20 +370,20 @@ class GeneratorController extends Controller
                 'brand_tone' => $brandTone,
                 'visual_theme' => $visualTheme,
                 'render_style' => $request->input('render_style', 'Studio Product Still'),
-                'tagline' => $request->input('tagline'),
+                'tagline' => $normalizedTagline,
                 'tagline_mode' => $request->input('tagline_mode', 'ai'),
-                'include_logo' => $includeLogo,
                 'aspect_ratio' => $request->input('aspect_ratio', '1:1'),
                 'image_model' => $request->input('image_model', 'gpt-image-2'),
-                'business_name' => $business->name,
+                'business_name' => $businessName,
                 'business_industry' => $business->industry,
                 'business_description' => $business->description,
-                'business_target_audience' => $business->target_audience,
                 'business_usp' => $business->unique_selling_point,
                 'business_content_style' => $business->content_style,
                 'business_marketing_prefs' => $business->marketing_preferences,
                 'reference_image_path' => $referenceImagePath,
-                'logo_path' => $logoPath,
+                'scene_prompt' => $request->input('image_prompt') ?: $request->input('scene_prompt') ?: $request->input('prompt') ?: $request->input('notes'),
+                'user_prompt' => $request->input('image_prompt') ?: $request->input('scene_prompt') ?: $request->input('prompt') ?: $request->input('notes'),
+                'notes' => $request->input('notes'),
             ]);
 
             $blueprint = $openAIService->getLastReferenceBlueprint();
@@ -370,7 +395,7 @@ class GeneratorController extends Controller
                 'generated_image_path' => $generatedImagePath,
                 'prompt' => $prompt,
                 'product_name' => $request->input('product_name'),
-                'tagline' => $request->input('tagline'),
+                'tagline' => $normalizedTagline,
                 'price' => $request->input('price'),
                 'render_style' => $request->input('render_style', 'Studio Product Still'),
                 'aspect_ratio' => $request->input('aspect_ratio', '1:1'),
@@ -382,6 +407,14 @@ class GeneratorController extends Controller
             ]);
         } catch (\Throwable $e) {
             Log::error('OpenAI image generation preview failed: '.$e->getMessage());
+
+            NotificationService::notifyAi(
+                $user,
+                'AI Generation Failed',
+                'Your visual creative could not be synthesized: '.($e->getMessage() ?: 'An unexpected error occurred during generation.'),
+                route('generator.index'),
+                ['error' => $e->getMessage()]
+            );
 
             return response()->json([
                 'success' => false,

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Models\Product;
-use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -79,14 +78,6 @@ class ProductController extends Controller
             'price' => $request->input('price') !== null && $request->input('price') !== '' ? $request->input('price') : null,
             'image_path' => $imagePath,
         ]);
-
-        NotificationService::notify(
-            $user,
-            'product_created',
-            "Product Created: {$product->name}",
-            "New product \"{$product->name}\" was successfully added to your catalog.",
-            route('products.show', $product)
-        );
 
         return redirect()->route('products.index')->with('success', 'Product created successfully.');
     }
@@ -164,16 +155,6 @@ class ProductController extends Controller
             'image_path' => $imagePath,
         ]);
 
-        if ($user = $request->user()) {
-            NotificationService::notify(
-                $user,
-                'product_updated',
-                "Product Updated: {$product->name}",
-                "Product details for \"{$product->name}\" were updated.",
-                route('products.show', $product)
-            );
-        }
-
         return redirect()->route('products.index')->with('success', 'Product updated successfully.');
     }
 
@@ -182,23 +163,12 @@ class ProductController extends Controller
         $this->authorize('delete', $product);
 
         $user = auth()->user();
-        $productName = $product->name;
 
         if ($product->image_path && Storage::disk('public')->exists($product->image_path)) {
             Storage::disk('public')->delete($product->image_path);
         }
 
         $product->delete();
-
-        if ($user) {
-            NotificationService::notify(
-                $user,
-                'product_deleted',
-                "Product Deleted: {$productName}",
-                "Product \"{$productName}\" was removed from your catalog.",
-                route('products.index')
-            );
-        }
 
         return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
     }
@@ -225,14 +195,6 @@ class ProductController extends Controller
             }
             $product->delete();
         }
-
-        NotificationService::notify(
-            $user,
-            'product_deleted',
-            "Bulk Delete: {$count} Products",
-            "Successfully removed {$count} products from your catalog.",
-            route('products.index')
-        );
 
         return redirect()->route('products.index')->with('success', "{$count} products deleted successfully.");
     }

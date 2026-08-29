@@ -6,23 +6,21 @@ import {
     Building2,
     Car,
     Check,
+    CheckCircle2,
     Cpu,
     GraduationCap,
     HeartPulse,
     Home,
-    ImageIcon,
     Landmark,
     Layers,
     Plane,
     ShoppingBag,
     ShoppingCart,
     Sparkles,
-    UploadCloud,
     UtensilsCrossed,
-    X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,19 +45,9 @@ type DescriptionForm = {
     description: string;
 };
 
-type LogoForm = {
-    logo: File | null;
-    logoPreview: string | null;
-};
-
 type Props = {
     step?: number;
-    business?: Partial<
-        BusinessForm &
-            DescriptionForm & {
-                logo_url?: string | null;
-            }
-    > | null;
+    business?: Partial<BusinessForm & DescriptionForm> | null;
 };
 
 /*
@@ -244,9 +232,9 @@ const steps = [
     },
     {
         id: 3,
-        title: 'Logo',
-        description: 'Brand identity',
-        icon: ImageIcon,
+        title: 'Launch',
+        description: 'Ready to create',
+        icon: CheckCircle2,
     },
 ];
 
@@ -291,13 +279,6 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
         description: business?.description ?? '',
     });
 
-    const logoInputRef = useRef<HTMLInputElement | null>(null);
-
-    const [logoForm, setLogoForm] = useState<LogoForm>({
-        logo: null,
-        logoPreview: business?.logo_url ?? null,
-    });
-
     /*
     |--------------------------------------------------------------------------
     | Derived Data
@@ -339,30 +320,6 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
         }
 
         setCurrentStep((step) => Math.max(1, step - 1));
-    };
-
-    /*
-    |--------------------------------------------------------------------------
-    | Logo
-    |--------------------------------------------------------------------------
-    */
-
-    const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0] ?? null;
-
-        if (!file) {
-            setLogoForm({
-                logo: null,
-                logoPreview: business?.logo_url ?? null,
-            });
-
-            return;
-        }
-
-        setLogoForm({
-            logo: file,
-            logoPreview: URL.createObjectURL(file),
-        });
     };
 
     /*
@@ -471,24 +428,21 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
     const finishSetup = () => {
         setIsSubmitting(true);
 
-        const formData = new FormData();
+        router.post(
+            '/onboarding/complete',
+            {},
+            {
+                preserveScroll: true,
 
-        if (logoForm.logo) {
-            formData.append('logo', logoForm.logo);
-        }
+                onError: () => {
+                    setIsSubmitting(false);
+                },
 
-        router.post('/onboarding/complete', formData, {
-            forceFormData: true,
-            preserveScroll: true,
-
-            onError: () => {
-                setIsSubmitting(false);
+                onFinish: () => {
+                    setIsSubmitting(false);
+                },
             },
-
-            onFinish: () => {
-                setIsSubmitting(false);
-            },
-        });
+        );
     };
 
     /*
@@ -1007,128 +961,57 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                         )}
 
                         {/* ============================
-                            STEP 3: LOGO
+                            STEP 3: REVIEW & LAUNCH
                         ============================ */}
 
                         {currentStep === 3 && (
                             <div className="mx-auto max-w-md animate-in duration-300 fade-in-50">
                                 <div className="mb-5 text-center">
-                                    <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                                        <ImageIcon className="h-5 w-5" />
+                                    <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500">
+                                        <CheckCircle2 className="h-6 w-6" />
                                     </div>
 
-                                    <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[9px] font-bold tracking-wider text-primary uppercase">
-                                        Brand Identity
+                                    <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[9px] font-bold tracking-wider text-emerald-600 dark:text-emerald-400 uppercase">
+                                        Ready to Launch
                                     </span>
 
                                     <h1 className="mt-3 text-xl font-bold tracking-tight sm:text-2xl">
-                                        Add your business logo
+                                        Your Business is Ready
                                     </h1>
 
                                     <p className="mt-1 text-xs text-muted-foreground">
-                                        Your logo can be incorporated into
-                                        future marketing visuals.
+                                        MarketPilot AI is configured for your brand.
                                     </p>
                                 </div>
 
-                                <input
-                                    ref={logoInputRef}
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={handleLogoChange}
-                                />
-
-                                {logoForm.logoPreview ? (
-                                    <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-                                        <div className="flex items-center gap-4">
-                                            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-white p-2 shadow-sm">
-                                                <img
-                                                    src={logoForm.logoPreview}
-                                                    alt="Logo preview"
-                                                    className="h-full w-full object-contain"
-                                                />
-                                            </div>
-
-                                            <div className="min-w-0 flex-1">
-                                                <p className="text-xs font-bold">
-                                                    Logo uploaded
-                                                </p>
-
-                                                <p className="mt-1 text-[10px] text-muted-foreground">
-                                                    Your logo is ready to be
-                                                    used in your marketing
-                                                    visuals.
-                                                </p>
-
-                                                <div className="mt-3 flex gap-2">
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() =>
-                                                            logoInputRef.current?.click()
-                                                        }
-                                                        className="h-7 rounded-lg text-[10px]"
-                                                    >
-                                                        Change
-                                                    </Button>
-
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            setLogoForm({
-                                                                logo: null,
-                                                                logoPreview:
-                                                                    null,
-                                                            });
-
-                                                            if (
-                                                                logoInputRef.current
-                                                            ) {
-                                                                logoInputRef.current.value =
-                                                                    '';
-                                                            }
-                                                        }}
-                                                        className="h-7 rounded-lg px-2 text-[10px] text-muted-foreground hover:text-destructive"
-                                                    >
-                                                        <X className="mr-1 h-3 w-3" />
-                                                        Remove
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
+                                <div className="space-y-3 rounded-2xl border border-border/80 bg-card/60 p-4 shadow-xs backdrop-blur-sm">
+                                    <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
+                                        <span className="text-xs text-muted-foreground">Business Name</span>
+                                        <span className="text-xs font-bold text-foreground">{businessForm.name || 'My Business'}</span>
                                     </div>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            logoInputRef.current?.click()
-                                        }
-                                        className="group w-full rounded-2xl border border-dashed border-border bg-background/30 p-6 text-center transition-all duration-200 hover:border-primary/50 hover:bg-primary/5 hover:shadow-lg"
-                                    >
-                                        <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-200 group-hover:scale-110">
-                                            <UploadCloud className="h-5 w-5" />
+                                    <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
+                                        <span className="text-xs text-muted-foreground">Industry</span>
+                                        <span className="text-xs font-semibold text-foreground">{businessForm.industry || 'General'}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
+                                        <span className="text-xs text-muted-foreground">Category</span>
+                                        <span className="text-xs font-semibold text-foreground">{businessForm.category || 'General'}</span>
+                                    </div>
+                                    {descriptionForm.description && (
+                                        <div className="pt-1">
+                                            <span className="text-xs text-muted-foreground">Description</span>
+                                            <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-foreground/90">
+                                                {descriptionForm.description}
+                                            </p>
                                         </div>
+                                    )}
+                                </div>
 
-                                        <p className="text-xs font-bold">
-                                            Upload your logo
-                                        </p>
-
-                                        <p className="mt-1 text-[10px] text-muted-foreground">
-                                            PNG, JPG or SVG • Up to 2MB
-                                        </p>
-                                    </button>
-                                )}
-
-                                <div className="mt-3 flex items-center gap-2 rounded-xl border border-border/50 bg-muted/20 px-3 py-2.5">
+                                <div className="mt-4 flex items-center gap-2 rounded-xl border border-primary/10 bg-primary/5 px-3 py-2.5">
                                     <Sparkles className="h-3.5 w-3.5 text-primary" />
 
-                                    <p className="text-[9px] leading-relaxed text-muted-foreground">
-                                        You can skip this step and add your logo
-                                        later.
+                                    <p className="text-[10px] leading-relaxed text-muted-foreground">
+                                        You can start generating promotional visuals, marketing campaigns, and social creatives right away.
                                     </p>
                                 </div>
                             </div>
@@ -1156,19 +1039,6 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                             </Button>
 
                             <div className="flex items-center gap-2">
-                                {currentStep === 3 && (
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={finishSetup}
-                                        disabled={isSubmitting}
-                                        className="h-8 rounded-lg px-3 text-[10px] text-muted-foreground"
-                                    >
-                                        Skip
-                                    </Button>
-                                )}
-
                                 <Button
                                     type="button"
                                     size="sm"
@@ -1178,9 +1048,11 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                                 >
                                     {isSubmitting
                                         ? currentStep === 3
-                                            ? 'Finalizing...'
+                                            ? 'Launching Workspace...'
                                             : 'Saving...'
-                                        : getContinueLabel()}
+                                        : currentStep === 3
+                                          ? 'Launch Workspace'
+                                          : getContinueLabel()}
 
                                     {!isSubmitting &&
                                         (currentStep === 3 ? (

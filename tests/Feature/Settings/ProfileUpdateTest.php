@@ -4,14 +4,17 @@ use App\Models\Business;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia;
 
-test('profile page is displayed', function () {
+test('profile settings page is displayed', function () {
     $user = User::factory()->create();
 
     $response = $this
         ->actingAs($user)
         ->get(route('profile.edit'));
 
-    $response->assertOk();
+    $response->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('settings/profile')
+        );
 });
 
 test('profile information can be updated', function () {
@@ -86,7 +89,7 @@ test('correct password must be provided to delete account', function () {
     expect($user->fresh())->not->toBeNull();
 });
 
-test('my profile page is displayed with onboarding and business setup info', function () {
+test('my profile page is displayed with account overview', function () {
     $user = User::factory()->create(['onboarding_completed' => true]);
     $business = Business::factory()->create([
         'user_id' => $user->id,
@@ -100,12 +103,35 @@ test('my profile page is displayed with onboarding and business setup info', fun
 
     $response->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('profile/show')
-            ->has('profile')
+            ->component('profile/my-profile')
+            ->has('profile.name')
+            ->has('profile.email')
             ->has('business')
+            ->has('stats')
+        );
+});
+
+test('business profile page is displayed with commercial context', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Acme Creative Studio',
+        'industry' => 'Fashion & Apparel',
+        'category' => 'Clothing Store',
+        'description' => 'A premier fashion house.',
+    ]);
+
+    $response = $this
+        ->actingAs($user)
+        ->get(route('profile.business'));
+
+    $response->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('profile/business')
             ->where('business.name', 'Acme Creative Studio')
             ->where('business.industry', 'Fashion & Apparel')
-            ->has('stats')
+            ->where('business.category', 'Clothing Store')
+            ->where('business.description', 'A premier fashion house.')
         );
 });
 
@@ -119,6 +145,7 @@ test('user can update business identity and setup details', function () {
 
     $response = $this
         ->actingAs($user)
+        ->from(route('profile.business'))
         ->post(route('profile.business.update'), [
             'name' => 'Updated Studio Labs',
             'industry' => 'Technology',
@@ -128,7 +155,7 @@ test('user can update business identity and setup details', function () {
 
     $response
         ->assertSessionHasNoErrors()
-        ->assertRedirect(route('profile.show'));
+        ->assertRedirect(route('profile.business'));
 
     $business->refresh();
     expect($business->name)->toBe('Updated Studio Labs')

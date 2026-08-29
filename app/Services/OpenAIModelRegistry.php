@@ -18,6 +18,9 @@ class OpenAIModelRegistry
             'supported_sizes' => ['1024x1024', '1792x1024', '1024x1792'],
             'status' => 'recommended',
             'is_recommended' => true,
+            'product_preservation_capability' => 'flagship_photorealistic',
+            'recommended_generation_mode' => 'PRODUCT_PRESERVING_FLAGSHIP',
+            'compatibility_notes' => 'OpenAI recommended flagship model. Native image-to-image edits pipeline with maximum product fidelity, ray-traced shadows, and photorealistic environmental integration.',
             'badge' => 'Recommended',
             'tag' => 'Flagship Photorealism',
             'speed' => 'Deep Studio (~9s)',
@@ -36,6 +39,9 @@ class OpenAIModelRegistry
             'supported_sizes' => ['1024x1024', '1792x1024', '1024x1792'],
             'status' => 'previous',
             'is_recommended' => false,
+            'product_preservation_capability' => 'enhanced_detail',
+            'recommended_generation_mode' => 'PRODUCT_PRESERVING_ADAPTED',
+            'compatibility_notes' => 'Previous flagship. Supports image editing with detailed textures. Strict preservation prompts enforced to maintain product geometry.',
             'badge' => 'Previous',
             'tag' => 'Previous Flagship',
             'speed' => 'Enhanced (~7s)',
@@ -54,6 +60,9 @@ class OpenAIModelRegistry
             'supported_sizes' => ['1024x1024', '1792x1024', '1024x1792'],
             'status' => 'previous',
             'is_recommended' => false,
+            'product_preservation_capability' => 'standard_fidelity',
+            'recommended_generation_mode' => 'PRODUCT_PRESERVING_ADAPTED',
+            'compatibility_notes' => 'Previous benchmark. Supports image editing. Enforces strict geometry preservation and typography suppression to prevent AI text hallucination.',
             'badge' => 'Previous',
             'tag' => 'Previous Benchmark',
             'speed' => 'Balanced (~5s)',
@@ -72,6 +81,9 @@ class OpenAIModelRegistry
             'supported_sizes' => ['1024x1024', '1792x1024', '1024x1792'],
             'status' => 'fast',
             'is_recommended' => false,
+            'product_preservation_capability' => 'rapid_draft',
+            'recommended_generation_mode' => 'PRODUCT_PRESERVING_ADAPTED',
+            'compatibility_notes' => 'Fast & budget model. Supports image editing with rapid generation. Strict prompt constraints applied to prevent product deformation.',
             'badge' => 'Previous / Fast',
             'tag' => 'Fastest & Budget',
             'speed' => 'Ultra Fast (~3s)',
@@ -90,6 +102,9 @@ class OpenAIModelRegistry
             'supported_sizes' => ['1024x1024', '1792x1024', '1024x1792'],
             'status' => 'previous',
             'is_recommended' => false,
+            'product_preservation_capability' => 'creative_adaptive',
+            'recommended_generation_mode' => 'PRODUCT_PRESERVING_ADAPTED',
+            'compatibility_notes' => 'Adaptive creative model. Supports image editing. Focuses on creative storytelling while preserving catalog product pixels.',
             'badge' => 'Previous',
             'tag' => 'Standard ChatGPT View',
             'speed' => 'Adaptive (~6s)',
@@ -108,6 +123,9 @@ class OpenAIModelRegistry
             'supported_sizes' => ['1024x1024', '1792x1024', '1024x1792'],
             'status' => 'legacy',
             'is_recommended' => false,
+            'product_preservation_capability' => 'text_to_image_only',
+            'recommended_generation_mode' => 'TEXT_TO_IMAGE_GENERATIVE',
+            'compatibility_notes' => 'Legacy text-to-image engine. Does not support multipart image-to-image editing; generates visuals from descriptive prompt alone.',
             'badge' => 'Legacy',
             'tag' => 'Legacy Engine',
             'speed' => 'Standard (~10s)',
@@ -166,5 +184,69 @@ class OpenAIModelRegistry
         $spec = $this->getModel($modelId);
 
         return (bool) ($spec['supports_image_input'] ?? false);
+    }
+
+    /**
+     * Get the capability policy for a specific model.
+     *
+     * @return array{
+     *     model_id: string,
+     *     display_name: string,
+     *     api_model_id: string,
+     *     is_recommended: bool,
+     *     status: string,
+     *     product_preservation_capability: string,
+     *     supports_image_input: bool,
+     *     supports_image_editing: bool,
+     *     recommended_generation_mode: string,
+     *     compatibility_notes: string,
+     * }
+     */
+    public function getModelPolicy(string $modelId): array
+    {
+        $spec = $this->getModel($modelId);
+
+        return [
+            'model_id' => $spec['id'],
+            'display_name' => $spec['display_name'],
+            'api_model_id' => $spec['api_model_id'],
+            'is_recommended' => (bool) ($spec['is_recommended'] ?? false),
+            'status' => $spec['status'] ?? 'previous',
+            'product_preservation_capability' => $spec['product_preservation_capability'] ?? 'standard_fidelity',
+            'supports_image_input' => (bool) ($spec['supports_image_input'] ?? false),
+            'supports_image_editing' => (bool) ($spec['supports_image_editing'] ?? false),
+            'recommended_generation_mode' => $spec['recommended_generation_mode'] ?? 'PRODUCT_PRESERVING_ADAPTED',
+            'compatibility_notes' => $spec['compatibility_notes'] ?? '',
+        ];
+    }
+
+    /**
+     * Check if a model is the recommended flagship model.
+     */
+    public function isRecommended(string $modelId): bool
+    {
+        $spec = $this->getModel($modelId);
+
+        return (bool) ($spec['is_recommended'] ?? false);
+    }
+
+    /**
+     * Get the preservation capability string for a model.
+     */
+    public function getPreservationCapability(string $modelId): string
+    {
+        $spec = $this->getModel($modelId);
+
+        return (string) ($spec['product_preservation_capability'] ?? 'standard_fidelity');
+    }
+
+    /**
+     * Get the recommended generation mode for a model.
+     */
+    public function getRecommendedGenerationMode(string $modelId): string
+    {
+        $spec = $this->getModel($modelId);
+
+        return (string) ($spec['recommended_generation_mode'] ?? 'PRODUCT_PRESERVING_ADAPTED');
     }
 }

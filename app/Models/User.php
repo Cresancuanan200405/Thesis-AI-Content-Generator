@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Notifications\VerifyEmailNotification;
+use App\Services\OpenAIUsageService;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -172,73 +173,33 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Calculate total spent across all generated AI designs and previews.
+     * Get authoritative organization AI total spent from OpenAI.
      */
     public function getAiTotalSpent(): float
     {
-        $baseSpend = (float) config('services.openai.baseline_spend', 0.85);
+        $usage = app(OpenAIUsageService::class)->getUsage($this);
 
-        $openaiDesignsCost = (float) $this->designs()
-            ->get()
-            ->filter(fn (Design $d) => ($d->generation_metadata['source'] ?? '') === 'openai')
-            ->sum(function (Design $design): float {
-                $model = $design->generation_metadata['model'] ?? 'chatgpt-image-latest';
-                $quality = $design->generation_metadata['quality'] ?? 'medium';
-
-                return match ($model) {
-                    'gpt-image-1-mini' => match ($quality) {
-                        'low' => 0.005,
-                        'high' => 0.036,
-                        default => 0.011,
-                    },
-                    'chatgpt-image-latest' => match ($quality) {
-                        'low' => 0.009,
-                        'high' => 0.133,
-                        default => 0.040,
-                    },
-                    'gpt-image-1' => match ($quality) {
-                        'low' => 0.011,
-                        'high' => 0.167,
-                        default => 0.042,
-                    },
-                    'gpt-image-1.5' => match ($quality) {
-                        'low' => 0.020,
-                        'high' => 0.080,
-                        default => 0.040,
-                    },
-                    'gpt-image-2' => match ($quality) {
-                        'low' => 0.006,
-                        'high' => 0.211,
-                        default => 0.053,
-                    },
-                    default => match ($quality) {
-                        'low' => 0.011,
-                        'high' => 0.167,
-                        default => 0.040,
-                    },
-                };
-            });
-
-        return round($baseSpend + $openaiDesignsCost, 3);
+        return (float) ($usage['total_spent'] ?? 0.0);
     }
 
     /**
-     * Check if the user has reached or exceeded the AI generation budget limit.
+     * Check if the organization has reached or exceeded the AI generation budget limit.
      */
     public function hasReachedAiBudgetLimit(?float $limit = null): bool
     {
-        $limit = $limit ?? (float) config('services.openai.budget_limit', 10.00);
+        $usage = app(OpenAIUsageService::class)->getUsage($this, $limit);
 
-        return $this->getAiTotalSpent() >= $limit;
+        return (bool) ($usage['is_limit_reached'] ?? false);
     }
 
     /**
-     * Get remaining AI generation budget.
+     * Get remaining AI generation budget from the authoritative organization usage service.
      */
     public function getAiRemainingBudget(?float $limit = null): float
     {
         $limit = $limit ?? (float) config('services.openai.budget_limit', 10.00);
+        $usage = app(OpenAIUsageService::class)->getUsage($this, $limit);
 
-        return max(0.0, round($limit - $this->getAiTotalSpent(), 3));
+        return (float) ($usage['remaining_budget'] ?? $limit);
     }
 }

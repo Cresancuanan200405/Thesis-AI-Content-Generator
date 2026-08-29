@@ -34,7 +34,7 @@ it('user can save a design from ai marketing studio in mockup mode', function ()
             'success' => true,
             'design' => [
                 'product_name' => 'Winter Glow Cream',
-                'tagline' => 'Glow through the cold.',
+                'tagline' => 'Glow through the cold',
                 'status' => 'completed',
             ],
         ]);
@@ -44,7 +44,7 @@ it('user can save a design from ai marketing studio in mockup mode', function ()
         'business_id' => $business->id,
         'product_name' => 'Winter Glow Cream',
         'event_id' => $event->id,
-        'tagline' => 'Glow through the cold.',
+        'tagline' => 'Glow through the cold',
         'status' => 'completed',
     ]);
 
@@ -127,7 +127,7 @@ it('user can create a campaign and link a generated design to it', function () {
     );
 });
 
-it('user can save a design with include_logo enabled', function () {
+it('user can save a design with custom business_name enabled', function () {
     $user = User::factory()->create(['onboarding_completed' => true]);
     $business = Business::factory()->create([
         'user_id' => $user->id,
@@ -138,7 +138,7 @@ it('user can save a design with include_logo enabled', function () {
         ->postJson('/designs', [
             'product_name' => 'Rose Hydrating Mist',
             'prompt' => 'Dewy skincare bottle on marble',
-            'include_logo' => true,
+            'business_name' => 'Aura Luxury Boutique',
         ]);
 
     $response->assertOk()
@@ -153,7 +153,7 @@ it('user can save a design with include_logo enabled', function () {
     expect($design)->not->toBeNull();
     expect($design->generated_image_path)->not->toBeNull();
     Storage::disk('public')->assertExists($design->generated_image_path);
-    expect($design->generation_metadata['include_logo'] ?? false)->toBeTrue();
+    expect($design->generation_metadata['business_name'] ?? null)->toBe('Aura Luxury Boutique');
 });
 
 it('user can attach an existing design to an existing campaign for matching event', function () {

@@ -6,7 +6,6 @@ use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use App\Models\Event;
 use App\Models\User;
-use App\Services\NotificationService;
 use App\Services\PhilippineHolidayService;
 use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
@@ -33,6 +32,13 @@ class EventController extends Controller
             }
         }
 
+        $userDesignEventIds = $user->designs()
+            ->whereNotNull('event_id')
+            ->pluck('event_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->all();
+
         $query = Event::query()
             ->where(fn ($query) => $query->where('user_id', $user->id)->orWhere('is_global', true))
             ->orderBy('date');
@@ -53,19 +59,25 @@ class EventController extends Controller
             $query->where('type', 'commercial');
         } elseif ($filter === 'custom') {
             $query->where('type', 'custom');
+        } elseif ($filter === 'missed') {
+            $query->whereDate('date', '<', now()->toDateString())
+                ->whereNotIn('id', $userDesignEventIds);
         }
 
         $events = $query->get();
 
         return Inertia::render('calendar/index', [
-            'events' => $events->map(function (Event $event): array {
+            'events' => $events->map(function (Event $event) use ($userDesignEventIds): array {
                 $eventDate = $event->getAttributeValue('date');
+                $eventDateStr = $eventDate instanceof CarbonInterface ? $eventDate->format('Y-m-d') : null;
+                $hasDesign = in_array((int) $event->id, $userDesignEventIds, true);
+                $isMissed = $eventDateStr && $eventDateStr < now()->toDateString() && ! $hasDesign;
 
                 return [
                     'id' => $event->id,
                     'name' => $event->name,
                     'description' => $event->description,
-                    'date' => $eventDate instanceof CarbonInterface ? $eventDate->format('Y-m-d') : null,
+                    'date' => $eventDateStr,
                     'type' => $event->type,
                     'category' => $event->category ?? $event->type,
                     'is_long_weekend' => (bool) $event->is_long_weekend,
@@ -74,6 +86,8 @@ class EventController extends Controller
                     'proclamation_no' => $event->proclamation_no,
                     'is_global' => (bool) $event->is_global,
                     'user_id' => $event->user_id,
+                    'has_design' => $hasDesign,
+                    'is_missed' => $isMissed,
                     'show_url' => route('events.show', $event),
                 ];
             })->values()->all(),
@@ -139,6 +153,13 @@ class EventController extends Controller
             Log::error("Failed to sync holidays for year {$year}: {$e->getMessage()}");
         }
 
+        $userDesignEventIds = $user->designs()
+            ->whereNotNull('event_id')
+            ->pluck('event_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->all();
+
         // Build query for events in the specified year
         $query = Event::query()
             ->where(fn ($query) => $query->where('user_id', $user->id)->orWhere('is_global', true))
@@ -162,20 +183,26 @@ class EventController extends Controller
             $query->where('type', 'commercial');
         } elseif ($filter === 'custom') {
             $query->where('type', 'custom');
+        } elseif ($filter === 'missed') {
+            $query->whereDate('date', '<', now()->toDateString())
+                ->whereNotIn('id', $userDesignEventIds);
         }
 
         $events = $query->get();
 
         return response()->json([
             'year' => $year,
-            'events' => $events->map(function (Event $event): array {
+            'events' => $events->map(function (Event $event) use ($userDesignEventIds): array {
                 $eventDate = $event->getAttributeValue('date');
+                $eventDateStr = $eventDate instanceof CarbonInterface ? $eventDate->format('Y-m-d') : null;
+                $hasDesign = in_array((int) $event->id, $userDesignEventIds, true);
+                $isMissed = $eventDateStr && $eventDateStr < now()->toDateString() && ! $hasDesign;
 
                 return [
                     'id' => $event->id,
                     'name' => $event->name,
                     'description' => $event->description,
-                    'date' => $eventDate instanceof CarbonInterface ? $eventDate->format('Y-m-d') : null,
+                    'date' => $eventDateStr,
                     'type' => $event->type,
                     'category' => $event->category ?? $event->type,
                     'is_long_weekend' => (bool) $event->is_long_weekend,
@@ -184,6 +211,8 @@ class EventController extends Controller
                     'proclamation_no' => $event->proclamation_no,
                     'is_global' => (bool) $event->is_global,
                     'user_id' => $event->user_id,
+                    'has_design' => $hasDesign,
+                    'is_missed' => $isMissed,
                 ];
             })->values()->all(),
         ]);
@@ -221,14 +250,6 @@ class EventController extends Controller
             'type' => $eventType,
             'is_global' => false,
         ]);
-
-        NotificationService::notify(
-            $request->user(),
-            'event_created',
-            "Event Added: {$event->name}",
-            "Custom calendar event \"{$event->name}\" was added to your marketing schedule.",
-            route('calendar.index')
-        );
 
         // Return JSON for AJAX requests
         if ($request->wantsJson() || $request->header('Accept') === 'application/json') {
@@ -286,16 +307,6 @@ class EventController extends Controller
             'type' => $request->input('type', $event->type),
         ]);
 
-        if ($user = $request->user()) {
-            NotificationService::notify(
-                $user,
-                'event_updated',
-                "Event Updated: {$event->name}",
-                "Calendar event \"{$event->name}\" was updated.",
-                route('calendar.index')
-            );
-        }
-
         return redirect()->route('calendar.index')->with('success', 'Event updated successfully.');
     }
 
@@ -303,20 +314,7 @@ class EventController extends Controller
     {
         $this->authorize('delete', $event);
 
-        $user = auth()->user();
-        $eventName = $event->name;
-
         $event->delete();
-
-        if ($user) {
-            NotificationService::notify(
-                $user,
-                'event_deleted',
-                "Event Removed: {$eventName}",
-                "Custom event \"{$eventName}\" was removed from your calendar.",
-                route('calendar.index')
-            );
-        }
 
         return redirect()->route('calendar.index')->with('success', 'Event deleted successfully.');
     }

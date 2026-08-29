@@ -38,9 +38,8 @@ class MockupImageService
         $themes = is_array($data['visual_theme'] ?? null)
             ? implode(' • ', $data['visual_theme'])
             : (string) ($data['visual_theme'] ?? 'AI Powered');
-        $includeLogo = ! empty($data['include_logo']);
         $businessName = htmlspecialchars((string) ($data['business_name'] ?? 'AI MARKETING AUTOMATION'), ENT_QUOTES, 'UTF-8');
-        $brandWatermark = $includeLogo ? 'BRAND: '.$businessName : 'AI MARKETING AUTOMATION';
+        $brandWatermark = 'BUSINESS: '.$businessName;
 
         $aspectRatio = (string) ($data['aspect_ratio'] ?? '1:1');
 

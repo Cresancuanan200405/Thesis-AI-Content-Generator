@@ -1,30 +1,22 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
-    ArrowLeft,
-    ArrowUpRight,
     Briefcase,
     Building2,
-    Calendar,
     Check,
-    CheckCircle2,
     FileText,
     Info,
-    Layers,
     Loader2,
-    Mail,
     RotateCcw,
     Save,
     Settings,
-    Shield,
     Sparkles,
     Store,
     Tag,
-    User as UserIcon,
+    User,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import { HelpTooltip } from '@/components/help-tooltip';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -179,19 +171,13 @@ const industryCategories: Record<string, string[]> = {
 const industryOptions = Object.keys(industryCategories);
 const MAX_DESCRIPTION_LENGTH = 3000;
 
-interface ProfileProps {
+interface BusinessProfileProps {
     profile?: {
         id?: number;
         name?: string;
         email?: string;
         email_verified?: boolean;
-        email_verified_at?: string;
-        provider?: string;
-        role?: string;
-        account_status?: string;
-        created_at?: string;
         member_since?: string;
-        two_factor_enabled?: boolean;
     };
     business?: {
         id?: number;
@@ -203,10 +189,10 @@ interface ProfileProps {
     };
 }
 
-export default function ProfileShowPage({
+export default function BusinessProfilePage({
     profile = {},
     business = {},
-}: ProfileProps) {
+}: BusinessProfileProps) {
     const initialValues = useMemo(() => ({
         name: business.name && business.name !== 'Not specified' ? business.name : '',
         industry: business.industry && business.industry !== 'General' ? business.industry : 'Food & Beverage',
@@ -296,59 +282,38 @@ export default function ProfileShowPage({
         );
     };
 
-    const initials = profile.name
-        ? profile.name
-              .split(' ')
-              .map((n: string) => n[0])
-              .join('')
-              .toUpperCase()
-              .slice(0, 2)
-        : 'U';
-
     return (
         <>
             <Head title="Business Profile" />
 
             <div className="min-h-screen bg-background pb-24 text-foreground">
                 <div className="mx-auto max-w-6xl space-y-8 p-4 md:p-8">
-                    {/* Top Navigation & Breadcrumbs Bar */}
+                    {/* Top Navigation Bar */}
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-3.5">
-                            <Button
-                                asChild
-                                variant="outline"
-                                size="icon"
-                                className="h-10 w-10 rounded-2xl border-border bg-card shadow-xs transition-colors hover:bg-muted"
-                            >
-                                <Link href="/generator">
-                                    <ArrowLeft className="h-4 w-4 text-muted-foreground" />
-                                </Link>
-                            </Button>
-                            <div>
-                                <div className="flex items-center gap-2.5">
-                                    <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                                        Business Profile
-                                    </h1>
-                                    {hasUnsavedChanges ? (
-                                        <Badge
-                                            variant="outline"
-                                            className="animate-pulse border-amber-500/30 bg-amber-500/10 text-[11px] font-semibold text-amber-600 dark:text-amber-400"
-                                        >
-                                            Unsaved Changes
-                                        </Badge>
-                                    ) : (
-                                        <Badge
-                                            variant="outline"
-                                            className="border-emerald-500/30 bg-emerald-500/10 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400"
-                                        >
-                                            Synchronized
-                                        </Badge>
-                                    )}
-                                </div>
-                                <p className="text-xs text-muted-foreground sm:text-sm">
-                                    Configure your business identity and offerings to guide authentic commercial visual generation.
-                                </p>
+                        <div>
+                            <div className="flex items-center gap-2.5">
+                                <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                                    Business Profile
+                                </h1>
+                                {hasUnsavedChanges ? (
+                                    <Badge
+                                        variant="outline"
+                                        className="animate-pulse border-amber-500/30 bg-amber-500/10 text-[11px] font-semibold text-amber-600 dark:text-amber-400"
+                                    >
+                                        Unsaved Changes
+                                    </Badge>
+                                ) : (
+                                    <Badge
+                                        variant="outline"
+                                        className="border-emerald-500/30 bg-emerald-500/10 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400"
+                                    >
+                                        Synchronized
+                                    </Badge>
+                                )}
                             </div>
+                            <p className="text-xs text-muted-foreground sm:text-sm">
+                                Persistent commercial context used by the AI engine to calibrate authentic visual generation.
+                            </p>
                         </div>
 
                         <div className="flex items-center gap-2.5">
@@ -357,9 +322,9 @@ export default function ProfileShowPage({
                                 variant="outline"
                                 className="h-10 gap-2 rounded-xl border-border bg-card text-xs font-semibold text-muted-foreground shadow-xs hover:bg-muted hover:text-foreground"
                             >
-                                <Link href="/settings/profile">
-                                    <Settings className="h-3.5 w-3.5" />
-                                    Account Settings
+                                <Link href="/profile">
+                                    <User className="h-3.5 w-3.5" />
+                                    My Profile
                                 </Link>
                             </Button>
                             <Button
@@ -368,7 +333,7 @@ export default function ProfileShowPage({
                             >
                                 <Link href="/generator">
                                     <Sparkles className="h-3.5 w-3.5" />
-                                    Open Studio
+                                    AI Studio
                                 </Link>
                             </Button>
                         </div>
@@ -390,7 +355,7 @@ export default function ProfileShowPage({
                                                 Business Identity
                                             </h2>
                                             <p className="text-xs text-muted-foreground">
-                                                The official registered name and commercial vertical of your business.
+                                                The official registered name and commercial vertical of your brand.
                                             </p>
                                         </div>
                                     </div>
@@ -519,7 +484,7 @@ export default function ProfileShowPage({
                                             maxLength={MAX_DESCRIPTION_LENGTH}
                                             value={formData.description}
                                             onChange={(e) => handleFieldChange('description', e.target.value)}
-                                            placeholder="e.g. A casual dining burger joint serving flame-grilled artisanal beef burgers, seasoned curly fries, craft milkshakes, and comfort food made with fresh local ingredients."
+                                            placeholder="e.g. An approachable local burger shop specializing in flame-grilled burgers, crispy fries, craft milkshakes, and refreshing comfort food."
                                             className={`resize-y rounded-2xl text-sm leading-relaxed ${
                                                 formErrors.description
                                                     ? 'border-destructive focus-visible:ring-destructive'
@@ -531,7 +496,6 @@ export default function ProfileShowPage({
                                             <p className="text-xs font-semibold text-destructive">{formErrors.description}</p>
                                         )}
 
-                                        {/* Helper guidance card */}
                                         <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-xs text-muted-foreground">
                                             <div className="flex items-start gap-2.5">
                                                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -545,7 +509,7 @@ export default function ProfileShowPage({
                                     </div>
                                 </Card>
 
-                                {/* Action Buttons Footer (Desktop & Tablet) */}
+                                {/* Action Buttons Footer */}
                                 <div className="flex items-center justify-between rounded-2xl border border-border/80 bg-card/60 p-4 shadow-xs">
                                     <div className="flex items-center gap-2">
                                         {hasUnsavedChanges && (
@@ -583,9 +547,9 @@ export default function ProfileShowPage({
                                 </div>
                             </div>
 
-                            {/* Right Column (4 cols): Context Overview & Account Summary */}
+                            {/* Right Column (4 cols): Context Overview & Guidance */}
                             <div className="space-y-6 lg:col-span-4">
-                                {/* Card 3: Business Information Preview & Status */}
+                                {/* Card 3: Live Context Summary */}
                                 <Card className="overflow-hidden rounded-3xl border-border/80 bg-card p-6 shadow-xs">
                                     <div className="flex items-center gap-2.5 border-b border-border/60 pb-4">
                                         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -647,85 +611,6 @@ export default function ProfileShowPage({
                                         </div>
                                     </div>
                                 </Card>
-
-                                {/* Card 4: Account Security & Credentials */}
-                                <Card className="overflow-hidden rounded-3xl border-border/80 bg-card p-6 shadow-xs">
-                                    <div className="flex items-center gap-2.5 border-b border-border/60 pb-4">
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted text-foreground">
-                                            <Shield className="h-4 w-4 text-muted-foreground" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-sm font-bold text-foreground">
-                                                Account Overview
-                                            </h3>
-                                            <p className="text-[11px] text-muted-foreground">
-                                                Authentication & workspace credentials
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-5 space-y-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-primary-foreground shadow-xs">
-                                                {initials}
-                                            </div>
-                                            <div className="space-y-0.5 overflow-hidden">
-                                                <p className="truncate text-sm font-bold text-foreground">
-                                                    {profile.name || 'Account Admin'}
-                                                </p>
-                                                <div className="flex items-center gap-1.5">
-                                                    <Badge
-                                                        variant="secondary"
-                                                        className="text-[10px] font-semibold"
-                                                    >
-                                                        {profile.role || 'Workspace Admin'}
-                                                    </Badge>
-                                                    {profile.email_verified && (
-                                                        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                                                            <Check className="h-2.5 w-2.5" /> Verified
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-2 border-t border-border/60 pt-3 text-xs text-muted-foreground">
-                                            <div className="flex items-center justify-between">
-                                                <span className="flex items-center gap-1.5">
-                                                    <Mail className="h-3.5 w-3.5" /> Email
-                                                </span>
-                                                <span className="max-w-44 truncate font-medium text-foreground">
-                                                    {profile.email}
-                                                </span>
-                                            </div>
-
-                                            {profile.member_since && (
-                                                <div className="flex items-center justify-between">
-                                                    <span className="flex items-center gap-1.5">
-                                                        <Calendar className="h-3.5 w-3.5" /> Member Since
-                                                    </span>
-                                                    <span className="font-medium text-foreground">
-                                                        {profile.member_since}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="pt-2">
-                                            <Button
-                                                asChild
-                                                variant="outline"
-                                                size="sm"
-                                                className="w-full gap-1.5 rounded-xl border-border bg-background text-xs font-semibold text-muted-foreground shadow-xs hover:bg-muted hover:text-foreground"
-                                            >
-                                                <Link href="/settings/profile">
-                                                    <span>Manage Security & Login</span>
-                                                    <ArrowUpRight className="h-3 w-3" />
-                                                </Link>
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </Card>
                             </div>
                         </div>
                     </form>
@@ -735,15 +620,16 @@ export default function ProfileShowPage({
     );
 }
 
-ProfileShowPage.layout = {
+BusinessProfilePage.layout = {
     breadcrumbs: [
         {
             title: 'Dashboard',
             href: '/dashboard',
         },
         {
-            title: 'My Profile',
-            href: '/profile',
+            title: 'Business Profile',
+            href: '/profile/business',
         },
     ],
 };
+

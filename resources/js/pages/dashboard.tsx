@@ -1,42 +1,33 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
-    ArrowRight,
+    Activity,
+    AlertCircle,
     ArrowUpRight,
     BarChart3,
     Calendar,
     CalendarDays,
-    Check,
     CheckCircle2,
-    ChevronDown,
     ChevronLeft,
     ChevronRight,
-    ChevronUp,
-    Clock,
     Download,
     Eye,
-    FolderPlus,
-    Heart,
     ImageIcon,
-    Layers,
-    LayoutDashboard,
     Megaphone,
     Package,
     PieChart,
     Plus,
-    Radio,
+    ShieldCheck,
     Sparkles,
-    Tag,
     TrendingUp,
     X,
-    ZoomIn,
-    ZoomOut,
+    Zap,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -45,12 +36,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
@@ -61,7 +46,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { downloadVisualAsFormat } from '@/lib/download';
 import { cn } from '@/lib/utils';
 
 /* ==========================================================================
@@ -74,28 +58,70 @@ type ActivityPoint = {
     campaigns: number;
 };
 
+type DashboardStats = {
+    total_designs?: number;
+    active_campaigns?: number;
+    total_products?: number;
+    upcoming_events?: number;
+    products_with_visuals?: number;
+    products_without_visuals?: number;
+    catalog_coverage?: number;
+};
+
+type CampaignStatusBreakdown = {
+    active?: number;
+    scheduled?: number;
+    draft?: number;
+    completed?: number;
+    archived?: number;
+};
+
+type SystemHealth = {
+    ai_generation?: 'operational' | 'attention_required';
+    event_calendar?: 'operational' | 'attention_required';
+    product_catalog?: 'operational' | 'attention_required';
+    campaign_engine?: 'operational' | 'attention_required';
+};
+
+type DashboardEvent = {
+    id: number | string;
+    name: string;
+    date?: string;
+    days?: string | number;
+    category?: string;
+};
+
+type DashboardDesign = {
+    id: number | string;
+    image_url?: string;
+    product_name?: string;
+    campaign_name?: string;
+    event_name?: string;
+    created_at?: string;
+};
+
+type DashboardCampaign = {
+    id: number | string;
+    name?: string;
+    status?: string;
+};
+
 type Props = {
-    auth?: any;
-    campaigns?: any[];
-    events?: any[];
-    upcoming_events?: any[];
-    recent_designs?: any[];
-    stats?: {
-        total_designs?: number;
-        active_campaigns?: number;
-        total_products?: number;
-        upcoming_events?: number;
-        catalog_coverage?: number;
+    auth?: {
+        user?: {
+            name?: string;
+            email?: string;
+        };
     };
+    campaigns?: DashboardCampaign[];
+    events?: DashboardEvent[];
+    upcoming_events?: DashboardEvent[];
+    recent_designs?: DashboardDesign[];
+    stats?: DashboardStats;
     monthly_activity?: ActivityPoint[];
     weekly_activity?: ActivityPoint[];
-    campaign_status_breakdown?: {
-        active?: number;
-        scheduled?: number;
-        draft?: number;
-        completed?: number;
-        archived?: number;
-    };
+    campaign_status_breakdown?: CampaignStatusBreakdown;
+    system_health?: SystemHealth;
     business?: {
         name?: string;
         industry?: string;
@@ -103,7 +129,7 @@ type Props = {
 };
 
 /* ==========================================================================
-   COMPONENT
+   MAIN DASHBOARD
 ========================================================================== */
 
 export default function Dashboard({
@@ -116,276 +142,368 @@ export default function Dashboard({
     monthly_activity = [],
     weekly_activity = [],
     campaign_status_breakdown = {},
+    system_health = {},
     business = {},
 }: Props) {
     const user = auth?.user;
-    const hour = new Date().getHours();
+
+    /* ----------------------------------------------------------------------
+       DATE / GREETING
+    ---------------------------------------------------------------------- */
+
+    const now = new Date();
+    const hour = now.getHours();
+
     const greeting =
         hour < 12
             ? 'Good morning'
             : hour < 18
-              ? 'Good afternoon'
-              : 'Good evening';
+                ? 'Good afternoon'
+                : 'Good evening';
+
     const todayFormatted = new Intl.DateTimeFormat('en-US', {
         weekday: 'long',
         month: 'short',
         day: 'numeric',
         year: 'numeric',
-    }).format(new Date());
+    }).format(now);
 
-    // Chart Timeframe Toggle: 'monthly' (6 months) vs 'weekly' (7 days)
+    /* ----------------------------------------------------------------------
+       UI STATE
+    ---------------------------------------------------------------------- */
+
     const [chartTimeframe, setChartTimeframe] = useState<'monthly' | 'weekly'>(
         'monthly',
     );
+
     const [hoveredPointIndex, setHoveredPointIndex] = useState<number | null>(
         null,
     );
 
-    // Full-screen image viewer state for recent designs
-    const [previewDesign, setPreviewDesign] = useState<any>(null);
-    const [isZoomed, setIsZoomed] = useState(false);
-    const [zoomOrigin, setZoomOrigin] = useState({ x: 50, y: 50 });
-    const [isScrolledToDetails, setIsScrolledToDetails] = useState(false);
+    const [previewDesign, setPreviewDesign] =
+        useState<DashboardDesign | null>(null);
 
-    // Create Campaign Modal State
     const [isCreateCampaignOpen, setIsCreateCampaignOpen] = useState(false);
+
     const [isSubmittingCampaign, setIsSubmittingCampaign] = useState(false);
+
     const [campaignFormErrors, setCampaignFormErrors] = useState<
         Record<string, string>
     >({});
+
     const [campaignFormData, setCampaignFormData] = useState({
         name: '',
         event_id: '',
-        start_date: new Date().toISOString().split('T')[0],
-        end_date: new Date().toISOString().split('T')[0],
+        start_date: now.toISOString().split('T')[0],
+        end_date: now.toISOString().split('T')[0],
         status: 'active',
     });
 
-    const handleCreateCampaign = (e: React.FormEvent) => {
-        e.preventDefault();
-        const errors: Record<string, string> = {};
-
-        if (!campaignFormData.name.trim()) {
-            errors.name = 'Campaign name is required';
-        }
-
-        if (!campaignFormData.event_id) {
-            errors.event_id = 'Marketing event or holiday is required';
-        }
-
-        if (!campaignFormData.start_date) {
-            errors.start_date = 'Start date is required';
-        }
-
-        if (!campaignFormData.end_date) {
-            errors.end_date = 'End date is required';
-        }
-
-        if (
-            campaignFormData.start_date &&
-            campaignFormData.end_date &&
-            campaignFormData.start_date > campaignFormData.end_date
-        ) {
-            errors.end_date = 'End date cannot be earlier than start date';
-        }
-
-        if (Object.keys(errors).length > 0) {
-            setCampaignFormErrors(errors);
-            toast.error('Please fill in all required campaign fields.');
-
-            return;
-        }
-
-        setIsSubmittingCampaign(true);
-        router.post('/campaigns', campaignFormData, {
-            preserveScroll: true,
-            onSuccess: () => {
-                setIsCreateCampaignOpen(false);
-                setCampaignFormData({
-                    name: '',
-                    event_id: '',
-                    start_date: new Date().toISOString().split('T')[0],
-                    end_date: new Date().toISOString().split('T')[0],
-                    status: 'active',
-                });
-                toast.success('Campaign created successfully!');
-            },
-            onError: (errors) => {
-                setCampaignFormErrors(errors as Record<string, string>);
-                toast.error('Failed to create campaign. Please check inputs.');
-            },
-            onFinish: () => {
-                setIsSubmittingCampaign(false);
-            },
-        });
-    };
+    /* ----------------------------------------------------------------------
+       REAL METRICS
+    ---------------------------------------------------------------------- */
 
     const totalDesigns = stats?.total_designs ?? 0;
     const activeCampaigns = stats?.active_campaigns ?? 0;
     const totalProducts = stats?.total_products ?? 0;
     const upcomingEventsCount = stats?.upcoming_events ?? 0;
-    const catalogCoverage =
-        stats?.catalog_coverage ??
-        (totalProducts > 0
-            ? Math.min(100, Math.round((totalDesigns / totalProducts) * 100))
-            : 0);
 
-    // Active Activity Data source
-    const activeActivityData = useMemo(() => {
-        const source =
-            chartTimeframe === 'monthly' ? monthly_activity : weekly_activity;
+    const productsWithVisuals = stats?.products_with_visuals ?? 0;
 
-        if (source && source.length > 0) {
-            return source;
-        }
+    const productsWithoutVisuals =
+        stats?.products_without_visuals ??
+        Math.max(0, totalProducts - productsWithVisuals);
 
-        // Fallback demo data if empty
-        if (chartTimeframe === 'monthly') {
-            return [
-                { period: 'Mar', designs: 4, campaigns: 1 },
-                { period: 'Apr', designs: 8, campaigns: 2 },
-                { period: 'May', designs: 14, campaigns: 3 },
-                { period: 'Jun', designs: 19, campaigns: 4 },
-                { period: 'Jul', designs: 26, campaigns: 5 },
-                {
-                    period: 'Aug',
-                    designs: totalDesigns || 12,
-                    campaigns: activeCampaigns || 2,
-                },
-            ];
-        }
+    const catalogCoverage = Math.min(
+        100,
+        Math.max(0, stats?.catalog_coverage ?? 0),
+    );
 
-        return [
-            { period: 'Mon', designs: 2, campaigns: 0 },
-            { period: 'Tue', designs: 5, campaigns: 1 },
-            { period: 'Wed', designs: 3, campaigns: 0 },
-            { period: 'Thu', designs: 8, campaigns: 2 },
-            { period: 'Fri', designs: 6, campaigns: 1 },
-            { period: 'Sat', designs: 4, campaigns: 0 },
-            { period: 'Sun', designs: 7, campaigns: 1 },
-        ];
-    }, [
-        chartTimeframe,
-        monthly_activity,
-        weekly_activity,
-        totalDesigns,
-        activeCampaigns,
-    ]);
+    /* ----------------------------------------------------------------------
+       ACTIVITY DATA
+    ---------------------------------------------------------------------- */
+
+    const activeActivityData = useMemo(
+        () =>
+            chartTimeframe === 'monthly'
+                ? monthly_activity
+                : weekly_activity,
+        [chartTimeframe, monthly_activity, weekly_activity],
+    );
+
+    const totalPeriodDesigns = useMemo(
+        () =>
+            activeActivityData.reduce(
+                (total, item) => total + (item.designs || 0),
+                0,
+            ),
+        [activeActivityData],
+    );
+
+    const totalPeriodCampaigns = useMemo(
+        () =>
+            activeActivityData.reduce(
+                (total, item) => total + (item.campaigns || 0),
+                0,
+            ),
+        [activeActivityData],
+    );
+
+    const hasActivity =
+        totalPeriodDesigns > 0 || totalPeriodCampaigns > 0;
 
     const maxChartValue = useMemo(() => {
-        return (
-            Math.max(
-                ...activeActivityData.map((d) =>
-                    Math.max(d.designs, d.campaigns, 4),
-                ),
-            ) + 2
+        if (!hasActivity) {
+            return 5;
+        }
+
+        const highest = Math.max(
+            ...activeActivityData.map((item) =>
+                Math.max(item.designs || 0, item.campaigns || 0),
+            ),
         );
-    }, [activeActivityData]);
 
-    const totalPeriodDesigns = useMemo(() => {
-        return activeActivityData.reduce((acc, d) => acc + d.designs, 0);
-    }, [activeActivityData]);
+        return Math.max(highest + 1, 4);
+    }, [activeActivityData, hasActivity]);
 
-    const totalPeriodCampaigns = useMemo(() => {
-        return activeActivityData.reduce((acc, d) => acc + d.campaigns, 0);
-    }, [activeActivityData]);
+    /* ----------------------------------------------------------------------
+       CAMPAIGN PIPELINE
+    ---------------------------------------------------------------------- */
 
-    // Summary Top Metric Cards
+    const statusCounts = {
+        active: campaign_status_breakdown?.active ?? 0,
+        scheduled: campaign_status_breakdown?.scheduled ?? 0,
+        draft: campaign_status_breakdown?.draft ?? 0,
+        completed: campaign_status_breakdown?.completed ?? 0,
+        archived: campaign_status_breakdown?.archived ?? 0,
+    };
+
+    const totalCampaignsTracked =
+        Object.values(statusCounts).reduce(
+            (total, count) => total + count,
+            0,
+        );
+
+    const pipelineTotal = Math.max(totalCampaignsTracked, 1);
+
+    /* ----------------------------------------------------------------------
+       MARKETING RECOMMENDATIONS
+       ----------------------------------------------------------------------
+       Recommendations are derived only from authentic dashboard state.
+    ---------------------------------------------------------------------- */
+
+    const recommendations = useMemo(() => {
+        const items: {
+            id: string;
+            title: string;
+            description: string;
+            action: string;
+            href: string;
+            icon: React.ElementType;
+            tone: string;
+        }[] = [];
+
+        if (
+            system_health?.ai_generation === 'attention_required'
+        ) {
+            items.push({
+                id: 'ai-health',
+                title: 'Check AI generation setup',
+                description:
+                    'The AI visual engine needs attention before new creatives can be generated.',
+                action: 'Check Generator',
+                href: '/generator',
+                icon: AlertCircle,
+                tone: 'text-amber-500 bg-amber-500/10',
+            });
+        }
+
+        if (totalProducts === 0) {
+            items.push({
+                id: 'catalog-empty',
+                title: 'Build your product catalog',
+                description:
+                    'Add products first so the studio can stage marketing creatives around your catalog.',
+                action: 'Add Product',
+                href: '/products/create',
+                icon: Package,
+                tone: 'text-emerald-500 bg-emerald-500/10',
+            });
+        } else if (productsWithoutVisuals > 0) {
+            items.push({
+                id: 'missing-visuals',
+                title: 'Complete catalog visuals',
+                description: `${productsWithoutVisuals} ${productsWithoutVisuals === 1 ? 'product is' : 'products are'} still missing marketing visuals.`,
+                action: 'Generate Visuals',
+                href: '/generator',
+                icon: ImageIcon,
+                tone: 'text-purple-500 bg-purple-500/10',
+            });
+        }
+
+        if (upcomingEventsCount > 0) {
+            const firstEvent = upcoming_events[0];
+
+            items.push({
+                id: 'upcoming-event',
+                title: firstEvent
+                    ? `Prepare for ${firstEvent.name}`
+                    : 'Prepare for an upcoming event',
+                description: firstEvent
+                    ? `${firstEvent.date || 'Upcoming'} is a marketing opportunity worth planning for.`
+                    : 'There are upcoming marketing opportunities in your calendar.',
+                action: 'Launch Brief',
+                href: firstEvent
+                    ? `/generator?event_id=${firstEvent.id}`
+                    : '/calendar',
+                icon: CalendarDays,
+                tone: 'text-blue-500 bg-blue-500/10',
+            });
+        }
+
+        if (statusCounts.draft > 0) {
+            items.push({
+                id: 'draft-campaigns',
+                title: 'Review draft campaigns',
+                description: `${statusCounts.draft} ${statusCounts.draft === 1 ? 'campaign is' : 'campaigns are'} waiting in draft status.`,
+                action: 'Review Campaigns',
+                href: '/campaigns',
+                icon: Megaphone,
+                tone: 'text-amber-500 bg-amber-500/10',
+            });
+        }
+
+        if (
+            totalDesigns === 0 &&
+            system_health?.ai_generation !== 'attention_required'
+        ) {
+            items.push({
+                id: 'first-visual',
+                title: 'Create your first AI visual',
+                description:
+                    'Start building your marketing creative library with a product or upcoming event.',
+                action: 'Generate Visual',
+                href: '/generator',
+                icon: Sparkles,
+                tone: 'text-primary bg-primary/10',
+            });
+        }
+
+        if (items.length === 0) {
+            items.push({
+                id: 'healthy-workspace',
+                title: 'Your marketing workspace is on track',
+                description:
+                    'Your catalog, campaigns, visuals, and upcoming opportunities are currently in good shape.',
+                action: 'View Campaigns',
+                href: '/campaigns',
+                icon: CheckCircle2,
+                tone: 'text-emerald-500 bg-emerald-500/10',
+            });
+        }
+
+        return items.slice(0, 3);
+    }, [
+        system_health,
+        totalProducts,
+        productsWithoutVisuals,
+        upcomingEventsCount,
+        upcoming_events,
+        statusCounts.draft,
+        totalDesigns,
+    ]);
+
+    /* ----------------------------------------------------------------------
+       SUMMARY METRICS
+    ---------------------------------------------------------------------- */
+
     const summaryMetrics = [
         {
-            label: 'Total AI Visuals',
+            label: 'AI Visuals Generated',
             value: totalDesigns,
-            trend: `${totalDesigns} Generated`,
+            description:
+                totalDesigns === 1
+                    ? '1 generated visual'
+                    : `${totalDesigns} generated visuals`,
             icon: ImageIcon,
             color: 'text-purple-500',
             bgColor: 'bg-purple-500/10 dark:bg-purple-500/20',
-            borderColor: 'group-hover:border-purple-500/40',
+            borderColor: 'hover:border-purple-500/40',
             href: '/designs',
         },
         {
             label: 'Active Campaigns',
             value: activeCampaigns,
-            trend: 'Live & Scheduled',
+            description: 'Live & scheduled',
             icon: Megaphone,
             color: 'text-blue-500',
             bgColor: 'bg-blue-500/10 dark:bg-blue-500/20',
-            borderColor: 'group-hover:border-blue-500/40',
+            borderColor: 'hover:border-blue-500/40',
             href: '/campaigns',
         },
         {
             label: 'Upcoming Key Dates',
             value: upcomingEventsCount,
-            trend: 'Next 30 Days',
+            description: 'Next 30 days',
             icon: CalendarDays,
             color: 'text-amber-500',
             bgColor: 'bg-amber-500/10 dark:bg-amber-500/20',
-            borderColor: 'group-hover:border-amber-500/40',
+            borderColor: 'hover:border-amber-500/40',
             href: '/calendar',
         },
         {
             label: 'Catalog Products',
             value: totalProducts,
-            trend: `${catalogCoverage}% Visual Coverage`,
+            description: `${catalogCoverage}% visual coverage`,
             icon: Package,
             color: 'text-emerald-500',
             bgColor: 'bg-emerald-500/10 dark:bg-emerald-500/20',
-            borderColor: 'group-hover:border-emerald-500/40',
+            borderColor: 'hover:border-emerald-500/40',
             href: '/products',
         },
     ];
 
-    // Pipeline status counts
-    const statusCounts = {
-        active:
-            campaign_status_breakdown.active ??
-            campaigns.filter((c) => c.status === 'active').length,
-        scheduled:
-            campaign_status_breakdown.scheduled ??
-            campaigns.filter((c) => c.status === 'scheduled').length,
-        completed:
-            campaign_status_breakdown.completed ??
-            campaigns.filter((c) => c.status === 'completed').length,
-        archived:
-            campaign_status_breakdown.archived ??
-            campaigns.filter((c) => c.status === 'archived').length,
-    };
-    const totalCampaignsTracked =
-        Object.values(statusCounts).reduce((a, b) => a + b, 0) || 1;
+    /* ----------------------------------------------------------------------
+       IMAGE PREVIEW NAVIGATION
+    ---------------------------------------------------------------------- */
 
-    // Image Modal Nav
     const currentPreviewIndex = previewDesign
-        ? recent_designs.findIndex((d: any) => d.id === previewDesign.id)
+        ? recent_designs.findIndex(
+            (design) => design.id === previewDesign.id,
+        )
         : -1;
+
     const hasPrevDesign = currentPreviewIndex > 0;
+
     const hasNextDesign =
         currentPreviewIndex !== -1 &&
         currentPreviewIndex < recent_designs.length - 1;
 
-    const handlePrevDesign = (e?: React.MouseEvent) => {
-        if (e) {
-            e.stopPropagation();
-        }
+    const handlePrevDesign = (
+        event?: React.MouseEvent,
+    ) => {
+        event?.stopPropagation();
 
         if (hasPrevDesign) {
-            setPreviewDesign(recent_designs[currentPreviewIndex - 1]);
-            setIsZoomed(false);
-            setIsScrolledToDetails(false);
+            setPreviewDesign(
+                recent_designs[currentPreviewIndex - 1],
+            );
         }
     };
 
-    const handleNextDesign = (e?: React.MouseEvent) => {
-        if (e) {
-            e.stopPropagation();
-        }
+    const handleNextDesign = (
+        event?: React.MouseEvent,
+    ) => {
+        event?.stopPropagation();
 
         if (hasNextDesign) {
-            setPreviewDesign(recent_designs[currentPreviewIndex + 1]);
-            setIsZoomed(false);
-            setIsScrolledToDetails(false);
+            setPreviewDesign(
+                recent_designs[currentPreviewIndex + 1],
+            );
         }
     };
 
-    const handleDownload = (design: any) => {
+    const handleDownload = (design: DashboardDesign) => {
         if (!design.image_url) {
             toast.info('No image available to download.');
 
@@ -393,13 +511,20 @@ export default function Dashboard({
         }
 
         const link = document.createElement('a');
+
         link.href = design.image_url;
-        link.download = `${design.product_name || 'design'}.png`;
+        link.download = `${design.product_name || 'marketing-visual'}.png`;
+
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+
         toast.success('Downloading visual!');
     };
+
+    /* ----------------------------------------------------------------------
+       IMAGE MODAL KEYBOARD HANDLING
+    ---------------------------------------------------------------------- */
 
     useEffect(() => {
         if (previewDesign) {
@@ -414,25 +539,35 @@ export default function Dashboard({
     }, [previewDesign]);
 
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
+        const handleKeyDown = (event: KeyboardEvent) => {
             if (!previewDesign) {
                 return;
             }
 
-            if (e.key === 'Escape') {
+            if (event.key === 'Escape') {
                 setPreviewDesign(null);
-                setIsZoomed(false);
-            } else if (e.key === 'ArrowLeft' && hasPrevDesign) {
-                setPreviewDesign(recent_designs[currentPreviewIndex - 1]);
-                setIsZoomed(false);
-            } else if (e.key === 'ArrowRight' && hasNextDesign) {
-                setPreviewDesign(recent_designs[currentPreviewIndex + 1]);
-                setIsZoomed(false);
+            }
+
+            if (event.key === 'ArrowLeft' && hasPrevDesign) {
+                setPreviewDesign(
+                    recent_designs[currentPreviewIndex - 1],
+                );
+            }
+
+            if (event.key === 'ArrowRight' && hasNextDesign) {
+                setPreviewDesign(
+                    recent_designs[currentPreviewIndex + 1],
+                );
             }
         };
+
         window.addEventListener('keydown', handleKeyDown);
 
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        return () =>
+            window.removeEventListener(
+                'keydown',
+                handleKeyDown,
+            );
     }, [
         previewDesign,
         currentPreviewIndex,
@@ -441,51 +576,182 @@ export default function Dashboard({
         recent_designs,
     ]);
 
+    /* ----------------------------------------------------------------------
+       CREATE CAMPAIGN
+    ---------------------------------------------------------------------- */
+
+    const handleCreateCampaign = (
+        event: React.FormEvent,
+    ) => {
+        event.preventDefault();
+
+        const errors: Record<string, string> = {};
+
+        if (!campaignFormData.name.trim()) {
+            errors.name = 'Campaign name is required';
+        }
+
+        if (!campaignFormData.event_id) {
+            errors.event_id =
+                'Marketing event or holiday is required';
+        }
+
+        if (!campaignFormData.start_date) {
+            errors.start_date = 'Start date is required';
+        }
+
+        if (!campaignFormData.end_date) {
+            errors.end_date = 'End date is required';
+        }
+
+        if (
+            campaignFormData.start_date &&
+            campaignFormData.end_date &&
+            campaignFormData.start_date >
+            campaignFormData.end_date
+        ) {
+            errors.end_date =
+                'End date cannot be earlier than start date';
+        }
+
+        if (Object.keys(errors).length > 0) {
+            setCampaignFormErrors(errors);
+
+            toast.error(
+                'Please fill in all required campaign fields.',
+            );
+
+            return;
+        }
+
+        setIsSubmittingCampaign(true);
+
+        router.post(
+            '/campaigns',
+            campaignFormData,
+            {
+                preserveScroll: true,
+
+                onSuccess: () => {
+                    setIsCreateCampaignOpen(false);
+
+                    setCampaignFormData({
+                        name: '',
+                        event_id: '',
+                        start_date:
+                            new Date()
+                                .toISOString()
+                                .split('T')[0],
+                        end_date:
+                            new Date()
+                                .toISOString()
+                                .split('T')[0],
+                        status: 'active',
+                    });
+
+                    setCampaignFormErrors({});
+
+                    toast.success(
+                        'Campaign created successfully!',
+                    );
+                },
+
+                onError: (errors) => {
+                    setCampaignFormErrors(
+                        errors as Record<string, string>,
+                    );
+
+                    toast.error(
+                        'Failed to create campaign. Please check the inputs.',
+                    );
+                },
+
+                onFinish: () => {
+                    setIsSubmittingCampaign(false);
+                },
+            },
+        );
+    };
+
+    /* ======================================================================
+       RENDER
+    ====================================================================== */
+
     return (
         <>
-            <Head title="System Dashboard" />
+            <Head title="AI Marketing Studio Dashboard" />
 
-            <div className="min-h-screen bg-background pb-20 text-foreground selection:bg-primary selection:text-primary-foreground">
-                <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6 lg:p-8">
-                    {/* =====================================================
-                        1. WELCOME & QUICK ACTION HERO (Glassmorphism Banner)
+            <div className="min-h-screen bg-background pb-24 text-foreground selection:bg-primary selection:text-primary-foreground">
+                <div className="mx-auto max-w-7xl space-y-8 p-4 sm:p-6 lg:p-8">
+
+                    {/* ======================================================
+                        SECTION 1 — HERO
                     ====================================================== */}
-                    <section className="relative overflow-hidden rounded-3xl border border-white/25 bg-card/85 p-6 shadow-xl shadow-black/5 backdrop-blur-2xl md:p-8 dark:border-white/10 dark:bg-card/85 dark:shadow-black/40">
-                        {/* Ambient Light Orbs */}
-                        <div className="pointer-events-none absolute -top-16 -right-16 h-64 w-64 rounded-full bg-primary/15 blur-[90px]" />
+
+                    <section className="relative overflow-hidden rounded-3xl border border-border/80 bg-gradient-to-br from-card via-card to-primary/[0.04] p-6 shadow-xs sm:p-8">
+                        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-primary/10 blur-[90px]" />
                         <div className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-blue-500/10 blur-[90px]" />
 
-                        <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-                            <div className="space-y-2">
+                        <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="space-y-3">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-0.5 text-xs font-bold text-primary shadow-2xs backdrop-blur-sm">
+                                    <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
                                         <Sparkles className="h-3.5 w-3.5" />
-                                        {business?.name ||
-                                            'AI Marketing Studio'}
+                                        <span>
+                                            {business?.name ||
+                                                'Marketing Studio Workspace'}
+                                        </span>
                                     </div>
-                                    <span className="hidden text-xs font-medium text-muted-foreground sm:inline">
-                                        &bull; {todayFormatted}
+
+                                    <span className="text-xs font-medium text-muted-foreground">
+                                        • {todayFormatted}
                                     </span>
                                 </div>
 
-                                <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl md:text-4xl">
+                                <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl md:text-4xl">
                                     {greeting},{' '}
-                                    {user?.name?.split(' ')[0] || 'Marketer'}!
+                                    {user?.name?.split(' ')[0] ||
+                                        'Marketer'}
+                                    !
                                 </h1>
 
-                                <p className="max-w-xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                                    Your automated marketing pipeline is active.
-                                    Manage your campaigns, generate AI visuals,
-                                    and track performance in real-time.
+                                <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                                    Your AI-powered marketing workspace
+                                    for planning campaigns, creating
+                                    visuals, managing products, and
+                                    acting on upcoming opportunities.
                                 </p>
                             </div>
 
-                            {/* Quick Action Shortcuts */}
-                            <div className="relative z-10 flex shrink-0 flex-wrap items-center gap-2.5">
+                            <div className="flex shrink-0 flex-wrap gap-2.5">
+                                <Button
+                                    asChild
+                                    className="h-10 gap-2 rounded-xl px-4 text-xs font-bold shadow-sm shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
+                                >
+                                    <Link href="/generator">
+                                        <Sparkles className="h-4 w-4" />
+                                        Generate Visual
+                                    </Link>
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() =>
+                                        setIsCreateCampaignOpen(
+                                            true,
+                                        )
+                                    }
+                                    className="h-10 gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    Create Campaign
+                                </Button>
+
                                 <Button
                                     asChild
                                     variant="outline"
-                                    className="h-10 gap-1.5 rounded-xl px-3.5 text-xs font-semibold shadow-sm transition-all hover:scale-105 hover:border-primary/40 active:scale-95"
+                                    className="h-10 gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
                                 >
                                     <Link href="/products/create">
                                         <Package className="h-4 w-4" />
@@ -494,43 +760,33 @@ export default function Dashboard({
                                 </Button>
 
                                 <Button
-                                    type="button"
-                                    onClick={() =>
-                                        setIsCreateCampaignOpen(true)
-                                    }
-                                    variant="outline"
-                                    className="h-10 cursor-pointer gap-1.5 rounded-xl px-3.5 text-xs font-semibold shadow-sm transition-all hover:scale-105 hover:border-primary/40 active:scale-95"
-                                >
-                                    <Plus className="h-4 w-4" />
-                                    New Campaign
-                                </Button>
-
-                                <Button
                                     asChild
-                                    className="h-10 gap-2 rounded-xl px-4 text-xs font-bold shadow-lg shadow-primary/25 transition-all hover:scale-105 active:scale-95"
+                                    variant="outline"
+                                    className="h-10 gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
                                 >
-                                    <Link href="/generator">
-                                        <Sparkles className="h-4 w-4" />
-                                        AI Studio
+                                    <Link href="/calendar">
+                                        <Calendar className="h-4 w-4" />
+                                        Calendar
                                     </Link>
                                 </Button>
                             </div>
                         </div>
                     </section>
 
-                    {/* =====================================================
-                        2. 4 CORE METRIC CARDS
+                    {/* ======================================================
+                        SECTION 2 — KEY METRICS
                     ====================================================== */}
+
                     <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         {summaryMetrics.map((metric) => {
-                            const IconComponent = metric.icon;
+                            const Icon = metric.icon;
 
                             return (
                                 <Link
                                     key={metric.label}
                                     href={metric.href}
                                     className={cn(
-                                        'group relative block flex cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-white/25 bg-card/80 p-5 shadow-lg backdrop-blur-xl transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl dark:border-white/10 dark:bg-card/80',
+                                        'group relative overflow-hidden rounded-2xl border border-border/80 bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md',
                                         metric.borderColor,
                                     )}
                                 >
@@ -538,23 +794,31 @@ export default function Dashboard({
                                         <span className="text-xs font-semibold text-muted-foreground">
                                             {metric.label}
                                         </span>
+
                                         <div
-                                            className={`flex h-9 w-9 items-center justify-center rounded-xl ${metric.bgColor} ${metric.color} shadow-xs transition-transform duration-200 group-hover:scale-110`}
+                                            className={cn(
+                                                'flex h-9 w-9 items-center justify-center rounded-xl shadow-xs transition-transform duration-200 group-hover:scale-110',
+                                                metric.bgColor,
+                                                metric.color,
+                                            )}
                                         >
-                                            <IconComponent className="h-4 w-4" />
+                                            <Icon className="h-4 w-4" />
                                         </div>
                                     </div>
 
-                                    <div className="mt-3 flex items-baseline gap-2">
-                                        <span className="text-3xl font-extrabold tracking-tight text-foreground">
+                                    <div className="mt-3">
+                                        <span className="text-3xl font-extrabold tracking-tight">
                                             {metric.value}
                                         </span>
                                     </div>
 
-                                    <div className="mt-2 flex items-center justify-between border-t border-border/50 pt-2 text-[11px] text-muted-foreground">
-                                        <span>{metric.trend}</span>
-                                        <span className="flex items-center gap-0.5 font-bold text-primary transition-colors group-hover:underline">
-                                            View{' '}
+                                    <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-2.5 text-[11px]">
+                                        <span className="text-muted-foreground">
+                                            {metric.description}
+                                        </span>
+
+                                        <span className="flex items-center gap-0.5 font-bold text-primary">
+                                            View
                                             <ArrowUpRight className="h-3 w-3" />
                                         </span>
                                     </div>
@@ -563,499 +827,576 @@ export default function Dashboard({
                         })}
                     </section>
 
-                    {/* =====================================================
-                        3. EASILY UNDERSTOOD CHARTS & PIPELINE ANALYTICS
+                    {/* ======================================================
+                        SECTION 3 + 4
                     ====================================================== */}
+
                     <div className="grid gap-6 lg:grid-cols-3">
-                        {/* CHART 1: Creative & Campaign Output Activity (Dual Bar / Trend Visualizer) */}
-                        <Card className="flex flex-col justify-between rounded-3xl border-white/25 bg-card/85 p-6 shadow-xl backdrop-blur-2xl lg:col-span-2 dark:border-white/10 dark:bg-card/85">
-                            <div>
-                                <div className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between">
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                                <BarChart3 className="h-4 w-4" />
-                                            </div>
-                                            <h2 className="text-base font-bold tracking-tight text-foreground">
-                                                Marketing Production & Output
-                                            </h2>
+
+                        {/* --------------------------------------------------
+                            MARKETING ACTIVITY
+                        -------------------------------------------------- */}
+
+                        <Card className="rounded-3xl border-border/80 bg-card p-6 shadow-xs lg:col-span-2">
+                            <div className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                            <BarChart3 className="h-4 w-4" />
                                         </div>
-                                        <p className="mt-1 text-xs text-muted-foreground">
-                                            Comparison of AI visual assets
-                                            generated versus marketing campaigns
-                                            launched.
-                                        </p>
+
+                                        <h2 className="text-base font-bold tracking-tight">
+                                            Marketing Activity & Output
+                                        </h2>
                                     </div>
 
-                                    {/* Timeframe Toggle Buttons (Monthly / Weekly) */}
-                                    <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-border/70 bg-muted/60 p-1">
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setChartTimeframe('monthly')
-                                            }
-                                            className={cn(
-                                                'cursor-pointer rounded-lg px-3 py-1 text-xs font-bold transition-all',
-                                                chartTimeframe === 'monthly'
-                                                    ? 'bg-card text-foreground shadow-xs'
-                                                    : 'text-muted-foreground hover:text-foreground',
-                                            )}
-                                        >
-                                            Monthly
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setChartTimeframe('weekly')
-                                            }
-                                            className={cn(
-                                                'cursor-pointer rounded-lg px-3 py-1 text-xs font-bold transition-all',
-                                                chartTimeframe === 'weekly'
-                                                    ? 'bg-card text-foreground shadow-xs'
-                                                    : 'text-muted-foreground hover:text-foreground',
-                                            )}
-                                        >
-                                            Last 7 Days
-                                        </button>
-                                    </div>
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                        Real AI visual generation and
+                                        campaign activity.
+                                    </p>
                                 </div>
 
-                                {/* Chart Legend & Summary Totals */}
-                                <div className="mt-4 flex flex-wrap items-center justify-between gap-4 text-xs">
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="h-3 w-3 rounded-md bg-primary shadow-xs" />
-                                            <span className="font-semibold text-foreground">
-                                                AI Visuals
-                                            </span>
-                                            <Badge
-                                                variant="outline"
-                                                className="ml-1 text-[10px] font-bold"
-                                            >
-                                                {totalPeriodDesigns} total
-                                            </Badge>
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="h-3 w-3 rounded-md bg-emerald-500 shadow-xs" />
-                                            <span className="font-semibold text-foreground">
-                                                Campaigns
-                                            </span>
-                                            <Badge
-                                                variant="outline"
-                                                className="ml-1 text-[10px] font-bold"
-                                            >
-                                                {totalPeriodCampaigns} total
-                                            </Badge>
-                                        </div>
-                                    </div>
+                                <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-border bg-muted/50 p-1">
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setChartTimeframe(
+                                                'monthly',
+                                            )
+                                        }
+                                        className={cn(
+                                            'rounded-lg px-3 py-1 text-xs font-bold transition-all',
+                                            chartTimeframe ===
+                                                'monthly'
+                                                ? 'bg-card text-foreground shadow-xs'
+                                                : 'text-muted-foreground hover:text-foreground',
+                                        )}
+                                    >
+                                        Monthly
+                                    </button>
 
-                                    <span className="text-[11px] text-muted-foreground">
-                                        Hover any column for details
-                                    </span>
-                                </div>
-
-                                {/* Interactive Bar Graph Canvas */}
-                                <div className="pt-6 pb-2">
-                                    <div className="grid h-48 grid-cols-6 items-end gap-2 border-b border-border/40 px-2 sm:grid-cols-7 sm:gap-4">
-                                        {activeActivityData.map((item, idx) => {
-                                            const designsHeightPercent =
-                                                Math.max(
-                                                    12,
-                                                    Math.round(
-                                                        (item.designs /
-                                                            maxChartValue) *
-                                                            100,
-                                                    ),
-                                                );
-                                            const campaignsHeightPercent =
-                                                Math.max(
-                                                    8,
-                                                    Math.round(
-                                                        (item.campaigns /
-                                                            maxChartValue) *
-                                                            100,
-                                                    ),
-                                                );
-                                            const isHovered =
-                                                hoveredPointIndex === idx;
-
-                                            return (
-                                                <div
-                                                    key={item.period + idx}
-                                                    className="group relative flex h-full cursor-pointer flex-col items-center justify-end"
-                                                    onMouseEnter={() =>
-                                                        setHoveredPointIndex(
-                                                            idx,
-                                                        )
-                                                    }
-                                                    onMouseLeave={() =>
-                                                        setHoveredPointIndex(
-                                                            null,
-                                                        )
-                                                    }
-                                                >
-                                                    {/* Hover Tooltip Card */}
-                                                    {isHovered && (
-                                                        <div className="absolute -top-12 z-30 animate-in rounded-xl border border-border/80 bg-popover/95 px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap text-popover-foreground shadow-2xl backdrop-blur-md duration-150 zoom-in-95 fade-in">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="font-bold text-primary">
-                                                                    {
-                                                                        item.designs
-                                                                    }{' '}
-                                                                    visuals
-                                                                </span>
-                                                                <span>
-                                                                    &bull;
-                                                                </span>
-                                                                <span className="font-bold text-emerald-500">
-                                                                    {
-                                                                        item.campaigns
-                                                                    }{' '}
-                                                                    campaigns
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Dual Bars */}
-                                                    <div className="flex h-36 w-full max-w-[48px] items-end justify-center gap-1.5">
-                                                        {/* Designs Bar */}
-                                                        <div
-                                                            style={{
-                                                                height: `${designsHeightPercent}%`,
-                                                            }}
-                                                            className="w-1/2 origin-bottom rounded-t-lg bg-primary/80 shadow-sm transition-all duration-200 group-hover:scale-y-[1.03] group-hover:bg-primary"
-                                                        />
-                                                        {/* Campaigns Bar */}
-                                                        <div
-                                                            style={{
-                                                                height: `${campaignsHeightPercent}%`,
-                                                            }}
-                                                            className="w-1/2 origin-bottom rounded-t-lg bg-emerald-500/80 shadow-sm transition-all duration-200 group-hover:scale-y-[1.03] group-hover:bg-emerald-500"
-                                                        />
-                                                    </div>
-
-                                                    {/* Period Label */}
-                                                    <span className="mt-2 text-xs font-bold text-muted-foreground transition-colors group-hover:text-foreground">
-                                                        {item.period}
-                                                    </span>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setChartTimeframe(
+                                                'weekly',
+                                            )
+                                        }
+                                        className={cn(
+                                            'rounded-lg px-3 py-1 text-xs font-bold transition-all',
+                                            chartTimeframe ===
+                                                'weekly'
+                                                ? 'bg-card text-foreground shadow-xs'
+                                                : 'text-muted-foreground hover:text-foreground',
+                                        )}
+                                    >
+                                        Weekly
+                                    </button>
                                 </div>
                             </div>
 
-                            {/* Bottom Chart Footer insight */}
+                            <div className="mt-4 flex flex-wrap items-center justify-between gap-4 text-xs">
+                                <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="h-3 w-3 rounded-md bg-primary" />
+
+                                        <span className="font-semibold">
+                                            AI Visuals
+                                        </span>
+
+                                        <Badge
+                                            variant="outline"
+                                            className="text-[10px] font-bold"
+                                        >
+                                            {totalPeriodDesigns}
+                                        </Badge>
+                                    </div>
+
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="h-3 w-3 rounded-md bg-emerald-500" />
+
+                                        <span className="font-semibold">
+                                            Campaigns
+                                        </span>
+
+                                        <Badge
+                                            variant="outline"
+                                            className="text-[10px] font-bold"
+                                        >
+                                            {totalPeriodCampaigns}
+                                        </Badge>
+                                    </div>
+                                </div>
+
+                                {hasActivity && (
+                                    <span className="text-[11px] text-muted-foreground">
+                                        Hover for details
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="pt-6">
+                                {hasActivity ? (
+                                    <div className="grid h-48 grid-cols-6 items-end gap-2 border-b border-border/60 px-2 sm:grid-cols-7 sm:gap-4">
+                                        {activeActivityData.map(
+                                            (
+                                                item,
+                                                index,
+                                            ) => {
+                                                const designs =
+                                                    item.designs ||
+                                                    0;
+
+                                                const campaigns =
+                                                    item.campaigns ||
+                                                    0;
+
+                                                const designHeight =
+                                                    designs >
+                                                        0
+                                                        ? Math.max(
+                                                            12,
+                                                            Math.round(
+                                                                (designs /
+                                                                    maxChartValue) *
+                                                                100,
+                                                            ),
+                                                        )
+                                                        : 4;
+
+                                                const campaignHeight =
+                                                    campaigns >
+                                                        0
+                                                        ? Math.max(
+                                                            8,
+                                                            Math.round(
+                                                                (campaigns /
+                                                                    maxChartValue) *
+                                                                100,
+                                                            ),
+                                                        )
+                                                        : 4;
+
+                                                const hovered =
+                                                    hoveredPointIndex ===
+                                                    index;
+
+                                                return (
+                                                    <div
+                                                        key={`${item.period}-${index}`}
+                                                        className="group relative flex h-full cursor-pointer flex-col items-center justify-end"
+                                                        onMouseEnter={() =>
+                                                            setHoveredPointIndex(
+                                                                index,
+                                                            )
+                                                        }
+                                                        onMouseLeave={() =>
+                                                            setHoveredPointIndex(
+                                                                null,
+                                                            )
+                                                        }
+                                                    >
+                                                        {hovered && (
+                                                            <div className="absolute -top-12 z-30 rounded-xl border border-border bg-popover px-3 py-1.5 text-[11px] font-semibold text-popover-foreground shadow-lg">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-bold text-primary">
+                                                                        {
+                                                                            designs
+                                                                        }{' '}
+                                                                        visuals
+                                                                    </span>
+
+                                                                    <span>
+                                                                        •
+                                                                    </span>
+
+                                                                    <span className="font-bold text-emerald-500">
+                                                                        {
+                                                                            campaigns
+                                                                        }{' '}
+                                                                        campaigns
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        <div className="flex h-36 w-full max-w-[48px] items-end justify-center gap-1.5">
+                                                            <div
+                                                                style={{
+                                                                    height: `${designHeight}%`,
+                                                                }}
+                                                                className={cn(
+                                                                    'w-1/2 rounded-t-lg transition-all',
+                                                                    designs >
+                                                                        0
+                                                                        ? 'bg-primary/80 group-hover:bg-primary'
+                                                                        : 'bg-muted/40',
+                                                                )}
+                                                            />
+
+                                                            <div
+                                                                style={{
+                                                                    height: `${campaignHeight}%`,
+                                                                }}
+                                                                className={cn(
+                                                                    'w-1/2 rounded-t-lg transition-all',
+                                                                    campaigns >
+                                                                        0
+                                                                        ? 'bg-emerald-500/80 group-hover:bg-emerald-500'
+                                                                        : 'bg-muted/40',
+                                                                )}
+                                                            />
+                                                        </div>
+
+                                                        <span className="mt-2 text-xs font-bold text-muted-foreground">
+                                                            {
+                                                                item.period
+                                                            }
+                                                        </span>
+                                                    </div>
+                                                );
+                                            },
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="flex h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-border/80 bg-muted/20 p-6 text-center">
+                                        <Activity className="mb-2 h-8 w-8 text-muted-foreground/40" />
+
+                                        <p className="text-sm font-semibold">
+                                            No marketing activity
+                                            recorded for this period.
+                                        </p>
+
+                                        <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+                                            Generate AI visuals or
+                                            launch a promotional
+                                            campaign to begin
+                                            tracking activity.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="mt-4 flex items-center justify-between border-t border-border/40 pt-3 text-xs text-muted-foreground">
                                 <span>
                                     Output Velocity:{' '}
                                     <strong className="text-foreground">
-                                        {Math.round(
-                                            totalPeriodDesigns /
-                                                (activeActivityData.length ||
-                                                    1),
-                                        )}{' '}
-                                        visuals /{' '}
-                                        {chartTimeframe === 'monthly'
-                                            ? 'month'
-                                            : 'day'}
+                                        {hasActivity
+                                            ? `${Math.round(
+                                                totalPeriodDesigns /
+                                                Math.max(
+                                                    activeActivityData.length,
+                                                    1,
+                                                ),
+                                            )} visuals / ${chartTimeframe ===
+                                                'monthly'
+                                                ? 'month'
+                                                : 'day'
+                                            }`
+                                            : '0 visuals recorded'}
                                     </strong>
                                 </span>
+
                                 <Link
                                     href="/generator"
                                     className="font-bold text-primary hover:underline"
                                 >
-                                    Generate Visual &rarr;
+                                    Generate Visual →
                                 </Link>
                             </div>
                         </Card>
 
-                        {/* CHART 2 & 3: Pipeline Distribution & Catalog Readiness */}
-                        <div className="space-y-6">
-                            {/* Campaign Pipeline Status Breakdown */}
-                            <Card className="rounded-3xl border-white/25 bg-card/85 p-5 shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-card/85">
-                                <div className="flex items-center justify-between border-b border-border/60 pb-3">
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
-                                            <PieChart className="h-4 w-4" />
-                                        </div>
-                                        <h3 className="text-sm font-bold tracking-tight text-foreground">
-                                            Campaign Pipeline
-                                        </h3>
-                                    </div>
-                                    <Badge
-                                        variant="outline"
-                                        className="text-[10px] font-bold"
-                                    >
-                                        {campaigns.length} Total
-                                    </Badge>
-                                </div>
+                        {/* --------------------------------------------------
+                            CAMPAIGN PIPELINE
+                        -------------------------------------------------- */}
 
-                                {/* Multi-segmented Progress Bar */}
-                                <div className="mt-4 space-y-3">
-                                    <div className="flex h-3 w-full gap-0.5 overflow-hidden rounded-full bg-muted/60 p-0.5">
-                                        <div
-                                            style={{
-                                                width: `${(statusCounts.active / totalCampaignsTracked) * 100}%`,
-                                            }}
-                                            className="rounded-full bg-emerald-500 transition-all duration-500"
-                                            title={`Active: ${statusCounts.active}`}
-                                        />
-                                        <div
-                                            style={{
-                                                width: `${(statusCounts.scheduled / totalCampaignsTracked) * 100}%`,
-                                            }}
-                                            className="rounded-full bg-blue-500 transition-all duration-500"
-                                            title={`Scheduled: ${statusCounts.scheduled}`}
-                                        />
-                                        <div
-                                            style={{
-                                                width: `${(statusCounts.completed / totalCampaignsTracked) * 100}%`,
-                                            }}
-                                            className="rounded-full bg-purple-500 transition-all duration-500"
-                                            title={`Completed: ${statusCounts.completed}`}
-                                        />
-                                        <div
-                                            style={{
-                                                width: `${(statusCounts.archived / totalCampaignsTracked) * 100}%`,
-                                            }}
-                                            className="rounded-full bg-zinc-500 transition-all duration-500"
-                                            title={`Archived: ${statusCounts.archived}`}
-                                        />
+                        <Card className="rounded-3xl border-border/80 bg-card p-5 shadow-xs">
+                            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+                                        <PieChart className="h-4 w-4" />
                                     </div>
 
-                                    {/* Breakdown Legend Grid */}
-                                    <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
-                                        <Link
-                                            href="/campaigns"
-                                            className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/30 p-2 transition-colors hover:bg-muted/60"
-                                        >
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                                                <span className="font-medium text-muted-foreground">
-                                                    Active
-                                                </span>
-                                            </div>
-                                            <span className="font-bold text-foreground">
-                                                {statusCounts.active}
-                                            </span>
-                                        </Link>
-                                        <Link
-                                            href="/campaigns"
-                                            className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/30 p-2 transition-colors hover:bg-muted/60"
-                                        >
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="h-2 w-2 rounded-full bg-blue-500" />
-                                                <span className="font-medium text-muted-foreground">
-                                                    Scheduled
-                                                </span>
-                                            </div>
-                                            <span className="font-bold text-foreground">
-                                                {statusCounts.scheduled}
-                                            </span>
-                                        </Link>
-                                        <Link
-                                            href="/campaigns?status=archived"
-                                            className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/30 p-2 transition-colors hover:bg-muted/60"
-                                        >
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="h-2 w-2 rounded-full bg-zinc-500" />
-                                                <span className="font-medium text-muted-foreground">
-                                                    Archived
-                                                </span>
-                                            </div>
-                                            <span className="font-bold text-foreground">
-                                                {statusCounts.archived || 0}
-                                            </span>
-                                        </Link>
-                                        <Link
-                                            href="/campaigns"
-                                            className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/30 p-2 transition-colors hover:bg-muted/60"
-                                        >
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="h-2 w-2 rounded-full bg-purple-500" />
-                                                <span className="font-medium text-muted-foreground">
-                                                    Completed
-                                                </span>
-                                            </div>
-                                            <span className="font-bold text-foreground">
-                                                {statusCounts.completed}
-                                            </span>
-                                        </Link>
-                                    </div>
-                                </div>
-                            </Card>
-
-                            {/* Catalog Marketing Coverage Gauge */}
-                            <Card className="rounded-3xl border-white/25 bg-card/85 p-5 shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-card/85">
-                                <div className="flex items-center justify-between border-b border-border/60 pb-3">
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
-                                            <Package className="h-4 w-4" />
-                                        </div>
-                                        <h3 className="text-sm font-bold tracking-tight text-foreground">
-                                            Catalog Visual Readiness
-                                        </h3>
-                                    </div>
-                                    <span className="text-xs font-bold text-emerald-500">
-                                        {catalogCoverage}% Ready
-                                    </span>
+                                    <h3 className="text-sm font-bold">
+                                        Campaign Pipeline
+                                    </h3>
                                 </div>
 
-                                <div className="mt-3 space-y-2">
-                                    <Progress
-                                        value={catalogCoverage}
-                                        className="h-2 bg-muted/60"
-                                    />
-                                    <p className="text-[11px] leading-relaxed text-muted-foreground">
-                                        {catalogCoverage >= 100
-                                            ? 'Great job! All your catalog products have visual marketing creatives.'
-                                            : `${totalProducts} products cataloged. Generate AI visuals to boost marketing reach.`}
-                                    </p>
+                                <Badge
+                                    variant="outline"
+                                    className="text-[10px] font-bold"
+                                >
+                                    {totalCampaignsTracked} Total
+                                </Badge>
+                            </div>
 
-                                    <Button
-                                        asChild
-                                        size="sm"
-                                        variant="outline"
-                                        className="mt-2 h-8 w-full gap-1.5 rounded-xl text-xs font-bold"
-                                    >
-                                        <Link href="/generator">
-                                            <Sparkles className="h-3.5 w-3.5 text-primary" />
-                                            Generate for Products
-                                        </Link>
-                                    </Button>
+                            <div className="mt-4 space-y-3">
+                                <div className="flex h-3 overflow-hidden rounded-full bg-muted/60">
+                                    {[
+                                        [
+                                            'active',
+                                            'bg-emerald-500',
+                                        ],
+                                        [
+                                            'scheduled',
+                                            'bg-blue-500',
+                                        ],
+                                        [
+                                            'draft',
+                                            'bg-amber-500',
+                                        ],
+                                        [
+                                            'completed',
+                                            'bg-purple-500',
+                                        ],
+                                        [
+                                            'archived',
+                                            'bg-zinc-500',
+                                        ],
+                                    ].map(
+                                        ([status, color]) => (
+                                            <div
+                                                key={status}
+                                                style={{
+                                                    width: `${(statusCounts[
+                                                            status as keyof typeof statusCounts
+                                                        ] /
+                                                            pipelineTotal) *
+                                                        100
+                                                        }%`,
+                                                }}
+                                                className={cn(
+                                                    'transition-all',
+                                                    color,
+                                                )}
+                                            />
+                                        ),
+                                    )}
                                 </div>
-                            </Card>
-                        </div>
+
+                                <div className="grid grid-cols-2 gap-2">
+                                    {[
+                                        [
+                                            'Active',
+                                            'active',
+                                            'bg-emerald-500',
+                                        ],
+                                        [
+                                            'Scheduled',
+                                            'scheduled',
+                                            'bg-blue-500',
+                                        ],
+                                        [
+                                            'Draft',
+                                            'draft',
+                                            'bg-amber-500',
+                                        ],
+                                        [
+                                            'Completed',
+                                            'completed',
+                                            'bg-purple-500',
+                                        ],
+                                        [
+                                            'Archived',
+                                            'archived',
+                                            'bg-zinc-500',
+                                        ],
+                                    ].map(
+                                        ([
+                                            label,
+                                            status,
+                                            color,
+                                        ]) => (
+                                            <Link
+                                                key={status}
+                                                href="/campaigns"
+                                                className={cn(
+                                                    'flex items-center justify-between rounded-xl border border-border/60 bg-muted/20 p-2.5 transition-colors hover:bg-muted/60',
+                                                    status ===
+                                                    'archived' &&
+                                                    'col-span-2',
+                                                )}
+                                            >
+                                                <div className="flex items-center gap-1.5">
+                                                    <span
+                                                        className={cn(
+                                                            'h-2 w-2 rounded-full',
+                                                            color,
+                                                        )}
+                                                    />
+
+                                                    <span className="text-xs font-medium text-muted-foreground">
+                                                        {label}
+                                                    </span>
+                                                </div>
+
+                                                <span className="text-xs font-bold">
+                                                    {
+                                                        statusCounts[
+                                                        status as keyof typeof statusCounts
+                                                        ]
+                                                    }
+                                                </span>
+                                            </Link>
+                                        ),
+                                    )}
+                                </div>
+                            </div>
+                        </Card>
                     </div>
 
-                    {/* =====================================================
-                        4. RECENT VISUALS & UPCOMING OPPORTUNITIES PANELS
+                    {/* ======================================================
+                        SECTION 5 + 6
                     ====================================================== */}
+
                     <div className="grid gap-6 lg:grid-cols-3">
-                        {/* LEFT 2 COLUMNS: RECENT AI DESIGNS GALLERY */}
+
+                        {/* --------------------------------------------------
+                            RECENT AI VISUALS
+                        -------------------------------------------------- */}
+
                         <div className="space-y-4 lg:col-span-2">
                             <div className="flex items-center justify-between">
-                                <h2 className="flex items-center gap-2 text-base font-bold tracking-tight text-foreground sm:text-lg">
+                                <h2 className="flex items-center gap-2 text-base font-bold sm:text-lg">
                                     <ImageIcon className="h-4 w-4 text-primary" />
                                     Recent AI Visuals
                                 </h2>
+
                                 <Button
                                     asChild
                                     variant="ghost"
                                     size="sm"
-                                    className="text-xs font-bold text-primary hover:underline"
+                                    className="text-xs font-bold text-primary"
                                 >
                                     <Link href="/designs">
-                                        View All ({totalDesigns}) &rarr;
+                                        View All ({totalDesigns})
+                                        <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
                                     </Link>
                                 </Button>
                             </div>
 
                             {recent_designs.length === 0 ? (
-                                <Card className="rounded-3xl border-white/25 bg-card/85 p-8 text-center shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-card/85">
+                                <Card className="rounded-3xl border-border/80 bg-card p-8 text-center shadow-xs">
                                     <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                                         <ImageIcon className="h-6 w-6" />
                                     </div>
-                                    <h3 className="text-sm font-bold text-foreground">
-                                        No visual assets generated yet
+
+                                    <h3 className="text-sm font-bold">
+                                        No AI visuals generated yet
                                     </h3>
+
                                     <p className="mx-auto mt-1 max-w-xs text-xs text-muted-foreground">
-                                        Generate stunning studio-grade
-                                        promotional posters and social media
-                                        creatives in seconds.
+                                        Create commercial posters
+                                        and social creatives using
+                                        your products and marketing
+                                        events.
                                     </p>
+
                                     <Button
                                         asChild
                                         size="sm"
-                                        className="mt-4 gap-1.5 rounded-xl text-xs font-bold shadow-lg shadow-primary/25"
+                                        className="mt-4 gap-1.5 rounded-xl text-xs font-bold"
                                     >
                                         <Link href="/generator">
                                             <Sparkles className="h-3.5 w-3.5" />
-                                            Launch AI Studio
+                                            Generate Your First
+                                            Visual
                                         </Link>
                                     </Button>
                                 </Card>
                             ) : (
                                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                    {recent_designs.map((design: any) => (
-                                        <div
-                                            key={design.id}
-                                            onClick={() => {
-                                                setPreviewDesign(design);
-                                                setIsZoomed(false);
-                                            }}
-                                            className="group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-white/25 bg-card/80 shadow-lg backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl dark:border-white/10 dark:bg-card/80"
-                                        >
-                                            <div className="relative h-44 w-full overflow-hidden bg-muted">
-                                                {design.image_url ? (
-                                                    <img
-                                                        src={design.image_url}
-                                                        alt={
-                                                            design.product_name ||
-                                                            'Design'
-                                                        }
-                                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                                    />
-                                                ) : (
-                                                    <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
-                                                        <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
-                                                    </div>
-                                                )}
+                                    {recent_designs.map(
+                                        (design) => (
+                                            <button
+                                                type="button"
+                                                key={design.id}
+                                                onClick={() =>
+                                                    setPreviewDesign(
+                                                        design,
+                                                    )
+                                                }
+                                                className="group overflow-hidden rounded-2xl border border-border/80 bg-card text-left shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md"
+                                            >
+                                                <div className="relative h-44 overflow-hidden bg-muted">
+                                                    {design.image_url ? (
+                                                        <img
+                                                            src={
+                                                                design.image_url
+                                                            }
+                                                            alt={
+                                                                design.product_name ||
+                                                                'Marketing visual'
+                                                            }
+                                                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex h-full items-center justify-center text-muted-foreground">
+                                                            <ImageIcon className="h-8 w-8 opacity-40" />
+                                                        </div>
+                                                    )}
 
-                                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 
-                                                <div className="absolute top-2.5 right-2.5 opacity-0 transition-opacity group-hover:opacity-100">
-                                                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white shadow-sm backdrop-blur-md">
+                                                    <span className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white opacity-0 backdrop-blur-md transition-opacity group-hover:opacity-100">
                                                         <Eye className="h-3.5 w-3.5" />
                                                     </span>
                                                 </div>
-                                            </div>
 
-                                            <div className="space-y-1 p-3.5">
-                                                <p className="truncate text-xs font-bold text-foreground transition-colors group-hover:text-primary">
-                                                    {design.product_name ||
-                                                        'Marketing Creative'}
-                                                </p>
-                                                <p className="truncate text-[11px] text-muted-foreground">
-                                                    {design.campaign_name ||
-                                                        design.event_name ||
-                                                        design.created_at}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
+                                                <div className="space-y-1 p-3.5">
+                                                    <p className="truncate text-xs font-bold group-hover:text-primary">
+                                                        {design.product_name ||
+                                                            'Marketing Creative'}
+                                                    </p>
+
+                                                    <p className="truncate text-[11px] text-muted-foreground">
+                                                        {design.campaign_name ||
+                                                            design.event_name ||
+                                                            design.created_at ||
+                                                            'Generated visual'}
+                                                    </p>
+                                                </div>
+                                            </button>
+                                        ),
+                                    )}
                                 </div>
                             )}
                         </div>
 
-                        {/* RIGHT 1 COLUMN: UPCOMING KEY MARKETING DATES */}
+                        {/* --------------------------------------------------
+                            UPCOMING OPPORTUNITIES
+                        -------------------------------------------------- */}
+
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <h2 className="flex items-center gap-2 text-base font-bold tracking-tight text-foreground sm:text-lg">
+                                <h2 className="flex items-center gap-2 text-base font-bold sm:text-lg">
                                     <Calendar className="h-4 w-4 text-primary" />
-                                    Upcoming Key Dates
+                                    Upcoming Opportunities
                                 </h2>
+
                                 <Button
                                     asChild
                                     variant="ghost"
                                     size="sm"
-                                    className="text-xs font-bold text-primary hover:underline"
+                                    className="text-xs font-bold text-primary"
                                 >
                                     <Link href="/calendar">
-                                        Calendar &rarr;
+                                        Calendar
+                                        <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
                                     </Link>
                                 </Button>
                             </div>
 
                             {upcoming_events.length === 0 ? (
-                                <Card className="rounded-3xl border-white/25 bg-card/85 p-6 text-center shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-card/85">
+                                <Card className="rounded-3xl border-border/80 bg-card p-6 text-center shadow-xs">
                                     <CalendarDays className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
+
                                     <p className="text-xs text-muted-foreground">
-                                        No upcoming dates scheduled in next 30
-                                        days.
+                                        No upcoming marketing
+                                        opportunities in the next
+                                        30 days.
                                     </p>
+
                                     <Button
                                         asChild
                                         size="sm"
@@ -1069,82 +1410,389 @@ export default function Dashboard({
                                 </Card>
                             ) : (
                                 <div className="space-y-3">
-                                    {upcoming_events.map((evt: any) => (
-                                        <div
-                                            key={evt.id}
-                                            className="group flex flex-col justify-between gap-2 rounded-2xl border border-white/25 bg-card/80 p-4 shadow-lg backdrop-blur-xl transition-all hover:border-primary/40 hover:shadow-2xl dark:border-white/10 dark:bg-card/80"
-                                        >
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div>
-                                                    <p className="text-xs font-bold text-foreground transition-colors group-hover:text-primary">
-                                                        {evt.name}
-                                                    </p>
-                                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                                        {evt.date}
-                                                    </p>
+                                    {upcoming_events.map(
+                                        (event) => (
+                                            <div
+                                                key={event.id}
+                                                className="group rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all hover:border-primary/40 hover:shadow-md"
+                                            >
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div>
+                                                        <p className="text-xs font-bold group-hover:text-primary">
+                                                            {
+                                                                event.name
+                                                            }
+                                                        </p>
+
+                                                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                                            {event.date ||
+                                                                'Upcoming'}
+                                                        </p>
+                                                    </div>
+
+                                                    {event.days && (
+                                                        <Badge
+                                                            variant="secondary"
+                                                            className="border-primary/20 bg-primary/10 text-[10px] font-bold text-primary"
+                                                        >
+                                                            {
+                                                                event.days
+                                                            }
+                                                        </Badge>
+                                                    )}
                                                 </div>
 
-                                                {evt.days && (
-                                                    <Badge
-                                                        variant="secondary"
-                                                        className="border-primary/20 bg-primary/10 text-[10px] font-bold text-primary"
-                                                    >
-                                                        {evt.days}
-                                                    </Badge>
-                                                )}
-                                            </div>
+                                                <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2">
+                                                    <span className="text-[11px] font-medium capitalize text-muted-foreground">
+                                                        {event.category ||
+                                                            'Holiday'}
+                                                    </span>
 
-                                            <div className="flex items-center justify-between border-t border-border/40 pt-2 text-[11px]">
-                                                <span className="font-medium text-muted-foreground capitalize">
-                                                    {evt.category || 'Season'}
-                                                </span>
-                                                <Button
-                                                    asChild
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-7 rounded-lg p-1 px-2.5 text-xs font-bold text-primary hover:bg-primary/10"
-                                                >
-                                                    <Link
-                                                        href={`/generator?event_id=${evt.id}`}
+                                                    <Button
+                                                        asChild
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-7 rounded-lg px-2 text-xs font-bold text-primary"
                                                     >
-                                                        Launch Brief &rarr;
-                                                    </Link>
-                                                </Button>
+                                                        <Link
+                                                            href={`/generator?event_id=${event.id}`}
+                                                        >
+                                                            Launch Brief
+                                                            <ArrowUpRight className="ml-1 h-3 w-3" />
+                                                        </Link>
+                                                    </Button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ),
+                                    )}
                                 </div>
                             )}
                         </div>
                     </div>
+
+                    {/* ======================================================
+                        SECTION 7 — CATALOG COVERAGE
+                    ====================================================== */}
+
+                    <section className="grid gap-6 lg:grid-cols-3">
+
+                        {/* CATALOG HEALTH */}
+
+                        <Card className="rounded-3xl border-border/80 bg-card p-5 shadow-xs lg:col-span-2">
+                            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
+                                        <Package className="h-4 w-4" />
+                                    </div>
+
+                                    <div>
+                                        <h3 className="text-sm font-bold">
+                                            Catalog Visual Readiness
+                                        </h3>
+
+                                        <p className="text-[10px] text-muted-foreground">
+                                            Product coverage for AI
+                                            marketing creatives
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <span className="text-xs font-bold text-emerald-500">
+                                    {catalogCoverage}% Ready
+                                </span>
+                            </div>
+
+                            <div className="mt-4 space-y-4">
+                                <Progress
+                                    value={catalogCoverage}
+                                    className="h-2"
+                                />
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+                                        <span className="text-[11px] text-muted-foreground">
+                                            With Visuals
+                                        </span>
+
+                                        <p className="mt-1 text-xl font-extrabold">
+                                            {productsWithVisuals}
+                                        </p>
+                                    </div>
+
+                                    <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+                                        <span className="text-[11px] text-muted-foreground">
+                                            Needs Visuals
+                                        </span>
+
+                                        <p className="mt-1 text-xl font-extrabold">
+                                            {productsWithoutVisuals}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <p className="text-xs font-bold">
+                                            {totalProducts === 0
+                                                ? 'Your catalog is ready to be built.'
+                                                : catalogCoverage >=
+                                                    100
+                                                    ? 'All catalog products have marketing visuals.'
+                                                    : `${productsWithoutVisuals} products still need marketing visuals.`}
+                                        </p>
+
+                                        <p className="mt-1 text-[11px] text-muted-foreground">
+                                            {totalProducts === 0
+                                                ? 'Add your products to start creating AI-powered marketing creatives.'
+                                                : 'Improve your catalog readiness by generating visuals for products without creative coverage.'}
+                                        </p>
+                                    </div>
+
+                                    <Button
+                                        asChild
+                                        size="sm"
+                                        variant="outline"
+                                        className="shrink-0 rounded-xl text-xs font-bold"
+                                    >
+                                        <Link
+                                            href={
+                                                totalProducts ===
+                                                    0
+                                                    ? '/products/create'
+                                                    : '/generator'
+                                            }
+                                        >
+                                            <Sparkles className="mr-1.5 h-3.5 w-3.5 text-primary" />
+
+                                            {totalProducts ===
+                                                0
+                                                ? 'Add Product'
+                                                : 'Generate Visuals'}
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </div>
+                        </Card>
+
+                        {/* MARKETING RECOMMENDATIONS */}
+
+                        <Card className="rounded-3xl border-border/80 bg-card p-5 shadow-xs">
+                            <div className="border-b border-border/60 pb-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                        <Zap className="h-4 w-4" />
+                                    </div>
+
+                                    <div>
+                                        <h3 className="text-sm font-bold">
+                                            Marketing Recommendations
+                                        </h3>
+
+                                        <p className="text-[10px] text-muted-foreground">
+                                            Suggested next actions
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-3 space-y-2.5">
+                                {recommendations.map(
+                                    (recommendation) => {
+                                        const Icon =
+                                            recommendation.icon;
+
+                                        return (
+                                            <div
+                                                key={
+                                                    recommendation.id
+                                                }
+                                                className="rounded-2xl border border-border/60 bg-muted/20 p-3 transition-colors hover:bg-muted/40"
+                                            >
+                                                <div className="flex gap-3">
+                                                    <div
+                                                        className={cn(
+                                                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl',
+                                                            recommendation.tone,
+                                                        )}
+                                                    >
+                                                        <Icon className="h-4 w-4" />
+                                                    </div>
+
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-xs font-bold">
+                                                            {
+                                                                recommendation.title
+                                                            }
+                                                        </p>
+
+                                                        <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+                                                            {
+                                                                recommendation.description
+                                                            }
+                                                        </p>
+
+                                                        <Button
+                                                            asChild
+                                                            variant="link"
+                                                            size="sm"
+                                                            className="mt-1 h-auto p-0 text-[10px] font-bold text-primary"
+                                                        >
+                                                            <Link
+                                                                href={
+                                                                    recommendation.href
+                                                                }
+                                                            >
+                                                                {
+                                                                    recommendation.action
+                                                                }
+                                                                <ArrowUpRight className="ml-1 h-3 w-3" />
+                                                            </Link>
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    },
+                                )}
+                            </div>
+                        </Card>
+                    </section>
+
+                    {/* ======================================================
+                        SECTION 8 — SYSTEM STATUS
+                    ====================================================== */}
+
+                    <section className="rounded-3xl border border-border/80 bg-card/60 p-5 shadow-xs">
+                        <div className="flex flex-col gap-2 border-b border-border/60 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-center gap-2">
+                                <ShieldCheck className="h-4 w-4 text-emerald-500" />
+
+                                <h3 className="text-xs font-bold uppercase tracking-wider">
+                                    System Automation & Pipeline Status
+                                </h3>
+                            </div>
+
+                            <span className="text-[11px] text-muted-foreground">
+                                Workspace operational status
+                            </span>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                            {[
+                                {
+                                    label: 'AI Visual Engine',
+                                    status:
+                                        system_health?.ai_generation ===
+                                            'attention_required'
+                                            ? 'Attention Required'
+                                            : 'Operational',
+                                    attention:
+                                        system_health?.ai_generation ===
+                                        'attention_required',
+                                },
+                                {
+                                    label: 'Event Calendar',
+                                    status:
+                                        system_health?.event_calendar ===
+                                            'attention_required'
+                                            ? 'Attention Required'
+                                            : 'Synced & Active',
+                                    attention:
+                                        system_health?.event_calendar ===
+                                        'attention_required',
+                                },
+                                {
+                                    label: 'Catalog Staging',
+                                    status:
+                                        system_health?.product_catalog ===
+                                            'attention_required'
+                                            ? 'Attention Required'
+                                            : totalProducts > 0
+                                                ? `${totalProducts} Products`
+                                                : 'Ready',
+                                    attention:
+                                        system_health?.product_catalog ===
+                                        'attention_required',
+                                },
+                                {
+                                    label: 'Campaign Engine',
+                                    status:
+                                        system_health?.campaign_engine ===
+                                            'attention_required'
+                                            ? 'Attention Required'
+                                            : 'Operational',
+                                    attention:
+                                        system_health?.campaign_engine ===
+                                        'attention_required',
+                                },
+                            ].map((item) => (
+                                <div
+                                    key={item.label}
+                                    className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-muted/20 p-3"
+                                >
+                                    <span
+                                        className={cn(
+                                            'h-2 w-2 shrink-0 rounded-full',
+                                            item.attention
+                                                ? 'bg-amber-500'
+                                                : 'bg-emerald-500',
+                                        )}
+                                    />
+
+                                    <div className="min-w-0">
+                                        <p className="truncate text-xs font-semibold">
+                                            {item.label}
+                                        </p>
+
+                                        <p
+                                            className={cn(
+                                                'truncate text-[10px]',
+                                                item.attention
+                                                    ? 'text-amber-500'
+                                                    : 'text-muted-foreground',
+                                            )}
+                                        >
+                                            {item.status}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
                 </div>
             </div>
 
-            {/* =============================================================
-                5. FULL-SCREEN IMAGE VIEWER MODAL
-            ============================================================= */}
+            {/* ==============================================================
+                IMAGE VIEWER
+            ============================================================== */}
+
             {previewDesign && (
                 <div
-                    id="dashboard-modal-container"
-                    onScroll={(e) => {
-                        const target = e.currentTarget;
-                        setIsScrolledToDetails(target.scrollTop > 150);
-                    }}
-                    className="dark fixed inset-0 z-[150] animate-in overflow-x-hidden overflow-y-auto scroll-smooth bg-black/95 text-white backdrop-blur-2xl duration-200 select-none fade-in"
+                    className="dark fixed inset-0 z-[150] overflow-auto bg-black/95 text-white backdrop-blur-2xl"
+                    onClick={() =>
+                        setPreviewDesign(null)
+                    }
                 >
-                    {/* Top Floating Control Bar */}
-                    <div className="sticky top-0 z-[160] flex w-full items-center justify-between border-b border-white/10 bg-black/80 px-5 py-3 backdrop-blur-md sm:px-8">
-                        <div className="flex items-center gap-3">
-                            <h2 className="max-w-[200px] truncate text-sm font-bold text-white sm:max-w-md sm:text-base">
+                    <div
+                        className="sticky top-0 z-[160] flex items-center justify-between border-b border-white/10 bg-black/80 px-5 py-3 backdrop-blur-md sm:px-8"
+                        onClick={(event) =>
+                            event.stopPropagation()
+                        }
+                    >
+                        <div className="flex min-w-0 items-center gap-3">
+                            <h2 className="max-w-[200px] truncate text-sm font-bold sm:max-w-md sm:text-base">
                                 {previewDesign.product_name ||
                                     'Marketing Visual'}
                             </h2>
+
                             {previewDesign.campaign_name && (
                                 <Badge
                                     variant="outline"
-                                    className="hidden border-white/20 bg-white/5 text-[10px] font-semibold text-white/90 sm:inline-flex"
+                                    className="hidden border-white/20 bg-white/5 text-[10px] text-white sm:inline-flex"
                                 >
-                                    {previewDesign.campaign_name}
+                                    {
+                                        previewDesign.campaign_name
+                                    }
                                 </Badge>
                             )}
                         </div>
@@ -1153,8 +1801,12 @@ export default function Dashboard({
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleDownload(previewDesign)}
-                                className="h-8 gap-1.5 rounded-xl border border-white/10 bg-white/10 text-xs font-semibold text-white hover:bg-white/20"
+                                onClick={() =>
+                                    handleDownload(
+                                        previewDesign,
+                                    )
+                                }
+                                className="h-8 gap-1.5 rounded-xl border border-white/10 bg-white/10 text-xs text-white hover:bg-white/20 hover:text-white"
                             >
                                 <Download className="h-3.5 w-3.5" />
                                 <span className="hidden sm:inline">
@@ -1165,7 +1817,9 @@ export default function Dashboard({
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => setPreviewDesign(null)}
+                                onClick={() =>
+                                    setPreviewDesign(null)
+                                }
                                 className="h-8 w-8 rounded-full border border-white/10 bg-white/10 text-white hover:bg-white/20 hover:text-white"
                             >
                                 <X className="h-4 w-4" />
@@ -1173,36 +1827,44 @@ export default function Dashboard({
                         </div>
                     </div>
 
-                    {/* Image View Canvas */}
-                    <div className="relative flex min-h-[calc(100vh-80px)] flex-col items-center justify-center px-4 pt-4 pb-20 sm:px-8 sm:pt-6 sm:pb-24">
-                        <div className="relative flex items-center justify-center">
-                            <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-black/40 shadow-2xl">
-                                <img
-                                    src={previewDesign.image_url}
-                                    alt={
-                                        previewDesign.product_name ||
-                                        'Visual Preview'
-                                    }
-                                    className="max-h-[calc(100vh-12rem)] max-w-[86vw] rounded-xl object-contain"
-                                />
+                    <div className="relative flex min-h-[calc(100vh-64px)] items-center justify-center px-4 py-8 sm:px-8">
+                        <div
+                            className="relative"
+                            onClick={(event) =>
+                                event.stopPropagation()
+                            }
+                        >
+                            <div className="overflow-hidden rounded-2xl border border-white/15 bg-black/40 shadow-2xl">
+                                {previewDesign.image_url && (
+                                    <img
+                                        src={
+                                            previewDesign.image_url
+                                        }
+                                        alt={
+                                            previewDesign.product_name ||
+                                            'Visual Preview'
+                                        }
+                                        className="max-h-[calc(100vh-12rem)] max-w-[86vw] rounded-xl object-contain"
+                                    />
+                                )}
                             </div>
                         </div>
 
-                        {/* Prev / Next Nav Buttons */}
                         {hasPrevDesign && (
                             <button
                                 type="button"
                                 onClick={handlePrevDesign}
-                                className="absolute top-1/2 left-4 flex h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl backdrop-blur-md transition-all hover:scale-110 hover:bg-black/90 sm:left-8"
+                                className="absolute left-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl backdrop-blur-md transition-all hover:scale-110 hover:bg-black/90 sm:left-8"
                             >
                                 <ChevronLeft className="h-5 w-5" />
                             </button>
                         )}
+
                         {hasNextDesign && (
                             <button
                                 type="button"
                                 onClick={handleNextDesign}
-                                className="absolute top-1/2 right-4 flex h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl backdrop-blur-md transition-all hover:scale-110 hover:bg-black/90 sm:right-8"
+                                className="absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl backdrop-blur-md transition-all hover:scale-110 hover:bg-black/90 sm:right-8"
                             >
                                 <ChevronRight className="h-5 w-5" />
                             </button>
@@ -1211,26 +1873,30 @@ export default function Dashboard({
                 </div>
             )}
 
-            {/* =============================================================
-                6. CREATE CAMPAIGN MODAL DIALOG
-            ============================================================= */}
+            {/* ==============================================================
+                CREATE CAMPAIGN MODAL
+            ============================================================== */}
+
             <Dialog
                 open={isCreateCampaignOpen}
                 onOpenChange={setIsCreateCampaignOpen}
             >
-                <DialogContent className="rounded-3xl border-white/25 bg-card/95 p-6 shadow-2xl backdrop-blur-2xl sm:max-w-md dark:border-white/10 dark:bg-card/95">
+                <DialogContent className="rounded-3xl border-border bg-card p-6 shadow-2xl sm:max-w-md">
                     <DialogHeader>
                         <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                                 <Megaphone className="h-5 w-5" />
                             </div>
+
                             <div>
-                                <DialogTitle className="text-lg font-bold text-foreground">
+                                <DialogTitle className="text-lg font-bold">
                                     Create New Campaign
                                 </DialogTitle>
-                                <DialogDescription className="mt-0.5 text-xs text-muted-foreground">
-                                    Organize promotional dates, products, and
-                                    visual creatives in one pipeline.
+
+                                <DialogDescription className="mt-0.5 text-xs">
+                                    Organize a promotional event,
+                                    product, and creative campaign
+                                    in one pipeline.
                                 </DialogDescription>
                             </div>
                         </div>
@@ -1240,234 +1906,194 @@ export default function Dashboard({
                         onSubmit={handleCreateCampaign}
                         className="space-y-4 pt-2"
                     >
-                        {/* Campaign Name */}
                         <div className="space-y-1.5">
                             <Label
                                 htmlFor="campaign-name"
-                                className="text-xs font-semibold text-foreground"
+                                className="text-xs font-semibold"
                             >
                                 Campaign Name{' '}
-                                <span className="text-destructive">*</span>
+                                <span className="text-destructive">
+                                    *
+                                </span>
                             </Label>
+
                             <Input
                                 id="campaign-name"
-                                value={campaignFormData.name}
-                                onChange={(e) =>
-                                    setCampaignFormData((prev) => ({
-                                        ...prev,
-                                        name: e.target.value,
-                                    }))
+                                value={
+                                    campaignFormData.name
                                 }
-                                placeholder="e.g., Summer Flash Sale 2026"
-                                className={cn(
-                                    'h-10 rounded-xl text-xs',
-                                    campaignFormErrors.name &&
-                                        'border-destructive',
-                                )}
+                                onChange={(event) =>
+                                    setCampaignFormData({
+                                        ...campaignFormData,
+                                        name: event.target.value,
+                                    })
+                                }
+                                placeholder="e.g. Summer Mega Sale 2026"
+                                className="h-9 rounded-xl text-xs"
                             />
+
                             {campaignFormErrors.name && (
-                                <p className="text-[11px] font-medium text-destructive">
-                                    {campaignFormErrors.name}
+                                <p className="text-[11px] text-destructive">
+                                    {
+                                        campaignFormErrors.name
+                                    }
                                 </p>
                             )}
                         </div>
 
-                        {/* Event Selection */}
                         <div className="space-y-1.5">
                             <Label
                                 htmlFor="campaign-event"
-                                className="text-xs font-semibold text-foreground"
+                                className="text-xs font-semibold"
                             >
-                                Target Retail Event / Holiday{' '}
-                                <span className="text-destructive">*</span>
+                                Target Holiday or Event{' '}
+                                <span className="text-destructive">
+                                    *
+                                </span>
                             </Label>
+
                             <Select
-                                value={campaignFormData.event_id || ''}
-                                onValueChange={(val) => {
-                                    const eventId = val;
-                                    const selectableEvents =
-                                        events.length > 0
-                                            ? events
-                                            : upcoming_events;
-                                    const found = selectableEvents.find(
-                                        (e: any) => String(e.id) === eventId,
-                                    );
-                                    setCampaignFormData((prev) => ({
-                                        ...prev,
-                                        event_id: eventId,
-                                        start_date: found?.date || prev.start_date,
-                                        end_date: found?.date || prev.end_date,
-                                        name:
-                                            prev.name ||
-                                            (found
-                                                ? `${found.name} Campaign`
-                                                : prev.name),
-                                    }));
-                                }}
+                                value={
+                                    campaignFormData.event_id
+                                }
+                                onValueChange={(value) =>
+                                    setCampaignFormData({
+                                        ...campaignFormData,
+                                        event_id: value,
+                                    })
+                                }
                             >
                                 <SelectTrigger
                                     id="campaign-event"
-                                    className={`h-10 rounded-xl bg-background/80 text-xs ${
-                                        campaignFormErrors.event_id
-                                            ? 'border-destructive'
-                                            : ''
-                                    }`}
+                                    className="h-9 rounded-xl text-xs"
                                 >
-                                    <SelectValue placeholder="Select a marketing event or holiday..." />
+                                    <SelectValue placeholder="Select calendar event..." />
                                 </SelectTrigger>
-                                <SelectContent className="max-h-[300px] rounded-2xl border-white/20 backdrop-blur-xl dark:border-white/10">
-                                    {(events.length > 0
-                                        ? events
-                                        : upcoming_events
-                                    ).map((evt: any) => (
+
+                                <SelectContent className="max-h-56 rounded-xl">
+                                    {events.map((event) => (
                                         <SelectItem
-                                            key={evt.id}
-                                            value={String(evt.id)}
-                                            className="text-xs font-medium"
+                                            key={event.id}
+                                            value={String(
+                                                event.id,
+                                            )}
+                                            className="text-xs"
                                         >
-                                            {evt.name} ({evt.date || 'Upcoming'}
+                                            {event.name} (
+                                            {event.date ||
+                                                'Year-round'}
                                             )
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
+
                             {campaignFormErrors.event_id && (
-                                <p className="text-[11px] font-medium text-destructive">
-                                    {campaignFormErrors.event_id}
+                                <p className="text-[11px] text-destructive">
+                                    {
+                                        campaignFormErrors.event_id
+                                    }
                                 </p>
                             )}
                         </div>
 
-                        {/* Dates */}
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1.5">
                                 <Label
-                                    htmlFor="start-date"
-                                    className="text-xs font-semibold text-foreground"
+                                    htmlFor="campaign-start-date"
+                                    className="text-xs font-semibold"
                                 >
                                     Start Date{' '}
-                                    <span className="text-destructive">*</span>
+                                    <span className="text-destructive">
+                                        *
+                                    </span>
                                 </Label>
+
                                 <Input
-                                    id="start-date"
+                                    id="campaign-start-date"
                                     type="date"
-                                    value={campaignFormData.start_date}
-                                    onChange={(e) =>
-                                        setCampaignFormData((prev) => ({
-                                            ...prev,
-                                            start_date: e.target.value,
-                                        }))
+                                    value={
+                                        campaignFormData.start_date
                                     }
-                                    className={`h-10 rounded-xl text-xs ${
-                                        campaignFormErrors.start_date
-                                            ? 'border-destructive'
-                                            : ''
-                                    }`}
+                                    onChange={(event) =>
+                                        setCampaignFormData({
+                                            ...campaignFormData,
+                                            start_date:
+                                                event.target
+                                                    .value,
+                                        })
+                                    }
+                                    className="h-9 rounded-xl text-xs"
                                 />
-                                {campaignFormErrors.start_date && (
-                                    <p className="text-[11px] font-medium text-destructive">
-                                        {campaignFormErrors.start_date}
-                                    </p>
-                                )}
                             </div>
 
                             <div className="space-y-1.5">
                                 <Label
-                                    htmlFor="end-date"
-                                    className="text-xs font-semibold text-foreground"
+                                    htmlFor="campaign-end-date"
+                                    className="text-xs font-semibold"
                                 >
                                     End Date{' '}
-                                    <span className="text-destructive">*</span>
+                                    <span className="text-destructive">
+                                        *
+                                    </span>
                                 </Label>
+
                                 <Input
-                                    id="end-date"
+                                    id="campaign-end-date"
                                     type="date"
-                                    value={campaignFormData.end_date}
-                                    onChange={(e) =>
-                                        setCampaignFormData((prev) => ({
-                                            ...prev,
-                                            end_date: e.target.value,
-                                        }))
+                                    value={
+                                        campaignFormData.end_date
                                     }
-                                    className={`h-10 rounded-xl text-xs ${
-                                        campaignFormErrors.end_date
-                                            ? 'border-destructive'
-                                            : ''
-                                    }`}
+                                    onChange={(event) =>
+                                        setCampaignFormData({
+                                            ...campaignFormData,
+                                            end_date:
+                                                event.target
+                                                    .value,
+                                        })
+                                    }
+                                    className="h-9 rounded-xl text-xs"
                                 />
-                                {campaignFormErrors.end_date && (
-                                    <p className="text-[11px] font-medium text-destructive">
-                                        {campaignFormErrors.end_date}
-                                    </p>
-                                )}
                             </div>
                         </div>
 
-                        {/* Campaign Status (No Draft) */}
-                        <div className="space-y-1.5">
-                            <Label
-                                htmlFor="campaign-status"
-                                className="text-xs font-semibold text-foreground"
-                            >
-                                Status{' '}
-                                <span className="text-destructive">*</span>
-                            </Label>
-                            <Select
-                                value={campaignFormData.status || 'active'}
-                                onValueChange={(val) =>
-                                    setCampaignFormData((prev) => ({
-                                        ...prev,
-                                        status: val,
-                                    }))
+                        {campaignFormErrors.end_date && (
+                            <p className="text-[11px] text-destructive">
+                                {
+                                    campaignFormErrors.end_date
                                 }
-                            >
-                                <SelectTrigger
-                                    id="campaign-status"
-                                    className="h-10 rounded-xl bg-background/80 text-xs"
-                                >
-                                    <SelectValue placeholder="Select status" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-2xl border-white/20 backdrop-blur-xl dark:border-white/10">
-                                    <SelectItem
-                                        value="active"
-                                        className="text-xs font-medium"
-                                    >
-                                        Active (Promotion running)
-                                    </SelectItem>
-                                    <SelectItem
-                                        value="scheduled"
-                                        className="text-xs font-medium"
-                                    >
-                                        Scheduled (Upcoming)
-                                    </SelectItem>
-                                    <SelectItem
-                                        value="completed"
-                                        className="text-xs font-medium"
-                                    >
-                                        Completed (Ended)
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+                            </p>
+                        )}
 
-                        <DialogFooter className="gap-2 pt-3 sm:gap-0">
+                        <DialogFooter className="pt-3">
                             <Button
                                 type="button"
                                 variant="outline"
-                                onClick={() => setIsCreateCampaignOpen(false)}
-                                disabled={isSubmittingCampaign}
-                                className="h-10 rounded-xl text-xs font-semibold"
+                                onClick={() =>
+                                    setIsCreateCampaignOpen(
+                                        false,
+                                    )
+                                }
+                                className="h-9 rounded-xl text-xs"
                             >
                                 Cancel
                             </Button>
+
                             <Button
                                 type="submit"
-                                disabled={isSubmittingCampaign}
-                                className="h-10 rounded-xl text-xs font-bold shadow-md shadow-primary/20"
+                                disabled={
+                                    isSubmittingCampaign
+                                }
+                                className="h-9 gap-1.5 rounded-xl text-xs font-bold"
                             >
-                                {isSubmittingCampaign
-                                    ? 'Creating...'
-                                    : 'Create Campaign'}
+                                {isSubmittingCampaign ? (
+                                    'Creating...'
+                                ) : (
+                                    <>
+                                        <Plus className="h-3.5 w-3.5" />
+                                        Create Campaign
+                                    </>
+                                )}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -1476,3 +2102,12 @@ export default function Dashboard({
         </>
     );
 }
+
+Dashboard.layout = {
+    breadcrumbs: [
+        {
+            title: 'Dashboard',
+            href: '/dashboard',
+        },
+    ],
+};

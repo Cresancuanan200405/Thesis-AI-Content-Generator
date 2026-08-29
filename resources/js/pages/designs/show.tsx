@@ -1,11 +1,20 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft,
+    ChevronDown,
+    ChevronUp,
+    Cpu,
     Download,
+    ExternalLink,
     Heart,
     ImageIcon,
+    RefreshCw,
+    ShieldCheck,
     Sparkles,
     Trash2,
+    X,
+    ZoomIn,
+    ZoomOut,
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -26,6 +35,25 @@ export default function DesignShowPage({ design }: any) {
     const [isFavorite, setIsFavorite] = useState<boolean>(
         Boolean(design.is_favorite),
     );
+    const [isGenerationDetailsOpen, setIsGenerationDetailsOpen] = useState(false);
+    const [isPreviewFullViewOpen, setIsPreviewFullViewOpen] = useState(false);
+    const [isPreviewZoomed, setIsPreviewZoomed] = useState(false);
+    const [isRegenerateModalOpen, setIsRegenerateModalOpen] = useState(false);
+    const [isRegenerating, setIsRegenerating] = useState(false);
+
+    const meta = design.generation_metadata || {};
+    const isProductPreserved = Boolean(
+        meta.product_preserved ||
+        meta.generation_mode === 'PRODUCT_PRESERVING' ||
+        meta.generation_method === 'image_to_image_edit'
+    );
+    const promptVersion = meta.prompt_version || 'marketing-pipeline-v1';
+    const modelName = meta.model_name || (meta.model === 'gpt-image-2' ? 'GPT-Image-2' : (meta.model || 'GPT-Image-2'));
+    const generationMethod = meta.generation_method === 'image_to_image_edit'
+        ? 'Image-to-Image Edit'
+        : (meta.generation_method || 'Image-to-Image Edit');
+    const aspectRatio = meta.aspect_ratio || '1:1';
+    const duration = meta.duration_seconds ? `${meta.duration_seconds}s` : null;
 
     const toggleFavorite = async () => {
         const nextVal = !isFavorite;
@@ -65,6 +93,21 @@ export default function DesignShowPage({ design }: any) {
 
     const handleDelete = () => {
         router.delete(`/designs/${design.id}`);
+    };
+
+    const handleRegenerate = () => {
+        setIsRegenerateModalOpen(false);
+        setIsRegenerating(true);
+        router.post(
+            `/designs/${design.id}/regenerate`,
+            {},
+            {
+                onFinish: () => setIsRegenerating(false),
+                onError: () => {
+                    toast.error('Unable to regenerate design. Please try again.');
+                },
+            },
+        );
     };
 
     return (
@@ -132,6 +175,17 @@ export default function DesignShowPage({ design }: any) {
                                 </a>
                             </Button>
 
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsRegenerateModalOpen(true)}
+                                disabled={isRegenerating}
+                                className="gap-2 bg-background/60 text-primary hover:bg-primary/10 hover:text-primary"
+                            >
+                                <RefreshCw className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`} />
+                                {isRegenerating ? 'Regenerating...' : 'Regenerate Design'}
+                            </Button>
+
                             <Button asChild className="gap-2">
                                 <Link href="/generator">
                                     <Sparkles className="h-4 w-4" />
@@ -178,6 +232,41 @@ export default function DesignShowPage({ design }: any) {
                                     </DialogFooter>
                                 </DialogContent>
                             </Dialog>
+
+                            <Dialog
+                                open={isRegenerateModalOpen}
+                                onOpenChange={setIsRegenerateModalOpen}
+                            >
+                                <DialogContent className="rounded-3xl sm:max-w-md">
+                                    <DialogHeader>
+                                        <DialogTitle className="text-lg font-bold">
+                                            Regenerate Creative Design?
+                                        </DialogTitle>
+                                        <DialogDescription className="text-xs leading-relaxed">
+                                            This will create a fresh creative variation using your original product, scene prompt, brand styling, pricing, and campaign settings.
+                                        </DialogDescription>
+                                    </DialogHeader>
+
+                                    <DialogFooter className="mt-6 gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => setIsRegenerateModalOpen(false)}
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            onClick={handleRegenerate}
+                                            disabled={isRegenerating}
+                                            className="gap-2"
+                                        >
+                                            <RefreshCw className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`} />
+                                            {isRegenerating ? 'Regenerating...' : 'Yes, Regenerate'}
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
                         </div>
                     </div>
                 </div>
@@ -189,14 +278,28 @@ export default function DesignShowPage({ design }: any) {
                         <CardContent className="p-0">
                             <div className="relative overflow-hidden bg-muted/30">
                                 {design.image_url ? (
-                                    <img
-                                        src={design.image_url}
-                                        alt={
-                                            design.product_name ||
-                                            'Generated design'
-                                        }
-                                        className="max-h-[760px] min-h-[420px] w-full object-contain"
-                                    />
+                                    <div
+                                        onClick={() => {
+                                            setIsPreviewFullViewOpen(true);
+                                            setIsPreviewZoomed(false);
+                                        }}
+                                        className="group relative cursor-pointer"
+                                    >
+                                        <img
+                                            src={design.image_url}
+                                            alt={
+                                                design.product_name ||
+                                                'Generated design'
+                                            }
+                                            className="max-h-[760px] min-h-[420px] w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
+                                        />
+                                        <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/60 via-transparent to-transparent p-4 opacity-0 transition-opacity group-hover:opacity-100">
+                                            <span className="flex items-center gap-1.5 rounded-xl bg-black/75 px-4 py-2 text-xs font-semibold text-white shadow-lg backdrop-blur-md">
+                                                <ZoomIn className="h-4 w-4" />
+                                                Click to view full size
+                                            </span>
+                                        </div>
+                                    </div>
                                 ) : (
                                     <div className="flex min-h-[520px] items-center justify-center bg-muted/40 text-muted-foreground">
                                         <div className="flex flex-col items-center gap-3">
@@ -221,9 +324,20 @@ export default function DesignShowPage({ design }: any) {
                             <CardHeader className="border-b border-border/70 pb-5">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="min-w-0">
-                                        <p className="text-sm font-medium text-muted-foreground">
-                                            Generated marketing visual
-                                        </p>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <p className="text-sm font-medium text-muted-foreground">
+                                                Generated marketing visual
+                                            </p>
+                                            {isProductPreserved && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="border-emerald-500/30 bg-emerald-500/10 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"
+                                                >
+                                                    <ShieldCheck className="mr-1 inline h-3 w-3" />
+                                                    Product-First Generation
+                                                </Badge>
+                                            )}
+                                        </div>
 
                                         <CardTitle className="mt-1 text-2xl tracking-tight">
                                             {design.product_name ||
@@ -321,6 +435,101 @@ export default function DesignShowPage({ design }: any) {
                             </CardContent>
                         </Card>
 
+                        {/* Collapsible Technical Summary / Generation Details */}
+                        <Card className="border-border/80 bg-card/80 shadow-[0_10px_35px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+                            <CardHeader
+                                className="cursor-pointer border-b border-border/70 pb-4 transition-colors hover:bg-muted/20"
+                                onClick={() => setIsGenerationDetailsOpen(!isGenerationDetailsOpen)}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Cpu className="h-4 w-4 text-primary" />
+                                        <CardTitle className="text-base">
+                                            Generation Details
+                                        </CardTitle>
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 w-7 p-0"
+                                        type="button"
+                                        aria-label="Toggle generation details"
+                                    >
+                                        {isGenerationDetailsOpen ? (
+                                            <ChevronUp className="h-4 w-4" />
+                                        ) : (
+                                            <ChevronDown className="h-4 w-4" />
+                                        )}
+                                    </Button>
+                                </div>
+                            </CardHeader>
+
+                            {isGenerationDetailsOpen && (
+                                <CardContent className="pt-4 space-y-4">
+                                    <div className="grid grid-cols-2 gap-3 text-xs">
+                                        <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                                            <p className="font-mono text-[10px] font-semibold uppercase text-muted-foreground">
+                                                Model
+                                            </p>
+                                            <p className="mt-1 font-semibold text-foreground">
+                                                {modelName}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                                            <p className="font-mono text-[10px] font-semibold uppercase text-muted-foreground">
+                                                Method
+                                            </p>
+                                            <p className="mt-1 font-semibold text-foreground">
+                                                {generationMethod}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                                            <p className="font-mono text-[10px] font-semibold uppercase text-muted-foreground">
+                                                Product Source
+                                            </p>
+                                            <p className="mt-1 font-semibold text-foreground">
+                                                {isProductPreserved ? 'Catalog Product Preserved' : 'Text Concept'}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                                            <p className="font-mono text-[10px] font-semibold uppercase text-muted-foreground">
+                                                Prompt Version
+                                            </p>
+                                            <p className="mt-1 font-mono text-foreground">
+                                                {promptVersion}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                                            <p className="font-mono text-[10px] font-semibold uppercase text-muted-foreground">
+                                                Aspect Ratio
+                                            </p>
+                                            <p className="mt-1 font-semibold text-foreground">
+                                                {aspectRatio}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                                            <p className="font-mono text-[10px] font-semibold uppercase text-muted-foreground">
+                                                Safe Margin
+                                            </p>
+                                            <p className="mt-1 font-semibold text-foreground">
+                                                20% Safe Zone Enforced
+                                            </p>
+                                        </div>
+                                        {duration && (
+                                            <div className="col-span-2 rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                                                <p className="font-mono text-[10px] font-semibold uppercase text-muted-foreground">
+                                                    Generation Duration
+                                                </p>
+                                                <p className="mt-1 font-semibold text-foreground">
+                                                    {duration}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            )}
+                        </Card>
+
                         {/* Prompt Details */}
                         <Card className="border-border/80 bg-card/80 shadow-[0_10px_35px_rgba(15,23,42,0.06)] backdrop-blur-xl">
                             <CardHeader className="border-b border-border/70 pb-4">
@@ -341,6 +550,128 @@ export default function DesignShowPage({ design }: any) {
                     </div>
                 </div>
             </div>
+
+            {/* Full Size Modal Viewer */}
+            {isPreviewFullViewOpen && design.image_url && (
+                <div
+                    className="fixed inset-0 z-50 flex animate-in flex-col items-center justify-between overflow-hidden bg-black/95 backdrop-blur-md duration-200 select-none fade-in"
+                    onClick={() => {
+                        setIsPreviewFullViewOpen(false);
+                        setIsPreviewZoomed(false);
+                    }}
+                >
+                    {/* Top Floating Control Bar */}
+                    <div
+                        className="relative z-50 flex w-full items-center justify-between bg-gradient-to-b from-black/90 via-black/60 to-transparent px-4 py-3 sm:px-8 sm:py-4"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center gap-3">
+                            <h2 className="max-w-[200px] truncate text-sm font-semibold text-white sm:max-w-md sm:text-base">
+                                {design.product_name || 'Generated Design'}
+                            </h2>
+                            <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 font-mono text-xs text-white">
+                                {meta.aspect_ratio || '1:1'}
+                            </span>
+                            <span className="hidden rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-mono text-[11px] text-emerald-400 sm:inline">
+                                Full Resolution
+                            </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            {/* Zoom Toggle Button */}
+                            <button
+                                type="button"
+                                onClick={() => setIsPreviewZoomed(!isPreviewZoomed)}
+                                className="flex h-9 items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 text-xs font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20"
+                                title={isPreviewZoomed ? 'Fit to Screen' : 'Zoom 100% Full Size'}
+                            >
+                                {isPreviewZoomed ? (
+                                    <>
+                                        <ZoomOut className="h-4 w-4" />
+                                        <span className="hidden sm:inline">Fit Screen</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <ZoomIn className="h-4 w-4" />
+                                        <span className="hidden sm:inline">Zoom 100%</span>
+                                    </>
+                                )}
+                            </button>
+
+                            {/* Open Raw in New Tab Button */}
+                            <a
+                                href={design.image_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hidden h-9 items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 text-xs font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20 sm:flex"
+                                title="Open image in new tab"
+                            >
+                                <ExternalLink className="h-4 w-4" />
+                                <span>Open Tab</span>
+                            </a>
+
+                            <a
+                                href={`/designs/${design.id}/download`}
+                                className="flex h-9 items-center gap-1.5 rounded-full bg-white/15 px-3 text-xs font-semibold text-white backdrop-blur-md transition-all hover:bg-white/25"
+                                title="Download Image"
+                            >
+                                <Download className="h-4 w-4" />
+                                <span className="hidden sm:inline">Download</span>
+                            </a>
+
+                            {/* Close Button */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsPreviewFullViewOpen(false);
+                                    setIsPreviewZoomed(false);
+                                }}
+                                className="ml-1 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md transition-all hover:bg-white/30"
+                                title="Close (Esc)"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Main Full View Canvas - Responsive & Uncut */}
+                    <div
+                        className={`relative flex h-full w-full flex-1 items-center justify-center p-3 sm:p-6 transition-all duration-300 ${
+                            isPreviewZoomed ? 'overflow-auto cursor-zoom-out' : 'overflow-hidden cursor-zoom-in'
+                        }`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsPreviewZoomed(!isPreviewZoomed);
+                        }}
+                    >
+                        <div
+                            className={`flex items-center justify-center transition-all duration-300 ${
+                                isPreviewZoomed
+                                    ? 'min-h-full min-w-full p-6'
+                                    : 'h-full w-full max-h-full max-w-full'
+                            }`}
+                        >
+                            <img
+                                src={design.image_url}
+                                alt={design.product_name || 'Generated design'}
+                                className={`rounded-2xl object-contain shadow-2xl drop-shadow-2xl transition-all duration-300 ${
+                                    isPreviewZoomed
+                                        ? 'max-h-none max-w-none w-auto h-auto'
+                                        : 'max-h-[calc(100vh-140px)] max-w-[calc(100vw-32px)] sm:max-w-[calc(100vw-64px)] w-auto h-auto scale-100'
+                                }`}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Bottom bar info */}
+                    <div
+                        className="relative z-50 flex w-full items-center justify-center bg-gradient-to-t from-black/95 via-black/70 to-transparent px-4 py-3 text-xs text-white/70"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <span>Click anywhere on image to toggle 100% zoom & fit</span>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

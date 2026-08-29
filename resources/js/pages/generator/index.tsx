@@ -9,9 +9,11 @@ import {
     Camera,
     Check,
     ChevronDown,
+    ChevronUp,
     Clapperboard,
     Clock,
     Compass,
+    Cpu,
     Download,
     Edit3,
     ExternalLink,
@@ -21,6 +23,7 @@ import {
     Layers,
     Loader2,
     Maximize2,
+    Minimize2,
     Package,
     Palette,
     PanelRightClose,
@@ -29,12 +32,16 @@ import {
     Plus,
     RefreshCcw,
     Search,
+    ShieldCheck,
+    SlidersHorizontal,
     Sparkles,
     Tag,
     Trash2,
     Upload,
     Wand2,
     X,
+    ZoomIn,
+    ZoomOut,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -117,7 +124,8 @@ interface GeneratorForm {
     tagline_mode: TaglineMode;
     tagline: string;
     reference_image: File | null;
-    include_logo: boolean;
+    include_business_name: boolean;
+    business_name?: string;
     aspect_ratio: string;
     image_model: string;
     image_quality: ImageQuality;
@@ -136,6 +144,105 @@ export interface ImageModelOption {
     outcome: string;
     badgeColor: string;
     isRecommended?: boolean;
+    highlight?: string;
+    isPrimary?: boolean;
+    badge?: string;
+    aspectRatios?: string[];
+    features?: string[];
+}
+
+export interface AspectRatioOption {
+    value: string;
+    label: string;
+    description: string;
+    badge: string;
+    previewClass: string;
+    useCase: string;
+    recommendation?: string;
+}
+
+export interface StyleOption {
+    label: string;
+    icon: string;
+    category?: string;
+    description?: string;
+    bestFor?: string;
+}
+
+export interface BrandToneOption {
+    label: string;
+    description: string;
+    icon: string;
+    recommendedCategories?: string[];
+}
+
+export interface RenderStyleOption {
+    value: string;
+    label: string;
+    tagline: string;
+    description: string;
+    badge: string;
+    badgeColor: string;
+    bestFor?: string;
+    features?: string[];
+    icon?: string;
+}
+
+export interface PresetRecipe {
+    id: string;
+    name: string;
+    badge: string;
+    description: string;
+    render_style: string;
+    content_style: string[];
+    brand_tone: string[];
+    aspect_ratio: string;
+    tagline_mode: TaglineMode;
+    icon: string;
+}
+
+interface ProductItem {
+    id: number | string;
+    name: string;
+    price?: number | string | null;
+    image_url?: string | null;
+    image_path?: string | null;
+    category?: string | null;
+    description?: string | null;
+}
+
+interface EventItem {
+    id: number | string;
+    name: string;
+    event_date?: string | null;
+    type?: string | null;
+    description?: string | null;
+}
+
+interface CampaignItem {
+    id: number | string;
+    name: string;
+    status?: string | null;
+    start_date?: string | null;
+    end_date?: string | null;
+    event_id?: number | string | null;
+    product_id?: number | string | null;
+    product_name?: string | null;
+    objective?: string | null;
+}
+
+interface BusinessProfile {
+    id?: number | string;
+    name?: string;
+    industry?: string;
+    category?: string;
+    description?: string;
+    unique_selling_point?: string;
+    brand_tone?: string | string[];
+    content_style?: string | string[];
+    color_palette?: string;
+    font_style?: string;
+    marketing_preferences?: string;
 }
 
 export const EXACT_MODEL_QUALITY_PRICING: Record<
@@ -155,12 +262,12 @@ export const EXACT_MODEL_QUALITY_PRICING: Record<
     'gpt-image-1': {
         low: { usd: 0.011, php: 0.63, totalOn20: 1818 },
         medium: { usd: 0.042, php: 2.42, totalOn20: 476 },
-        high: { usd: 0.167, php: 9.60, totalOn20: 119 },
+        high: { usd: 0.167, php: 9.6, totalOn20: 119 },
     },
     'gpt-image-1.5': {
-        low: { usd: 0.020, php: 1.15, totalOn20: 1000 },
-        medium: { usd: 0.040, php: 2.30, totalOn20: 500 },
-        high: { usd: 0.080, php: 4.60, totalOn20: 250 },
+        low: { usd: 0.02, php: 1.15, totalOn20: 1000 },
+        medium: { usd: 0.04, php: 2.3, totalOn20: 500 },
+        high: { usd: 0.08, php: 4.6, totalOn20: 250 },
     },
     'gpt-image-2': {
         low: { usd: 0.006, php: 0.35, totalOn20: 3333 },
@@ -433,8 +540,7 @@ const contentStyleDescriptions: Record<string, string> = {
         'Clean negative space, subtle textures, and uncluttered modern composition.',
     Storytelling:
         'Evocative visual narrative that connects emotionally with viewers.',
-    Premium:
-        'Luxury textures, refined lighting, and prestigious brand finish.',
+    Premium: 'Luxury textures, refined lighting, and prestigious brand finish.',
     Editorial:
         'Magazine-style art direction with sophisticated artistic framing.',
 };
@@ -756,12 +862,14 @@ export default function GeneratorPage() {
                 ? String(initialCampaign.product_id)
                 : '');
 
-        let initialIncludeLogo = Boolean(business?.logo_url);
+        let initialIncludeBusinessName = true;
         if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('ai_studio_include_logo');
+            const saved = localStorage.getItem(
+                'ai_studio_include_business_name',
+            );
 
             if (saved !== null) {
-                initialIncludeLogo = saved === 'true';
+                initialIncludeBusinessName = saved === 'true';
             }
         }
 
@@ -778,7 +886,8 @@ export default function GeneratorPage() {
             tagline_mode: initialTagline ? 'manual' : 'ai',
             tagline: initialTagline,
             reference_image: null,
-            include_logo: initialIncludeLogo,
+            include_business_name: initialIncludeBusinessName,
+            business_name: business?.name || '',
             aspect_ratio: initialAspectRatio,
             image_model: initialModel,
             image_quality: initialQuality,
@@ -883,6 +992,8 @@ export default function GeneratorPage() {
             return false;
         },
     );
+    const [isCanvasAndEngineOpen, setIsCanvasAndEngineOpen] =
+        useState<boolean>(true);
 
     const handleSetSummaryCollapsed = (collapsed: boolean) => {
         setIsSummaryCollapsed(collapsed);
@@ -943,6 +1054,7 @@ export default function GeneratorPage() {
 
     // Full-screen viewer for generated visual
     const [isPreviewFullViewOpen, setIsPreviewFullViewOpen] = useState(false);
+    const [isPreviewZoomed, setIsPreviewZoomed] = useState(false);
     const [isFullViewDetailsExpanded, setIsFullViewDetailsExpanded] =
         useState(false);
 
@@ -1057,7 +1169,11 @@ export default function GeneratorPage() {
             const aspectRatioParam = params.get('aspect_ratio');
             const imageModelParam =
                 params.get('image_model') || params.get('model');
-            const includeLogoParam = params.get('include_logo');
+            const includeBusinessNameParam =
+                params.get('include_business_name') ||
+                params.get('include_brand');
+            const businessNameParam =
+                params.get('business_name') || params.get('brand');
 
             let matchedEventId = eventIdParam
                 ? String(eventIdParam)
@@ -1073,7 +1189,8 @@ export default function GeneratorPage() {
             let matchedCatalogProduct: ProductItem | undefined = undefined;
             if (matchedProductId) {
                 matchedCatalogProduct = products.find(
-                    (p: ProductItem) => String(p.id) === String(matchedProductId),
+                    (p: ProductItem) =>
+                        String(p.id) === String(matchedProductId),
                 );
             } else if (matchedProductName) {
                 matchedCatalogProduct = products.find(
@@ -1116,7 +1233,9 @@ export default function GeneratorPage() {
                 matchedProductId = String(matchedCatalogProduct.id);
                 matchedProductName = matchedCatalogProduct.name;
                 setReferenceImageSource('product');
-                setReferenceImagePreview(matchedCatalogProduct.image_url ?? null);
+                setReferenceImagePreview(
+                    matchedCatalogProduct.image_url ?? null,
+                );
             }
 
             setForm((prev) => ({
@@ -1152,12 +1271,16 @@ export default function GeneratorPage() {
                 ...(imageModelParam
                     ? { image_model: String(imageModelParam) }
                     : {}),
-                ...(includeLogoParam !== null && includeLogoParam !== undefined
+                ...(includeBusinessNameParam !== null &&
+                includeBusinessNameParam !== undefined
                     ? {
-                          include_logo:
-                              includeLogoParam === '1' ||
-                              includeLogoParam === 'true',
+                          include_business_name:
+                              includeBusinessNameParam === '1' ||
+                              includeBusinessNameParam === 'true',
                       }
+                    : {}),
+                ...(businessNameParam
+                    ? { business_name: String(businessNameParam) }
                     : {}),
             }));
         }
@@ -1266,44 +1389,45 @@ export default function GeneratorPage() {
     const generateTagline = () => {
         const rawEvent = selectedEvent?.name || 'Special Occasion';
         const cleanEvent = rawEvent.replace(/\s*\(.*?\)\s*/g, '').trim();
-        const eventWord = cleanEvent.length > 22
-            ? cleanEvent.split(/\s+/).slice(0, 3).join(' ')
-            : (cleanEvent || 'Special Occasion');
+        const eventWord =
+            cleanEvent.length > 22
+                ? cleanEvent.split(/\s+/).slice(0, 3).join(' ')
+                : cleanEvent || 'Special Occasion';
         const prodWord = form.product_name?.trim() || 'Signature Creation';
 
         const templates = [
-            `${eventWord} made memorable with ${prodWord}.`,
-            `Celebrate ${eventWord} in unmatched style.`,
-            `Your ${eventWord} essential: ${prodWord}.`,
-            `Crafted for ${eventWord}, loved every day.`,
-            `Elevate your ${eventWord} experience.`,
-            `Turn ${eventWord} into a story worth sharing.`,
-            `Make ${eventWord} truly unforgettable.`,
-            `The perfect companion for ${eventWord}.`,
-            `Redefining ${eventWord}, one ${prodWord} at a time.`,
-            `Unwrap joy this ${eventWord}.`,
-            `Experience ${prodWord} like never before this ${eventWord}.`,
-            `Distinctive style for a memorable ${eventWord}.`,
-            `Brighten your ${eventWord} with ${prodWord}.`,
-            `Pure quality, perfected for ${eventWord}.`,
-            `Transform your ${eventWord} moments.`,
-            `Made for celebrating. Made for you.`,
-            `This ${eventWord}, choose extraordinary with ${prodWord}.`,
-            `The gift of perfection this ${eventWord}.`,
-            `Celebrate bigger. Live better with ${prodWord}.`,
-            `Spark something special this ${eventWord}.`,
-            `Where tradition meets modern taste this ${eventWord}.`,
-            `Uncompromising quality for your ${eventWord}.`,
-            `Simple pleasures, unforgettable ${eventWord}.`,
-            `${prodWord}: Your secret to a remarkable ${eventWord}.`,
-            `Step into ${eventWord} with confidence and ${prodWord}.`,
-            `Curated for taste. Created for ${eventWord}.`,
-            `Give the gift of ${prodWord} this ${eventWord}.`,
-            `Limited ${eventWord} release — experience it today.`,
-            `Nothing compares this ${eventWord}.`,
-            `A modern touch for classic ${eventWord} celebrations.`,
-            `${prodWord} — the highlight of your ${eventWord}.`,
-            `Moments matter. Celebrate ${eventWord} with ${prodWord}.`,
+            `${eventWord} made memorable with ${prodWord}`,
+            `Celebrate ${eventWord} in unmatched style`,
+            `Your ${eventWord} essential: ${prodWord}`,
+            `Crafted for ${eventWord}, loved every day`,
+            `Elevate your ${eventWord} experience`,
+            `Turn ${eventWord} into a story worth sharing`,
+            `Make ${eventWord} truly unforgettable`,
+            `The perfect companion for ${eventWord}`,
+            `Redefining ${eventWord}, one ${prodWord} at a time`,
+            `Unwrap joy this ${eventWord}`,
+            `Experience ${prodWord} like never before this ${eventWord}`,
+            `Distinctive style for a memorable ${eventWord}`,
+            `Brighten your ${eventWord} with ${prodWord}`,
+            `Pure quality, perfected for ${eventWord}`,
+            `Transform your ${eventWord} moments`,
+            `Made for celebrating. Made for you`,
+            `This ${eventWord}, choose extraordinary with ${prodWord}`,
+            `The gift of perfection this ${eventWord}`,
+            `Celebrate bigger. Live better with ${prodWord}`,
+            `Spark something special this ${eventWord}`,
+            `Where tradition meets modern taste this ${eventWord}`,
+            `Uncompromising quality for your ${eventWord}`,
+            `Simple pleasures, unforgettable ${eventWord}`,
+            `${prodWord}: Your secret to a remarkable ${eventWord}`,
+            `Step into ${eventWord} with confidence and ${prodWord}`,
+            `Curated for taste. Created for ${eventWord}`,
+            `Give the gift of ${prodWord} this ${eventWord}`,
+            `Limited ${eventWord} release — experience it today`,
+            `Nothing compares this ${eventWord}`,
+            `A modern touch for classic ${eventWord} celebrations`,
+            `${prodWord} — the highlight of your ${eventWord}`,
+            `Moments matter. Celebrate ${eventWord} with ${prodWord}`,
         ];
 
         let nextIdx = Math.floor(Math.random() * templates.length);
@@ -1473,8 +1597,18 @@ export default function GeneratorPage() {
                 formData.append('tagline', form.tagline);
             }
 
-            if (form.include_logo) {
-                formData.append('include_logo', '1');
+            formData.append(
+                'include_business_name',
+                form.include_business_name ? '1' : '0',
+            );
+            if (
+                form.include_business_name &&
+                (form.business_name || business?.name)
+            ) {
+                formData.append(
+                    'business_name',
+                    form.business_name || business?.name || '',
+                );
             }
 
             if (form.reference_image) {
@@ -1529,6 +1663,10 @@ export default function GeneratorPage() {
                 tagline: data.tagline,
                 price: data.price,
                 aspect_ratio: data.aspect_ratio,
+                generation_meta: data.generation_meta,
+                reference_blueprint: data.reference_blueprint,
+                image_model: data.image_model,
+                render_style: data.render_style,
             });
             setIsSavedToDesigns(false);
             window.setTimeout(() => {
@@ -1608,8 +1746,18 @@ export default function GeneratorPage() {
                 formData.append('tagline', form.tagline);
             }
 
-            if (form.include_logo) {
-                formData.append('include_logo', '1');
+            formData.append(
+                'include_business_name',
+                form.include_business_name ? '1' : '0',
+            );
+            if (
+                form.include_business_name &&
+                (form.business_name || business?.name)
+            ) {
+                formData.append(
+                    'business_name',
+                    form.business_name || business?.name || '',
+                );
             }
 
             if (form.reference_image) {
@@ -1821,7 +1969,8 @@ export default function GeneratorPage() {
     const stepOneValid =
         form.product_name.trim().length > 0 &&
         form.image_prompt.trim().length > 0;
-    const canGenerate = stepOneValid && !isQuotaExceeded;
+    const canGenerate =
+        stepOneValid && !isQuotaExceeded && generationState !== 'generating';
 
     // Filter events in event modal
     const availableYears = useMemo(() => {
@@ -1926,116 +2075,121 @@ export default function GeneratorPage() {
                     MAIN STUDIO WORKSPACE (LEFT/CENTER)
                 ====================================================== */}
                 <div className="min-w-0 flex-1 space-y-5 p-4 sm:p-6 lg:p-8">
-                    {/* COMPACT & PROFESSIONAL STICKY STUDIO HEADER */}
-                    <div className="sticky top-11 z-20 -mx-4 -mt-4 flex flex-col gap-3 border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur-xl transition-all sm:top-12 sm:-mx-6 sm:-mt-6 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:-mx-8 lg:-mt-8 lg:px-8 dark:bg-background/90">
-                        <div className="flex items-center gap-2.5">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                <Sparkles className="h-4 w-4" />
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
-                                        AI Marketing Studio
-                                    </h1>
+                    {/* COMPACT & PROFESSIONAL STICKY STUDIO HEADER (HIDDEN DURING SYNTHESIS) */}
+                    {generationState !== 'generating' && (
+                        <div className="sticky top-11 z-20 -mx-4 -mt-4 flex flex-col gap-3 border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur-xl transition-all sm:top-12 sm:-mx-6 sm:-mt-6 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:-mx-8 lg:-mt-8 lg:px-8 dark:bg-background/90">
+                            <div className="flex items-center gap-2.5">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                    <Sparkles className="h-4 w-4" />
                                 </div>
-                                <p className="text-xs text-muted-foreground">
-                                    Create campaign-ready marketing visuals
-                                    tailored to holidays and product launches.
-                                </p>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
+                                            AI Marketing Studio
+                                        </h1>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Create campaign-ready marketing visuals
+                                        tailored to holidays and product
+                                        launches.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Top Right Actions */}
+                            <div className="flex items-center gap-2 self-start sm:self-auto">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8 gap-1.5 text-xs font-semibold shadow-2xs"
+                                        >
+                                            <Sparkles className="h-3.5 w-3.5 text-primary" />
+                                            <span className="font-mono text-[11px] font-bold">
+                                                {form.image_model}
+                                            </span>
+                                            <Badge
+                                                variant="secondary"
+                                                className="px-1 py-0 font-mono text-[9px] text-emerald-600 dark:text-emerald-400"
+                                            >
+                                                {imageModelOptions.find(
+                                                    (m) =>
+                                                        m.value ===
+                                                        form.image_model,
+                                                )?.price || '$0.040 / gen'}
+                                            </Badge>
+                                            <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                        align="end"
+                                        className="max-h-[380px] w-[340px] space-y-1 overflow-y-auto rounded-2xl border-border bg-popover/98 p-2 shadow-2xl backdrop-blur-xl"
+                                    >
+                                        <div className="px-2 py-1 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                                            Switch Generation Model & Pricing
+                                        </div>
+                                        {imageModelOptions.map((model) => (
+                                            <DropdownMenuItem
+                                                key={model.value}
+                                                onClick={() =>
+                                                    setForm({
+                                                        ...form,
+                                                        image_model:
+                                                            model.value,
+                                                    })
+                                                }
+                                                className={`cursor-pointer rounded-xl p-2 text-xs transition-colors ${
+                                                    form.image_model ===
+                                                    model.value
+                                                        ? 'border border-primary/30 bg-primary/10'
+                                                        : 'hover:bg-muted/60'
+                                                }`}
+                                            >
+                                                <div className="w-full space-y-1">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="font-mono text-xs font-bold text-foreground">
+                                                                {model.label}
+                                                            </span>
+                                                            <span className="py-0.2 rounded border border-emerald-500/30 bg-emerald-500/10 px-1 font-mono text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                                {model.price}
+                                                            </span>
+                                                        </div>
+                                                        <Badge
+                                                            variant="secondary"
+                                                            className="font-mono text-[9px]"
+                                                        >
+                                                            {model.speed}
+                                                        </Badge>
+                                                    </div>
+                                                    <p className="line-clamp-1 text-[10px] text-muted-foreground">
+                                                        {model.description}
+                                                    </p>
+                                                </div>
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+
+                                <Button
+                                    asChild
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 gap-1.5 text-xs font-semibold shadow-2xs"
+                                >
+                                    <Link href="/designs">
+                                        <ImageIcon className="h-3.5 w-3.5 text-primary" />
+                                        Saved Designs
+                                    </Link>
+                                </Button>
                             </div>
                         </div>
+                    )}
 
-                        {/* Top Right Actions */}
-                        <div className="flex items-center gap-2 self-start sm:self-auto">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        className="h-8 gap-1.5 text-xs font-semibold shadow-2xs"
-                                    >
-                                        <Sparkles className="h-3.5 w-3.5 text-primary" />
-                                        <span className="font-mono text-[11px] font-bold">
-                                            {form.image_model}
-                                        </span>
-                                        <Badge
-                                            variant="secondary"
-                                            className="px-1 py-0 font-mono text-[9px] text-emerald-600 dark:text-emerald-400"
-                                        >
-                                            {imageModelOptions.find(
-                                                (m) =>
-                                                    m.value ===
-                                                    form.image_model,
-                                            )?.price || '$0.040 / gen'}
-                                        </Badge>
-                                        <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                    align="end"
-                                    className="max-h-[380px] w-[340px] space-y-1 overflow-y-auto rounded-2xl border-border bg-popover/98 p-2 shadow-2xl backdrop-blur-xl"
-                                >
-                                    <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                        Switch Generation Model & Pricing
-                                    </div>
-                                    {imageModelOptions.map((model) => (
-                                        <DropdownMenuItem
-                                            key={model.value}
-                                            onClick={() =>
-                                                setForm({
-                                                    ...form,
-                                                    image_model: model.value,
-                                                })
-                                            }
-                                            className={`cursor-pointer rounded-xl p-2 text-xs transition-colors ${
-                                                form.image_model === model.value
-                                                    ? 'border border-primary/30 bg-primary/10'
-                                                    : 'hover:bg-muted/60'
-                                            }`}
-                                        >
-                                            <div className="w-full space-y-1">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span className="font-mono text-xs font-bold text-foreground">
-                                                            {model.label}
-                                                        </span>
-                                                        <span className="rounded border border-emerald-500/30 bg-emerald-500/10 px-1 py-0.2 font-mono text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
-                                                            {model.price}
-                                                        </span>
-                                                    </div>
-                                                    <Badge
-                                                        variant="secondary"
-                                                        className="font-mono text-[9px]"
-                                                    >
-                                                        {model.speed}
-                                                    </Badge>
-                                                </div>
-                                                <p className="line-clamp-1 text-[10px] text-muted-foreground">
-                                                    {model.description}
-                                                </p>
-                                            </div>
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-
-                            <Button
-                                asChild
-                                variant="outline"
-                                size="sm"
-                                className="h-8 gap-1.5 text-xs font-semibold shadow-2xs"
-                            >
-                                <Link href="/designs">
-                                    <ImageIcon className="h-3.5 w-3.5 text-primary" />
-                                    Saved Designs
-                                </Link>
-                            </Button>
-                        </div>
-                    </div>
-
-                    {/* Active Campaign Banner */}
-                    {activeCampaign && (
+                    {/* Active Campaign Banner (HIDDEN DURING SYNTHESIS) */}
+                    {generationState !== 'generating' && activeCampaign && (
                         <div className="flex animate-in items-center justify-between rounded-2xl border border-primary/30 bg-primary/5 p-4 text-xs duration-200 fade-in">
                             <div className="flex items-center gap-3">
                                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -2080,8 +2234,217 @@ export default function GeneratorPage() {
                         GENERATION STATE: IDLE VS GENERATING VS READY
                     ====================================================== */}
 
-                    {generationState !== 'idle' ? (
-                        /* READY / GENERATING RESULT VIEW */
+                    {generationState === 'generating' ? (
+                        /* DEDICATED FULL-FOCUS NEURAL RENDERING STUDIO (NO TABS / CLEAN VIEW) */
+                        <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-4xl flex-col items-center justify-center px-2 py-4 sm:px-4 sm:py-8">
+                            <div className="relative w-full overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-b from-card via-card/95 to-background p-6 shadow-2xl backdrop-blur-2xl sm:p-8 md:p-10 dark:from-card/90 dark:via-card/75 dark:to-background">
+                                {/* Ambient Background Glows */}
+                                <div className="pointer-events-none absolute -top-20 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
+                                <div className="pointer-events-none absolute -bottom-20 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
+
+                                {/* Top Bar: Neural Engine Telemetry Header */}
+                                <div className="relative mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-5">
+                                    <div className="flex items-center gap-3">
+                                        <span className="relative flex h-3 w-3">
+                                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                                            <span className="relative inline-flex h-3 w-3 rounded-full bg-primary" />
+                                        </span>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm font-extrabold tracking-tight text-foreground sm:text-base">
+                                                    Neural Creative Studio
+                                                </span>
+                                                <Badge
+                                                    variant="outline"
+                                                    className="border-primary/30 bg-primary/10 font-mono text-[10px] font-bold text-primary"
+                                                >
+                                                    Live Synthesis
+                                                </Badge>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">
+                                                Synthesizing commercial visual
+                                                for{' '}
+                                                <strong className="font-semibold text-foreground">
+                                                    {form.product_name ||
+                                                        'Product'}
+                                                </strong>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Right Telemetry Chips */}
+                                    <div className="flex items-center gap-2">
+                                        <Badge
+                                            variant="secondary"
+                                            className="gap-1.5 px-3 py-1 font-mono text-xs font-semibold shadow-2xs"
+                                        >
+                                            <Clock className="h-3.5 w-3.5 text-primary" />
+                                            {String(
+                                                Math.floor(elapsedSeconds / 60),
+                                            ).padStart(2, '0')}
+                                            :
+                                            {String(
+                                                elapsedSeconds % 60,
+                                            ).padStart(2, '0')}
+                                            s
+                                        </Badge>
+                                        <Badge
+                                            variant="outline"
+                                            className="border-primary/40 bg-primary/10 px-3 py-1 font-mono text-xs font-bold text-primary"
+                                        >
+                                            {generationProgress}%
+                                        </Badge>
+                                    </div>
+                                </div>
+
+                                {/* Center Dynamic Aspect Ratio Visualizer Canvas Frame */}
+                                <div className="relative mx-auto flex flex-col items-center justify-center py-2">
+                                    <div
+                                        className={`relative flex flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-primary/30 bg-gradient-to-b from-primary/15 via-background/95 to-muted/50 p-6 shadow-2xl shadow-primary/10 backdrop-blur-xl transition-all duration-500 ${
+                                            form.aspect_ratio === '9:16'
+                                                ? 'h-[280px] w-[160px] sm:h-[320px] sm:w-[180px]'
+                                                : form.aspect_ratio === '16:9'
+                                                  ? 'h-[180px] w-[320px] sm:h-[200px] sm:w-[360px]'
+                                                  : 'h-[220px] w-[220px] sm:h-[260px] sm:w-[260px]'
+                                        }`}
+                                    >
+                                        {/* Concentric Pulsing Radar Waves */}
+                                        <div className="absolute inset-3 animate-ping rounded-2xl border border-primary/20 opacity-30 duration-1000" />
+                                        <div className="absolute inset-8 animate-pulse rounded-2xl border border-primary/30 duration-700" />
+
+                                        {/* Scanning Neural Light Beam */}
+                                        <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 animate-pulse bg-gradient-to-b from-primary/25 to-transparent opacity-60" />
+
+                                        {/* Center Core Glowing Orb & Icon */}
+                                        <div className="relative z-10 flex h-14 w-14 animate-bounce items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 text-primary-foreground shadow-xl ring-4 shadow-primary/40 ring-primary/20 sm:h-16 sm:w-16">
+                                            <Sparkles className="h-7 w-7 sm:h-8 sm:w-8" />
+                                        </div>
+
+                                        {/* Floating Live Badges */}
+                                        <div className="absolute top-2.5 left-2.5 z-10">
+                                            <span className="rounded-full border border-primary/30 bg-background/90 px-2 py-0.5 font-mono text-[9px] font-bold text-primary backdrop-blur-md">
+                                                {form.render_style ||
+                                                    'Studio Product Still'}
+                                            </span>
+                                        </div>
+                                        <div className="absolute right-2.5 bottom-2.5 z-10">
+                                            <span className="rounded-full border border-border/70 bg-background/90 px-2 py-0.5 font-mono text-[9px] font-bold text-muted-foreground backdrop-blur-md">
+                                                {form.aspect_ratio || '1:1'}{' '}
+                                                Canvas
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Live Stage Subtitle */}
+                                    <div className="mt-4 text-center">
+                                        <p className="text-sm font-bold text-foreground">
+                                            {generationStage === 0
+                                                ? 'Analyzing Campaign Brief & Product Truth'
+                                                : generationStage === 1
+                                                  ? 'Calibrating Composition & 20% Safe Zone'
+                                                  : generationStage === 2
+                                                    ? 'Synthesizing Neural Lighting & Textures'
+                                                    : 'Mastering & Finalizing Commercial Rendering'}
+                                        </p>
+                                        <p className="mt-0.5 text-xs text-muted-foreground">
+                                            {form.image_model === 'gpt-image-2'
+                                                ? 'GPT-Image-2 Photorealistic Pro Engine'
+                                                : form.image_model ||
+                                                  'OpenAI Creative Studio'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Glowing Smooth Progress Bar */}
+                                <div className="relative mt-6 space-y-2">
+                                    <div className="flex items-center justify-between text-xs font-semibold">
+                                        <span className="text-muted-foreground">
+                                            Synthesis Progress
+                                        </span>
+                                        <span className="font-mono text-primary">
+                                            {generationProgress}% Completed
+                                        </span>
+                                    </div>
+                                    <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted/60 p-0.5">
+                                        <div
+                                            className="h-full rounded-full bg-gradient-to-r from-primary/80 via-primary to-emerald-500 shadow-sm shadow-primary/50 transition-all duration-300 ease-out"
+                                            style={{
+                                                width: `${generationProgress}%`,
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Dynamic Stage Tracker (4 Milestones) */}
+                                <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+                                    {[
+                                        {
+                                            label: 'Prompt Analysis',
+                                            desc: 'Campaign & product context',
+                                            stageIdx: 0,
+                                        },
+                                        {
+                                            label: 'Layout & Hierarchy',
+                                            desc: '20% safe zone & lighting',
+                                            stageIdx: 1,
+                                        },
+                                        {
+                                            label: 'Asset Synthesis',
+                                            desc: 'Neural photorealism',
+                                            stageIdx: 2,
+                                        },
+                                        {
+                                            label: 'Canvas Render',
+                                            desc: 'Commercial grade output',
+                                            stageIdx: 3,
+                                        },
+                                    ].map(({ label, desc, stageIdx }) => {
+                                        const isDone =
+                                            generationProgress >
+                                            (stageIdx + 1) * 24;
+                                        const isCurrent =
+                                            generationStage === stageIdx &&
+                                            !isDone;
+
+                                        return (
+                                            <div
+                                                key={label}
+                                                className={`rounded-2xl border p-3.5 text-left transition-all duration-300 ${
+                                                    isDone
+                                                        ? 'border-emerald-500/30 bg-emerald-500/10 shadow-2xs'
+                                                        : isCurrent
+                                                          ? 'border-primary/50 bg-primary/10 shadow-md ring-1 shadow-primary/10 ring-primary/40'
+                                                          : 'border-border/60 bg-muted/20 opacity-50'
+                                                }`}
+                                            >
+                                                <div className="mb-1.5 flex items-center justify-between">
+                                                    <span className="font-mono text-[10px] font-bold text-muted-foreground">
+                                                        0{stageIdx + 1}
+                                                    </span>
+                                                    {isDone ? (
+                                                        <Check className="h-4 w-4 font-bold text-emerald-600 dark:text-emerald-400" />
+                                                    ) : isCurrent ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                                                    ) : (
+                                                        <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+                                                    )}
+                                                </div>
+                                                <p
+                                                    className={`text-xs font-bold ${isDone ? 'text-emerald-700 dark:text-emerald-300' : isCurrent ? 'text-primary' : 'text-muted-foreground'}`}
+                                                >
+                                                    {label}
+                                                </p>
+                                                <p className="mt-0.5 line-clamp-1 text-[10px] text-muted-foreground">
+                                                    {desc}
+                                                </p>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    ) : generationState === 'ready' ? (
+                        /* READY RESULT VIEW */
                         <Card className="mx-auto max-w-3xl overflow-hidden rounded-3xl border-border bg-card shadow-sm">
                             <CardHeader className="border-b p-5 md:p-6">
                                 <div className="flex items-center justify-between">
@@ -2090,9 +2453,7 @@ export default function GeneratorPage() {
                                             Creative Generation
                                         </p>
                                         <h2 className="mt-1 text-lg font-bold">
-                                            {generationState === 'generating'
-                                                ? 'Synthesizing Visual Creative...'
-                                                : 'Visual Creative Ready'}
+                                            Visual Creative Ready
                                         </h2>
                                     </div>
                                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -2102,480 +2463,429 @@ export default function GeneratorPage() {
                             </CardHeader>
 
                             <CardContent className="space-y-6 p-5 md:p-7">
-                                {generationState === 'generating' ? (
-                                    <div className="animate-in space-y-7 py-6 duration-300 fade-in sm:py-8">
-                                        {/* Status Header with Timer & Active State */}
-                                        <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-                                            <div className="flex items-center gap-2">
-                                                <span className="relative flex h-2.5 w-2.5">
-                                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                                                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
-                                                </span>
-                                                <span className="text-xs font-bold text-foreground">
-                                                    Synthesizing Visual Asset
-                                                </span>
-                                                <Badge
-                                                    variant="outline"
-                                                    className="border-primary/20 bg-primary/10 font-mono text-[10px] text-primary"
-                                                >
-                                                    OpenAI Studio Core
-                                                </Badge>
-                                            </div>
-
-                                            <div className="flex items-center gap-2">
-                                                <Badge
-                                                    variant="secondary"
-                                                    className="gap-1 px-2.5 py-1 font-mono text-[11px] font-medium"
-                                                >
-                                                    <Clock className="h-3 w-3 text-muted-foreground" />
-                                                    {String(
-                                                        Math.floor(
-                                                            elapsedSeconds / 60,
-                                                        ),
-                                                    ).padStart(2, '0')}
-                                                    :
-                                                    {String(
-                                                        elapsedSeconds % 60,
-                                                    ).padStart(2, '0')}
-                                                    s
-                                                </Badge>
-                                                <Badge
-                                                    variant="outline"
-                                                    className="font-mono text-[11px] font-bold text-primary"
-                                                >
-                                                    {generationProgress}%
-                                                </Badge>
-                                            </div>
-                                        </div>
-
-                                        {/* Glowing Central Synthesis Visualizer */}
-                                        <div className="relative mx-auto flex h-36 w-36 items-center justify-center overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-b from-primary/10 via-background to-muted/40 shadow-inner sm:h-44 sm:w-44">
-                                            {/* Concentric pulsing rings */}
-                                            <div className="absolute inset-2 animate-ping rounded-2xl border border-primary/20 opacity-25" />
-                                            <div className="absolute inset-6 animate-pulse rounded-2xl border border-primary/30" />
-
-                                            {/* Center icon & glow */}
-                                            <div className="relative flex h-16 w-16 animate-bounce items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
-                                                <Sparkles className="h-8 w-8" />
-                                            </div>
-
-                                            {/* Canvas specs tag */}
-                                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
-                                                <span className="rounded-full border border-border/60 bg-background/90 px-2 py-0.5 font-mono text-[10px] font-bold text-muted-foreground">
-                                                    {form.aspect_ratio || '1:1'}{' '}
-                                                    Canvas
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* Dynamic Stage Tracker (4 Milestones) */}
-                                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2.5">
-                                            {[
-                                                {
-                                                    label: 'Prompt Analysis',
-                                                    desc: 'Campaign context',
-                                                    stageIdx: 0,
-                                                },
-                                                {
-                                                    label: 'Layout & Hierarchy',
-                                                    desc: 'Typography & vibe',
-                                                    stageIdx: 1,
-                                                },
-                                                {
-                                                    label: 'Asset Synthesis',
-                                                    desc: 'AI visual generation',
-                                                    stageIdx: 2,
-                                                },
-                                                {
-                                                    label: 'Canvas Render',
-                                                    desc: 'High-res polish',
-                                                    stageIdx: 3,
-                                                },
-                                            ].map(
-                                                ({ label, desc, stageIdx }) => {
-                                                    const isDone =
-                                                        generationProgress >
-                                                        (stageIdx + 1) * 24;
-                                                    const isCurrent =
-                                                        generationStage ===
-                                                            stageIdx && !isDone;
-
-                                                    return (
-                                                        <div
-                                                            key={label}
-                                                            className={`rounded-2xl border p-3 text-left transition-all duration-300 ${
-                                                                isDone
-                                                                    ? 'border-emerald-500/30 bg-emerald-500/5'
-                                                                    : isCurrent
-                                                                      ? 'border-primary/50 bg-primary/10 shadow-xs ring-1 ring-primary/30'
-                                                                      : 'border-border/60 bg-muted/20 opacity-50'
-                                                            }`}
-                                                        >
-                                                            <div className="mb-1.5 flex items-center justify-between">
-                                                                <span className="font-mono text-[10px] font-bold text-muted-foreground">
-                                                                    0
-                                                                    {stageIdx +
-                                                                        1}
-                                                                </span>
-                                                                {isDone ? (
-                                                                    <Check className="h-3.5 w-3.5 font-bold text-emerald-500" />
-                                                                ) : isCurrent ? (
-                                                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                                                                ) : (
-                                                                    <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
-                                                                )}
-                                                            </div>
-                                                            <p
-                                                                className={`truncate text-xs font-bold ${isCurrent ? 'text-primary' : 'text-foreground'}`}
-                                                            >
-                                                                {label}
-                                                            </p>
-                                                            <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
-                                                                {desc}
-                                                            </p>
-                                                        </div>
-                                                    );
-                                                },
-                                            )}
-                                        </div>
-
-                                        {/* High-Accuracy Animated Progress Bar */}
-                                        <div className="mx-auto max-w-xl space-y-2">
-                                            <div className="flex justify-between px-0.5 text-xs font-medium text-muted-foreground">
-                                                <span className="flex items-center gap-1.5 font-semibold text-foreground">
-                                                    <Sparkles className="h-3.5 w-3.5 text-primary" />
-                                                    {generationStage === 0
-                                                        ? 'Analyzing product & campaign objectives...'
-                                                        : generationStage === 1
-                                                          ? 'Composing typography, brand tone & layout...'
-                                                          : generationStage ===
-                                                              2
-                                                            ? 'Synthesizing visual assets with OpenAI Studio...'
-                                                            : 'Rendering high-resolution marketing visual...'}
-                                                </span>
-                                                <span className="font-mono font-bold text-foreground">
-                                                    {generationProgress}%
-                                                </span>
-                                            </div>
-                                            <div className="h-2.5 w-full overflow-hidden rounded-full border border-border/50 bg-muted p-0.5">
-                                                <div
-                                                    className="h-full rounded-full bg-gradient-to-r from-primary/80 via-primary to-primary/90 shadow-sm transition-all duration-300"
-                                                    style={{
-                                                        width: `${generationProgress}%`,
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
                                 ) : (
-                                    <div className="animate-in space-y-6 duration-300 fade-in">
-                                        {/* CLICKABLE GENERATED VISUAL */}
-                                        <div
-                                            onClick={() => {
-                                                setIsPreviewFullViewOpen(true);
-                                                setIsFullViewDetailsExpanded(
-                                                    false,
-                                                );
-                                            }}
-                                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:border-primary/50"
-                                        >
-                                            <div className="flex items-center justify-between border-b bg-muted/30 px-4 py-2.5 text-xs">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                                                    <span className="font-semibold">
-                                                        {form.product_name}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
+                                <div className="animate-in space-y-6 duration-300 fade-in">
+                                    {/* CLICKABLE GENERATED VISUAL */}
+                                    <div
+                                        onClick={() => {
+                                            setIsPreviewFullViewOpen(true);
+                                            setIsFullViewDetailsExpanded(false);
+                                        }}
+                                        className="group relative cursor-pointer overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:border-primary/50"
+                                    >
+                                        <div className="flex items-center justify-between border-b bg-muted/30 px-4 py-2.5 text-xs">
+                                            <div className="flex items-center gap-2">
+                                                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                                                <span className="font-semibold">
+                                                    {form.product_name}
+                                                </span>
+                                                {Boolean(
+                                                    referenceImagePreview ||
+                                                    form.product_id,
+                                                ) && (
                                                     <Badge
                                                         variant="outline"
-                                                        className="border-primary/30 bg-primary/10 font-mono text-[10px] font-bold text-primary"
+                                                        className="border-emerald-500/30 bg-emerald-500/10 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"
                                                     >
-                                                        <Sparkles className="mr-1 inline h-2.5 w-2.5" />
-                                                        {form.image_model ||
-                                                            'gpt-image-1'}
+                                                        <ShieldCheck className="mr-1 inline h-3 w-3" />
+                                                        Product-First Generation
                                                     </Badge>
-                                                    <Badge
-                                                        variant="outline"
-                                                        className={`font-mono text-[10px] font-bold uppercase ${
-                                                            form.image_quality === 'high'
-                                                                ? 'border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400'
-                                                                : form.image_quality === 'low'
-                                                                  ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                                                                  : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                                                        }`}
-                                                    >
-                                                        {form.image_quality || 'medium'}
-                                                    </Badge>
-                                                    <Badge
-                                                        variant="outline"
-                                                        className="font-mono text-[10px]"
-                                                    >
-                                                        {form.aspect_ratio ||
-                                                            '1:1'}
-                                                    </Badge>
-                                                    {isSavedToDesigns && (
-                                                        <Badge
-                                                            variant="secondary"
-                                                            className="text-[10px]"
-                                                        >
-                                                            Saved
-                                                        </Badge>
-                                                    )}
-                                                </div>
+                                                )}
                                             </div>
+                                            <div className="flex items-center gap-2">
+                                                <Badge
+                                                    variant="outline"
+                                                    className="border-primary/30 bg-primary/10 font-mono text-[10px] font-bold text-primary"
+                                                >
+                                                    <Sparkles className="mr-1 inline h-2.5 w-2.5" />
+                                                    {form.image_model ||
+                                                        'gpt-image-1'}
+                                                </Badge>
+                                                <Badge
+                                                    variant="outline"
+                                                    className={`font-mono text-[10px] font-bold uppercase ${
+                                                        form.image_quality ===
+                                                        'high'
+                                                            ? 'border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400'
+                                                            : form.image_quality ===
+                                                                'low'
+                                                              ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                                                              : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                                    }`}
+                                                >
+                                                    {form.image_quality ||
+                                                        'medium'}
+                                                </Badge>
+                                                <Badge
+                                                    variant="outline"
+                                                    className="font-mono text-[10px]"
+                                                >
+                                                    {form.aspect_ratio || '1:1'}
+                                                </Badge>
+                                                {isSavedToDesigns && (
+                                                    <Badge
+                                                        variant="secondary"
+                                                        className="text-[10px]"
+                                                    >
+                                                        Saved
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </div>
 
-                                            {/* Generated Visual Canvas - Real OpenAI Image */}
-                                            <div className="flex min-h-[360px] items-center justify-center overflow-hidden rounded-2xl bg-muted/20 p-3 sm:p-4">
-                                                {savedDesign?.image_url ? (
-                                                    <div className="relative flex max-h-[520px] w-full items-center justify-center overflow-hidden rounded-2xl border border-border/50 bg-background/50 shadow-lg">
-                                                        <img
-                                                            src={
-                                                                savedDesign.image_url
-                                                            }
-                                                            alt={
-                                                                form.product_name
-                                                            }
-                                                            className="max-h-[500px] w-auto max-w-full rounded-xl object-contain transition-transform duration-300 group-hover:scale-[1.01]"
-                                                        />
-                                                        <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/60 via-transparent to-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100">
-                                                            <span className="rounded-xl bg-black/70 px-3.5 py-1.5 text-xs font-semibold text-white shadow-md backdrop-blur-md">
-                                                                Click to view
-                                                                full size
-                                                            </span>
-                                                        </div>
+                                        {/* Generated Visual Canvas - Real OpenAI Image */}
+                                        <div className="flex min-h-[360px] items-center justify-center overflow-hidden rounded-2xl bg-muted/20 p-3 sm:p-4">
+                                            {savedDesign?.image_url ? (
+                                                <div className="relative flex max-h-[520px] w-full items-center justify-center overflow-hidden rounded-2xl border border-border/50 bg-background/50 shadow-lg">
+                                                    <img
+                                                        src={
+                                                            savedDesign.image_url
+                                                        }
+                                                        alt={form.product_name}
+                                                        className="max-h-[500px] w-auto max-w-full rounded-xl object-contain transition-transform duration-300 group-hover:scale-[1.01]"
+                                                    />
+                                                    <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/60 via-transparent to-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100">
+                                                        <span className="rounded-xl bg-black/70 px-3.5 py-1.5 text-xs font-semibold text-white shadow-md backdrop-blur-md">
+                                                            Click to view full
+                                                            size
+                                                        </span>
                                                     </div>
-                                                ) : (
-                                                    <div className="w-full max-w-md space-y-3 rounded-2xl bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 p-6 text-center text-white">
-                                                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20 text-primary shadow-md">
-                                                            <Sparkles className="h-6 w-6 text-primary" />
-                                                        </div>
-                                                        <h3 className="text-xl font-bold">
-                                                            {form.product_name}
-                                                        </h3>
-                                                        {form.tagline &&
-                                                            form.tagline_mode !==
-                                                                'none' && (
-                                                                <p className="text-xs font-medium text-slate-300">
-                                                                    "
-                                                                    {
-                                                                        form.tagline
-                                                                    }
-                                                                    "
-                                                                </p>
-                                                            )}
-                                                        {form.price && (
-                                                            <p className="text-base font-bold text-sky-400">
-                                                                ₱
-                                                                {Number(
-                                                                    form.price,
-                                                                ).toLocaleString()}
+                                                </div>
+                                            ) : (
+                                                <div className="w-full max-w-md space-y-3 rounded-2xl bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 p-6 text-center text-white">
+                                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20 text-primary shadow-md">
+                                                        <Sparkles className="h-6 w-6 text-primary" />
+                                                    </div>
+                                                    <h3 className="text-xl font-bold">
+                                                        {form.product_name}
+                                                    </h3>
+                                                    {form.tagline &&
+                                                        form.tagline_mode !==
+                                                            'none' && (
+                                                            <p className="text-xs font-medium text-slate-300">
+                                                                "{form.tagline}"
                                                             </p>
                                                         )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Status Alert */}
-                                        <div
-                                            className={`rounded-2xl border p-4 ${isSavedToDesigns ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-primary/20 bg-primary/5'}`}
-                                        >
-                                            <div className="flex items-center justify-between gap-3">
-                                                <div className="flex items-center gap-2.5">
-                                                    <Check
-                                                        className={`h-4 w-4 ${isSavedToDesigns ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary'}`}
-                                                    />
-                                                    <p className="text-xs font-semibold">
-                                                        {isSavedToDesigns
-                                                            ? 'Visual successfully saved to My Designs'
-                                                            : 'Visual ready — save to keep in your library'}
-                                                    </p>
-                                                </div>
-                                                {isSavedToDesigns && (
-                                                    <Button
-                                                        asChild
-                                                        size="sm"
-                                                        variant="ghost"
-                                                        className="h-7 text-xs text-emerald-600 dark:text-emerald-400"
-                                                    >
-                                                        <Link href="/designs">
-                                                            Open Designs →
-                                                        </Link>
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Action Bar */}
-                                        <div className="space-y-3">
-                                            <div className="grid gap-2.5 sm:grid-cols-3">
-                                                <Button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        saveToDesigns()
-                                                    }
-                                                    disabled={isSavingDesign}
-                                                    variant={
-                                                        isSavedToDesigns
-                                                            ? 'outline'
-                                                            : 'default'
-                                                    }
-                                                    className="h-10 text-xs font-semibold shadow-sm"
-                                                >
-                                                    {isSavingDesign ? (
-                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                    ) : (
-                                                        <Check className="mr-2 h-4 w-4" />
+                                                    {form.price && (
+                                                        <p className="text-base font-bold text-sky-400">
+                                                            ₱
+                                                            {Number(
+                                                                form.price,
+                                                            ).toLocaleString()}
+                                                        </p>
                                                     )}
-                                                    {isSavedToDesigns
-                                                        ? 'Saved in Designs'
-                                                        : 'Save to Designs'}
-                                                </Button>
-
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger
-                                                        asChild
-                                                    >
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            className="h-10 gap-1.5 text-xs font-semibold shadow-none"
-                                                        >
-                                                            <Download className="h-4 w-4" />
-                                                            Download Visual
-                                                            <ChevronDown className="h-3.5 w-3.5 opacity-70" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent
-                                                        align="center"
-                                                        className="w-52 rounded-2xl border-border p-1.5 shadow-lg"
-                                                    >
-                                                        <DropdownMenuItem
-                                                            onClick={() =>
-                                                                downloadImage(
-                                                                    'png',
-                                                                )
-                                                            }
-                                                            className="cursor-pointer gap-2 text-xs font-medium"
-                                                        >
-                                                            <Download className="h-3.5 w-3.5 text-primary" />
-                                                            PNG (High Quality)
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            onClick={() =>
-                                                                downloadImage(
-                                                                    'jpeg',
-                                                                )
-                                                            }
-                                                            className="cursor-pointer gap-2 text-xs font-medium"
-                                                        >
-                                                            <Download className="h-3.5 w-3.5 text-blue-500" />
-                                                            JPEG (Web-Optimized)
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            onClick={() =>
-                                                                downloadImage(
-                                                                    'svg',
-                                                                )
-                                                            }
-                                                            className="cursor-pointer gap-2 text-xs font-medium"
-                                                        >
-                                                            <Download className="h-3.5 w-3.5 text-emerald-500" />
-                                                            SVG (Vector Embed)
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    onClick={() => {
-                                                        const defaultName =
-                                                            selectedEvent
-                                                                ? `${selectedEvent.name} Campaign`
-                                                                : `${form.product_name} Campaign`;
-                                                        setCampaignFormData({
-                                                            name: defaultName,
-                                                            event_id:
-                                                                form.event_id ||
-                                                                '',
-                                                            start_date:
-                                                                selectedEvent?.date ||
-                                                                new Date()
-                                                                    .toISOString()
-                                                                    .split(
-                                                                        'T',
-                                                                    )[0],
-                                                            end_date:
-                                                                selectedEvent?.date ||
-                                                                new Date()
-                                                                    .toISOString()
-                                                                    .split(
-                                                                        'T',
-                                                                    )[0],
-                                                        });
-                                                        if (
-                                                            eligibleCampaigns.length >
-                                                            0
-                                                        ) {
-                                                            setSelectedExistingCampaignId(
-                                                                String(
-                                                                    eligibleCampaigns[0]
-                                                                        .id,
-                                                                ),
-                                                            );
-                                                        } else {
-                                                            setSelectedExistingCampaignId(
-                                                                '',
-                                                            );
-                                                        }
-                                                        setIsCampaignModalOpen(
-                                                            true,
-                                                        );
-                                                    }}
-                                                    className="h-10 gap-1.5 text-xs font-semibold shadow-none"
-                                                >
-                                                    <Layers className="h-4 w-4" />
-                                                    Link to Campaign
-                                                </Button>
-                                            </div>
-
-                                            {/* Sub actions */}
-                                            <div className="flex items-center justify-between border-t border-border/50 pt-2">
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        setIsEditConfirmOpen(
-                                                            true,
-                                                        )
-                                                    }
-                                                    className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-                                                >
-                                                    <Edit3 className="h-3.5 w-3.5" />
-                                                    Edit Parameters
-                                                </Button>
-
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        setIsRegenerateConfirmOpen(
-                                                            true,
-                                                        )
-                                                    }
-                                                    className="gap-1.5 text-xs text-primary hover:bg-primary/10"
-                                                >
-                                                    <RefreshCcw className="h-3.5 w-3.5" />
-                                                    Regenerate Variation
-                                                </Button>
-                                            </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                )}
+
+                                    {/* Status Alert */}
+                                    <div
+                                        className={`rounded-2xl border p-4 ${isSavedToDesigns ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-primary/20 bg-primary/5'}`}
+                                    >
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-2.5">
+                                                <Check
+                                                    className={`h-4 w-4 ${isSavedToDesigns ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary'}`}
+                                                />
+                                                <p className="text-xs font-semibold">
+                                                    {isSavedToDesigns
+                                                        ? 'Visual successfully saved to My Designs'
+                                                        : 'Visual ready — save to keep in your library'}
+                                                </p>
+                                            </div>
+                                            {isSavedToDesigns && (
+                                                <Button
+                                                    asChild
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="h-7 text-xs text-emerald-600 dark:text-emerald-400"
+                                                >
+                                                    <Link href="/designs">
+                                                        Open Designs →
+                                                    </Link>
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Action Bar */}
+                                    <div className="space-y-3">
+                                        <div className="grid gap-2.5 sm:grid-cols-3">
+                                            <Button
+                                                type="button"
+                                                onClick={() => saveToDesigns()}
+                                                disabled={isSavingDesign}
+                                                variant={
+                                                    isSavedToDesigns
+                                                        ? 'outline'
+                                                        : 'default'
+                                                }
+                                                className="h-10 text-xs font-semibold shadow-sm"
+                                            >
+                                                {isSavingDesign ? (
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Check className="mr-2 h-4 w-4" />
+                                                )}
+                                                {isSavedToDesigns
+                                                    ? 'Saved in Designs'
+                                                    : 'Save to Designs'}
+                                            </Button>
+
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        className="h-10 gap-1.5 text-xs font-semibold shadow-none"
+                                                    >
+                                                        <Download className="h-4 w-4" />
+                                                        Download Visual
+                                                        <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent
+                                                    align="center"
+                                                    className="w-52 rounded-2xl border-border p-1.5 shadow-lg"
+                                                >
+                                                    <DropdownMenuItem
+                                                        onClick={() =>
+                                                            downloadImage('png')
+                                                        }
+                                                        className="cursor-pointer gap-2 text-xs font-medium"
+                                                    >
+                                                        <Download className="h-3.5 w-3.5 text-primary" />
+                                                        PNG (High Quality)
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        onClick={() =>
+                                                            downloadImage(
+                                                                'jpeg',
+                                                            )
+                                                        }
+                                                        className="cursor-pointer gap-2 text-xs font-medium"
+                                                    >
+                                                        <Download className="h-3.5 w-3.5 text-blue-500" />
+                                                        JPEG (Web-Optimized)
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        onClick={() =>
+                                                            downloadImage('svg')
+                                                        }
+                                                        className="cursor-pointer gap-2 text-xs font-medium"
+                                                    >
+                                                        <Download className="h-3.5 w-3.5 text-emerald-500" />
+                                                        SVG (Vector Embed)
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    const defaultName =
+                                                        selectedEvent
+                                                            ? `${selectedEvent.name} Campaign`
+                                                            : `${form.product_name} Campaign`;
+                                                    setCampaignFormData({
+                                                        name: defaultName,
+                                                        event_id:
+                                                            form.event_id || '',
+                                                        start_date:
+                                                            selectedEvent?.date ||
+                                                            new Date()
+                                                                .toISOString()
+                                                                .split('T')[0],
+                                                        end_date:
+                                                            selectedEvent?.date ||
+                                                            new Date()
+                                                                .toISOString()
+                                                                .split('T')[0],
+                                                    });
+                                                    if (
+                                                        eligibleCampaigns.length >
+                                                        0
+                                                    ) {
+                                                        setSelectedExistingCampaignId(
+                                                            String(
+                                                                eligibleCampaigns[0]
+                                                                    .id,
+                                                            ),
+                                                        );
+                                                    } else {
+                                                        setSelectedExistingCampaignId(
+                                                            '',
+                                                        );
+                                                    }
+                                                    setIsCampaignModalOpen(
+                                                        true,
+                                                    );
+                                                }}
+                                                className="h-10 gap-1.5 text-xs font-semibold shadow-none"
+                                            >
+                                                <Layers className="h-4 w-4" />
+                                                Link to Campaign
+                                            </Button>
+                                        </div>
+
+                                        {/* Sub actions */}
+                                        <div className="flex items-center justify-between border-t border-border/50 pt-2">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() =>
+                                                    setIsEditConfirmOpen(true)
+                                                }
+                                                className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                                            >
+                                                <Edit3 className="h-3.5 w-3.5" />
+                                                Edit Parameters
+                                            </Button>
+
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() =>
+                                                    setIsRegenerateConfirmOpen(
+                                                        true,
+                                                    )
+                                                }
+                                                className="gap-1.5 text-xs text-primary hover:bg-primary/10"
+                                            >
+                                                <RefreshCcw className="h-3.5 w-3.5" />
+                                                Regenerate Variation
+                                            </Button>
+                                        </div>
+
+                                        {/* Technical Generation Details Accordion */}
+                                        <div className="overflow-hidden rounded-2xl border border-border/80 bg-card/60">
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setIsTechDetailsExpanded(
+                                                        !isTechDetailsExpanded,
+                                                    )
+                                                }
+                                                className="flex w-full items-center justify-between p-3 text-xs font-semibold text-foreground transition-colors hover:bg-muted/30"
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <Cpu className="h-4 w-4 text-primary" />
+                                                    <span>
+                                                        Generation Details
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 text-muted-foreground">
+                                                    <span className="text-[11px]">
+                                                        Technical Summary
+                                                    </span>
+                                                    {isTechDetailsExpanded ? (
+                                                        <ChevronUp className="h-4 w-4" />
+                                                    ) : (
+                                                        <ChevronDown className="h-4 w-4" />
+                                                    )}
+                                                </div>
+                                            </button>
+                                            {isTechDetailsExpanded && (
+                                                <div className="space-y-2.5 border-t border-border/60 p-3 pt-1">
+                                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                                        <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                                                            <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
+                                                                Model
+                                                            </p>
+                                                            <p className="mt-0.5 font-semibold text-foreground">
+                                                                {form.image_model ===
+                                                                'gpt-image-2'
+                                                                    ? 'GPT-Image-2'
+                                                                    : form.image_model ||
+                                                                      'GPT-Image-2'}
+                                                            </p>
+                                                        </div>
+                                                        <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                                                            <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
+                                                                Method
+                                                            </p>
+                                                            <p className="mt-0.5 font-semibold text-foreground">
+                                                                {Boolean(
+                                                                    referenceImagePreview ||
+                                                                    form.product_id,
+                                                                )
+                                                                    ? 'Image-to-Image Edit'
+                                                                    : 'Text-to-Image'}
+                                                            </p>
+                                                        </div>
+                                                        <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                                                            <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
+                                                                Product Source
+                                                            </p>
+                                                            <p className="mt-0.5 font-semibold text-foreground">
+                                                                {form.product_id
+                                                                    ? 'Catalog Product'
+                                                                    : referenceImagePreview
+                                                                      ? 'Uploaded Reference'
+                                                                      : 'Concept Description'}
+                                                            </p>
+                                                        </div>
+                                                        <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                                                            <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
+                                                                Prompt Version
+                                                            </p>
+                                                            <p className="mt-0.5 font-mono text-foreground">
+                                                                marketing-pipeline-v1
+                                                            </p>
+                                                        </div>
+                                                        <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                                                            <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
+                                                                Aspect Ratio
+                                                            </p>
+                                                            <p className="mt-0.5 font-semibold text-foreground">
+                                                                {form.aspect_ratio ||
+                                                                    '1:1'}
+                                                            </p>
+                                                        </div>
+                                                        <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                                                            <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
+                                                                Safe Margin
+                                                            </p>
+                                                            <p className="mt-0.5 font-semibold text-foreground">
+                                                                20% Safe Zone
+                                                                Enforced
+                                                            </p>
+                                                        </div>
+                                                        <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                                                            <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
+                                                                Status
+                                                            </p>
+                                                            <p className="mt-0.5 font-semibold text-emerald-600 dark:text-emerald-400">
+                                                                Completed
+                                                            </p>
+                                                        </div>
+                                                        {savedDesign
+                                                            ?.generation_meta
+                                                            ?.duration_seconds && (
+                                                            <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                                                                <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
+                                                                    Duration
+                                                                </p>
+                                                                <p className="mt-0.5 font-semibold text-foreground">
+                                                                    {
+                                                                        savedDesign
+                                                                            .generation_meta
+                                                                            .duration_seconds
+                                                                    }
+                                                                    s
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
                     ) : (
@@ -2680,17 +2990,28 @@ export default function GeneratorPage() {
                                     <div className="flex-1 space-y-1">
                                         <div className="flex items-center justify-between gap-2">
                                             <p className="text-sm font-bold text-destructive">
-                                                AI Budget Quota Limit Reached ($10.00 Limit)
+                                                AI Budget Quota Limit Reached
+                                                ($10.00 Limit)
                                             </p>
                                             <Badge
                                                 variant="outline"
                                                 className="border-destructive/40 bg-destructive/20 font-mono text-[10px] font-bold text-destructive"
                                             >
-                                                ${Number(ai_usage?.total_spent ?? 10).toFixed(2)} / $10.00
+                                                $
+                                                {Number(
+                                                    ai_usage?.total_spent ?? 10,
+                                                ).toFixed(2)}{' '}
+                                                / $10.00
                                             </Badge>
                                         </div>
                                         <p className="text-[11px] leading-relaxed text-destructive/90">
-                                            You have hit your <strong>$10.00 total generation quota limit</strong>. Image generation has been halted to prevent unexpected overages.
+                                            You have hit your{' '}
+                                            <strong>
+                                                $10.00 total generation quota
+                                                limit
+                                            </strong>
+                                            . Image generation has been halted
+                                            to prevent unexpected overages.
                                         </p>
                                     </div>
                                 </div>
@@ -2721,14 +3042,25 @@ export default function GeneratorPage() {
                                         <div className="animate-in space-y-5 duration-200 fade-in">
                                             {/* Product Name */}
                                             <div className="space-y-1.5">
-                                                <div className="flex items-center gap-1">
-                                                    <Label
-                                                        htmlFor="product_name"
-                                                        className="text-xs font-semibold"
-                                                    >
-                                                        Product / Service Name *
-                                                    </Label>
-                                                    <HelpTooltip text="Enter the name of the product, service, or offering to be showcased in your marketing visual." />
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Label
+                                                            htmlFor="product_name"
+                                                            className="text-xs font-semibold"
+                                                        >
+                                                            Product / Service Name
+                                                        </Label>
+                                                        <HelpTooltip text="Enter the name of the product, service, or offering to be showcased in your marketing visual." />
+                                                    </div>
+                                                    {form.product_name.trim() ? (
+                                                        <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                            <Check className="h-3 w-3" /> Ready
+                                                        </span>
+                                                    ) : (
+                                                        <span className="flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" /> Required
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <Input
                                                     id="product_name"
@@ -2748,13 +3080,22 @@ export default function GeneratorPage() {
 
                                             {/* Event Selector Display */}
                                             <div className="space-y-1.5">
-                                                <div className="flex items-center gap-1">
-                                                    <Label className="text-xs font-semibold">
-                                                        Selected Holiday or
-                                                        Marketing Event
-                                                        (Optional)
-                                                    </Label>
-                                                    <HelpTooltip text="Choose an official Philippine holiday or commercial sale date to tailor seasonal themes and promotions." />
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Label className="text-xs font-semibold">
+                                                            Holiday or Marketing Event
+                                                        </Label>
+                                                        <HelpTooltip text="Choose an official Philippine holiday or commercial sale date to tailor seasonal themes and promotions." />
+                                                    </div>
+                                                    {selectedEvent ? (
+                                                        <span className="flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                                                            <Check className="h-3 w-3" /> Selected
+                                                        </span>
+                                                    ) : (
+                                                        <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                                            Optional
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 {selectedEvent ? (
                                                     <div className="flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/5 p-3.5">
@@ -2846,15 +3187,23 @@ export default function GeneratorPage() {
                                             {/* Automatic Visual Prompt Generator */}
                                             <div className="space-y-1.5">
                                                 <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-1">
+                                                    <div className="flex items-center gap-1.5">
                                                         <Label
                                                             htmlFor="image_prompt"
                                                             className="text-xs font-semibold"
                                                         >
-                                                            Visual Prompt &
-                                                            Scene Concept *
+                                                            Visual Prompt & Scene Concept
                                                         </Label>
                                                         <HelpTooltip text="Detailed creative prompt describing product staging, backdrop, festive accents, lighting, and textures." />
+                                                        {form.image_prompt.trim() ? (
+                                                            <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                                <Check className="h-3 w-3" /> Ready
+                                                            </span>
+                                                        ) : (
+                                                            <span className="flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                                                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" /> Required
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <Button
                                                         type="button"
@@ -2892,14 +3241,25 @@ export default function GeneratorPage() {
                                             {/* Price & Reference Box */}
                                             <div className="grid gap-4 sm:grid-cols-2">
                                                 <div className="space-y-1.5">
-                                                    <div className="flex items-center gap-1">
-                                                        <Label
-                                                            htmlFor="price"
-                                                            className="text-xs font-semibold"
-                                                        >
-                                                            Price (Optional)
-                                                        </Label>
-                                                        <HelpTooltip text="Optional retail price or discount tag (e.g. 499) to highlight promotional pricing on the visual." />
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Label
+                                                                htmlFor="price"
+                                                                className="text-xs font-semibold"
+                                                            >
+                                                                Price
+                                                            </Label>
+                                                            <HelpTooltip text="Optional retail price or discount tag (e.g. 499) to highlight promotional pricing on the visual." />
+                                                        </div>
+                                                        {form.price ? (
+                                                            <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                                <Check className="h-3 w-3" /> Set (₱{Number(form.price).toLocaleString()})
+                                                            </span>
+                                                        ) : (
+                                                            <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                                                Optional
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <div className="flex items-center rounded-xl border border-input bg-background focus-within:ring-2 focus-within:ring-primary/30">
                                                         <span className="border-r border-input bg-muted/30 px-3 py-2 text-xs font-bold text-muted-foreground">
@@ -2924,12 +3284,22 @@ export default function GeneratorPage() {
                                                 </div>
 
                                                 <div className="space-y-1.5">
-                                                    <div className="flex items-center gap-1">
-                                                        <Label className="text-xs font-semibold">
-                                                            Reference Product
-                                                            Photo (Optional)
-                                                        </Label>
-                                                        <HelpTooltip text="Upload an existing photo from your device or select an item from your catalog for visual reference." />
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Label className="text-xs font-semibold">
+                                                                Reference Product Photo
+                                                            </Label>
+                                                            <HelpTooltip text="Upload an existing photo from your device or select an item from your catalog for visual reference." />
+                                                        </div>
+                                                        {referenceImagePreview ? (
+                                                            <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                                <Check className="h-3 w-3" /> Attached
+                                                            </span>
+                                                        ) : (
+                                                            <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                                                Optional
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     {referenceImagePreview ? (
                                                         <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-2 px-3">
@@ -3000,59 +3370,62 @@ export default function GeneratorPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Include Brand Logo Option Card */}
+                                            {/* Include Business / Shop Name Selection / Checkbox Card */}
                                             <div className="flex items-center justify-between rounded-2xl border border-border/80 bg-card/60 p-3.5 shadow-xs backdrop-blur-sm transition-all hover:border-primary/40 hover:bg-card sm:p-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
-                                                        {business?.logo_url ? (
-                                                            <img
-                                                                src={
-                                                                    business.logo_url
-                                                                }
-                                                                alt="Logo"
-                                                                className="h-7 w-7 rounded-lg object-contain"
-                                                            />
-                                                        ) : (
-                                                            <Building2 className="h-5 w-5 text-primary" />
-                                                        )}
+                                                        <Building2 className="h-5 w-5 text-primary" />
                                                     </div>
                                                     <div>
                                                         <div className="flex items-center gap-1.5">
                                                             <Label
-                                                                htmlFor="include_logo_toggle"
+                                                                htmlFor="include_business_name_toggle"
                                                                 className="cursor-pointer text-xs font-bold text-foreground"
                                                             >
-                                                                Include Brand
-                                                                Logo in Visual
+                                                                Include Business / Shop Name
                                                             </Label>
-                                                            <HelpTooltip text="When enabled, your business logo will be embedded and composed seamlessly into the generated visual." />
+                                                            <HelpTooltip text="When enabled, the AI incorporates your registered business or shop name and brand identity into the generated marketing creative scene." />
                                                         </div>
                                                         <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                                            {business?.logo_url
-                                                                ? `Branded with "${business.name || 'Your Business'}" logo`
-                                                                : 'Seamlessly embeds your official brand logo on the creative corner'}
+                                                            {business?.name
+                                                                ? `Feature "${business.name}" in marketing creative`
+                                                                : 'Feature your business / shop identity in marketing creative'}
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <Checkbox
-                                                    id="include_logo_toggle"
-                                                    checked={form.include_logo}
-                                                    onCheckedChange={(
-                                                        checked,
-                                                    ) => {
-                                                        const val =
-                                                            Boolean(checked);
-                                                        setForm({
-                                                            ...form,
-                                                            include_logo: val,
-                                                        });
-                                                        localStorage.setItem(
-                                                            'ai_studio_include_logo',
-                                                            String(val),
-                                                        );
-                                                    }}
-                                                    className="h-5 w-5 cursor-pointer rounded-md"
-                                                />
+                                                <div className="flex items-center gap-2.5">
+                                                    <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                                        {form.include_business_name ? (
+                                                            <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                                                                <Check className="h-3 w-3" /> Active
+                                                            </span>
+                                                        ) : (
+                                                            'Disabled'
+                                                        )}
+                                                    </span>
+                                                    <Checkbox
+                                                        id="include_business_name_toggle"
+                                                        checked={
+                                                            form.include_business_name
+                                                        }
+                                                        onCheckedChange={(
+                                                            checked,
+                                                        ) => {
+                                                            const val =
+                                                                Boolean(checked);
+                                                            setForm({
+                                                                ...form,
+                                                                include_business_name:
+                                                                    val,
+                                                            });
+                                                            localStorage.setItem(
+                                                                'ai_studio_include_business_name',
+                                                                String(val),
+                                                            );
+                                                        }}
+                                                        className="h-5 w-5 cursor-pointer rounded-md"
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     )}
@@ -3084,11 +3457,15 @@ export default function GeneratorPage() {
                                                     type="button"
                                                     size="sm"
                                                     variant="outline"
-                                                    onClick={applyDynamicSuggestions}
+                                                    onClick={
+                                                        applyDynamicSuggestions
+                                                    }
                                                     className="h-8 gap-1.5 self-start text-xs font-semibold shadow-none sm:self-auto"
                                                 >
                                                     <Sparkles className="h-3.5 w-3.5 text-primary" />
-                                                    {form.content_style.length > 0 || form.brand_tone.length > 0
+                                                    {form.content_style.length >
+                                                        0 ||
+                                                    form.brand_tone.length > 0
                                                         ? 'Shuffle Preset'
                                                         : 'Auto-Suggest Style'}
                                                 </Button>
@@ -3103,92 +3480,117 @@ export default function GeneratorPage() {
                                                         </Label>
                                                         <HelpTooltip text="Defines visual rendering mode, studio camera treatment, volumetric lighting, and scene fidelity." />
                                                     </div>
-                                                    <span className="font-mono text-xs text-muted-foreground">
-                                                        {form.render_style
-                                                            ? '1 / 1'
-                                                            : '0 / 1'}
+                                                    <span className="flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-bold text-primary">
+                                                        <Check className="h-3 w-3" /> 1 / 1 Selected
                                                     </span>
                                                 </div>
 
                                                 <div className="grid gap-2.5 sm:grid-cols-2">
-                                                    {renderStyleOptions.map((opt) => {
-                                                        const isSelected = form.render_style === opt.value;
-                                                        const IconComponent =
-                                                            opt.value === 'Studio Product Still'
-                                                                ? Camera
-                                                                : opt.value === 'Cinematic Marketing'
-                                                                  ? Clapperboard
-                                                                  : opt.value === 'Lifestyle Capture'
-                                                                    ? Compass
-                                                                    : PenTool;
+                                                    {renderStyleOptions.map(
+                                                        (opt) => {
+                                                            const isSelected =
+                                                                form.render_style ===
+                                                                opt.value;
+                                                            const IconComponent =
+                                                                opt.value ===
+                                                                'Studio Product Still'
+                                                                    ? Camera
+                                                                    : opt.value ===
+                                                                        'Cinematic Marketing'
+                                                                      ? Clapperboard
+                                                                      : opt.value ===
+                                                                          'Lifestyle Capture'
+                                                                        ? Compass
+                                                                        : PenTool;
 
-                                                        return (
-                                                            <TooltipProvider key={opt.value} delayDuration={150}>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() =>
-                                                                                setForm({
-                                                                                    ...form,
-                                                                                    render_style: opt.value,
-                                                                                })
-                                                                            }
-                                                                            className={`group relative flex items-start gap-3 rounded-2xl border p-3.5 text-left transition-all ${
-                                                                                isSelected
-                                                                                    ? 'border-primary bg-primary/10 shadow-xs ring-1 ring-primary/40'
-                                                                                    : 'border-border bg-card hover:border-primary/40 hover:bg-muted/30'
-                                                                            }`}
+                                                            return (
+                                                                <TooltipProvider
+                                                                    key={
+                                                                        opt.value
+                                                                    }
+                                                                    delayDuration={
+                                                                        150
+                                                                    }
+                                                                >
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger
+                                                                            asChild
                                                                         >
-                                                                            <div
-                                                                                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-colors ${
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() =>
+                                                                                    setForm(
+                                                                                        {
+                                                                                            ...form,
+                                                                                            render_style:
+                                                                                                opt.value,
+                                                                                        },
+                                                                                    )
+                                                                                }
+                                                                                className={`group relative flex items-start gap-3 rounded-2xl border p-3.5 text-left transition-all ${
                                                                                     isSelected
-                                                                                        ? 'bg-primary text-primary-foreground'
-                                                                                        : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
+                                                                                        ? 'border-primary bg-primary/10 shadow-xs ring-1 ring-primary/40'
+                                                                                        : 'border-border bg-card hover:border-primary/40 hover:bg-muted/30'
                                                                                 }`}
                                                                             >
-                                                                                <IconComponent className="h-4 w-4" />
-                                                                            </div>
-
-                                                                            <div className="min-w-0 flex-1 space-y-1">
-                                                                                <div className="flex items-center justify-between gap-1.5">
-                                                                                    <span className="truncate text-xs font-bold text-foreground transition-colors group-hover:text-primary">
-                                                                                        {opt.label}
-                                                                                    </span>
-                                                                                    <span
-                                                                                        className={`shrink-0 rounded-md border px-1.5 py-0.2 text-[9px] font-bold ${opt.badgeColor}`}
-                                                                                    >
-                                                                                        {opt.badge}
-                                                                                    </span>
+                                                                                <div
+                                                                                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-colors ${
+                                                                                        isSelected
+                                                                                            ? 'bg-primary text-primary-foreground'
+                                                                                            : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
+                                                                                    }`}
+                                                                                >
+                                                                                    <IconComponent className="h-4 w-4" />
                                                                                 </div>
-                                                                                <p className="line-clamp-1 text-[11px] text-muted-foreground">
-                                                                                    {opt.tagline}
-                                                                                </p>
-                                                                            </div>
 
-                                                                            <div
-                                                                                className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-all ${
-                                                                                    isSelected
-                                                                                        ? 'border-primary bg-primary text-primary-foreground'
-                                                                                        : 'border-muted-foreground/30 opacity-40 group-hover:border-primary/60 group-hover:opacity-100'
-                                                                                }`}
-                                                                            >
-                                                                                {isSelected && (
-                                                                                    <Check className="h-2.5 w-2.5 stroke-[3]" />
-                                                                                )}
-                                                                            </div>
-                                                                        </button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent
-                                                                        side="top"
-                                                                        className="max-w-xs rounded-xl p-2.5 text-xs leading-relaxed"
-                                                                    >
-                                                                        {opt.description}
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        );
-                                                    })}
+                                                                                <div className="min-w-0 flex-1 space-y-1">
+                                                                                    <div className="flex items-center justify-between gap-1.5">
+                                                                                        <span className="truncate text-xs font-bold text-foreground transition-colors group-hover:text-primary">
+                                                                                            {
+                                                                                                opt.label
+                                                                                            }
+                                                                                        </span>
+                                                                                        <span
+                                                                                            className={`py-0.2 shrink-0 rounded-md border px-1.5 text-[9px] font-bold ${opt.badgeColor}`}
+                                                                                        >
+                                                                                            {
+                                                                                                opt.badge
+                                                                                            }
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <p className="line-clamp-1 text-[11px] text-muted-foreground">
+                                                                                        {
+                                                                                            opt.tagline
+                                                                                        }
+                                                                                    </p>
+                                                                                </div>
+
+                                                                                <div
+                                                                                    className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-all ${
+                                                                                        isSelected
+                                                                                            ? 'border-primary bg-primary text-primary-foreground'
+                                                                                            : 'border-muted-foreground/30 opacity-40 group-hover:border-primary/60 group-hover:opacity-100'
+                                                                                    }`}
+                                                                                >
+                                                                                    {isSelected && (
+                                                                                        <Check className="h-2.5 w-2.5 stroke-[3]" />
+                                                                                    )}
+                                                                                </div>
+                                                                            </button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent
+                                                                            side="top"
+                                                                            className="max-w-xs rounded-xl p-2.5 text-xs leading-relaxed"
+                                                                        >
+                                                                            {
+                                                                                opt.description
+                                                                            }
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                </TooltipProvider>
+                                                            );
+                                                        },
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -3201,70 +3603,110 @@ export default function GeneratorPage() {
                                                         </Label>
                                                         <HelpTooltip text="Art direction and photography aesthetics (e.g. Lifestyle, Minimal, Storytelling, Editorial)." />
                                                     </div>
-                                                    <span className="font-mono text-xs text-muted-foreground">
-                                                        {form.content_style.length} / 3
+                                                    <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
+                                                        Optional • {form.content_style.length} / 3 Selected
                                                     </span>
                                                 </div>
 
-                                                <TooltipProvider delayDuration={150}>
+                                                <TooltipProvider
+                                                    delayDuration={150}
+                                                >
                                                     <div className="flex flex-wrap gap-2">
-                                                        {contentStyleOptions.map((style) => {
-                                                            const active = form.content_style.includes(style);
-                                                            const disabled = !active && form.content_style.length >= 3;
-                                                            const desc =
-                                                                contentStyleDescriptions[style] ||
-                                                                'Art direction visual theme preset.';
+                                                        {contentStyleOptions.map(
+                                                            (style) => {
+                                                                const active =
+                                                                    form.content_style.includes(
+                                                                        style,
+                                                                    );
+                                                                const disabled =
+                                                                    !active &&
+                                                                    form
+                                                                        .content_style
+                                                                        .length >=
+                                                                        3;
+                                                                const desc =
+                                                                    contentStyleDescriptions[
+                                                                        style
+                                                                    ] ||
+                                                                    'Art direction visual theme preset.';
 
-                                                            return (
-                                                                <Tooltip key={style}>
-                                                                    <TooltipTrigger asChild>
-                                                                        <button
-                                                                            type="button"
-                                                                            disabled={disabled}
-                                                                            onClick={() => {
-                                                                                if (active) {
-                                                                                    setForm({
-                                                                                        ...form,
-                                                                                        content_style:
-                                                                                            form.content_style.filter(
-                                                                                                (s) => s !== style,
-                                                                                            ),
-                                                                                    });
-                                                                                } else if (
-                                                                                    form.content_style.length < 3
-                                                                                ) {
-                                                                                    setForm({
-                                                                                        ...form,
-                                                                                        content_style: [
-                                                                                            ...form.content_style,
-                                                                                            style,
-                                                                                        ],
-                                                                                    });
-                                                                                }
-                                                                            }}
-                                                                            className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
-                                                                                active
-                                                                                    ? 'border-primary bg-primary font-semibold text-primary-foreground shadow-xs'
-                                                                                    : disabled
-                                                                                      ? 'cursor-not-allowed border-border bg-muted/20 opacity-40'
-                                                                                      : 'border-border bg-background hover:border-primary/40 hover:bg-muted/40'
-                                                                            }`}
-                                                                        >
-                                                                            {active && (
-                                                                                <Check className="mr-1.5 inline h-3 w-3 stroke-[3]" />
-                                                                            )}
-                                                                            {style}
-                                                                        </button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent
-                                                                        side="top"
-                                                                        className="max-w-xs rounded-xl p-2.5 text-xs leading-relaxed"
+                                                                return (
+                                                                    <Tooltip
+                                                                        key={
+                                                                            style
+                                                                        }
                                                                     >
-                                                                        {desc}
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            );
-                                                        })}
+                                                                        <TooltipTrigger
+                                                                            asChild
+                                                                        >
+                                                                            <button
+                                                                                type="button"
+                                                                                disabled={
+                                                                                    disabled
+                                                                                }
+                                                                                onClick={() => {
+                                                                                    if (
+                                                                                        active
+                                                                                    ) {
+                                                                                        setForm(
+                                                                                            {
+                                                                                                ...form,
+                                                                                                content_style:
+                                                                                                    form.content_style.filter(
+                                                                                                        (
+                                                                                                            s,
+                                                                                                        ) =>
+                                                                                                            s !==
+                                                                                                            style,
+                                                                                                    ),
+                                                                                            },
+                                                                                        );
+                                                                                    } else if (
+                                                                                        form
+                                                                                            .content_style
+                                                                                            .length <
+                                                                                        3
+                                                                                    ) {
+                                                                                        setForm(
+                                                                                            {
+                                                                                                ...form,
+                                                                                                content_style:
+                                                                                                    [
+                                                                                                        ...form.content_style,
+                                                                                                        style,
+                                                                                                    ],
+                                                                                            },
+                                                                                        );
+                                                                                    }
+                                                                                }}
+                                                                                className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
+                                                                                    active
+                                                                                        ? 'border-primary bg-primary font-semibold text-primary-foreground shadow-xs'
+                                                                                        : disabled
+                                                                                          ? 'cursor-not-allowed border-border bg-muted/20 opacity-40'
+                                                                                          : 'border-border bg-background hover:border-primary/40 hover:bg-muted/40'
+                                                                                }`}
+                                                                            >
+                                                                                {active && (
+                                                                                    <Check className="mr-1.5 inline h-3 w-3 stroke-[3]" />
+                                                                                )}
+                                                                                {
+                                                                                    style
+                                                                                }
+                                                                            </button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent
+                                                                            side="top"
+                                                                            className="max-w-xs rounded-xl p-2.5 text-xs leading-relaxed"
+                                                                        >
+                                                                            {
+                                                                                desc
+                                                                            }
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                );
+                                                            },
+                                                        )}
                                                     </div>
                                                 </TooltipProvider>
                                             </div>
@@ -3278,70 +3720,110 @@ export default function GeneratorPage() {
                                                         </Label>
                                                         <HelpTooltip text="Brand emotional vibe and atmosphere (e.g. Luxury, Warm, Bold, Modern) to guide lighting and tone." />
                                                     </div>
-                                                    <span className="font-mono text-xs text-muted-foreground">
-                                                        {form.brand_tone.length} / 3
+                                                    <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
+                                                        Optional • {form.brand_tone.length} / 3 Selected
                                                     </span>
                                                 </div>
 
-                                                <TooltipProvider delayDuration={150}>
+                                                <TooltipProvider
+                                                    delayDuration={150}
+                                                >
                                                     <div className="flex flex-wrap gap-2">
-                                                        {toneOptions.map((tone) => {
-                                                            const active = form.brand_tone.includes(tone);
-                                                            const disabled = !active && form.brand_tone.length >= 3;
-                                                            const desc =
-                                                                brandToneDescriptions[tone] ||
-                                                                'Brand tone and emotional atmosphere preset.';
+                                                        {toneOptions.map(
+                                                            (tone) => {
+                                                                const active =
+                                                                    form.brand_tone.includes(
+                                                                        tone,
+                                                                    );
+                                                                const disabled =
+                                                                    !active &&
+                                                                    form
+                                                                        .brand_tone
+                                                                        .length >=
+                                                                        3;
+                                                                const desc =
+                                                                    brandToneDescriptions[
+                                                                        tone
+                                                                    ] ||
+                                                                    'Brand tone and emotional atmosphere preset.';
 
-                                                            return (
-                                                                <Tooltip key={tone}>
-                                                                    <TooltipTrigger asChild>
-                                                                        <button
-                                                                            type="button"
-                                                                            disabled={disabled}
-                                                                            onClick={() => {
-                                                                                if (active) {
-                                                                                    setForm({
-                                                                                        ...form,
-                                                                                        brand_tone:
-                                                                                            form.brand_tone.filter(
-                                                                                                (t) => t !== tone,
-                                                                                            ),
-                                                                                    });
-                                                                                } else if (
-                                                                                    form.brand_tone.length < 3
-                                                                                ) {
-                                                                                    setForm({
-                                                                                        ...form,
-                                                                                        brand_tone: [
-                                                                                            ...form.brand_tone,
-                                                                                            tone,
-                                                                                        ],
-                                                                                    });
-                                                                                }
-                                                                            }}
-                                                                            className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
-                                                                                active
-                                                                                    ? 'border-primary bg-primary font-semibold text-primary-foreground shadow-xs'
-                                                                                    : disabled
-                                                                                      ? 'cursor-not-allowed border-border bg-muted/20 opacity-40'
-                                                                                      : 'border-border bg-background hover:border-primary/40 hover:bg-muted/40'
-                                                                            }`}
-                                                                        >
-                                                                            {active && (
-                                                                                <Check className="mr-1.5 inline h-3 w-3 stroke-[3]" />
-                                                                            )}
-                                                                            {tone}
-                                                                        </button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent
-                                                                        side="top"
-                                                                        className="max-w-xs rounded-xl p-2.5 text-xs leading-relaxed"
+                                                                return (
+                                                                    <Tooltip
+                                                                        key={
+                                                                            tone
+                                                                        }
                                                                     >
-                                                                        {desc}
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            );
-                                                        })}
+                                                                        <TooltipTrigger
+                                                                            asChild
+                                                                        >
+                                                                            <button
+                                                                                type="button"
+                                                                                disabled={
+                                                                                    disabled
+                                                                                }
+                                                                                onClick={() => {
+                                                                                    if (
+                                                                                        active
+                                                                                    ) {
+                                                                                        setForm(
+                                                                                            {
+                                                                                                ...form,
+                                                                                                brand_tone:
+                                                                                                    form.brand_tone.filter(
+                                                                                                        (
+                                                                                                            t,
+                                                                                                        ) =>
+                                                                                                            t !==
+                                                                                                            tone,
+                                                                                                    ),
+                                                                                            },
+                                                                                        );
+                                                                                    } else if (
+                                                                                        form
+                                                                                            .brand_tone
+                                                                                            .length <
+                                                                                        3
+                                                                                    ) {
+                                                                                        setForm(
+                                                                                            {
+                                                                                                ...form,
+                                                                                                brand_tone:
+                                                                                                    [
+                                                                                                        ...form.brand_tone,
+                                                                                                        tone,
+                                                                                                    ],
+                                                                                            },
+                                                                                        );
+                                                                                    }
+                                                                                }}
+                                                                                className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${
+                                                                                    active
+                                                                                        ? 'border-primary bg-primary font-semibold text-primary-foreground shadow-xs'
+                                                                                        : disabled
+                                                                                          ? 'cursor-not-allowed border-border bg-muted/20 opacity-40'
+                                                                                          : 'border-border bg-background hover:border-primary/40 hover:bg-muted/40'
+                                                                                }`}
+                                                                            >
+                                                                                {active && (
+                                                                                    <Check className="mr-1.5 inline h-3 w-3 stroke-[3]" />
+                                                                                )}
+                                                                                {
+                                                                                    tone
+                                                                                }
+                                                                            </button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent
+                                                                            side="top"
+                                                                            className="max-w-xs rounded-xl p-2.5 text-xs leading-relaxed"
+                                                                        >
+                                                                            {
+                                                                                desc
+                                                                            }
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                );
+                                                            },
+                                                        )}
                                                     </div>
                                                 </TooltipProvider>
                                             </div>
@@ -3349,407 +3831,554 @@ export default function GeneratorPage() {
                                     )}
 
                                     {/* =====================================
-                                        STEP 3: AI MODEL, DIMENSIONS & TAGLINE
+                                        STEP 3: CANVAS, ENGINE & COPY
                                     ====================================== */}
                                     {currentStep === 3 && (
-                                        <div className="animate-in space-y-6 duration-200 fade-in">
-                                            {/* AI Image Generation Model Selector */}
-                                            <div className="space-y-2.5">
+                                        <div className="animate-in space-y-5 duration-200 fade-in">
+                                            {/* Section 1: Campaign Tagline & Slogan Card */}
+                                            <div className="space-y-3 rounded-2xl border border-border/80 bg-card/60 p-4 shadow-xs">
                                                 <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Label className="text-xs font-semibold">
-                                                            AI Generation Engine
-                                                        </Label>
-                                                        <HelpTooltip text="Select the OpenAI image synthesis engine tailored for turn speed, creative context, or photorealistic commercial campaigns." />
-                                                    </div>
-                                                    {(() => {
-                                                        const activeModel =
-                                                            imageModelOptions.find(
-                                                                (m) =>
-                                                                    m.value ===
-                                                                    form.image_model,
-                                                            ) ||
-                                                            imageModelOptions[0];
-
-                                                        return (
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                                            <Tag className="h-3.5 w-3.5" />
+                                                        </div>
+                                                        <div>
                                                             <div className="flex items-center gap-1.5">
-                                                                <Badge
-                                                                    variant="outline"
-                                                                    className={`font-mono text-[10px] font-bold ${activeModel.badgeColor}`}
-                                                                >
-                                                                    {activeModel.speed}
-                                                                </Badge>
-                                                                <span className="font-mono text-[10px] text-muted-foreground">
-                                                                    {activeModel.price}
-                                                                </span>
+                                                                <Label className="text-xs font-bold text-foreground">
+                                                                    Campaign Tagline & Headline
+                                                                </Label>
+                                                                <HelpTooltip text="Optional commercial slogan, value hook, or headline rendered into the advertisement." />
                                                             </div>
-                                                        );
-                                                    })()}
-                                                </div>
+                                                            <p className="text-[11px] text-muted-foreground">
+                                                                Commercial tagline integrated into visual composition
+                                                            </p>
+                                                        </div>
+                                                    </div>
 
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
+                                                    <div className="flex items-center gap-2">
+                                                        {form.tagline.trim() ? (
+                                                            <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                                <Check className="h-3 w-3" /> Included
+                                                            </span>
+                                                        ) : (
+                                                            <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                                                Optional
+                                                            </span>
+                                                        )}
                                                         <Button
                                                             type="button"
                                                             variant="outline"
-                                                            className="h-auto min-h-12 w-full justify-between rounded-2xl border-border bg-card p-3 text-left shadow-xs hover:border-primary/50"
+                                                            size="sm"
+                                                            onClick={generateTagline}
+                                                            className="h-7 gap-1 text-[11px] font-semibold text-primary shadow-none hover:bg-primary/10"
                                                         >
-                                                            {(() => {
-                                                                const activeModel =
-                                                                    imageModelOptions.find(
-                                                                        (m) =>
-                                                                            m.value ===
-                                                                            form.image_model,
-                                                                    ) ||
-                                                                    imageModelOptions[0];
-
-                                                                return (
-                                                                    <div className="flex w-full items-center justify-between gap-3">
-                                                                        <div className="flex min-w-0 items-center gap-2.5">
-                                                                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                                                                <Sparkles className="h-4 w-4" />
-                                                                            </div>
-                                                                            <div className="min-w-0">
-                                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                                    <span className="font-mono text-xs font-bold text-foreground">
-                                                                                        {
-                                                                                            activeModel.label
-                                                                                        }
-                                                                                    </span>
-                                                                                    {activeModel.isRecommended && (
-                                                                                        <span className="rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.2 text-[9px] font-bold text-primary">
-                                                                                            ★
-                                                                                            Recommended
-                                                                                        </span>
-                                                                                    )}
-                                                                                    <span
-                                                                                        className={`rounded-md border px-1.5 py-0.2 text-[9px] font-semibold ${activeModel.badgeColor}`}
-                                                                                    >
-                                                                                        {
-                                                                                            activeModel.tag
-                                                                                        }
-                                                                                    </span>
-                                                                                </div>
-                                                                                <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground">
-                                                                                    {
-                                                                                        activeModel.description
-                                                                                    }
-                                                                                </p>
-                                                                            </div>
-                                                                        </div>
-                                                                        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-                                                                    </div>
-                                                                );
-                                                            })()}
+                                                            <Sparkles className="h-3 w-3" />
+                                                            Suggest Tagline
                                                         </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent
-                                                        align="start"
-                                                        side="bottom"
-                                                        sideOffset={6}
-                                                        collisionPadding={24}
-                                                        avoidCollisions={true}
-                                                        className="max-h-[min(320px,50vh)] w-[var(--radix-dropdown-menu-trigger-width)] min-w-[280px] max-w-full space-y-1 overflow-y-auto rounded-2xl border-border bg-popover/98 p-2 shadow-2xl backdrop-blur-xl"
-                                                    >
-                                                        <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                                            OpenAI Generation Engines
+                                                    </div>
+                                                </div>
+
+                                                <div className="relative">
+                                                    <Input
+                                                        value={form.tagline}
+                                                        onChange={(e) =>
+                                                            setForm({
+                                                                ...form,
+                                                                tagline: e.target.value,
+                                                                tagline_mode: 'manual',
+                                                            })
+                                                        }
+                                                        placeholder="e.g. Elevate Your Everyday with Fresh Artisan Roasts"
+                                                        className="h-10 pr-8 text-xs"
+                                                    />
+                                                    {form.tagline && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setForm({
+                                                                    ...form,
+                                                                    tagline: '',
+                                                                    tagline_mode: 'none',
+                                                                })
+                                                            }
+                                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                                        >
+                                                            <X className="h-3.5 w-3.5" />
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                {form.tagline && (
+                                                    <div className="rounded-xl border border-primary/20 bg-primary/5 p-2.5 text-xs">
+                                                        <span className="mr-1.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+                                                            Live Tagline Preview:
+                                                        </span>
+                                                        <span className="font-medium italic text-foreground">
+                                                            "{form.tagline}"
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Section 2: Combined Canvas Dimensions & AI Engine Configuration Box */}
+                                            <div className="overflow-hidden rounded-2xl border border-border/80 bg-card/60 shadow-xs transition-all hover:border-primary/40">
+                                                {/* Clickable Combined Header Trigger */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setIsCanvasAndEngineOpen(
+                                                            !isCanvasAndEngineOpen,
+                                                        )
+                                                    }
+                                                    className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none"
+                                                >
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                                            <SlidersHorizontal className="h-4 w-4" />
                                                         </div>
-                                                        {imageModelOptions.map(
-                                                            (model) => {
-                                                                const isSelected =
-                                                                    form.image_model ===
-                                                                    model.value;
-
-                                                                return (
-                                                                    <DropdownMenuItem
-                                                                        key={
-                                                                            model.value
-                                                                        }
-                                                                        onClick={() =>
-                                                                            setForm(
-                                                                                {
-                                                                                    ...form,
-                                                                                    image_model:
-                                                                                        model.value,
-                                                                                },
-                                                                            )
-                                                                        }
-                                                                        className={`cursor-pointer rounded-xl p-2.5 transition-colors ${
-                                                                            isSelected
-                                                                                ? 'border border-primary/30 bg-primary/10'
-                                                                                : 'hover:bg-muted/60'
-                                                                        }`}
-                                                                    >
-                                                                        <div className="w-full space-y-1">
-                                                                            <div className="flex items-center justify-between gap-2">
-                                                                                <div className="flex items-center gap-1.5">
-                                                                                    <span className="font-mono text-xs font-bold text-foreground">
-                                                                                        {
-                                                                                            model.label
-                                                                                        }
-                                                                                    </span>
-                                                                                    {model.isRecommended && (
-                                                                                        <span className="rounded bg-primary/10 px-1 py-0.2 text-[9px] font-bold text-primary">
-                                                                                            ★
-                                                                                        </span>
-                                                                                    )}
-                                                                                    <span className="text-[10px] text-muted-foreground">
-                                                                                        ({model.tag})
-                                                                                    </span>
-                                                                                </div>
-                                                                                <div className="flex items-center gap-1.5">
-                                                                                    <span className="font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                                                                                        {
-                                                                                            model.price
-                                                                                        }
-                                                                                    </span>
-                                                                                    {isSelected && (
-                                                                                        <Check className="h-3.5 w-3.5 text-primary" />
-                                                                                    )}
-                                                                                </div>
-                                                                            </div>
-                                                                            <p className="line-clamp-1 text-[10px] text-muted-foreground">
-                                                                                {
-                                                                                    model.description
-                                                                                }
-                                                                            </p>
-                                                                        </div>
-                                                                    </DropdownMenuItem>
-                                                                );
-                                                            },
-                                                        )}
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-
-                                                {/* Active Model Snapshot Pill */}
-                                                {(() => {
-                                                    const activeModel =
-                                                        imageModelOptions.find(
-                                                            (m) =>
-                                                                m.value ===
-                                                                form.image_model,
-                                                        ) ||
-                                                        imageModelOptions[1];
-
-                                                    return (
-                                                        <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2 text-xs">
-                                                            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                                                                <span className="font-semibold text-foreground">
-                                                                    {activeModel.tag}
+                                                        <div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-xs font-bold text-foreground">
+                                                                    Canvas Format & AI Engine Settings
                                                                 </span>
-                                                                <span>•</span>
-                                                                <span>{activeModel.outcome}</span>
+                                                                <HelpTooltip text="Configure canvas proportions (1:1, 9:16, 16:9, 4:5, 4:3), OpenAI generation model, and detail quality tier." />
                                                             </div>
+                                                            <p className="text-[11px] text-muted-foreground">
+                                                                Click to{' '}
+                                                                {isCanvasAndEngineOpen
+                                                                    ? 'collapse'
+                                                                    : 'view and customize'}{' '}
+                                                                canvas layout
+                                                                and neural
+                                                                engine settings
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2">
+                                                        {/* Summary Pills */}
+                                                        <div className="hidden flex-wrap items-center gap-1.5 sm:flex">
                                                             <Badge
                                                                 variant="outline"
-                                                                className="shrink-0 font-mono text-[10px]"
+                                                                className="border-primary/30 bg-primary/10 font-mono text-[10px] font-bold text-primary"
                                                             >
-                                                                {activeModel.speed}
+                                                                {form.aspect_ratio}
                                                             </Badge>
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="border-border bg-background font-mono text-[10px] text-muted-foreground"
+                                                            >
+                                                                {form.image_model}
+                                                            </Badge>
+                                                            {(() => {
+                                                                const currentCost =
+                                                                    calculateGenerationCost(
+                                                                        form.image_model,
+                                                                        form.image_quality,
+                                                                    );
+                                                                return (
+                                                                    <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                                        {currentCost.usd}
+                                                                    </span>
+                                                                );
+                                                            })()}
                                                         </div>
-                                                    );
-                                                })()}
-                                            </div>
-
-                                            {/* Image Quality & Detail Fidelity Tier Selector */}
-                                            <div className="space-y-2.5">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Label className="text-xs font-semibold">
-                                                            Detail Quality & Quota Tier
-                                                        </Label>
-                                                        <HelpTooltip text="Controls rendering passes, sharpness, and pricing multiplier. Medium is standard commercial default." />
+                                                        <div
+                                                            className={`flex h-6 w-6 items-center justify-center rounded-full bg-muted/50 text-muted-foreground transition-transform duration-200 ${
+                                                                isCanvasAndEngineOpen
+                                                                    ? 'rotate-180 text-primary'
+                                                                    : ''
+                                                            }`}
+                                                        >
+                                                            <ChevronDown className="h-4 w-4" />
+                                                        </div>
                                                     </div>
-                                                    {(() => {
-                                                        const currentCost =
-                                                            calculateGenerationCost(
-                                                                form.image_model,
-                                                                form.image_quality,
-                                                            );
+                                                </button>
 
-                                                        return (
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span className="font-mono text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                                                                    {currentCost.usd}{' '}
-                                                                    <span className="text-[10px] font-normal text-muted-foreground">
-                                                                        ({currentCost.php})
-                                                                    </span>
+                                                {/* Expandable Content Panel */}
+                                                {isCanvasAndEngineOpen && (
+                                                    <div className="animate-in space-y-4 border-t border-border/60 bg-muted/10 p-4 pt-3.5 duration-150 fade-in">
+                                                        {/* 1. Canvas Proportions Dropdown */}
+                                                        <div className="space-y-1.5">
+                                                            <div className="flex items-center justify-between">
+                                                                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                                                    Canvas Format & Dimensions
+                                                                </Label>
+                                                                <span className="font-mono text-[10px] text-muted-foreground">
+                                                                    20% Safe Area Protected
                                                                 </span>
-                                                                <Badge
-                                                                    variant="outline"
-                                                                    className="border-primary/20 bg-primary/10 font-mono text-[10px] font-bold text-primary"
-                                                                >
-                                                                    {form.image_quality === 'medium'
-                                                                        ? 'Standard'
-                                                                        : form.image_quality === 'low'
-                                                                          ? 'Draft'
-                                                                          : 'HD Studio'}
-                                                                </Badge>
                                                             </div>
-                                                        );
-                                                    })()}
-                                                </div>
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="outline"
+                                                                        className="h-auto min-h-12 w-full justify-between rounded-xl border-border bg-background p-3 text-left shadow-xs hover:border-primary/50"
+                                                                    >
+                                                                        {(() => {
+                                                                            const activeAspect =
+                                                                                aspectRatioOptions.find(
+                                                                                    (a) =>
+                                                                                        a.value ===
+                                                                                        form.aspect_ratio,
+                                                                                ) ||
+                                                                                aspectRatioOptions[0];
 
-                                                {/* 3-Tier Interactive Quality Cards */}
-                                                <div className="grid gap-2.5 sm:grid-cols-3">
-                                                    {imageQualityOptions.map((q) => {
-                                                        const isSelected =
-                                                            form.image_quality === q.value;
-                                                        const cost =
-                                                            calculateGenerationCost(
-                                                                form.image_model,
-                                                                q.value,
-                                                            );
-
-                                                        return (
-                                                            <button
-                                                                key={q.value}
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    handleQualitySelect(q.value)
-                                                                }
-                                                                className={`group relative flex flex-col justify-between rounded-2xl border p-3 text-left transition-all ${
-                                                                    isSelected
-                                                                        ? 'border-primary bg-primary/10 shadow-xs ring-2 ring-primary/40'
-                                                                        : 'border-border bg-card hover:border-primary/40 hover:bg-muted/30'
-                                                                }`}
-                                                            >
-                                                                <div className="space-y-1">
-                                                                    <div className="flex items-center justify-between gap-1.5">
-                                                                        <span className="text-xs font-bold text-foreground transition-colors group-hover:text-primary">
-                                                                            {q.label}
-                                                                        </span>
-                                                                        {q.isStandard ? (
-                                                                            <Badge
-                                                                                variant="outline"
-                                                                                className="border-emerald-500/30 bg-emerald-500/10 px-1 py-0 text-[9px] font-bold text-emerald-600 dark:text-emerald-400"
-                                                                            >
-                                                                                Standard
-                                                                            </Badge>
-                                                                        ) : isSelected ? (
-                                                                            <Check className="h-3.5 w-3.5 text-primary" />
-                                                                        ) : null}
+                                                                            return (
+                                                                                <div className="flex w-full items-center justify-between gap-3">
+                                                                                    <div className="flex min-w-0 items-center gap-3">
+                                                                                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
+                                                                                            <div
+                                                                                                className={`rounded-xs border border-primary bg-primary/30 ${
+                                                                                                    activeAspect.value ===
+                                                                                                    '9:16'
+                                                                                                        ? 'h-5 w-2.5'
+                                                                                                        : activeAspect.value ===
+                                                                                                            '16:9'
+                                                                                                          ? 'h-2.5 w-5'
+                                                                                                          : activeAspect.value ===
+                                                                                                                '4:5'
+                                                                                                            ? 'h-4.5 w-3.5'
+                                                                                                            : activeAspect.value ===
+                                                                                                                  '4:3'
+                                                                                                              ? 'h-3.5 w-4.5'
+                                                                                                              : 'h-4 w-4'
+                                                                                                }`}
+                                                                                            />
+                                                                                        </div>
+                                                                                        <div className="min-w-0">
+                                                                                            <div className="flex items-center gap-2">
+                                                                                                <span className="font-mono text-xs font-bold text-foreground">
+                                                                                                    {activeAspect.label}
+                                                                                                </span>
+                                                                                                <span className="font-mono text-[10px] text-muted-foreground">
+                                                                                                    ({activeAspect.badge})
+                                                                                                </span>
+                                                                                            </div>
+                                                                                            <p className="line-clamp-1 text-[11px] text-muted-foreground">
+                                                                                                {activeAspect.description}
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                                                                </div>
+                                                                            );
+                                                                        })()}
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent
+                                                                    align="start"
+                                                                    side="bottom"
+                                                                    sideOffset={6}
+                                                                    collisionPadding={24}
+                                                                    avoidCollisions={true}
+                                                                    className="max-h-[min(340px,50vh)] w-[var(--radix-dropdown-menu-trigger-width)] min-w-[280px] space-y-1 overflow-y-auto rounded-2xl border-border bg-popover/98 p-2 shadow-2xl backdrop-blur-xl"
+                                                                >
+                                                                    <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                                                        Available Proportions
                                                                     </div>
-
-                                                                    <div className="flex items-baseline gap-1.5">
-                                                                        <span className="font-mono text-xs font-extrabold text-foreground">
-                                                                            {cost.usd}
-                                                                        </span>
-                                                                        <span className="font-mono text-[10px] text-muted-foreground">
-                                                                            {cost.php}
-                                                                        </span>
-                                                                    </div>
-
-                                                                    <p className="line-clamp-2 text-[10px] leading-relaxed text-muted-foreground">
-                                                                        {q.description}
-                                                                    </p>
-                                                                </div>
-
-                                                                <div className="mt-2.5 flex items-center justify-between border-t border-border/50 pt-1.5 text-[9px]">
-                                                                    <span className="font-mono text-muted-foreground">
-                                                                        {cost.totalOn20.toLocaleString()} on $20
-                                                                    </span>
-                                                                    {isSelected ? (
-                                                                        <span className="font-bold text-primary">
-                                                                            Active ✓
-                                                                        </span>
-                                                                    ) : (
-                                                                        <span className="font-medium text-muted-foreground group-hover:text-foreground">
-                                                                            Select
-                                                                        </span>
+                                                                    {aspectRatioOptions.map(
+                                                                        (opt) => {
+                                                                            const isSelected =
+                                                                                form.aspect_ratio ===
+                                                                                opt.value;
+                                                                            return (
+                                                                                <DropdownMenuItem
+                                                                                    key={opt.value}
+                                                                                    onClick={() =>
+                                                                                        setForm({
+                                                                                            ...form,
+                                                                                            aspect_ratio:
+                                                                                                opt.value,
+                                                                                        })
+                                                                                    }
+                                                                                    className={`cursor-pointer rounded-xl p-2.5 transition-colors ${
+                                                                                        isSelected
+                                                                                            ? 'border border-primary/30 bg-primary/10'
+                                                                                            : 'hover:bg-muted/60'
+                                                                                    }`}
+                                                                                >
+                                                                                    <div className="flex w-full items-center justify-between gap-3">
+                                                                                        <div className="flex items-center gap-3">
+                                                                                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border/80 bg-muted/40">
+                                                                                                <div
+                                                                                                    className={`rounded-xs border ${
+                                                                                                        isSelected
+                                                                                                            ? 'border-primary bg-primary/40'
+                                                                                                            : 'border-muted-foreground/60 bg-muted-foreground/20'
+                                                                                                    } ${
+                                                                                                        opt.value ===
+                                                                                                        '9:16'
+                                                                                                            ? 'h-5 w-2.5'
+                                                                                                            : opt.value ===
+                                                                                                                '16:9'
+                                                                                                              ? 'h-2.5 w-5'
+                                                                                                              : opt.value ===
+                                                                                                                    '4:5'
+                                                                                                                ? 'h-4.5 w-3.5'
+                                                                                                                : opt.value ===
+                                                                                                                      '4:3'
+                                                                                                                    ? 'h-3.5 w-4.5'
+                                                                                                                    : 'h-4 w-4'
+                                                                                                    }`}
+                                                                                                />
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <span className="font-mono text-xs font-bold text-foreground">
+                                                                                                        {opt.label}
+                                                                                                    </span>
+                                                                                                    <span className="font-mono text-[10px] text-muted-foreground">
+                                                                                                        {opt.badge}
+                                                                                                    </span>
+                                                                                            </div>
+                                                                                                <p className="line-clamp-1 text-[11px] text-muted-foreground">
+                                                                                                    {opt.description}
+                                                                                                </p>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        {isSelected && (
+                                                                                            <Check className="h-4 w-4 shrink-0 text-primary" />
+                                                                                        )}
+                                                                                    </div>
+                                                                                </DropdownMenuItem>
+                                                                            );
+                                                                        },
                                                                     )}
-                                                                </div>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        </div>
 
-                                            {/* Aspect Ratio & Canvas Dimensions */}
-                                            <div className="space-y-2.5">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Label className="text-xs font-semibold">
-                                                            Aspect Ratio & Dimensions
-                                                        </Label>
-                                                        <HelpTooltip text="Target proportions optimized for social feeds, mobile Stories/Reels, or wide display banners." />
+                                                        {/* 2. AI Engine & Quality Dropdowns */}
+                                                        <div className="grid gap-3 sm:grid-cols-2">
+                                                            {/* AI Model Dropdown Box */}
+                                                            <div className="space-y-1.5">
+                                                                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                                                    Model Engine
+                                                                </Label>
+                                                                <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="outline"
+                                                                            className="h-auto min-h-11 w-full justify-between rounded-xl border-border bg-background p-2.5 text-left shadow-xs hover:border-primary/50"
+                                                                        >
+                                                                            {(() => {
+                                                                                const activeModel =
+                                                                                    imageModelOptions.find(
+                                                                                        (m) =>
+                                                                                            m.value ===
+                                                                                            form.image_model,
+                                                                                    ) ||
+                                                                                    imageModelOptions[0];
+
+                                                                                return (
+                                                                                    <div className="flex w-full items-center justify-between gap-2">
+                                                                                        <div className="min-w-0">
+                                                                                            <div className="flex items-center gap-1.5">
+                                                                                                <span className="font-mono text-xs font-bold text-foreground">
+                                                                                                    {activeModel.label}
+                                                                                                </span>
+                                                                                                {activeModel.isRecommended && (
+                                                                                                    <span className="rounded bg-primary/10 px-1 py-0 text-[8px] font-bold text-primary">
+                                                                                                        ★ Rec
+                                                                                                    </span>
+                                                                                                )}
+                                                                                            </div>
+                                                                                            <p className="line-clamp-1 text-[10px] text-muted-foreground">
+                                                                                                {activeModel.tag} • {activeModel.speed}
+                                                                                            </p>
+                                                                                        </div>
+                                                                                        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                                                                    </div>
+                                                                                );
+                                                                            })()}
+                                                                        </Button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent
+                                                                        align="start"
+                                                                        side="bottom"
+                                                                        sideOffset={6}
+                                                                        collisionPadding={24}
+                                                                        avoidCollisions={true}
+                                                                        className="max-h-[min(340px,50vh)] w-[var(--radix-dropdown-menu-trigger-width)] min-w-[280px] space-y-1 overflow-y-auto rounded-2xl border-border bg-popover/98 p-2 shadow-2xl backdrop-blur-xl"
+                                                                    >
+                                                                        <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                                                            Generation Engines
+                                                                        </div>
+                                                                        {imageModelOptions.map(
+                                                                            (model) => {
+                                                                                const isSelected =
+                                                                                    form.image_model ===
+                                                                                    model.value;
+                                                                                return (
+                                                                                    <DropdownMenuItem
+                                                                                        key={model.value}
+                                                                                        onClick={() =>
+                                                                                            setForm({
+                                                                                                ...form,
+                                                                                                image_model:
+                                                                                                    model.value,
+                                                                                            })
+                                                                                        }
+                                                                                        className={`cursor-pointer rounded-xl p-2.5 transition-colors ${
+                                                                                            isSelected
+                                                                                                ? 'border border-primary/30 bg-primary/10'
+                                                                                                : 'hover:bg-muted/60'
+                                                                                        }`}
+                                                                                    >
+                                                                                        <div className="w-full space-y-0.5">
+                                                                                            <div className="flex items-center justify-between">
+                                                                                                <div className="flex items-center gap-1.5">
+                                                                                                    <span className="font-mono text-xs font-bold text-foreground">
+                                                                                                        {model.label}
+                                                                                                    </span>
+                                                                                                    {model.isRecommended && (
+                                                                                                        <span className="rounded bg-primary/10 px-1 py-0 text-[8px] font-bold text-primary">
+                                                                                                            ★ Recommended
+                                                                                                        </span>
+                                                                                                    )}
+                                                                                                </div>
+                                                                                                {isSelected && (
+                                                                                                    <Check className="h-3.5 w-3.5 text-primary" />
+                                                                                                )}
+                                                                                            </div>
+                                                                                            <p className="line-clamp-1 text-[10px] text-muted-foreground">
+                                                                                                {model.description}
+                                                                                            </p>
+                                                                                            <div className="flex items-center gap-2 pt-0.5 text-[9px] font-mono text-muted-foreground">
+                                                                                                <span>{model.price}</span>
+                                                                                                <span>•</span>
+                                                                                                <span>{model.speed}</span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </DropdownMenuItem>
+                                                                                );
+                                                                            },
+                                                                        )}
+                                                                    </DropdownMenuContent>
+                                                                </DropdownMenu>
+                                                            </div>
+
+                                                            {/* Quality Tier Dropdown Box */}
+                                                            <div className="space-y-1.5">
+                                                                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                                                    Quality Fidelity
+                                                                </Label>
+                                                                <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="outline"
+                                                                            className="h-auto min-h-11 w-full justify-between rounded-xl border-border bg-background p-2.5 text-left shadow-xs hover:border-primary/50"
+                                                                        >
+                                                                            {(() => {
+                                                                                const activeQuality =
+                                                                                    imageQualityOptions.find(
+                                                                                        (q) =>
+                                                                                            q.value ===
+                                                                                            form.image_quality,
+                                                                                    ) ||
+                                                                                    imageQualityOptions[1];
+                                                                                const cost =
+                                                                                    calculateGenerationCost(
+                                                                                        form.image_model,
+                                                                                        form.image_quality,
+                                                                                    );
+
+                                                                                return (
+                                                                                    <div className="flex w-full items-center justify-between gap-2">
+                                                                                        <div className="min-w-0">
+                                                                                            <div className="flex items-center gap-1.5">
+                                                                                                <span className="text-xs font-bold text-foreground">
+                                                                                                    {activeQuality.label}
+                                                                                                </span>
+                                                                                                {activeQuality.isStandard && (
+                                                                                                    <span className="rounded bg-emerald-500/10 px-1 py-0 text-[8px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                                                                        Standard
+                                                                                                    </span>
+                                                                                                )}
+                                                                                            </div>
+                                                                                            <p className="line-clamp-1 font-mono text-[10px] text-muted-foreground">
+                                                                                                {cost.usd} ({cost.php})
+                                                                                            </p>
+                                                                                        </div>
+                                                                                        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                                                                    </div>
+                                                                                );
+                                                                            })()}
+                                                                        </Button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent
+                                                                        align="start"
+                                                                        side="bottom"
+                                                                        sideOffset={6}
+                                                                        collisionPadding={24}
+                                                                        avoidCollisions={true}
+                                                                        className="max-h-[min(340px,50vh)] w-[var(--radix-dropdown-menu-trigger-width)] min-w-[280px] space-y-1 overflow-y-auto rounded-2xl border-border bg-popover/98 p-2 shadow-2xl backdrop-blur-xl"
+                                                                    >
+                                                                        <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                                                            Rendering Fidelity
+                                                                        </div>
+                                                                        {imageQualityOptions.map(
+                                                                            (q) => {
+                                                                                const isSelected =
+                                                                                    form.image_quality ===
+                                                                                    q.value;
+                                                                                const cost =
+                                                                                    calculateGenerationCost(
+                                                                                        form.image_model,
+                                                                                        q.value,
+                                                                                    );
+
+                                                                                return (
+                                                                                    <DropdownMenuItem
+                                                                                        key={q.value}
+                                                                                        onClick={() =>
+                                                                                            handleQualitySelect(
+                                                                                                q.value,
+                                                                                            )
+                                                                                        }
+                                                                                        className={`cursor-pointer rounded-xl p-2.5 transition-colors ${
+                                                                                            isSelected
+                                                                                                ? 'border border-primary/30 bg-primary/10'
+                                                                                                : 'hover:bg-muted/60'
+                                                                                        }`}
+                                                                                    >
+                                                                                        <div className="w-full space-y-0.5">
+                                                                                            <div className="flex items-center justify-between">
+                                                                                                <div className="flex items-center gap-1.5">
+                                                                                                    <span className="text-xs font-bold text-foreground">
+                                                                                                        {q.label}
+                                                                                                    </span>
+                                                                                                    {q.isStandard && (
+                                                                                                        <span className="rounded bg-emerald-500/10 px-1 py-0 text-[8px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                                                                            Standard
+                                                                                                        </span>
+                                                                                                    )}
+                                                                                                </div>
+                                                                                                {isSelected && (
+                                                                                                    <Check className="h-3.5 w-3.5 text-primary" />
+                                                                                                )}
+                                                                                            </div>
+                                                                                            <p className="line-clamp-1 text-[10px] text-muted-foreground">
+                                                                                                {q.description}
+                                                                                            </p>
+                                                                                            <div className="flex items-center gap-2 pt-0.5 text-[9px] font-mono text-emerald-600 dark:text-emerald-400">
+                                                                                                <span>{cost.usd}</span>
+                                                                                                <span>({cost.php})</span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </DropdownMenuItem>
+                                                                                );
+                                                                            },
+                                                                        )}
+                                                                    </DropdownMenuContent>
+                                                                </DropdownMenu>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <Badge
-                                                        variant="outline"
-                                                        className="border-primary/20 bg-primary/10 font-mono text-[10px] font-bold text-primary"
-                                                    >
-                                                        {form.aspect_ratio}
-                                                    </Badge>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-                                                    {aspectRatioOptions.map((opt) => {
-                                                        const isSelected = form.aspect_ratio === opt.value;
-
-                                                        return (
-                                                            <button
-                                                                key={opt.value}
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    setForm({
-                                                                        ...form,
-                                                                        aspect_ratio: opt.value,
-                                                                    })
-                                                                }
-                                                                className={`flex flex-col items-center justify-center rounded-xl border p-2.5 text-center transition-all ${
-                                                                    isSelected
-                                                                        ? 'border-primary bg-primary/10 font-bold text-primary shadow-xs ring-1 ring-primary/40'
-                                                                        : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:bg-muted/30 hover:text-foreground'
-                                                                }`}
-                                                            >
-                                                                <span className="font-mono text-xs font-bold">
-                                                                    {opt.value}
-                                                                </span>
-                                                                <span className="text-[10px]">
-                                                                    {opt.label.split(' ')[1] || opt.label}
-                                                                </span>
-                                                                <span className="mt-0.5 font-mono text-[9px] text-muted-foreground">
-                                                                    {opt.badge}
-                                                                </span>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-
-                                            {/* Marketing Tagline & Slogan */}
-                                            <div className="space-y-2.5">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Label className="text-xs font-semibold">
-                                                            Campaign Tagline (Optional)
-                                                        </Label>
-                                                        <HelpTooltip text="An optional campaign slogan or promotional hook placed on or styled into the visual." />
-                                                    </div>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={generateTagline}
-                                                        className="h-7 gap-1 text-[11px] font-semibold text-primary hover:bg-primary/10"
-                                                    >
-                                                        <Sparkles className="h-3 w-3" />
-                                                        Auto-Generate
-                                                    </Button>
-                                                </div>
-
-                                                <Input
-                                                    value={form.tagline}
-                                                    onChange={(e) =>
-                                                        setForm({
-                                                            ...form,
-                                                            tagline: e.target.value,
-                                                            tagline_mode: 'manual',
-                                                        })
-                                                    }
-                                                    placeholder="e.g. Elevate Your Everyday with Fresh Artisan Roasts"
-                                                    className="h-10 text-xs"
-                                                />
+                                                )}
                                             </div>
                                         </div>
                                     )}
@@ -3810,7 +4439,8 @@ export default function GeneratorPage() {
                                                 {isQuotaExceeded ? (
                                                     <>
                                                         <AlertTriangle className="h-4 w-4" />
-                                                        Quota Limit Reached ($10.00)
+                                                        Quota Limit Reached
+                                                        ($10.00)
                                                     </>
                                                 ) : (
                                                     <>
@@ -3830,316 +4460,379 @@ export default function GeneratorPage() {
                 {/* =====================================================
                     DOCKED RIGHT SIDEBAR: BRIEF SUMMARY (ONLY IN FORM EDIT MODE)
                 ====================================================== */}
-                {generationState === 'idle' && (
-                    isSummaryCollapsed ? (
-                    /* COLLAPSED VERTICAL RAIL BOX (LIKE LEFT SIDEBAR RAIL) */
-                    <aside
-                        onClick={() => handleSetSummaryCollapsed(false)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                handleSetSummaryCollapsed(false);
-                            }
-                        }}
-                        className="group sticky top-11 z-20 flex h-[calc(100vh-2.75rem)] w-11 shrink-0 cursor-pointer flex-col items-center justify-between border-l border-border/80 bg-card/60 py-4 backdrop-blur-xl transition-all duration-200 select-none hover:bg-muted/40 sm:top-12 sm:h-[calc(100vh-3rem)] lg:w-12"
-                        title="Open Brief Summary"
-                    >
-                        <div className="flex flex-col items-center gap-5">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-2xs transition-all group-hover:bg-primary group-hover:text-primary-foreground">
-                                <PanelRightOpen className="h-4 w-4" />
-                            </div>
-
-                            <div className="flex flex-col items-center gap-4 py-2">
-                                <span className="rotate-180 text-[10px] font-bold tracking-widest text-muted-foreground uppercase transition-colors [writing-mode:vertical-rl] group-hover:text-foreground">
-                                    Brief Summary
-                                </span>
-                                <span className="rotate-180 rounded border border-primary/30 bg-primary/5 px-1 py-0.5 font-mono text-[9px] font-bold text-primary [writing-mode:vertical-rl]">
-                                    {form.aspect_ratio}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors group-hover:text-foreground">
-                            <Sparkles className="h-3.5 w-3.5" />
-                        </div>
-                    </aside>
-                ) : (
-                    /* EXPANDED FULL RIGHT SIDEBAR */
-                    <aside className="sticky top-11 z-20 flex h-[calc(100vh-2.75rem)] w-80 shrink-0 flex-col justify-between overflow-y-auto border-l border-border/80 bg-card/75 p-5 backdrop-blur-2xl transition-all duration-300 sm:top-12 sm:h-[calc(100vh-3rem)] lg:w-[320px] dark:bg-card/85">
-                        <div className="space-y-5">
-                            {/* Sidebar Header */}
-                            <div className="flex items-center justify-between border-b border-border/60 pb-3">
-                                <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-                                    <Sparkles className="h-4 w-4 text-primary" />
-                                    Brief Summary
+                {generationState === 'idle' &&
+                    (isSummaryCollapsed ? (
+                        /* COLLAPSED VERTICAL RAIL BOX (LIKE LEFT SIDEBAR RAIL) */
+                        <aside
+                            onClick={() => handleSetSummaryCollapsed(false)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    handleSetSummaryCollapsed(false);
+                                }
+                            }}
+                            className="group sticky top-11 z-20 flex h-[calc(100vh-2.75rem)] w-11 shrink-0 cursor-pointer flex-col items-center justify-between border-l border-border/80 bg-card/60 py-4 backdrop-blur-xl transition-all duration-200 select-none hover:bg-muted/40 sm:top-12 sm:h-[calc(100vh-3rem)] lg:w-12"
+                            title="Open Brief Summary"
+                        >
+                            <div className="flex flex-col items-center gap-5">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-2xs transition-all group-hover:bg-primary group-hover:text-primary-foreground">
+                                    <PanelRightOpen className="h-4 w-4" />
                                 </div>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() =>
-                                        handleSetSummaryCollapsed(true)
-                                    }
-                                    className="h-7 w-7 cursor-pointer rounded-lg text-muted-foreground hover:text-foreground"
-                                    title="Collapse summary sidebar"
-                                >
-                                    <PanelRightClose className="h-4 w-4" />
-                                </Button>
-                            </div>
 
-                            {/* Aspect Ratio Dimension Visualizer (Clean Wireframe Only) */}
-                            <div className="space-y-3 rounded-2xl border border-border/70 bg-muted/20 p-3.5">
-                                <div className="flex items-center justify-between text-xs">
-                                    <span className="font-bold text-foreground">
-                                        Canvas Ratio
+                                <div className="flex flex-col items-center gap-4 py-2">
+                                    <span className="rotate-180 text-[10px] font-bold tracking-widest text-muted-foreground uppercase transition-colors [writing-mode:vertical-rl] group-hover:text-foreground">
+                                        Brief Summary
                                     </span>
-                                    <Badge
-                                        variant="outline"
-                                        className="border-primary/20 bg-primary/10 font-mono text-[10px] font-bold text-primary"
-                                    >
+                                    <span className="rotate-180 rounded border border-primary/30 bg-primary/5 px-1 py-0.5 font-mono text-[9px] font-bold text-primary [writing-mode:vertical-rl]">
                                         {form.aspect_ratio}
-                                    </Badge>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors group-hover:text-foreground">
+                                <Sparkles className="h-3.5 w-3.5" />
+                            </div>
+                        </aside>
+                    ) : (
+                        /* EXPANDED FULL RIGHT SIDEBAR: PROFESSIONAL BRIEF SUMMARY */
+                        <aside className="sticky top-11 z-20 flex h-[calc(100vh-2.75rem)] w-80 shrink-0 flex-col justify-between overflow-y-auto border-l border-border/80 bg-card/80 p-4 backdrop-blur-2xl transition-all duration-300 sm:top-12 sm:h-[calc(100vh-3rem)] lg:w-[330px] dark:bg-card/90">
+                            <div className="space-y-3.5">
+                                {/* Header */}
+                                <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 text-primary shadow-2xs ring-1 ring-primary/20">
+                                            <Sparkles className="h-3.5 w-3.5" />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-xs font-bold tracking-tight text-foreground">
+                                                    Brief Summary
+                                                </span>
+                                                <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                    <span className="h-1 w-1 animate-pulse rounded-full bg-emerald-500" />
+                                                    Live
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() =>
+                                            handleSetSummaryCollapsed(true)
+                                        }
+                                        className="h-7 w-7 cursor-pointer rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                        title="Collapse summary sidebar"
+                                    >
+                                        <PanelRightClose className="h-4 w-4" />
+                                    </Button>
                                 </div>
 
-                                {/* Proportional Wireframe Box - Pure Dimensions */}
-                                <div className="flex min-h-[170px] items-center justify-center overflow-hidden rounded-xl border border-border/50 bg-background/80 p-3">
-                                    <div
-                                        className={`relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-primary/60 bg-primary/5 transition-all duration-300 ${
-                                            form.aspect_ratio === '9:16'
-                                                ? 'h-[160px] w-[90px]'
-                                                : form.aspect_ratio === '16:9'
-                                                  ? 'h-[101px] w-[180px]'
-                                                  : form.aspect_ratio === '4:5'
-                                                    ? 'h-[145px] w-[116px]'
+                                {/* Section 1: Canvas & Aspect Ratio Preview */}
+                                <div className="group relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-b from-primary/5 via-card/60 to-background/80 p-3 shadow-2xs transition-all hover:border-primary/30">
+                                    <div className="mb-2 flex items-center justify-between text-xs">
+                                        <span className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-foreground uppercase">
+                                            <Layers className="h-3.5 w-3.5 text-primary" />
+                                            Canvas & Ratio
+                                        </span>
+                                        <Badge
+                                            variant="outline"
+                                            className="border-primary/30 bg-primary/10 font-mono text-[10px] font-bold text-primary shadow-2xs"
+                                        >
+                                            {form.aspect_ratio}
+                                        </Badge>
+                                    </div>
+
+                                    {/* Dynamic Proportional Aspect Preview */}
+                                    <div className="flex min-h-[130px] items-center justify-center overflow-hidden rounded-xl border border-border/50 bg-background/70 p-2.5 shadow-inner">
+                                        <div
+                                            className={`relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-primary/60 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent shadow-sm transition-all duration-300 ${
+                                                form.aspect_ratio === '9:16'
+                                                    ? 'h-[125px] w-[70px]'
                                                     : form.aspect_ratio ===
-                                                        '4:3'
-                                                      ? 'h-[114px] w-[152px]'
-                                                      : 'h-[125px] w-[125px]' // 1:1 square
-                                        }`}
-                                    >
-                                        {/* Centered Ratio & Resolution Tags */}
-                                        <div className="flex flex-col items-center justify-center gap-1 p-1 text-center">
-                                            <span className="font-mono text-xs font-extrabold text-primary">
-                                                {form.aspect_ratio}
-                                            </span>
-                                            <span className="font-mono text-[10px] font-semibold text-muted-foreground">
-                                                {aspectRatioOptions.find(
-                                                    (o) =>
-                                                        o.value ===
-                                                        form.aspect_ratio,
-                                                )?.badge || '1024 × 1024'}
-                                            </span>
+                                                        '16:9'
+                                                      ? 'h-[75px] w-[134px]'
+                                                      : form.aspect_ratio ===
+                                                          '4:5'
+                                                        ? 'h-[115px] w-[92px]'
+                                                        : form.aspect_ratio ===
+                                                            '4:3'
+                                                          ? 'h-[90px] w-[120px]'
+                                                          : 'h-[100px] w-[100px]' // 1:1 square
+                                            }`}
+                                        >
+                                            <div className="flex flex-col items-center justify-center gap-0.5 p-1 text-center">
+                                                <span className="font-mono text-xs font-black tracking-tight text-primary">
+                                                    {form.aspect_ratio}
+                                                </span>
+                                                <span className="font-mono text-[9px] font-semibold text-muted-foreground">
+                                                    {aspectRatioOptions.find(
+                                                        (o) =>
+                                                            o.value ===
+                                                            form.aspect_ratio,
+                                                    )?.badge || '1024 × 1024'}
+                                                </span>
+                                            </div>
                                         </div>
+                                    </div>
+
+                                    <div className="mt-2 flex items-center justify-between border-t border-border/40 pt-2 text-[11px]">
+                                        <span className="max-w-[170px] truncate font-medium text-foreground">
+                                            {aspectRatioOptions.find(
+                                                (o) =>
+                                                    o.value ===
+                                                    form.aspect_ratio,
+                                            )?.label || form.aspect_ratio}
+                                        </span>
+                                        <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                            <ShieldCheck className="h-3 w-3" />
+                                            Safe Area
+                                        </span>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between border-t border-border/40 pt-1 text-[11px] text-muted-foreground">
-                                    <span className="max-w-[170px] truncate font-medium text-foreground">
-                                        {aspectRatioOptions.find(
-                                            (o) =>
-                                                o.value === form.aspect_ratio,
-                                        )?.label || form.aspect_ratio}
-                                    </span>
-                                    <span className="text-[10px] text-muted-foreground">
-                                        {aspectRatioOptions.find(
-                                            (o) =>
-                                                o.value === form.aspect_ratio,
-                                        )?.badge || '1024 × 1024'}
-                                    </span>
-                                </div>
-                            </div>
+                                {/* Section 2: Hero Product & Copy */}
+                                <div className="space-y-2.5 rounded-2xl border border-border/70 bg-card/60 p-3 shadow-2xs">
+                                    <div className="flex items-center justify-between text-[11px] font-bold tracking-wide text-foreground uppercase">
+                                        <span className="flex items-center gap-1.5">
+                                            <Package className="h-3.5 w-3.5 text-primary" />
+                                            Hero Product & Copy
+                                        </span>
+                                        {form.price && (
+                                            <span className="rounded-md border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                ₱
+                                                {Number(
+                                                    form.price,
+                                                ).toLocaleString()}
+                                            </span>
+                                        )}
+                                    </div>
 
-                            {/* Parameter Details Rows */}
-                            <div className="space-y-2.5 text-xs">
-                                <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
-                                    <span className="text-muted-foreground">
-                                        Product
-                                    </span>
-                                    <span className="max-w-[160px] truncate text-right font-semibold text-foreground">
-                                        {form.product_name || '—'}
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
-                                    <span className="text-muted-foreground">
-                                        Event
-                                    </span>
-                                    <span className="max-w-[160px] truncate text-right font-semibold text-foreground">
-                                        {selectedEvent?.name || 'None'}
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
-                                    <span className="text-muted-foreground">
-                                        Price
-                                    </span>
-                                    <span className="text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                                        {form.price
-                                            ? `₱${Number(form.price).toLocaleString()}`
-                                            : '—'}
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
-                                    <span className="text-muted-foreground">
-                                        AI Model
-                                    </span>
-                                    {(() => {
-                                        const activeModel =
-                                            imageModelOptions.find(
-                                                (m) =>
-                                                    m.value ===
-                                                    form.image_model,
-                                            ) || imageModelOptions[1];
-
-                                        return (
-                                            <div className="flex items-center gap-1.5 text-right">
-                                                <span className="font-mono font-bold text-foreground">
-                                                    {activeModel.label}
-                                                </span>
-                                                {activeModel.isRecommended && (
-                                                    <span className="rounded bg-primary/10 px-1 py-0.2 text-[9px] font-bold text-primary">
-                                                        ★
+                                    <div className="space-y-1.5 text-xs">
+                                        <div className="rounded-xl border border-border/50 bg-background/60 p-2.5">
+                                            <div className="mb-0.5 text-[9px] font-bold tracking-wider text-muted-foreground uppercase">
+                                                Product Name
+                                            </div>
+                                            <div className="truncate text-xs font-semibold text-foreground">
+                                                {form.product_name || (
+                                                    <span className="text-muted-foreground italic">
+                                                        No product specified
                                                     </span>
                                                 )}
                                             </div>
-                                        );
-                                    })()}
-                                </div>
-                                <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
-                                    <span className="text-muted-foreground">
-                                        Quality Tier
-                                    </span>
-                                    {(() => {
-                                        const activeQuality =
-                                            imageQualityOptions.find(
-                                                (q) =>
-                                                    q.value ===
-                                                    form.image_quality,
-                                            ) || imageQualityOptions[1];
-                                        const cost = calculateGenerationCost(
-                                            form.image_model,
-                                            form.image_quality,
-                                        );
+                                        </div>
 
-                                        return (
-                                            <div className="flex items-center gap-1.5 text-right">
-                                                <span className="text-xs font-semibold text-foreground">
-                                                    {activeQuality.label}
-                                                </span>
-                                                <span className="rounded border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.2 font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                                                    {cost.usd}
+                                        {form.tagline && (
+                                            <div className="rounded-xl border border-primary/20 bg-primary/5 p-2.5">
+                                                <div className="mb-0.5 text-[9px] font-bold tracking-wider text-primary uppercase">
+                                                    Active Tagline
+                                                </div>
+                                                <div className="text-xs leading-snug font-medium text-foreground italic">
+                                                    "{form.tagline}"
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {referenceImagePreview && (
+                                            <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-2 text-xs text-emerald-700 dark:text-emerald-400">
+                                                <ImageIcon className="h-3.5 w-3.5 shrink-0" />
+                                                <span className="truncate text-[11px] font-medium">
+                                                    Reference Image Locked
                                                 </span>
                                             </div>
-                                        );
-                                    })()}
-                                </div>
-                                <div className="flex flex-col gap-1.5 border-b border-border/40 pb-2">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-muted-foreground">
-                                            Themes
-                                        </span>
-                                        <span className="font-mono text-[10px] text-muted-foreground">
-                                            {form.content_style.length > 0
-                                                ? `${form.content_style.length} selected`
-                                                : 'Default'}
-                                        </span>
+                                        )}
                                     </div>
-                                    {form.content_style.length > 0 ? (
-                                        <div className="flex flex-wrap gap-1">
-                                            {form.content_style.map((style) => (
-                                                <span
-                                                    key={style}
-                                                    className="rounded-md border border-primary/25 bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary"
-                                                >
-                                                    {style}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <span className="text-[11px] font-medium text-muted-foreground">
-                                            Product-focused (Auto)
-                                        </span>
-                                    )}
                                 </div>
-                                <div className="flex flex-col gap-1.5 border-b border-border/40 pb-2">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-muted-foreground">
-                                            Tones
-                                        </span>
-                                        <span className="font-mono text-[10px] text-muted-foreground">
-                                            {form.brand_tone.length > 0
-                                                ? `${form.brand_tone.length} selected`
-                                                : 'Default'}
-                                        </span>
+
+                                {/* Section 3: Art Direction & Staging */}
+                                <div className="space-y-2 rounded-2xl border border-border/70 bg-card/60 p-3 shadow-2xs">
+                                    <span className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-foreground uppercase">
+                                        <Camera className="h-3.5 w-3.5 text-primary" />
+                                        Art Direction & Staging
+                                    </span>
+
+                                    <div className="space-y-1.5 text-xs">
+                                        {/* Industry / Category */}
+                                        <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
+                                            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                                                <Building2 className="h-3 w-3" />
+                                                Industry
+                                            </span>
+                                            <span className="max-w-[150px] truncate text-right text-[11px] font-medium text-foreground">
+                                                {business?.industry ||
+                                                    'Commercial'}
+                                            </span>
+                                        </div>
+
+                                        {/* Event / Holiday */}
+                                        <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
+                                            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                                                <CalendarDays className="h-3 w-3" />
+                                                Holiday / Event
+                                            </span>
+                                            <span className="max-w-[150px] truncate text-right text-[11px] font-medium text-foreground">
+                                                {selectedEvent?.name ||
+                                                    'Standard Season'}
+                                            </span>
+                                        </div>
+
+                                        {/* Render Style */}
+                                        <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
+                                            <span className="text-[11px] text-muted-foreground">
+                                                Render Style
+                                            </span>
+                                            <Badge
+                                                variant="outline"
+                                                className="border-primary/30 bg-primary/10 text-[10px] font-bold text-primary"
+                                            >
+                                                {form.render_style ||
+                                                    'Studio Product Still'}
+                                            </Badge>
+                                        </div>
+
+                                        {/* Themes & Tones */}
+                                        {(form.content_style.length > 0 ||
+                                            form.brand_tone.length > 0) && (
+                                            <div className="space-y-1 pt-1">
+                                                {form.content_style.length >
+                                                    0 && (
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {form.content_style.map(
+                                                            (style) => (
+                                                                <span
+                                                                    key={style}
+                                                                    className="rounded-md border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary"
+                                                                >
+                                                                    {style}
+                                                                </span>
+                                                            ),
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {form.brand_tone.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {form.brand_tone.map(
+                                                            (tone) => (
+                                                                <span
+                                                                    key={tone}
+                                                                    className="rounded-md border border-border/70 bg-muted/40 px-1.5 py-0.5 text-[9px] font-medium text-foreground"
+                                                                >
+                                                                    {tone}
+                                                                </span>
+                                                            ),
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
-                                    {form.brand_tone.length > 0 ? (
-                                        <div className="flex flex-wrap gap-1">
-                                            {form.brand_tone.map((tone) => (
-                                                <span
-                                                    key={tone}
-                                                    className="rounded-md border border-border/80 bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-foreground"
-                                                >
-                                                    {tone}
-                                                </span>
-                                            ))}
+                                </div>
+
+                                {/* Section 4: AI Engine & Identity */}
+                                <div className="space-y-2 rounded-2xl border border-border/70 bg-card/60 p-3 shadow-2xs">
+                                    <span className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-foreground uppercase">
+                                        <Cpu className="h-3.5 w-3.5 text-primary" />
+                                        AI Engine & Identity
+                                    </span>
+
+                                    <div className="space-y-1.5 text-xs">
+                                        {/* Model & Quality */}
+                                        <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
+                                            <span className="text-[11px] text-muted-foreground">
+                                                Model Tier
+                                            </span>
+                                            {(() => {
+                                                const activeModel =
+                                                    imageModelOptions.find(
+                                                        (m) =>
+                                                            m.value ===
+                                                            form.image_model,
+                                                    ) || imageModelOptions[1];
+                                                return (
+                                                    <div className="flex items-center gap-1 text-right">
+                                                        <span className="font-mono text-[11px] font-bold text-foreground">
+                                                            {activeModel.label}
+                                                        </span>
+                                                        {activeModel.isRecommended && (
+                                                            <span className="py-0.2 rounded bg-primary/10 px-1 text-[8px] font-bold text-primary">
+                                                                ★
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
-                                    ) : (
-                                        <span className="text-[11px] font-medium text-muted-foreground">
-                                            Professional (Auto)
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
-                                    <span className="text-muted-foreground">
-                                        Render Style
-                                    </span>
-                                    <Badge
-                                        variant="outline"
-                                        className="border-primary/30 bg-primary/10 text-[10px] font-bold text-primary"
-                                    >
-                                        {form.render_style ||
-                                            'Studio Product Still'}
-                                    </Badge>
-                                </div>
-                                <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
-                                    <span className="text-muted-foreground">
-                                        Dimensions
-                                    </span>
-                                    <Badge
-                                        variant="outline"
-                                        className="font-mono text-[10px] font-semibold"
-                                    >
-                                        {form.aspect_ratio} (
-                                        {aspectRatioOptions.find(
-                                            (o) =>
-                                                o.value === form.aspect_ratio,
-                                        )?.badge || '1024 × 1024'}
-                                        )
-                                    </Badge>
-                                </div>
-                                <div className="flex items-center justify-between gap-2">
-                                    <span className="text-muted-foreground">
-                                        Brand Logo
-                                    </span>
-                                    <Badge
-                                        variant={
-                                            form.include_logo
-                                                ? 'default'
-                                                : 'outline'
-                                        }
-                                        className={`text-[10px] font-semibold ${form.include_logo ? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : ''}`}
-                                    >
-                                        {form.include_logo ? 'Included' : 'Off'}
-                                    </Badge>
+
+                                        {/* Quality & Cost */}
+                                        <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
+                                            <span className="text-[11px] text-muted-foreground">
+                                                Quality / Est.
+                                            </span>
+                                            {(() => {
+                                                const activeQuality =
+                                                    imageQualityOptions.find(
+                                                        (q) =>
+                                                            q.value ===
+                                                            form.image_quality,
+                                                    ) || imageQualityOptions[1];
+                                                const cost =
+                                                    calculateGenerationCost(
+                                                        form.image_model,
+                                                        form.image_quality,
+                                                    );
+                                                return (
+                                                    <div className="flex items-center gap-1.5 text-right">
+                                                        <span className="text-[11px] font-semibold text-foreground">
+                                                            {
+                                                                activeQuality.label
+                                                            }
+                                                        </span>
+                                                        <span className="py-0.2 rounded border border-emerald-500/30 bg-emerald-500/10 px-1.5 font-mono text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                            {cost.usd}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+
+                                        {/* Business Branding */}
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-[11px] text-muted-foreground">
+                                                Branding
+                                            </span>
+                                            <Badge
+                                                variant={
+                                                    form.include_business_name
+                                                        ? 'default'
+                                                        : 'outline'
+                                                }
+                                                className={`text-[9px] font-semibold ${
+                                                    form.include_business_name
+                                                        ? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                                        : ''
+                                                }`}
+                                            >
+                                                {form.include_business_name
+                                                    ? business?.name ||
+                                                      'Included'
+                                                    : 'Disabled'}
+                                            </Badge>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Sticky footer info */}
-                        <div className="border-t border-border/50 pt-4 text-center text-[11px] text-muted-foreground">
-                            <span>MarketPilot AI Creative Engine</span>
-                        </div>
-                    </aside>
-                ))}
+                            {/* Sticky footer info */}
+                            <div className="border-t border-border/50 pt-3 text-center">
+                                <div className="flex items-center justify-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+                                    <Wand2 className="h-3 w-3 text-primary" />
+                                    <span>MarketPilot Creative Engine</span>
+                                </div>
+                            </div>
+                        </aside>
+                    ))}
             </div>
 
             {/* =============================================================
@@ -4429,32 +5122,87 @@ export default function GeneratorPage() {
                     onClick={() => {
                         setIsPreviewFullViewOpen(false);
                         setIsFullViewDetailsExpanded(false);
+                        setIsPreviewZoomed(false);
                     }}
                 >
                     {/* Top Floating Control Bar */}
                     <div
-                        className="relative z-50 flex w-full items-center justify-between bg-gradient-to-b from-black/90 via-black/50 to-transparent px-5 py-4 sm:px-8"
+                        className="relative z-50 flex w-full items-center justify-between bg-gradient-to-b from-black/90 via-black/60 to-transparent px-4 py-3 sm:px-8 sm:py-4"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center gap-3">
-                            <h2 className="max-w-[240px] truncate text-sm font-semibold text-white sm:max-w-md sm:text-base">
+                            <h2 className="max-w-[200px] truncate text-sm font-semibold text-white sm:max-w-md sm:text-base">
                                 {form.product_name || 'Marketing Visual'}
                             </h2>
-                            <span className="rounded-full bg-white/10 px-2.5 py-1 font-mono text-xs text-white">
+                            <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 font-mono text-xs text-white">
                                 {form.aspect_ratio || '1:1'}
                             </span>
+                            {savedDesign?.image_url && (
+                                <span className="hidden rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-mono text-[11px] text-emerald-400 sm:inline">
+                                    Full Resolution
+                                </span>
+                            )}
                         </div>
 
                         <div className="flex items-center gap-2">
+                            {savedDesign?.image_url && (
+                                <>
+                                    {/* Zoom Toggle Button */}
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setIsPreviewZoomed(!isPreviewZoomed)
+                                        }
+                                        className="flex h-9 items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 text-xs font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20"
+                                        title={
+                                            isPreviewZoomed
+                                                ? 'Fit to Screen'
+                                                : 'Zoom 100% Full Size'
+                                        }
+                                    >
+                                        {isPreviewZoomed ? (
+                                            <>
+                                                <ZoomOut className="h-4 w-4" />
+                                                <span className="hidden sm:inline">
+                                                    Fit Screen
+                                                </span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ZoomIn className="h-4 w-4" />
+                                                <span className="hidden sm:inline">
+                                                    Zoom 100%
+                                                </span>
+                                            </>
+                                        )}
+                                    </button>
+
+                                    {/* Open Raw in New Tab Button */}
+                                    <a
+                                        href={savedDesign.image_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="hidden h-9 items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 text-xs font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20 sm:flex"
+                                        title="Open image in new tab"
+                                    >
+                                        <ExternalLink className="h-4 w-4" />
+                                        <span>Open Tab</span>
+                                    </a>
+                                </>
+                            )}
+
+                            {/* Download Dropdown */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <button
                                         type="button"
-                                        className="flex h-9 items-center gap-1.5 rounded-full bg-white/10 px-3 text-xs font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20"
+                                        className="flex h-9 items-center gap-1.5 rounded-full bg-white/15 px-3 text-xs font-semibold text-white backdrop-blur-md transition-all hover:bg-white/25"
                                         title="Download Image"
                                     >
                                         <Download className="h-4 w-4" />
-                                        Download
+                                        <span className="hidden sm:inline">
+                                            Download
+                                        </span>
                                         <ChevronDown className="h-3 w-3 opacity-70" />
                                     </button>
                                 </DropdownMenuTrigger>
@@ -4486,13 +5234,15 @@ export default function GeneratorPage() {
                                 </DropdownMenuContent>
                             </DropdownMenu>
 
+                            {/* Close Button */}
                             <button
                                 type="button"
                                 onClick={() => {
                                     setIsPreviewFullViewOpen(false);
                                     setIsFullViewDetailsExpanded(false);
+                                    setIsPreviewZoomed(false);
                                 }}
-                                className="ml-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md transition-all hover:bg-white/30"
+                                className="ml-1 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md transition-all hover:bg-white/30"
                                 title="Close (Esc)"
                             >
                                 <X className="h-5 w-5" />
@@ -4500,21 +5250,42 @@ export default function GeneratorPage() {
                         </div>
                     </div>
 
-                    {/* Main Full View Canvas - Real Image */}
+                    {/* Main Full View Canvas - Responsive & Uncut */}
                     <div
-                        className="relative flex h-full w-full flex-1 items-center justify-center overflow-hidden p-4 sm:p-8"
-                        onClick={(e) => e.stopPropagation()}
+                        className={`relative flex h-full w-full flex-1 items-center justify-center p-3 transition-all duration-300 sm:p-6 ${
+                            isPreviewZoomed
+                                ? 'cursor-zoom-out overflow-auto'
+                                : 'cursor-zoom-in overflow-hidden'
+                        }`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (savedDesign?.image_url) {
+                                setIsPreviewZoomed(!isPreviewZoomed);
+                            }
+                        }}
                     >
                         {savedDesign?.image_url ? (
-                            <img
-                                src={savedDesign.image_url}
-                                alt={form.product_name}
-                                className={`max-h-[82vh] max-w-[90vw] rounded-2xl object-contain shadow-2xl drop-shadow-2xl transition-all duration-300 ${
-                                    isFullViewDetailsExpanded
-                                        ? '-translate-y-6 scale-90'
-                                        : 'scale-100'
+                            <div
+                                className={`flex items-center justify-center transition-all duration-300 ${
+                                    isPreviewZoomed
+                                        ? 'min-h-full min-w-full p-6'
+                                        : 'h-full max-h-full w-full max-w-full'
                                 }`}
-                            />
+                            >
+                                <img
+                                    src={savedDesign.image_url}
+                                    alt={form.product_name}
+                                    className={`rounded-2xl object-contain shadow-2xl drop-shadow-2xl transition-all duration-300 ${
+                                        isPreviewZoomed
+                                            ? 'h-auto max-h-none w-auto max-w-none'
+                                            : `h-auto max-h-[calc(100vh-145px)] w-auto max-w-[calc(100vw-32px)] sm:max-w-[calc(100vw-64px)] ${
+                                                  isFullViewDetailsExpanded
+                                                      ? '-translate-y-4 scale-95'
+                                                      : 'scale-100'
+                                              }`
+                                    }`}
+                                />
+                            </div>
                         ) : (
                             <div
                                 className={`flex flex-col items-center justify-center rounded-3xl border border-white/20 bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 p-8 text-center text-white drop-shadow-2xl transition-all duration-300 ${
@@ -4549,9 +5320,9 @@ export default function GeneratorPage() {
                         )}
                     </div>
 
-                    {/* Bottom Fade-out Section with Toggle & Expandable Details */}
+                    {/* Bottom Floating Details Section */}
                     <div
-                        className="relative z-50 flex w-full flex-col items-center justify-end bg-gradient-to-t from-black/95 via-black/75 to-transparent px-4 pt-12 pb-5"
+                        className="relative z-50 flex w-full flex-col items-center justify-end bg-gradient-to-t from-black/95 via-black/80 to-transparent px-4 pt-6 pb-4"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <button
@@ -4575,7 +5346,7 @@ export default function GeneratorPage() {
                         </button>
 
                         {isFullViewDetailsExpanded && (
-                            <div className="mt-4 max-h-[38vh] w-full max-w-xl animate-in space-y-4 overflow-y-auto rounded-2xl border border-white/15 bg-black/80 p-5 text-white shadow-2xl backdrop-blur-2xl duration-300 fade-in slide-in-from-bottom-4">
+                            <div className="mt-3 max-h-[35vh] w-full max-w-xl animate-in space-y-4 overflow-y-auto rounded-2xl border border-white/15 bg-black/85 p-5 text-white shadow-2xl backdrop-blur-2xl duration-300 fade-in slide-in-from-bottom-4">
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
                                         <h4 className="text-xs font-bold tracking-wider text-white/60 uppercase">
@@ -4588,7 +5359,7 @@ export default function GeneratorPage() {
                                             </span>
                                             <span className="rounded-md border border-white/20 bg-white/10 px-2 py-0.5 font-mono text-[10px] font-bold text-white">
                                                 {form.image_model ||
-                                                    'gpt-image-1'}
+                                                    'gpt-image-2'}
                                             </span>
                                             <span
                                                 className={`rounded-md border px-2 py-0.5 font-mono text-[10px] font-bold uppercase ${
@@ -4615,7 +5386,7 @@ export default function GeneratorPage() {
                                             {form.content_style.map((style) => (
                                                 <span
                                                     key={style}
-                                                    className="rounded border border-primary/40 bg-primary/10 px-1.5 py-0.2 font-mono text-[9px] text-primary"
+                                                    className="py-0.2 rounded border border-primary/40 bg-primary/10 px-1.5 font-mono text-[9px] text-primary"
                                                 >
                                                     {style}
                                                 </span>
@@ -4623,7 +5394,7 @@ export default function GeneratorPage() {
                                             {form.brand_tone.map((tone) => (
                                                 <span
                                                     key={tone}
-                                                    className="rounded border border-white/20 bg-white/5 px-1.5 py-0.2 font-mono text-[9px] text-slate-300"
+                                                    className="py-0.2 rounded border border-white/20 bg-white/5 px-1.5 font-mono text-[9px] text-slate-300"
                                                 >
                                                     {tone}
                                                 </span>
@@ -4652,7 +5423,7 @@ export default function GeneratorPage() {
                                         className="gap-1.5 border-white/20 bg-white/10 text-xs text-white shadow-none hover:bg-white/20"
                                     >
                                         <Download className="h-3.5 w-3.5" />
-                                        Download Visual
+                                        Download
                                     </Button>
                                 </div>
                             </div>
@@ -4898,8 +5669,8 @@ export default function GeneratorPage() {
                                             }
                                             className="gap-1.5 text-xs font-semibold"
                                         >
-                                            <Plus className="h-3.5 w-3.5" />
-                                            + Create New Campaign
+                                            <Plus className="h-3.5 w-3.5" />+
+                                            Create New Campaign
                                         </Button>
                                     </div>
                                 ) : (
@@ -4939,9 +5710,13 @@ export default function GeneratorPage() {
                                                                 </span>
                                                                 {c.event_name && (
                                                                     <>
-                                                                        <span>•</span>
+                                                                        <span>
+                                                                            •
+                                                                        </span>
                                                                         <span className="truncate text-primary">
-                                                                            {c.event_name}
+                                                                            {
+                                                                                c.event_name
+                                                                            }
                                                                         </span>
                                                                     </>
                                                                 )}
@@ -4958,13 +5733,16 @@ export default function GeneratorPage() {
                                         {/* Direct create new campaign shortcut even when existing ones exist */}
                                         <div className="flex items-center justify-between rounded-xl border border-dashed border-border bg-muted/20 px-3 py-2 text-xs">
                                             <span className="text-[11px] text-muted-foreground">
-                                                Want to start a new campaign instead?
+                                                Want to start a new campaign
+                                                instead?
                                             </span>
                                             <Button
                                                 type="button"
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => setCampaignModalTab('new')}
+                                                onClick={() =>
+                                                    setCampaignModalTab('new')
+                                                }
                                                 className="h-7 gap-1 px-2.5 text-xs font-semibold text-primary hover:bg-primary/10 hover:text-primary"
                                             >
                                                 <Plus className="h-3.5 w-3.5" />
@@ -5014,10 +5792,13 @@ export default function GeneratorPage() {
                                     {eligibleCampaigns.length > 0 && (
                                         <button
                                             type="button"
-                                            onClick={() => setCampaignModalTab('existing')}
+                                            onClick={() =>
+                                                setCampaignModalTab('existing')
+                                            }
                                             className="text-[11px] font-semibold text-primary hover:underline"
                                         >
-                                            ← Select from existing ({eligibleCampaigns.length})
+                                            ← Select from existing (
+                                            {eligibleCampaigns.length})
                                         </button>
                                     )}
                                 </div>
@@ -5029,7 +5810,8 @@ export default function GeneratorPage() {
                                                 {selectedEvent.name}
                                             </p>
                                             <p className="text-[10px] text-muted-foreground">
-                                                Campaign will automatically be linked to this event.
+                                                Campaign will automatically be
+                                                linked to this event.
                                             </p>
                                         </div>
                                     </div>
@@ -5164,7 +5946,8 @@ export default function GeneratorPage() {
                                         : 'Switch to Low Quality (Draft Mode)?'}
                                 </DialogTitle>
                                 <DialogDescription className="text-xs">
-                                    Adjusting image detail tier alters generation speed and token quota pricing.
+                                    Adjusting image detail tier alters
+                                    generation speed and token quota pricing.
                                 </DialogDescription>
                             </div>
                         </div>
@@ -5175,7 +5958,8 @@ export default function GeneratorPage() {
                             <div className="space-y-2 rounded-2xl border border-purple-500/30 bg-purple-500/10 p-3.5 text-purple-950 dark:text-purple-100">
                                 <div className="flex items-center justify-between font-bold">
                                     <span className="flex items-center gap-1.5 text-purple-900 dark:text-purple-200">
-                                        HD Studio Quality (2.0× Token Multiplier)
+                                        HD Studio Quality (2.0× Token
+                                        Multiplier)
                                     </span>
                                     <span className="font-mono text-purple-700 dark:text-purple-300">
                                         {
@@ -5195,14 +5979,20 @@ export default function GeneratorPage() {
                                     </span>
                                 </div>
                                 <p className="text-[11px] leading-relaxed text-purple-900/80 dark:text-purple-200/90">
-                                    High Quality mode activates enhanced rendering passes, high-DPI texture sharpness, and studio lighting synthesis. This utilizes <strong>2× standard quota</strong> against your $10.00 custom budget limit.
+                                    High Quality mode activates enhanced
+                                    rendering passes, high-DPI texture
+                                    sharpness, and studio lighting synthesis.
+                                    This utilizes{' '}
+                                    <strong>2× standard quota</strong> against
+                                    your $10.00 custom budget limit.
                                 </p>
                             </div>
                         ) : (
                             <div className="space-y-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-amber-950 dark:text-amber-100">
                                 <div className="flex items-center justify-between font-bold">
                                     <span className="flex items-center gap-1.5 text-amber-900 dark:text-amber-200">
-                                        Low Quality Draft (0.5× Token Multiplier)
+                                        Low Quality Draft (0.5× Token
+                                        Multiplier)
                                     </span>
                                     <span className="font-mono text-amber-700 dark:text-amber-300">
                                         {
@@ -5222,7 +6012,11 @@ export default function GeneratorPage() {
                                     </span>
                                 </div>
                                 <p className="text-[11px] leading-relaxed text-amber-900/80 dark:text-amber-200/90">
-                                    Low Quality mode reduces render passes to minimize token cost (50% cheaper) and accelerate generation. Suitable for rapid concept drafts, though fine typography and intricate textures will be simplified.
+                                    Low Quality mode reduces render passes to
+                                    minimize token cost (50% cheaper) and
+                                    accelerate generation. Suitable for rapid
+                                    concept drafts, though fine typography and
+                                    intricate textures will be simplified.
                                 </p>
                             </div>
                         )}
@@ -5243,7 +6037,8 @@ export default function GeneratorPage() {
                                 htmlFor="dismiss-quality-warning"
                                 className="cursor-pointer text-[11px] leading-snug font-medium text-muted-foreground select-none"
                             >
-                                Don't show this quality confirmation again (remember my preference)
+                                Don't show this quality confirmation again
+                                (remember my preference)
                             </label>
                         </div>
                     </div>

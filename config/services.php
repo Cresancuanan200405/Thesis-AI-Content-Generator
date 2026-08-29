@@ -44,7 +44,6 @@ return [
         'size' => env('OPENAI_IMAGE_SIZE', '1024x1024'),
         'quality' => env('OPENAI_IMAGE_QUALITY', 'standard'),
         'budget_limit' => (float) env('OPENAI_BUDGET_LIMIT', 10.00),
-        'baseline_spend' => (float) env('OPENAI_BASELINE_SPEND', 0.85),
     ],
 
     'google' => [

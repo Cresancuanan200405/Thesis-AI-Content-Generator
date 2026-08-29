@@ -19,6 +19,7 @@ import {
     List,
     MoreVertical,
     Plus,
+    RefreshCw,
     Search,
     Sparkles,
     Square,
@@ -84,6 +85,8 @@ export default function DesignsPage({
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+    const [designToRegenerate, setDesignToRegenerate] = useState<any | null>(null);
+    const [isRegenerating, setIsRegenerating] = useState(false);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('marketpilot_designs_view_mode');
@@ -97,6 +100,55 @@ export default function DesignsPage({
         if (typeof window !== 'undefined') {
             localStorage.setItem('marketpilot_designs_view_mode', mode);
         }
+    };
+
+    const getEditStudioUrl = (design: any) => {
+        if (!design) return '/generator';
+        const meta = design.generation_metadata || {};
+        const contentStyle = Array.isArray(design.content_style)
+            ? design.content_style.join(',')
+            : design.content_style || design.visual_theme || meta.visual_theme || '';
+        const brandTone = Array.isArray(design.brand_tone)
+            ? design.brand_tone.join(',')
+            : design.brand_tone || meta.brand_tone || '';
+        const renderStyle = design.render_style || meta.render_style || 'Studio Product Still';
+        const imageModel = meta.model || meta.image_model || design.model || 'gpt-image-2';
+        const quality = meta.quality || meta.image_quality || 'medium';
+        const aspectRatio = design.aspect_ratio || meta.aspect_ratio || '1:1';
+        const includeBusiness = meta.include_business_name !== false ? '1' : '0';
+
+        const params = new URLSearchParams();
+        if (design.product_name) params.set('product_name', design.product_name);
+        if (design.product_id) params.set('product_id', String(design.product_id));
+        if (design.price) params.set('price', String(design.price));
+        if (design.campaign_id) params.set('campaign_id', String(design.campaign_id));
+        if (design.event_id) params.set('event_id', String(design.event_id));
+        if (design.tagline) params.set('tagline', design.tagline);
+        if (design.prompt) params.set('prompt', design.prompt);
+        params.set('aspect_ratio', aspectRatio);
+        if (contentStyle) params.set('content_style', contentStyle);
+        if (brandTone) params.set('brand_tone', brandTone);
+        params.set('render_style', renderStyle);
+        params.set('image_model', imageModel);
+        params.set('image_quality', quality);
+        params.set('include_business_name', includeBusiness);
+
+        return `/generator?${params.toString()}`;
+    };
+
+    const handleRegenerate = (design: any) => {
+        setDesignToRegenerate(null);
+        setIsRegenerating(true);
+        router.post(
+            `/designs/${design.id}/regenerate`,
+            {},
+            {
+                onFinish: () => setIsRegenerating(false),
+                onError: () => {
+                    toast.error('Unable to regenerate design. Please try again.');
+                },
+            },
+        );
     };
 
     const isAllSelected =
@@ -1388,19 +1440,26 @@ export default function DesignsPage({
                                                                         ) => {
                                                                             e.preventDefault();
                                                                             e.stopPropagation();
-                                                                            router.visit(
-                                                                                `/generator?product_name=${encodeURIComponent(
-                                                                                    design.product_name ||
-                                                                                        '',
-                                                                                )}`,
-                                                                            );
+                                                                            setDesignToRegenerate(design);
+                                                                        }}
+                                                                        className="cursor-pointer gap-2 text-xs font-medium text-primary hover:text-primary"
+                                                                    >
+                                                                        <RefreshCw className="h-3.5 w-3.5" />
+                                                                        Regenerate Design
+                                                                    </DropdownMenuItem>
+
+                                                                    <DropdownMenuItem
+                                                                        onClick={(
+                                                                            e,
+                                                                        ) => {
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+                                                                            router.visit(getEditStudioUrl(design));
                                                                         }}
                                                                         className="cursor-pointer gap-2 text-xs font-medium"
                                                                     >
                                                                         <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
-                                                                        Edit in
-                                                                        AI
-                                                                        Studio
+                                                                        Edit in AI Studio
                                                                     </DropdownMenuItem>
 
                                                                     {!design.campaign_id &&
@@ -1680,15 +1739,25 @@ export default function DesignsPage({
                                                                 ) => {
                                                                     e.preventDefault();
                                                                     e.stopPropagation();
-                                                                    router.visit(
-                                                                        `/generator?product_name=${encodeURIComponent(design.product_name || '')}`,
-                                                                    );
+                                                                    setDesignToRegenerate(design);
+                                                                }}
+                                                                className="cursor-pointer gap-2 text-xs font-medium text-primary hover:text-primary"
+                                                            >
+                                                                <RefreshCw className="h-3.5 w-3.5" />{' '}
+                                                                Regenerate Design
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                onClick={(
+                                                                    e,
+                                                                ) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    router.visit(getEditStudioUrl(design));
                                                                 }}
                                                                 className="cursor-pointer gap-2 text-xs font-medium"
                                                             >
                                                                 <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />{' '}
-                                                                Edit in AI
-                                                                Studio
+                                                                Edit in AI Studio
                                                             </DropdownMenuItem>
                                                             {!design.campaign_id &&
                                                                 design.event_id && (
@@ -2166,13 +2235,27 @@ export default function DesignsPage({
 
                                 <div className="flex items-center gap-2">
                                     <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                            const d = previewDesign;
+                                            setPreviewDesign(null);
+                                            setDesignToRegenerate(d);
+                                        }}
+                                        disabled={isRegenerating}
+                                        className="h-9 cursor-pointer gap-2 border-primary/30 text-xs font-bold text-primary hover:bg-primary/10"
+                                    >
+                                        <RefreshCw className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`} />
+                                        Regenerate
+                                    </Button>
+
+                                    <Button
                                         asChild
                                         size="sm"
                                         className="h-9 cursor-pointer gap-2 bg-primary px-4 text-xs font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:scale-105 hover:bg-primary/90"
                                     >
-                                        <Link
-                                            href={`/generator?product_name=${encodeURIComponent(previewDesign.product_name || '')}&price=${encodeURIComponent(previewDesign.price || '')}&campaign_id=${encodeURIComponent(previewDesign.campaign_id || '')}&event_id=${encodeURIComponent(previewDesign.event_id || '')}&tagline=${encodeURIComponent(previewDesign.tagline || '')}&prompt=${encodeURIComponent(previewDesign.prompt || '')}&aspect_ratio=${encodeURIComponent(previewDesign.aspect_ratio || '1:1')}&content_style=${encodeURIComponent(Array.isArray(previewDesign.content_style) ? previewDesign.content_style.join(',') : previewDesign.content_style || previewDesign.visual_theme || '')}&brand_tone=${encodeURIComponent(Array.isArray(previewDesign.brand_tone) ? previewDesign.brand_tone.join(',') : previewDesign.brand_tone || '')}&render_style=${encodeURIComponent(previewDesign.render_style || previewDesign.generation_metadata?.render_style || 'Studio Product Still')}&image_model=${encodeURIComponent(previewDesign.generation_metadata?.model || previewDesign.model || 'gpt-image-1')}&image_quality=${encodeURIComponent(previewDesign.generation_metadata?.quality || 'medium')}`}
-                                        >
+                                        <Link href={getEditStudioUrl(previewDesign)}>
                                             <Sparkles className="h-4 w-4" />
                                             Edit in AI Studio
                                         </Link>
@@ -2700,6 +2783,51 @@ export default function DesignsPage({
                             {isAttachingCampaign
                                 ? 'Linking...'
                                 : 'Add to Campaign'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* =============================================================
+                REGENERATE DESIGN CONFIRMATION MODAL
+            ============================================================= */}
+            <Dialog
+                open={Boolean(designToRegenerate)}
+                onOpenChange={(open) => {
+                    if (!open) setDesignToRegenerate(null);
+                }}
+            >
+                <DialogContent className="rounded-3xl sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold">
+                            Regenerate Design?
+                        </DialogTitle>
+                        <DialogDescription className="text-xs leading-relaxed">
+                            This will create a new creative variation of "{designToRegenerate?.product_name || 'this design'}" restoring your exact product, scene prompt, brand styling, pricing, and campaign settings.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <DialogFooter className="mt-6 gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setDesignToRegenerate(null)}
+                            disabled={isRegenerating}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={() => {
+                                if (designToRegenerate) {
+                                    handleRegenerate(designToRegenerate);
+                                }
+                            }}
+                            disabled={isRegenerating}
+                            className="gap-2"
+                        >
+                            <RefreshCw className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`} />
+                            {isRegenerating ? 'Regenerating...' : 'Yes, Regenerate'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

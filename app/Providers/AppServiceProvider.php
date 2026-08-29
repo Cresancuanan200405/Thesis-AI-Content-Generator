@@ -6,11 +6,15 @@ use App\Models\Campaign;
 use App\Models\Design;
 use App\Models\Event;
 use App\Models\Product;
+use App\Models\User;
 use App\Policies\CampaignPolicy;
 use App\Policies\DesignPolicy;
 use App\Policies\EventPolicy;
 use App\Policies\ProductPolicy;
+use App\Services\NotificationService;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Date;
@@ -70,6 +74,24 @@ class AppServiceProvider extends ServiceProvider
                 ->symbols()
                 ->uncompromised()
             : null,
+        );
+
+        \Illuminate\Support\Facades\Event::listen(
+            Login::class,
+            function (Login $event): void {
+                if ($event->user instanceof User) {
+                    NotificationService::recordLogin($event->user, request());
+                }
+            }
+        );
+
+        \Illuminate\Support\Facades\Event::listen(
+            Logout::class,
+            function (Logout $event): void {
+                if ($event->user instanceof User) {
+                    NotificationService::recordLogout($event->user, request());
+                }
+            }
         );
     }
 }

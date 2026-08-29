@@ -20,7 +20,8 @@ test('security page is displayed', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('settings/security')
             ->where('canManageTwoFactor', true)
-            ->where('twoFactorEnabled', false),
+            ->where('twoFactorEnabled', false)
+            ->has('sessions')
         );
 });
 
@@ -38,7 +39,8 @@ test('security page renders without two factor when feature is disabled', functi
             ->component('settings/security')
             ->where('canManageTwoFactor', false)
             ->missing('twoFactorEnabled')
-            ->missing('requiresConfirmation'),
+            ->missing('requiresConfirmation')
+            ->has('sessions')
         );
 });
 
@@ -75,5 +77,20 @@ test('correct password must be provided to update password', function () {
 
     $response
         ->assertSessionHasErrors('current_password')
+        ->assertRedirect(route('security.edit'));
+});
+
+test('user can log out other browser sessions with correct password', function () {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->from(route('security.edit'))
+        ->delete(route('security.sessions.destroy'), [
+            'password' => 'password',
+        ]);
+
+    $response
+        ->assertSessionHasNoErrors()
         ->assertRedirect(route('security.edit'));
 });

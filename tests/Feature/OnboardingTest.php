@@ -58,7 +58,7 @@ it('business information is saved correctly', function () {
         ->and($business->category)->toBe('Coffee Shop');
 });
 
-it('optional business logo can be saved during onboarding', function () {
+it('onboarding can be completed directly after business setup without logo', function () {
     $user = User::factory()->create();
     $user->business()->create([
         'name' => 'North Star Coffee',
@@ -67,7 +67,7 @@ it('optional business logo can be saved during onboarding', function () {
     ]);
 
     $this->actingAs($user)
-        ->post('/onboarding/logo', [])
+        ->post('/onboarding/complete', [])
         ->assertRedirect('/dashboard');
 
     $user->refresh();

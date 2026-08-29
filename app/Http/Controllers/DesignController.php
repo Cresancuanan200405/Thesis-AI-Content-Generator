@@ -9,8 +9,8 @@ use App\Models\Event;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\DesignRegenerationService;
-use App\Services\NotificationService;
 use App\Services\OpenAIImageService;
+use App\Services\TaglineNormalizationService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -241,11 +241,16 @@ class DesignController extends Controller
         }
 
         $business = $user->business;
-        $includeLogo = (bool) $request->boolean('include_logo', false);
-        $aspectRatio = (string) ($request->input('aspect_ratio') ?? '1:1');
+        $includeBusinessName = $request->has('include_business_name')
+            ? filter_var($request->input('include_business_name'), FILTER_VALIDATE_BOOLEAN)
+            : true;
 
-        // Resolve logo path for brand badge (if user opted in)
-        $logoPath = ($includeLogo && $business?->logo_path) ? $business->logo_path : null;
+        $businessName = null;
+        if ($includeBusinessName) {
+            $businessName = $request->filled('business_name') ? trim((string) $request->input('business_name')) : ($business?->name ?? 'Brand');
+        }
+        $aspectRatio = (string) ($request->input('aspect_ratio') ?? '1:1');
+        $normalizedTagline = TaglineNormalizationService::normalize($request->input('tagline'));
 
         // Resolve product image URL (for reference when product chosen from catalog)
         $productImageUrl = $product?->image_path ? asset('storage/'.$product->image_path) : null;
@@ -270,24 +275,26 @@ class DesignController extends Controller
                 'brand_tone' => $brandTone,
                 'visual_theme' => $visualTheme,
 
+                'render_style' => $request->input('render_style', 'Studio Product Still'),
+                'image_model' => $request->input('image_model', 'gpt-image-2'),
+
                 // Step 3 — Canvas
-                'tagline' => $request->input('tagline'),
+                'tagline' => $normalizedTagline,
                 'tagline_mode' => $request->input('tagline_mode', 'ai'),
-                'include_logo' => $includeLogo,
                 'aspect_ratio' => $aspectRatio,
 
                 // Onboarding / Business Context
-                'business_name' => $business?->name,
+                'business_name' => $businessName,
                 'business_industry' => $business?->industry,
                 'business_description' => $business?->description,
-                'business_target_audience' => $business?->target_audience,
                 'business_usp' => $business?->unique_selling_point,
                 'business_content_style' => $business?->content_style,
                 'business_marketing_prefs' => $business?->marketing_preferences,
 
                 // Reference image (uploaded file or catalog product image)
                 'reference_image_path' => $referenceImagePath,
-                'logo_path' => $logoPath,
+                'scene_prompt' => $request->input('image_prompt') ?: $request->input('prompt') ?: $request->input('scene_prompt'),
+                'user_prompt' => $request->input('image_prompt') ?: $request->input('prompt') ?: $request->input('scene_prompt'),
             ]);
         }
 
@@ -301,7 +308,7 @@ class DesignController extends Controller
             'price' => $request->input('price'),
             'brand_tone' => $brandTone,
             'visual_theme' => $visualTheme,
-            'tagline' => $request->input('tagline'),
+            'tagline' => $normalizedTagline,
             'tagline_mode' => $request->input('tagline_mode', 'ai'),
             'reference_image_path' => $referenceImagePath,
             'generated_image_path' => $generatedImagePath,
@@ -316,7 +323,7 @@ class DesignController extends Controller
                     'product_preserved' => (bool) $referenceImagePath,
                     'quality' => $request->input('image_quality', 'medium'),
                     'render_style' => $request->input('render_style', 'Studio Product Still'),
-                    'include_logo' => $includeLogo,
+                    'business_name' => $businessName,
                     'aspect_ratio' => $aspectRatio,
                     'status' => 'completed',
                 ],
@@ -324,14 +331,6 @@ class DesignController extends Controller
             ),
             'status' => 'completed',
         ]);
-
-        NotificationService::notify(
-            $user,
-            'design_created',
-            "Design Created: {$design->product_name}",
-            "Marketing visual for \"{$design->product_name}\" was generated and saved to your designs.",
-            route('designs.show', $design)
-        );
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -379,14 +378,6 @@ class DesignController extends Controller
             'campaign_id' => $campaign->id,
         ]);
 
-        NotificationService::notify(
-            $user,
-            'campaign_updated',
-            'Design Linked to Campaign',
-            "Design \"{$design->product_name}\" was attached to campaign \"{$campaign->name}\".",
-            route('campaigns.show', $campaign)
-        );
-
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
@@ -412,16 +403,6 @@ class DesignController extends Controller
         $design->update([
             'is_favorite' => ! $design->is_favorite,
         ]);
-
-        if ($user = $request->user()) {
-            NotificationService::notify(
-                $user,
-                'design_favorited',
-                $design->is_favorite ? 'Added to Favorites' : 'Removed from Favorites',
-                "Design \"{$design->product_name}\" ".($design->is_favorite ? 'was added to your favorites.' : 'was removed from your favorites.'),
-                route('designs.show', $design)
-            );
-        }
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -508,16 +489,6 @@ class DesignController extends Controller
 
         $design->delete();
 
-        if ($user) {
-            NotificationService::notify(
-                $user,
-                'design_deleted',
-                "Design Deleted: {$productName}",
-                "Design \"{$productName}\" was deleted from your designs.",
-                route('designs.index')
-            );
-        }
-
         return redirect()->route('designs.index')->with('success', 'Design deleted successfully.');
     }
 
@@ -543,14 +514,6 @@ class DesignController extends Controller
             }
             $design->delete();
         }
-
-        NotificationService::notify(
-            $user,
-            'design_deleted',
-            "Bulk Delete: {$count} Designs",
-            "Successfully deleted {$count} design visuals from your workspace.",
-            route('designs.index')
-        );
 
         return redirect()->route('designs.index')->with('success', "{$count} designs deleted successfully.");
     }

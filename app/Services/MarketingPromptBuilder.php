@@ -48,15 +48,25 @@ class MarketingPromptBuilder
             $lines[] = '• Event/Holiday: '.$payload['event_name'];
         }
 
-        if (! empty($payload['tagline'] ?? null)) {
-            $lines[] = '• Headline/Tagline: "'.$payload['tagline'].'"';
+        $normalizedTagline = TaglineNormalizationService::normalize($payload['tagline'] ?? null);
+        if ($normalizedTagline !== null) {
+            $lines[] = '• Headline/Tagline: "'.$normalizedTagline.'"';
         }
 
         if (! empty($payload['campaign_name'] ?? null)) {
             $lines[] = '• Campaign: '.$payload['campaign_name'];
         }
 
-        $lines[] = '• Brand: '.$business->name.($business->industry ? ' ('.$business->industry.')' : '');
+        $includeBusinessName = array_key_exists('include_business_name', $payload)
+            ? (bool) $payload['include_business_name']
+            : (! array_key_exists('business_name', $payload) || ! empty($payload['business_name']));
+
+        if ($includeBusinessName) {
+            $businessName = ! empty($payload['business_name']) ? trim((string) $payload['business_name']) : $business->name;
+            if ($businessName) {
+                $lines[] = '• Business / Shop: '.$businessName.($business->industry ? ' ('.$business->industry.')' : '');
+            }
+        }
 
         if (! empty($contentStyle)) {
             $lines[] = '• Content Style Tags: '.implode(', ', $contentStyle);
@@ -66,8 +76,9 @@ class MarketingPromptBuilder
             $lines[] = '• Brand Tone: '.implode(', ', $brandTone);
         }
 
-        if (! empty($payload['notes'] ?? null)) {
-            $lines[] = '• Specific User Instructions: '.$payload['notes'];
+        $sceneInstruction = $payload['image_prompt'] ?? $payload['scene_prompt'] ?? $payload['notes'] ?? null;
+        if (! empty($sceneInstruction)) {
+            $lines[] = '• Specific User Instructions: '.$sceneInstruction;
         }
 
         return implode("\n", $lines);

@@ -179,7 +179,7 @@ export default function Welcome() {
     const [aspectRatio, setAspectRatio] = useState<'1:1' | '4:5' | '16:9'>(
         '1:1',
     );
-    const [includeLogo, setIncludeLogo] = useState(true);
+    const [businessName, setBusinessName] = useState('CoffeYessir');
     const [isGenerating, setIsGenerating] = useState(false);
     const [activeTab, setActiveTab] = useState<'preview' | 'prompt' | 'export'>(
         'preview',
@@ -301,7 +301,7 @@ export default function Welcome() {
         },
         {
             q: 'Can I use my existing product catalog and brand assets?',
-            a: 'Yes. You can upload products, prices, product descriptions, reference photos, and your business logo. The AI generator automatically factors your brand voice (friendly, luxurious, professional) and places your logo onto finished visuals.',
+            a: 'Yes. You can upload products, prices, product descriptions, reference photos, and configure your business / shop name. The AI generator automatically factors your brand identity and voice (friendly, luxurious, professional) into finished visuals.',
         },
         {
             q: 'What download formats are supported for marketing campaigns?',
@@ -785,23 +785,20 @@ export default function Welcome() {
                                                     ))}
                                                 </div>
 
-                                                <label className="flex cursor-pointer items-center gap-2 text-[11px] font-semibold text-foreground select-none">
+                                                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground">
+                                                    <span className="text-muted-foreground">Shop:</span>
                                                     <input
-                                                        type="checkbox"
-                                                        checked={includeLogo}
+                                                        type="text"
+                                                        value={businessName}
                                                         onChange={(e) =>
-                                                            setIncludeLogo(
-                                                                e.target
-                                                                    .checked,
+                                                            setBusinessName(
+                                                                e.target.value,
                                                             )
                                                         }
-                                                        className="h-3.5 w-3.5 rounded border-border text-primary focus:ring-primary"
+                                                        placeholder="Shop Name"
+                                                        className="h-6 w-28 rounded-md border border-border bg-background px-2 text-[11px] font-semibold text-foreground focus:border-primary focus:outline-hidden"
                                                     />
-                                                    <span>
-                                                        Include Brand Logo
-                                                        Overlay
-                                                    </span>
-                                                </label>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -818,7 +815,7 @@ export default function Welcome() {
                                                             className={`pointer-events-none absolute inset-0 ${selectedProduct.bgPattern}`}
                                                         />
 
-                                                        {/* Top Event & Logo Bar */}
+                                                        {/* Top Event & Brand Identity Bar */}
                                                         <div className="relative z-10 flex items-start justify-between gap-2">
                                                             <Badge className="border-white/20 bg-white/20 text-[10px] font-bold text-white shadow-xs backdrop-blur-md hover:bg-white/30">
                                                                 {
@@ -826,12 +823,11 @@ export default function Welcome() {
                                                                 }
                                                             </Badge>
 
-                                                            {includeLogo && (
+                                                            {businessName && (
                                                                 <div className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/40 px-2.5 py-1 text-[10px] font-bold text-white shadow-xs backdrop-blur-md">
-                                                                    <AppLogoIcon className="h-3.5 w-3.5 fill-white" />
-                                                                    <span>
-                                                                        YOUR
-                                                                        BRAND
+                                                                    <Sparkles className="h-3 w-3 text-primary-foreground" />
+                                                                    <span className="uppercase tracking-wider">
+                                                                        {businessName}
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -1544,7 +1540,7 @@ export default function Welcome() {
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-4 w-4 shrink-0 text-emerald-500" />
                                                 <span>
-                                                    Custom Logo & Brand Tone
+                                                    Business Identity & Brand Tone
                                                     Presets
                                                 </span>
                                             </li>
