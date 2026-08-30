@@ -1,19 +1,33 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
+    ArrowRight,
+    BarChart3,
+    Building2,
     Calendar,
     CalendarDays,
     Check,
     CheckCircle2,
     ChevronDown,
     Clock,
+    Compass,
+    Cpu,
+    Download,
+    ExternalLink,
+    Eye,
+    HeartPulse,
+    ImageIcon,
     Layers,
     Megaphone,
+    Menu,
     Moon,
     Package,
-    Sparkles,
+    ShieldCheck,
+    ShoppingBag,
+    ShoppingCart,
+    SlidersHorizontal,
     Sun,
-    Menu,
     X,
+    Zap,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
@@ -47,113 +61,106 @@ const getInitialTheme = (): Theme => {
 
 /*
 |--------------------------------------------------------------------------
-| Interactive Hero Demo Data
+| Real AI-Generated Creative Showcase Data Model
 |--------------------------------------------------------------------------
 */
 
-interface SampleProduct {
+interface HeroCreative {
     id: string;
-    name: string;
+    businessName: string;
+    industry: string;
     category: string;
+    productName: string;
     price: string;
     tagline: string;
-    tone: string;
-    gradient: string;
-    bgPattern: string;
+    event: string;
+    renderStyle: string;
+    brandTone: string;
+    visualTheme: string;
+    features: string[];
+    images: {
+        '1:1': string;
+        '4:5': string;
+        '16:9': string;
+    };
 }
 
-const sampleProducts: SampleProduct[] = [
+const heroCreatives: HeroCreative[] = [
     {
         id: 'coffee',
-        name: 'Barako Reserve Cold Brew',
-        category: 'Beverages & Cafe',
+        businessName: 'Kape Barako Heritage',
+        industry: 'Cafe & Beverages',
+        category: 'Coffee & Cold Brew',
+        productName: 'Barako Reserve Cold Brew',
         price: '₱165',
-        tagline: 'Bold heritage flavor brewed for 18 hours.',
-        tone: 'Artisanal & Energetic',
-        gradient: 'from-amber-900 via-amber-800 to-stone-900',
-        bgPattern:
-            'bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-700/30 via-transparent to-transparent',
+        tagline: '18-Hour Slow Brew',
+        event: 'Philippine Independence Day',
+        renderStyle: 'Studio Product Still',
+        brandTone: 'Artisanal & Energetic',
+        visualTheme: 'Warm Seasonal',
+        features: ['100% Batangas Liberica', 'Slow-Drip 18H', 'Signature Roast'],
+        images: {
+            '1:1': '/images/demo/barako-ad-1x1.jpg',
+            '4:5': '/images/demo/barako-ad-4x5.jpg',
+            '16:9': '/images/demo/barako-ad-16x9.jpg',
+        },
     },
     {
         id: 'bakery',
-        name: 'Ube Halaya Dream Cake',
-        category: 'Bakery & Desserts',
+        businessName: 'Pampanga Sweet Treats',
+        industry: 'Bakery & Pastries',
+        category: 'Artisanal Cakes',
+        productName: 'Ube Halaya Dream Cake',
         price: '₱480',
-        tagline: 'Authentic purple yam sponge with silky velvet cream.',
-        tone: 'Indulgent & Celebratory',
-        gradient: 'from-purple-950 via-purple-900 to-zinc-950',
-        bgPattern:
-            'bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-600/30 via-transparent to-transparent',
+        tagline: 'Silky Ube Velvet Cream',
+        event: 'Paskong Pinoy Grand Season',
+        renderStyle: 'Commercial Food Photography',
+        brandTone: 'Indulgent & Celebratory',
+        visualTheme: 'Christmas Parol Illumination',
+        features: ['Pure Ube Halaya', 'Macapuno Flakes', 'Velvet Cream'],
+        images: {
+            '1:1': '/images/demo/ube-ad-1x1.jpg',
+            '4:5': '/images/demo/ube-ad-4x5.jpg',
+            '16:9': '/images/demo/ube-ad-16x9.jpg',
+        },
     },
     {
         id: 'fashion',
-        name: 'Heritage Linen Camp Shirt',
-        category: 'Apparel & Fashion',
+        businessName: 'Laguna Weavers Co.',
+        industry: 'Retail & Apparel',
+        category: 'Handcrafted Fashion',
+        productName: 'Heritage Linen Camp Shirt',
         price: '₱1,250',
-        tagline: 'Breathable tropical weave handcrafted in Laguna.',
-        tone: 'Minimalist & Sophisticated',
-        gradient: 'from-sky-950 via-zinc-900 to-zinc-950',
-        bgPattern:
-            'bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sky-600/25 via-transparent to-transparent',
+        tagline: 'Handcrafted Tropical Weave',
+        event: 'Mid-Month 15/30 Payday Sale',
+        renderStyle: 'Minimalist Commercial Still',
+        brandTone: 'Tropical & Sophisticated',
+        visualTheme: 'Natural Stone & Palm Flora',
+        features: ['100% Organic Linen', 'Coconut Buttons', 'Laguna Handcrafted'],
+        images: {
+            '1:1': '/images/demo/linen-ad-1x1.jpg',
+            '4:5': '/images/demo/linen-ad-4x5.jpg',
+            '16:9': '/images/demo/linen-ad-16x9.jpg',
+        },
     },
     {
         id: 'beauty',
-        name: 'Kalamansi Glow Botanical Serum',
-        category: 'Beauty & Wellness',
+        businessName: 'Aura Botanicals PH',
+        industry: 'Beauty & Wellness',
+        category: 'Botanical Skincare',
+        productName: 'Kalamansi Glow Botanical Serum',
         price: '₱690',
-        tagline: 'Natural vitamin C antioxidant brightening essence.',
-        tone: 'Fresh & Clean Botanical',
-        gradient: 'from-emerald-950 via-teal-900 to-zinc-950',
-        bgPattern:
-            'bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-600/25 via-transparent to-transparent',
-    },
-];
-
-interface SampleEvent {
-    id: string;
-    name: string;
-    category: 'regular' | 'special_non_working' | 'islamic' | 'retail_sale';
-    badgeLabel: string;
-    date: string;
-    seasonHook: string;
-}
-
-const sampleEvents: SampleEvent[] = [
-    {
-        id: 'independence',
-        name: 'Philippine Independence Day',
-        category: 'regular',
-        badgeLabel: 'Regular Holiday',
-        date: 'June 12',
-        seasonHook:
-            'Celebrate Pinoy Pride with exclusive commemorative offers and festive visual accents.',
-    },
-    {
-        id: 'pasko',
-        name: 'Paskong Pinoy Grand Season',
-        category: 'special_non_working',
-        badgeLabel: 'Special Non-Working',
-        date: 'December 25',
-        seasonHook:
-            'Warm holiday lanterns, parol illumination, and heartfelt gift-giving visual aesthetics.',
-    },
-    {
-        id: 'payday',
-        name: 'Mid-Month 15/30 Payday Sale',
-        category: 'retail_sale',
-        badgeLabel: 'Commercial Sale',
-        date: '15th & 30th Monthly',
-        seasonHook:
-            'High-urgency promotional badges, bold discount emphasis, and high-conversion layout.',
-    },
-    {
-        id: 'eid',
-        name: 'Eid al-Fitr Celebration',
-        category: 'islamic',
-        badgeLabel: 'Islamic Movable Date',
-        date: 'Movable Date (National)',
-        seasonHook:
-            'Elegant crescent moon motifs, gold filigree accents, and community-centered warmth.',
+        tagline: 'Fresh Vitamin C Brightening',
+        event: 'Mid-Month 15/30 Payday Sale',
+        renderStyle: 'Luxury Cosmetic Splash',
+        brandTone: 'Fresh & Clean Botanical',
+        visualTheme: 'Crystal Water & Citrus Accents',
+        features: ['Fresh Calamansi Extract', 'Vitamin C Bioactive', 'Deep Hydration'],
+        images: {
+            '1:1': '/images/demo/calamansi-ad-1x1.jpg',
+            '4:5': '/images/demo/calamansi-ad-4x5.jpg',
+            '16:9': '/images/demo/calamansi-ad-16x9.jpg',
+        },
     },
 ];
 
@@ -168,19 +175,15 @@ export default function Welcome() {
 
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [theme, setTheme] = useState<Theme>(getInitialTheme);
+    const [isScrolled, setIsScrolled] = useState(false);
 
-    // Interactive Hero State
-    const [selectedProduct, setSelectedProduct] = useState<SampleProduct>(
-        sampleProducts[0],
-    );
-    const [selectedEvent, setSelectedEvent] = useState<SampleEvent>(
-        sampleEvents[0],
+    // Hero Real Creative Showcase State
+    const [selectedCreative, setSelectedCreative] = useState<HeroCreative>(
+        heroCreatives[0],
     );
     const [aspectRatio, setAspectRatio] = useState<'1:1' | '4:5' | '16:9'>(
         '1:1',
     );
-    const [businessName, setBusinessName] = useState('CoffeYessir');
-    const [isGenerating, setIsGenerating] = useState(false);
     const [activeTab, setActiveTab] = useState<'preview' | 'prompt' | 'export'>(
         'preview',
     );
@@ -203,21 +206,31 @@ export default function Welcome() {
         window.localStorage.setItem('theme', theme);
     }, [theme]);
 
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 20);
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
     const toggleTheme = () => {
         setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
     };
 
-    const handleSimulateGenerate = () => {
-        setIsGenerating(true);
-        setTimeout(() => {
-            setIsGenerating(false);
-        }, 600);
-    };
-
-    // Generated prompt representation
+    // System-compliant 10-priority structured prompt orchestration matching ModularPromptOrchestrator
     const generatedPrompt = useMemo(() => {
-        return `Studio commercial product photography of "${selectedProduct.name}", premium ${selectedProduct.category.toLowerCase()} presentation themed for ${selectedEvent.name}. Warm atmospheric lighting, subtle ${selectedEvent.id === 'pasko' ? 'parol lanterns and festive bokeh' : 'commercial retail styling'}, high resolution, hyper-detailed texture, sharp focus, 8k quality. Brand tone: ${selectedProduct.tone}.`;
-    }, [selectedProduct, selectedEvent]);
+        return `CREATE: A professional commercial marketing advertisement.
+• STRICT LOGO RESTRICTION: Do not generate or add any logo, emblem, cup/bean logo, or watermark.
+• PRIMARY PRODUCT IMAGE: Use catalog reference image for "${selectedCreative.productName}" (${selectedCreative.category}). Lock product geometry, packaging, and textures.
+• BUSINESS / SHOP NAME: "${selectedCreative.businessName}" (Render as clean, readable commercial typography).
+• PRICE: "${selectedCreative.price}" (Must appear visibly with currency symbol).
+• TAGLINE: "${selectedCreative.tagline}" (Must appear visibly verbatim).
+• EVENT / PHILIPPINE HOLIDAY: ${selectedCreative.event}.
+• ART DIRECTION: ${selectedCreative.category} authentic staging, ${selectedCreative.brandTone} tone, ${selectedCreative.renderStyle} render style.
+• VISUAL THEME: ${selectedCreative.visualTheme}, featuring ${selectedCreative.features.join(', ')}.
+• RESPONSIVE COMPOSITION: ${aspectRatio} format profile with 20% safe-margin typography boundary.`;
+    }, [selectedCreative, aspectRatio]);
 
     const upcomingCalendarDates = [
         {
@@ -321,7 +334,7 @@ export default function Welcome() {
         <>
             <Head title="MarketPilot — AI Marketing Automation & Creative Engine" />
 
-            <div className="relative min-h-screen overflow-x-hidden bg-background text-foreground transition-colors duration-200 selection:bg-primary/20 selection:text-primary">
+            <div className="relative min-h-screen bg-background text-foreground transition-colors duration-200 selection:bg-primary/20 selection:text-primary">
                 {/* Ambient Fixed Background Glow Orbs for Landing Page */}
                 <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
                     <div className="absolute -top-40 left-1/4 h-[550px] w-[550px] rounded-full bg-primary/12 blur-[140px] dark:bg-primary/15" />
@@ -330,10 +343,16 @@ export default function Welcome() {
                 </div>
 
                 {/* ==========================================================
-                    TOP STICKY NAVIGATION HEADER (GLASSMORPHISM)
+                    TOP FIXED NAVIGATION HEADER (GLASSMORPHISM)
                 =========================================================== */}
 
-                <header className="sticky top-0 z-50 w-full border-b border-white/20 bg-background/80 shadow-lg shadow-black/5 backdrop-blur-2xl dark:border-white/10 dark:bg-background/80">
+                <header
+                    className={`fixed top-0 inset-x-0 z-50 w-full transition-all duration-300 ${
+                        isScrolled
+                            ? 'border-b border-border/80 bg-background/90 shadow-lg shadow-black/5 backdrop-blur-2xl'
+                            : 'border-b border-border/40 bg-background/75 backdrop-blur-xl dark:border-white/10'
+                    }`}
+                >
                     <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
                         {/* Brand Logo with Glow */}
                         <Link
@@ -348,20 +367,22 @@ export default function Welcome() {
                                 <span className="text-base font-extrabold tracking-tight text-foreground">
                                     MarketPilot
                                 </span>
-                                <span className="hidden items-center gap-1 rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary shadow-2xs sm:inline-flex">
-                                    <Sparkles className="h-2.5 w-2.5" />
-                                    AI Studio
-                                </span>
+                                <Badge
+                                    variant="outline"
+                                    className="hidden items-center border-primary/25 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-bold text-primary shadow-2xs sm:inline-flex"
+                                >
+                                    Retail Automation
+                                </Badge>
                             </div>
                         </Link>
 
                         {/* Desktop Navigation Links */}
                         <nav className="hidden items-center gap-1.5 rounded-full border border-white/20 bg-card/60 p-1 text-xs font-semibold text-muted-foreground shadow-xs backdrop-blur-md md:flex dark:border-white/10 dark:bg-card/60">
                             <a
-                                href="#hero-studio"
+                                href="#hero-showcase"
                                 className="rounded-full px-3.5 py-1.5 transition-all hover:bg-muted/80 hover:text-foreground"
                             >
-                                Live Studio
+                                AI Showcase
                             </a>
                             <a
                                 href="#system-flow"
@@ -382,10 +403,10 @@ export default function Welcome() {
                                 PH Calendar
                             </a>
                             <a
-                                href="#pricing"
+                                href="#subscriptions"
                                 className="rounded-full px-3.5 py-1.5 transition-all hover:bg-muted/80 hover:text-foreground"
                             >
-                                Pricing
+                                Subscriptions
                             </a>
                             <a
                                 href="#faq"
@@ -470,11 +491,11 @@ export default function Welcome() {
                         <div className="animate-in space-y-4 border-t border-border/80 bg-card/95 px-4 py-5 backdrop-blur-2xl duration-150 slide-in-from-top-2 md:hidden">
                             <nav className="flex flex-col space-y-2 text-sm font-semibold">
                                 <a
-                                    href="#hero-studio"
+                                    href="#hero-showcase"
                                     onClick={() => setMobileMenuOpen(false)}
                                     className="rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground"
                                 >
-                                    Live Studio Demo
+                                    AI Showcase Demo
                                 </a>
                                 <a
                                     href="#system-flow"
@@ -498,11 +519,11 @@ export default function Welcome() {
                                     Philippine Calendar
                                 </a>
                                 <a
-                                    href="#pricing"
+                                    href="#subscriptions"
                                     onClick={() => setMobileMenuOpen(false)}
                                     className="rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground"
                                 >
-                                    Pricing
+                                    Subscriptions
                                 </a>
                                 <a
                                     href="#faq"
@@ -547,38 +568,34 @@ export default function Welcome() {
                     )}
                 </header>
 
+                {/* Fixed Header Height Spacer */}
+                <div className="h-16 w-full shrink-0" aria-hidden="true" />
+
                 <main>
                     {/* ==========================================================
                         REDESIGNED HERO SECTION WITH SYSTEM-CONNECTED WORKFLOW
                     =========================================================== */}
 
                     <section
-                        id="hero-studio"
+                        id="hero-showcase"
                         className="relative overflow-hidden pt-8 pb-16 md:pt-14 md:pb-24 lg:pt-16 lg:pb-28"
                     >
                         <div className="mx-auto max-w-7xl space-y-12 px-4 sm:px-6 lg:px-8">
-                            {/* Top Hero Grid (Left Value Prop + Right Interactive AI Sandbox) */}
+                            {/* Top Hero Grid (Left Value Prop + Right Interactive Studio Sandbox) */}
                             <div className="grid gap-8 lg:grid-cols-12 lg:items-center">
                                 {/* Left Column: Clear Value Proposition, System Overview & CTAs */}
                                 <div className="space-y-6 lg:col-span-6 xl:col-span-5">
-                                    <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1 text-xs font-bold text-primary shadow-xs backdrop-blur-md">
-                                        <Sparkles className="h-3.5 w-3.5" />
-                                        Retail Marketing Engine & Philippine
-                                        Holiday Intelligence
+                                    <div className="inline-flex items-center gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3.5 py-1.5 text-xs font-bold text-primary shadow-xs backdrop-blur-md transition-all hover:bg-primary/10">
+                                        <Layers className="h-4 w-4 text-primary" />
+                                        <span>Retail Marketing & Holiday Automation Engine</span>
                                     </div>
 
                                     <h1 className="text-3xl leading-[1.12] font-extrabold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-                                        Automate seasonal retail visuals and
-                                        marketing campaigns in seconds.
+                                        Automate seasonal retail visuals and marketing campaigns.
                                     </h1>
 
                                     <p className="text-sm leading-relaxed text-muted-foreground md:text-base">
-                                        Connect your product catalog directly
-                                        with official Philippine national
-                                        holidays, retail payday cycles, and
-                                        custom brand guidelines to generate
-                                        high-converting promotional graphics
-                                        with one click.
+                                        Connect your product catalog directly with official Philippine national holidays, commercial payday cycles, and custom brand guidelines to generate high-converting promotional graphics with one click.
                                     </p>
 
                                     {/* Action Buttons */}
@@ -586,11 +603,11 @@ export default function Welcome() {
                                         <Button
                                             asChild
                                             size="lg"
-                                            className="h-11 gap-2 rounded-xl px-6 text-xs font-bold shadow-lg shadow-primary/25 transition-all hover:scale-105 active:scale-95"
+                                            className="h-11 gap-2 rounded-xl px-6 text-xs font-bold shadow-lg shadow-primary/25 transition-all duration-200 hover:scale-105 hover:shadow-xl hover:shadow-primary/30 active:scale-95"
                                         >
                                             <Link href={register()}>
-                                                <Sparkles className="h-4 w-4" />
-                                                Start Creating Free
+                                                <span>Get Started Free</span>
+                                                <ArrowRight className="h-4 w-4" />
                                             </Link>
                                         </Button>
 
@@ -598,51 +615,50 @@ export default function Welcome() {
                                             asChild
                                             variant="outline"
                                             size="lg"
-                                            className="h-11 gap-2 rounded-xl px-5 text-xs font-semibold shadow-xs transition-all hover:scale-105 hover:border-primary/40 active:scale-95"
+                                            className="h-11 gap-2 rounded-xl px-5 text-xs font-semibold shadow-2xs transition-all duration-200 hover:scale-105 hover:border-primary/40 hover:bg-muted/50 active:scale-95"
                                         >
-                                            <a href="#system-flow">
+                                            <a href="#subscriptions">
                                                 <Layers className="h-4 w-4 text-primary" />
-                                                How the System Works
+                                                <span>Subscription Plans</span>
                                             </a>
                                         </Button>
                                     </div>
 
                                     {/* System Pillars Badges */}
-                                    <div className="grid grid-cols-1 gap-3 border-t border-border/60 pt-4 text-xs font-medium text-muted-foreground sm:grid-cols-3">
-                                        <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card/60 p-2">
-                                            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                                    <div className="grid grid-cols-1 gap-3 border-t border-border/60 pt-5 text-xs font-medium text-muted-foreground sm:grid-cols-3">
+                                        <div className="group flex items-center gap-2.5 rounded-xl border border-border/60 bg-card/60 p-2.5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
+                                            <CalendarDays className="h-4 w-4 shrink-0 text-amber-500" />
                                             <span className="text-[11px] font-semibold text-foreground">
                                                 Official PH Holidays
                                             </span>
                                         </div>
-                                        <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card/60 p-2">
-                                            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                                        <div className="group flex items-center gap-2.5 rounded-xl border border-border/60 bg-card/60 p-2.5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
+                                            <ImageIcon className="h-4 w-4 shrink-0 text-primary" />
                                             <span className="text-[11px] font-semibold text-foreground">
                                                 PNG, JPEG & SVG
                                             </span>
                                         </div>
-                                        <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card/60 p-2">
-                                            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                                        <div className="group flex items-center gap-2.5 rounded-xl border border-border/60 bg-card/60 p-2.5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
+                                            <Megaphone className="h-4 w-4 shrink-0 text-emerald-500" />
                                             <span className="text-[11px] font-semibold text-foreground">
-                                                Instant Campaign Link
+                                                Instant Campaign Sync
                                             </span>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Right Column: Interactive Live AI Studio Sandbox (Glassmorphic) */}
+                                {/* Right Column: Interactive Live Creative Studio Sandbox (Glassmorphic) */}
                                 <div className="lg:col-span-6 xl:col-span-7">
-                                    <div className="overflow-hidden rounded-3xl border border-white/25 bg-card/85 shadow-2xl backdrop-blur-2xl transition-all duration-300 dark:border-white/10 dark:bg-card/85">
+                                    <div className="overflow-hidden rounded-3xl border border-white/25 bg-card/85 shadow-2xl backdrop-blur-2xl transition-all duration-300 hover:shadow-primary/5 dark:border-white/10 dark:bg-card/85">
                                         {/* Sandbox Top Window Bar */}
                                         <div className="flex items-center justify-between border-b border-border/80 bg-muted/40 px-5 py-3.5">
                                             <div className="flex items-center gap-2.5">
-                                                <span className="h-3 w-3 rounded-full bg-rose-500/80" />
-                                                <span className="h-3 w-3 rounded-full bg-amber-500/80" />
-                                                <span className="h-3 w-3 rounded-full bg-emerald-500/80" />
+                                                <span className="h-3 w-3 rounded-full bg-rose-500/80 shadow-xs" />
+                                                <span className="h-3 w-3 rounded-full bg-amber-500/80 shadow-xs" />
+                                                <span className="h-3 w-3 rounded-full bg-emerald-500/80 shadow-xs" />
                                                 <span className="ml-2 flex items-center gap-1.5 text-xs font-bold text-foreground">
-                                                    <Sparkles className="h-3.5 w-3.5 text-primary" />
-                                                    Interactive AI Studio
-                                                    Sandbox
+                                                    <Layers className="h-3.5 w-3.5 text-primary" />
+                                                    AI-Generated Creative Showcase
                                                 </span>
                                             </div>
 
@@ -655,7 +671,7 @@ export default function Welcome() {
                                                     }
                                                     className={`cursor-pointer rounded-lg px-3 py-1 transition-all ${activeTab === 'preview' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
                                                 >
-                                                    Visual
+                                                    Visual Canvas
                                                 </button>
                                                 <button
                                                     type="button"
@@ -664,7 +680,7 @@ export default function Welcome() {
                                                     }
                                                     className={`cursor-pointer rounded-lg px-3 py-1 transition-all ${activeTab === 'prompt' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
                                                 >
-                                                    Prompt Logic
+                                                    System Blueprint
                                                 </button>
                                                 <button
                                                     type="button"
@@ -673,95 +689,61 @@ export default function Welcome() {
                                                     }
                                                     className={`cursor-pointer rounded-lg px-3 py-1 transition-all ${activeTab === 'export' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
                                                 >
-                                                    Export
+                                                    Delivery Specs
                                                 </button>
                                             </div>
                                         </div>
 
                                         {/* Sandbox Controls Toolbar */}
                                         <div className="space-y-3.5 border-b border-border/80 bg-card/60 p-4 sm:p-5">
-                                            {/* 1. Pick Product */}
+                                            {/* 1. Pick Predefined Scenario */}
                                             <div>
-                                                <label className="mb-1.5 block text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
-                                                    1. Select Catalog Offering
-                                                </label>
+                                                <div className="mb-1.5 flex items-center justify-between">
+                                                    <label className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
+                                                        1. Select Curated Demonstration Scenario
+                                                    </label>
+                                                    <span className="text-[10px] font-semibold text-primary">
+                                                        Real Production Creatives
+                                                    </span>
+                                                </div>
                                                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                                                    {sampleProducts.map(
-                                                        (prod) => (
+                                                    {heroCreatives.map(
+                                                        (creative) => (
                                                             <button
-                                                                key={prod.id}
+                                                                key={creative.id}
                                                                 type="button"
-                                                                onClick={() => {
-                                                                    setSelectedProduct(
-                                                                        prod,
-                                                                    );
-                                                                    handleSimulateGenerate();
-                                                                }}
-                                                                className={`cursor-pointer rounded-xl border p-2.5 text-left text-xs transition-all ${selectedProduct.id === prod.id ? 'scale-[1.02] border-primary bg-primary/10 font-bold text-primary shadow-xs' : 'border-border/80 bg-muted/20 text-muted-foreground hover:border-primary/40'}`}
+                                                                onClick={() =>
+                                                                    setSelectedCreative(
+                                                                        creative,
+                                                                    )
+                                                                }
+                                                                className={`cursor-pointer rounded-xl border p-2.5 text-left text-xs transition-all duration-150 ${selectedCreative.id === creative.id ? 'scale-[1.02] border-primary bg-primary/10 font-bold text-primary shadow-xs ring-1 ring-primary/20' : 'border-border/80 bg-muted/20 text-muted-foreground hover:-translate-y-0.5 hover:border-primary/40 hover:bg-muted/40 hover:shadow-xs'}`}
                                                             >
                                                                 <p className="truncate font-bold text-foreground">
-                                                                    {
-                                                                        prod.name.split(
-                                                                            ' ',
-                                                                        )[0]
-                                                                    }
+                                                                    {creative.productName}
                                                                 </p>
-                                                                <p className="mt-0.5 text-[10px] text-muted-foreground">
-                                                                    {prod.price}
+                                                                <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                                                                    {creative.businessName}
                                                                 </p>
+                                                                <div className="mt-1 flex items-center justify-between text-[10px]">
+                                                                    <span className="font-semibold text-primary">
+                                                                        {creative.price}
+                                                                    </span>
+                                                                    <span className="text-[9px] text-muted-foreground">
+                                                                        {creative.industry.split(' ')[0]}
+                                                                    </span>
+                                                                </div>
                                                             </button>
                                                         ),
                                                     )}
                                                 </div>
                                             </div>
 
-                                            {/* 2. Pick Holiday / Event Context */}
-                                            <div>
-                                                <label className="mb-1.5 block text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
-                                                    2. Philippine Event /
-                                                    Campaign Target
-                                                </label>
-                                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                                                    {sampleEvents.map((evt) => (
-                                                        <button
-                                                            key={evt.id}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setSelectedEvent(
-                                                                    evt,
-                                                                );
-                                                                handleSimulateGenerate();
-                                                            }}
-                                                            className={`flex cursor-pointer items-center justify-between rounded-xl border p-2.5 text-left text-xs transition-all ${selectedEvent.id === evt.id ? 'scale-[1.02] border-primary bg-primary/10 font-bold text-foreground shadow-xs' : 'border-border/80 bg-muted/20 text-muted-foreground hover:border-primary/40'}`}
-                                                        >
-                                                            <div className="min-w-0 pr-1">
-                                                                <p className="truncate font-bold">
-                                                                    {evt.name}
-                                                                </p>
-                                                                <p className="text-[10px] text-muted-foreground">
-                                                                    {evt.date}
-                                                                </p>
-                                                            </div>
-                                                            <Badge
-                                                                variant="outline"
-                                                                className="shrink-0 text-[9px] font-bold"
-                                                            >
-                                                                {
-                                                                    evt.badgeLabel.split(
-                                                                        ' ',
-                                                                    )[0]
-                                                                }
-                                                            </Badge>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            {/* 3. Settings: Aspect Ratio & Shop Name */}
+                                            {/* 2. Aspect Ratio & Verified Merchant Info */}
                                             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/50 pt-2 text-xs">
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-[11px] font-semibold text-muted-foreground">
-                                                        Ratio:
+                                                        Aspect Ratio:
                                                     </span>
                                                     {(
                                                         [
@@ -785,19 +767,18 @@ export default function Welcome() {
                                                     ))}
                                                 </div>
 
-                                                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground">
-                                                    <span className="text-muted-foreground">Shop:</span>
-                                                    <input
-                                                        type="text"
-                                                        value={businessName}
-                                                        onChange={(e) =>
-                                                            setBusinessName(
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        placeholder="Shop Name"
-                                                        className="h-6 w-28 rounded-md border border-border bg-background px-2 text-[11px] font-semibold text-foreground focus:border-primary focus:outline-hidden"
-                                                    />
+                                                <div className="flex items-center gap-2 rounded-xl border border-border/80 bg-muted/30 px-3 py-1 text-[11px] shadow-2xs">
+                                                    <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                    <span className="text-muted-foreground">Merchant:</span>
+                                                    <span className="font-bold text-foreground">
+                                                        {selectedCreative.businessName}
+                                                    </span>
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="border-emerald-500/30 bg-emerald-500/10 text-[9px] font-bold text-emerald-600 dark:text-emerald-400"
+                                                    >
+                                                        Verified
+                                                    </Badge>
                                                 </div>
                                             </div>
                                         </div>
@@ -805,112 +786,116 @@ export default function Welcome() {
                                         {/* Sandbox Interactive Display Body */}
                                         <div className="bg-muted/10 p-4 sm:p-5">
                                             {activeTab === 'preview' && (
-                                                <div className="relative overflow-hidden rounded-2xl border border-white/20 bg-card/80 p-5 shadow-lg transition-all dark:border-white/10">
-                                                    {/* Simulated AI Render Canvas */}
-                                                    <div
-                                                        className={`relative w-full rounded-2xl bg-gradient-to-br ${selectedProduct.gradient} flex min-h-[240px] flex-col justify-between overflow-hidden p-6 text-white shadow-xl transition-all duration-300 ${isGenerating ? 'scale-[0.99] opacity-50' : 'scale-100 opacity-100'}`}
-                                                    >
-                                                        {/* Atmospheric Pattern */}
+                                                <div className="relative overflow-hidden rounded-2xl border border-white/20 bg-card/80 p-4 sm:p-5 shadow-lg transition-all dark:border-white/10">
+                                                    {/* Dynamic Interactive Ratio Canvas Wrapper */}
+                                                    <div className="mx-auto flex w-full items-center justify-center py-1">
                                                         <div
-                                                            className={`pointer-events-none absolute inset-0 ${selectedProduct.bgPattern}`}
-                                                        />
+                                                            className={`group relative w-full overflow-hidden rounded-2xl border border-white/25 bg-black/90 shadow-2xl transition-all duration-300 ease-in-out dark:border-white/15 ${
+                                                                aspectRatio === '1:1'
+                                                                    ? 'aspect-square max-w-[390px]'
+                                                                    : aspectRatio === '4:5'
+                                                                      ? 'aspect-[4/5] max-w-[330px]'
+                                                                      : 'aspect-[16/9] w-full max-w-[550px]'
+                                                            }`}
+                                                        >
+                                                            {/* Actual Complete AI-Generated Commercial Advertisement Output */}
+                                                            <img
+                                                                src={selectedCreative.images[aspectRatio]}
+                                                                alt={`${selectedCreative.productName} - ${selectedCreative.businessName}`}
+                                                                className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+                                                            />
 
-                                                        {/* Top Event & Brand Identity Bar */}
-                                                        <div className="relative z-10 flex items-start justify-between gap-2">
-                                                            <Badge className="border-white/20 bg-white/20 text-[10px] font-bold text-white shadow-xs backdrop-blur-md hover:bg-white/30">
-                                                                {
-                                                                    selectedEvent.name
-                                                                }
-                                                            </Badge>
-
-                                                            {businessName && (
-                                                                <div className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/40 px-2.5 py-1 text-[10px] font-bold text-white shadow-xs backdrop-blur-md">
-                                                                    <Sparkles className="h-3 w-3 text-primary-foreground" />
-                                                                    <span className="uppercase tracking-wider">
-                                                                        {businessName}
-                                                                    </span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Center Product & Offer Highlight */}
-                                                        <div className="relative z-10 my-4 space-y-1.5">
-                                                            <span className="text-[10px] font-extrabold tracking-widest text-amber-300 uppercase">
-                                                                Special Holiday
-                                                                Release
-                                                            </span>
-                                                            <h3 className="text-xl font-black tracking-tight text-white drop-shadow-sm sm:text-2xl">
-                                                                {
-                                                                    selectedProduct.name
-                                                                }
-                                                            </h3>
-                                                            <p className="max-w-sm text-xs text-white/80 italic drop-shadow-xs">
-                                                                "
-                                                                {
-                                                                    selectedProduct.tagline
-                                                                }
-                                                                "
-                                                            </p>
-                                                        </div>
-
-                                                        {/* Bottom Price & Call To Action */}
-                                                        <div className="relative z-10 flex items-center justify-between border-t border-white/20 pt-3">
-                                                            <div className="flex items-baseline gap-1.5">
-                                                                <span className="text-lg font-black text-white">
-                                                                    {
-                                                                        selectedProduct.price
-                                                                    }
-                                                                </span>
-                                                                <span className="text-[10px] text-white/60 line-through">
-                                                                    ₱
-                                                                    {(
-                                                                        parseInt(
-                                                                            selectedProduct.price.replace(
-                                                                                /\D/g,
-                                                                                '',
-                                                                            ),
-                                                                        ) * 1.3
-                                                                    ).toFixed(
-                                                                        0,
-                                                                    )}
-                                                                </span>
+                                                            {/* Live Generation Pipeline Badges */}
+                                                            <div className="pointer-events-none absolute top-3 left-3 z-10 flex items-center gap-1.5 rounded-lg border border-black/40 bg-black/70 px-2.5 py-1 text-[10px] font-bold text-white shadow-md backdrop-blur-md">
+                                                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                                                <span>AI-Generated Creative ({aspectRatio})</span>
                                                             </div>
 
-                                                            <span className="rounded-xl bg-primary px-3.5 py-1 text-[11px] font-extrabold text-primary-foreground shadow-md shadow-primary/30">
-                                                                Order Now
-                                                            </span>
+                                                            <div className="pointer-events-none absolute top-3 right-3 z-10 flex items-center gap-1.5 rounded-lg border border-black/40 bg-black/70 px-2.5 py-1 text-[10px] font-bold text-white shadow-md backdrop-blur-md">
+                                                                <Building2 className="h-3 w-3 text-primary-foreground" />
+                                                                <span className="uppercase tracking-wider font-semibold">
+                                                                    {selectedCreative.businessName}
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                     </div>
 
-                                                    {/* Quick Actions Under Canvas */}
-                                                    <div className="mt-3.5 flex items-center justify-between text-xs text-muted-foreground">
-                                                        <span className="text-[11px] font-semibold text-foreground">
-                                                            Tone:{' '}
-                                                            <span className="font-bold text-primary">
-                                                                {
-                                                                    selectedProduct.tone
-                                                                }
-                                                            </span>
-                                                        </span>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <Badge
-                                                                variant="outline"
-                                                                className="font-mono text-[10px]"
-                                                            >
-                                                                PNG
-                                                            </Badge>
-                                                            <Badge
-                                                                variant="outline"
-                                                                className="font-mono text-[10px]"
-                                                            >
-                                                                JPEG
-                                                            </Badge>
-                                                            <Badge
-                                                                variant="outline"
-                                                                className="font-mono text-[10px]"
-                                                            >
-                                                                SVG
-                                                            </Badge>
+                                                    {/* Explanatory Metadata Shelf (Describing the Generated Copy in the Image) */}
+                                                    <div className="mt-3.5 space-y-2 border-t border-border/60 pt-3 text-xs">
+                                                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                                            <div className="rounded-xl border border-border/60 bg-muted/20 p-2 text-left">
+                                                                <span className="text-[9px] font-bold tracking-wider text-muted-foreground uppercase">
+                                                                    Product
+                                                                </span>
+                                                                <p className="truncate font-bold text-foreground">
+                                                                    {selectedCreative.productName}
+                                                                </p>
+                                                            </div>
+                                                            <div className="rounded-xl border border-border/60 bg-muted/20 p-2 text-left">
+                                                                <span className="text-[9px] font-bold tracking-wider text-muted-foreground uppercase">
+                                                                    Exact Price
+                                                                </span>
+                                                                <p className="font-bold text-primary">
+                                                                    {selectedCreative.price}
+                                                                </p>
+                                                            </div>
+                                                            <div className="rounded-xl border border-border/60 bg-muted/20 p-2 text-left">
+                                                                <span className="text-[9px] font-bold tracking-wider text-muted-foreground uppercase">
+                                                                    Tagline
+                                                                </span>
+                                                                <p className="truncate font-medium text-foreground italic">
+                                                                    "{selectedCreative.tagline}"
+                                                                </p>
+                                                            </div>
+                                                            <div className="rounded-xl border border-border/60 bg-muted/20 p-2 text-left">
+                                                                <span className="text-[9px] font-bold tracking-wider text-muted-foreground uppercase">
+                                                                    Campaign Event
+                                                                </span>
+                                                                <p className="truncate font-bold text-foreground">
+                                                                    {selectedCreative.event}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Quick Specs Under Canvas */}
+                                                        <div className="flex items-center justify-between pt-1 text-muted-foreground">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[11px] font-semibold text-foreground">
+                                                                    Tone & Style:{' '}
+                                                                    <span className="font-bold text-primary">
+                                                                        {selectedCreative.brandTone}
+                                                                    </span>{' '}
+                                                                    • {selectedCreative.renderStyle}
+                                                                </span>
+                                                                <span className="text-muted-foreground/40">•</span>
+                                                                <span className="text-[11px] font-mono text-muted-foreground">
+                                                                    {aspectRatio === '1:1'
+                                                                        ? '1080×1080 (Square Feed)'
+                                                                        : aspectRatio === '4:5'
+                                                                          ? '1080×1350 (Social Portrait)'
+                                                                          : '1920×1080 (Landscape Banner)'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="font-mono text-[10px]"
+                                                                >
+                                                                    PNG
+                                                                </Badge>
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="font-mono text-[10px]"
+                                                                >
+                                                                    JPEG
+                                                                </Badge>
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="font-mono text-[10px]"
+                                                                >
+                                                                    SVG
+                                                                </Badge>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -919,36 +904,56 @@ export default function Welcome() {
                                             {activeTab === 'prompt' && (
                                                 <div className="space-y-3.5 rounded-2xl border border-white/20 bg-card/80 p-5 shadow-lg dark:border-white/10">
                                                     <div>
-                                                        <p className="text-xs font-bold text-foreground">
-                                                            Generated AI
-                                                            Prompt Directive:
-                                                        </p>
+                                                        <div className="flex items-center justify-between">
+                                                            <p className="text-xs font-bold text-foreground">
+                                                                Synthesized Directive Blueprint:
+                                                            </p>
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="font-mono text-[10px] font-bold text-primary"
+                                                            >
+                                                                {aspectRatio} Ratio
+                                                            </Badge>
+                                                        </div>
                                                         <p className="mt-1.5 rounded-xl border border-border/80 bg-muted/50 p-3.5 font-mono text-xs leading-relaxed text-muted-foreground">
                                                             {generatedPrompt}
                                                         </p>
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-3 text-xs">
+
+                                                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 text-xs">
                                                         <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
-                                                            <span className="font-bold text-foreground">
-                                                                Holiday Season
-                                                                Hook:
+                                                            <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                                                                Step 1 • Product Anchor
                                                             </span>
-                                                            <p className="mt-1 text-[11px] text-muted-foreground">
-                                                                {
-                                                                    selectedEvent.seasonHook
-                                                                }
+                                                            <p className="mt-1 font-bold text-foreground">
+                                                                {selectedCreative.productName}
+                                                            </p>
+                                                            <p className="text-[10px] text-muted-foreground">
+                                                                {selectedCreative.features.join(' • ')}
                                                             </p>
                                                         </div>
+
                                                         <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
-                                                            <span className="font-bold text-foreground">
-                                                                Output Format
-                                                                Constraint:
+                                                            <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                                                                Step 2 • Holiday / Event Vector
                                                             </span>
-                                                            <p className="mt-1 text-[11px] text-muted-foreground">
-                                                                {aspectRatio}{' '}
-                                                                High-Resolution
-                                                                Export with
-                                                                Auto-Contrast
+                                                            <p className="mt-1 font-bold text-foreground">
+                                                                {selectedCreative.event}
+                                                            </p>
+                                                            <p className="text-[10px] text-muted-foreground">
+                                                                {selectedCreative.visualTheme}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+                                                            <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                                                                Step 3 • Format Specs
+                                                            </span>
+                                                            <p className="mt-1 font-bold text-primary">
+                                                                {aspectRatio} Social Output
+                                                            </p>
+                                                            <p className="text-[10px] text-muted-foreground">
+                                                                20% Safe-Zone Margin Calibrated
                                                             </p>
                                                         </div>
                                                     </div>
@@ -958,43 +963,34 @@ export default function Welcome() {
                                             {activeTab === 'export' && (
                                                 <div className="space-y-4 rounded-2xl border border-white/20 bg-card/80 p-6 text-center shadow-lg dark:border-white/10">
                                                     <h4 className="text-sm font-bold text-foreground">
-                                                        Multi-Format Commercial
-                                                        Export
+                                                        Multi-Format Commercial Export
                                                     </h4>
                                                     <p className="mx-auto max-w-sm text-xs text-muted-foreground">
-                                                        Export ready-to-publish
-                                                        assets optimized for
-                                                        Facebook, Instagram,
-                                                        TikTok, Shopee, Lazada,
-                                                        and physical POS
-                                                        collateral.
+                                                        Export ready-to-publish assets optimized for Facebook, Instagram, TikTok, Shopee, Lazada, and physical POS collateral.
                                                     </p>
                                                     <div className="grid grid-cols-3 gap-3">
-                                                        <div className="rounded-2xl border border-border/60 bg-muted/30 p-3.5 text-center">
+                                                        <div className="rounded-2xl border border-border/60 bg-muted/30 p-3.5 text-center transition-all hover:border-primary/40 hover:shadow-xs">
                                                             <p className="text-xs font-bold text-primary">
                                                                 PNG Format
                                                             </p>
                                                             <p className="mt-0.5 text-[10px] text-muted-foreground">
-                                                                Lossless
-                                                                Transparent
+                                                                Lossless Transparent
                                                             </p>
                                                         </div>
-                                                        <div className="rounded-xl border border-border/60 bg-muted/30 p-3.5 text-center">
+                                                        <div className="rounded-xl border border-border/60 bg-muted/30 p-3.5 text-center transition-all hover:border-primary/40 hover:shadow-xs">
                                                             <p className="text-xs font-bold text-blue-500">
                                                                 JPEG Format
                                                             </p>
                                                             <p className="mt-0.5 text-[10px] text-muted-foreground">
-                                                                Fast Social
-                                                                Media Web
+                                                                Fast Social Media Web
                                                             </p>
                                                         </div>
-                                                        <div className="rounded-xl border border-border/60 bg-muted/30 p-3.5 text-center">
+                                                        <div className="rounded-xl border border-border/60 bg-muted/30 p-3.5 text-center transition-all hover:border-primary/40 hover:shadow-xs">
                                                             <p className="text-xs font-bold text-emerald-500">
                                                                 SVG Format
                                                             </p>
                                                             <p className="mt-0.5 text-[10px] text-muted-foreground">
-                                                                Vector Scale
-                                                                Clean
+                                                                Vector Scale Clean
                                                             </p>
                                                         </div>
                                                     </div>
@@ -1021,8 +1017,7 @@ export default function Welcome() {
                                         How All System Capabilities Connect
                                     </h2>
                                     <p className="text-xs text-muted-foreground sm:text-sm">
-                                        From raw catalog inventory to
-                                        calendar-synchronized campaign launches.
+                                        From raw catalog inventory to calendar-synchronized campaign launches.
                                     </p>
                                 </div>
 
@@ -1048,9 +1043,9 @@ export default function Welcome() {
                                         },
                                         {
                                             step: '03',
-                                            title: 'OpenAI Studio',
+                                            title: 'Creative Studio',
                                             desc: 'Synthesize tailored promotional creatives with customizable vibes, styles, and dimensions.',
-                                            icon: Sparkles,
+                                            icon: ImageIcon,
                                             color: 'text-primary',
                                             bg: 'bg-primary/10',
                                             route: '/generator',
@@ -1139,16 +1134,13 @@ export default function Welcome() {
                                 {/* Pillar 1 */}
                                 <div className="space-y-3 rounded-2xl border border-border bg-card p-6 shadow-xs">
                                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500">
-                                        <Sparkles className="h-5 w-5" />
+                                        <ImageIcon className="h-5 w-5" />
                                     </div>
                                     <h3 className="text-base font-bold text-foreground">
-                                        AI Creative Visual Studio
+                                        Commercial Visual Studio
                                     </h3>
                                     <p className="text-xs leading-relaxed text-muted-foreground">
-                                        Generate commercial-grade product
-                                        photography, seasonal promotional
-                                        banners, and ad mockups tailored to your
-                                        exact brand tone.
+                                        Generate commercial-grade product photography, seasonal promotional banners, and ad mockups tailored to your exact brand tone.
                                     </p>
                                 </div>
 
@@ -1161,10 +1153,7 @@ export default function Welcome() {
                                         Philippine Holiday Engine
                                     </h3>
                                     <p className="text-xs leading-relaxed text-muted-foreground">
-                                        Track official regular holidays, special
-                                        non-working days, Islamic movable dates,
-                                        and long-weekend opportunities with
-                                        automatic 60-day forecasts.
+                                        Track official regular holidays, special non-working days, Islamic movable dates, and long-weekend opportunities with automatic 60-day forecasts.
                                     </p>
                                 </div>
 
@@ -1177,10 +1166,7 @@ export default function Welcome() {
                                         Product Catalog Sync
                                     </h3>
                                     <p className="text-xs leading-relaxed text-muted-foreground">
-                                        Organize offerings with pricing,
-                                        category tags, and reference photos.
-                                        Select any item to instantly populate
-                                        campaign creatives.
+                                        Organize offerings with pricing, category tags, and reference photos. Select any item to instantly populate campaign creatives.
                                     </p>
                                 </div>
 
@@ -1193,10 +1179,7 @@ export default function Welcome() {
                                         Multi-Channel Campaigns
                                     </h3>
                                     <p className="text-xs leading-relaxed text-muted-foreground">
-                                        Group visual assets into scheduled
-                                        campaigns, track active marketing
-                                        pipelines, and export in PNG, JPEG, or
-                                        SVG format anytime.
+                                        Group visual assets into scheduled campaigns, track active marketing pipelines, and export in PNG, JPEG, or SVG format anytime.
                                     </p>
                                 </div>
                             </div>
@@ -1225,131 +1208,110 @@ export default function Welcome() {
                                         Never miss a holiday revenue window.
                                     </h2>
                                     <p className="text-sm leading-relaxed text-muted-foreground">
-                                        Filipino consumers shop actively around
-                                        long weekends, national holidays, and
-                                        payday intervals. MarketPilot gives you
-                                        a proactive 60-day visual launch radar.
+                                        Filipino consumers shop actively around long weekends, national holidays, and payday intervals. MarketPilot gives you a proactive 60-day visual launch radar.
                                     </p>
 
                                     <div className="space-y-2 pt-2">
                                         <div className="flex items-center gap-2.5 text-xs font-semibold text-foreground">
                                             <span className="h-2 w-2 rounded-full bg-blue-500" />
                                             <span>
-                                                Regular National Holidays (Full
-                                                Proclamation Sync)
+                                                Regular National Holidays (Full Proclamation Sync)
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2.5 text-xs font-semibold text-foreground">
                                             <span className="h-2 w-2 rounded-full bg-amber-500" />
                                             <span>
-                                                Special Non-Working Days &
-                                                Shifted Dates
+                                                Special Non-Working Days & Shifted Dates
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2.5 text-xs font-semibold text-foreground">
                                             <span className="h-2 w-2 rounded-full bg-emerald-500" />
                                             <span>
-                                                Islamic Movable Holidays (Eid
-                                                al-Fitr, Eid al-Adha)
+                                                Islamic Movable Holidays & National Proclamations
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2.5 text-xs font-semibold text-foreground">
+                                            <span className="h-2 w-2 rounded-full bg-purple-500" />
+                                            <span>
+                                                Mid-Month & End-Month Payday Sale Cycles
                                             </span>
                                         </div>
                                     </div>
 
-                                    <div className="pt-3">
+                                    <div className="pt-2">
                                         <Button
                                             asChild
                                             size="sm"
-                                            className="h-10 gap-2 rounded-xl px-4 text-xs font-semibold shadow-xs"
+                                            className="h-10 rounded-xl px-4 text-xs font-bold shadow-md shadow-primary/20"
                                         >
                                             <Link href={register()}>
-                                                <Calendar className="h-4 w-4" />
-                                                Connect Marketing Calendar
+                                                Sync Your Store Calendar &rarr;
                                             </Link>
                                         </Button>
                                     </div>
                                 </div>
 
-                                {/* Right Side: Interactive Holiday Calendar Widget */}
+                                {/* Right Side: Interactive Calendar Showcase */}
                                 <div className="lg:col-span-7">
-                                    <div className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-md sm:p-6">
-                                        <div className="flex flex-col justify-between gap-3 border-b border-border/80 pb-4 sm:flex-row sm:items-center">
-                                            <div>
-                                                <h3 className="flex items-center gap-2 text-sm font-bold text-foreground">
-                                                    <Clock className="h-4 w-4 text-primary" />
-                                                    Philippine Key Retail Dates
-                                                    (2026/2027)
+                                    <div className="overflow-hidden rounded-3xl border border-white/25 bg-card/85 p-6 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-card/85">
+                                        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-4">
+                                            <div className="flex items-center gap-2">
+                                                <Calendar className="h-5 w-5 text-amber-500" />
+                                                <h3 className="text-sm font-bold text-foreground">
+                                                    Philippine National Holiday Forecast
                                                 </h3>
-                                                <p className="mt-0.5 text-xs text-muted-foreground">
-                                                    Synced with official
-                                                    proclamations & long weekend
-                                                    metadata
-                                                </p>
                                             </div>
 
-                                            {/* Category Filter Chips */}
-                                            <div className="flex items-center gap-1">
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        setCalendarCategory(
-                                                            'all',
-                                                        )
-                                                    }
-                                                    className={`rounded-lg border px-2 py-1 text-[11px] font-semibold transition-all ${calendarCategory === 'all' ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-muted/30 text-muted-foreground'}`}
-                                                >
-                                                    All Dates
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        setCalendarCategory(
-                                                            'regular',
-                                                        )
-                                                    }
-                                                    className={`rounded-lg border px-2 py-1 text-[11px] font-semibold transition-all ${calendarCategory === 'regular' ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-muted/30 text-muted-foreground'}`}
-                                                >
-                                                    Regular
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        setCalendarCategory(
-                                                            'special_non_working',
-                                                        )
-                                                    }
-                                                    className={`rounded-lg border px-2 py-1 text-[11px] font-semibold transition-all ${calendarCategory === 'special_non_working' ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-muted/30 text-muted-foreground'}`}
-                                                >
-                                                    Special
-                                                </button>
+                                            {/* Filter Tabs */}
+                                            <div className="flex items-center gap-1 text-[11px] font-semibold">
+                                                {(
+                                                    [
+                                                        'all',
+                                                        'regular',
+                                                        'special_non_working',
+                                                    ] as const
+                                                ).map((cat) => (
+                                                    <button
+                                                        key={cat}
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setCalendarCategory(
+                                                                cat,
+                                                            )
+                                                        }
+                                                        className={`cursor-pointer rounded-lg px-2.5 py-1 transition-all ${calendarCategory === cat ? 'bg-primary text-primary-foreground shadow-2xs' : 'text-muted-foreground hover:text-foreground'}`}
+                                                    >
+                                                        {cat === 'all'
+                                                            ? 'All Dates'
+                                                            : cat === 'regular'
+                                                              ? 'Regular'
+                                                              : 'Special'}
+                                                    </button>
+                                                ))}
                                             </div>
                                         </div>
 
-                                        {/* Event Cards Grid */}
-                                        <div className="grid max-h-[320px] gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                                        <div className="grid gap-3 sm:grid-cols-2">
                                             {filteredDates.map((evt) => (
                                                 <div
                                                     key={evt.name}
-                                                    className="flex flex-col justify-between space-y-2 rounded-xl border border-border/80 bg-muted/20 p-3 transition-all hover:border-primary/50"
+                                                    className="group flex flex-col justify-between rounded-2xl border border-border/70 bg-card/60 p-3.5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-500/40 hover:shadow-md"
                                                 >
-                                                    <div className="flex items-start justify-between gap-1">
-                                                        <div>
-                                                            <p className="max-w-[170px] truncate text-xs font-bold text-foreground">
-                                                                {evt.name}
-                                                            </p>
-                                                            <p className="text-[11px] text-muted-foreground">
+                                                    <div className="mb-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="font-mono text-xs font-bold text-primary">
                                                                 {evt.date}
-                                                            </p>
+                                                            </span>
+                                                            <Badge
+                                                                variant="outline"
+                                                                className={`text-[9px] font-bold ${evt.type === 'Regular Holiday' ? 'border-blue-500/30 bg-blue-500/10 text-blue-500' : 'border-amber-500/30 bg-amber-500/10 text-amber-500'}`}
+                                                            >
+                                                                {evt.type}
+                                                            </Badge>
                                                         </div>
-                                                        <Badge
-                                                            variant="outline"
-                                                            className={`text-[9px] font-bold ${evt.type === 'Regular Holiday' ? 'border-blue-500/30 bg-blue-500/10 text-blue-500' : 'border-amber-500/30 bg-amber-500/10 text-amber-500'}`}
-                                                        >
-                                                            {
-                                                                evt.type.split(
-                                                                    ' ',
-                                                                )[0]
-                                                            }
-                                                        </Badge>
+                                                        <p className="mt-1 font-bold text-foreground">
+                                                            {evt.name}
+                                                        </p>
                                                     </div>
 
                                                     <div className="flex items-center justify-between border-t border-border/40 pt-1.5 text-[11px]">
@@ -1372,11 +1334,11 @@ export default function Welcome() {
                     </section>
 
                     {/* ==========================================================
-                        TRANSPARENT PRICING
+                        SUBSCRIPTION PLANS
                     =========================================================== */}
 
                     <section
-                        id="pricing"
+                        id="subscriptions"
                         className="border-b border-border/70 bg-background py-16 md:py-24"
                     >
                         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -1385,36 +1347,34 @@ export default function Welcome() {
                                     variant="outline"
                                     className="border-primary/20 bg-primary/10 text-xs font-bold text-primary"
                                 >
-                                    Simple Pricing
+                                    Subscription Plans
                                 </Badge>
                                 <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl">
-                                    Predictable plans for growing retail brands.
+                                    Flexible subscription tiers for growing retail brands.
                                 </h2>
                                 <p className="text-sm text-muted-foreground">
-                                    Create studio-grade visual assets and manage
-                                    Philippine marketing campaigns without
-                                    expensive agency retainers.
+                                    Choose the right plan to power your seasonal marketing campaigns and visual creative workflows.
                                 </p>
 
-                                {/* Billing toggle */}
+                                {/* Billing cycle selector */}
                                 <div className="flex items-center justify-center gap-3 pt-2">
                                     <button
                                         type="button"
                                         onClick={() =>
                                             setBillingCycle('monthly')
                                         }
-                                        className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${billingCycle === 'monthly' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
+                                        className={`cursor-pointer rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all ${billingCycle === 'monthly' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
                                     >
-                                        Monthly Billing
+                                        Monthly Subscription
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() =>
                                             setBillingCycle('annual')
                                         }
-                                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${billingCycle === 'annual' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
+                                        className={`flex cursor-pointer items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all ${billingCycle === 'annual' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}`}
                                     >
-                                        <span>Annual Billing</span>
+                                        <span>Annual Subscription</span>
                                         <Badge className="bg-emerald-500 px-1.5 py-0 text-[10px] font-extrabold text-white">
                                             Save 20%
                                         </Badge>
@@ -1423,39 +1383,37 @@ export default function Welcome() {
                             </div>
 
                             <div className="mx-auto mt-12 grid max-w-5xl gap-6 lg:grid-cols-3">
-                                {/* Free Starter Plan */}
-                                <div className="flex flex-col justify-between space-y-6 rounded-2xl border border-border bg-card p-6 shadow-xs">
+                                {/* Starter Subscription */}
+                                <div className="group flex flex-col justify-between space-y-6 rounded-3xl border border-border/80 bg-card/85 p-6 shadow-md backdrop-blur-xl transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl dark:border-white/10 dark:bg-card/85">
                                     <div className="space-y-4">
                                         <div className="space-y-1">
-                                            <h3 className="text-base font-bold text-foreground">
-                                                Starter Tier
-                                            </h3>
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-base font-bold text-foreground">
+                                                    Starter Plan
+                                                </h3>
+                                                <Badge variant="outline" className="text-[10px] font-bold text-muted-foreground">
+                                                    Free Access
+                                                </Badge>
+                                            </div>
                                             <p className="text-xs text-muted-foreground">
-                                                Ideal for exploring the studio
-                                                and tracking key dates.
+                                                Ideal for exploring the studio and tracking key holiday dates.
                                             </p>
                                         </div>
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="text-3xl font-extrabold text-foreground">
-                                                ₱0
-                                            </span>
-                                            <span className="text-xs text-muted-foreground">
-                                                / free forever
-                                            </span>
+                                        <div className="rounded-xl border border-border/60 bg-muted/20 p-3 text-center">
+                                            <p className="text-xs font-bold text-foreground">Community Starter</p>
+                                            <p className="text-[11px] text-muted-foreground">Free forever / No credit card</p>
                                         </div>
                                         <ul className="space-y-2.5 pt-2 text-xs text-muted-foreground">
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-4 w-4 shrink-0 text-emerald-500" />
                                                 <span>
-                                                    15 AI visual generations per
-                                                    month
+                                                    15 Visual creations per month
                                                 </span>
                                             </li>
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-4 w-4 shrink-0 text-emerald-500" />
                                                 <span>
-                                                    Official Philippine Holiday
-                                                    Calendar
+                                                    Official Philippine Holiday Calendar
                                                 </span>
                                             </li>
                                             <li className="flex items-center gap-2">
@@ -1476,7 +1434,7 @@ export default function Welcome() {
                                     <Button
                                         asChild
                                         variant="outline"
-                                        className="h-10 w-full rounded-xl text-xs font-bold shadow-none"
+                                        className="h-10 w-full rounded-xl text-xs font-bold shadow-none transition-all hover:bg-muted/60"
                                     >
                                         <Link href={register()}>
                                             Get Started Free
@@ -1484,44 +1442,40 @@ export default function Welcome() {
                                     </Button>
                                 </div>
 
-                                {/* Pro Growth Plan (Highlighted) */}
-                                <div className="relative flex flex-col justify-between space-y-6 rounded-2xl border-2 border-primary bg-card p-6 shadow-md">
-                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-md bg-primary px-3 py-0.5 text-[10px] font-extrabold tracking-wider text-primary-foreground uppercase">
-                                        Most Popular
+                                {/* Pro Growth Subscription (Highlighted) */}
+                                <div className="group relative flex flex-col justify-between space-y-6 rounded-3xl border-2 border-primary bg-card/95 p-6 shadow-xl backdrop-blur-2xl transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/15">
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-md bg-primary px-3 py-0.5 text-[10px] font-extrabold tracking-wider text-primary-foreground uppercase shadow-sm">
+                                        Recommended
                                     </div>
                                     <div className="space-y-4">
                                         <div className="space-y-1">
-                                            <h3 className="text-base font-bold text-foreground">
-                                                Growth Professional
-                                            </h3>
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-base font-bold text-foreground">
+                                                    Growth Professional
+                                                </h3>
+                                                <Badge className="bg-primary/10 text-[10px] font-bold text-primary">
+                                                    Full Access
+                                                </Badge>
+                                            </div>
                                             <p className="text-xs text-muted-foreground">
-                                                For active online sellers &
-                                                retail MSMEs.
+                                                For active online sellers & retail MSMEs.
                                             </p>
                                         </div>
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="text-3xl font-extrabold text-foreground">
-                                                {billingCycle === 'monthly'
-                                                    ? '₱990'
-                                                    : '₱790'}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground">
-                                                / month
-                                            </span>
+                                        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-center">
+                                            <p className="text-xs font-bold text-primary">Professional Subscription</p>
+                                            <p className="text-[11px] text-muted-foreground">Unlimited generation capacity</p>
                                         </div>
                                         <ul className="space-y-2.5 pt-2 text-xs text-muted-foreground">
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-4 w-4 shrink-0 text-emerald-500" />
                                                 <span className="font-semibold text-foreground">
-                                                    Unlimited AI Visual
-                                                    Generations
+                                                    Unlimited Visual Generations
                                                 </span>
                                             </li>
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-4 w-4 shrink-0 text-emerald-500" />
                                                 <span>
-                                                    Full Philippine Calendar +
-                                                    Custom Events
+                                                    Full Philippine Calendar + Custom Events
                                                 </span>
                                             </li>
                                             <li className="flex items-center gap-2">
@@ -1533,15 +1487,13 @@ export default function Welcome() {
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-4 w-4 shrink-0 text-emerald-500" />
                                                 <span>
-                                                    PNG, JPEG & SVG Vector
-                                                    Exports
+                                                    PNG, JPEG & SVG Vector Exports
                                                 </span>
                                             </li>
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-4 w-4 shrink-0 text-emerald-500" />
                                                 <span>
-                                                    Business Identity & Brand Tone
-                                                    Presets
+                                                    Business Identity & Brand Tone Presets
                                                 </span>
                                             </li>
                                         </ul>
@@ -1549,7 +1501,7 @@ export default function Welcome() {
 
                                     <Button
                                         asChild
-                                        className="h-10 w-full rounded-xl text-xs font-bold shadow-sm"
+                                        className="h-10 w-full rounded-xl text-xs font-bold shadow-md shadow-primary/25 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/30"
                                     >
                                         <Link href={register()}>
                                             Start 14-Day Free Trial
@@ -1557,41 +1509,37 @@ export default function Welcome() {
                                     </Button>
                                 </div>
 
-                                {/* Enterprise / Business Plan */}
-                                <div className="flex flex-col justify-between space-y-6 rounded-2xl border border-border bg-card p-6 shadow-xs">
+                                {/* Enterprise Subscription */}
+                                <div className="group flex flex-col justify-between space-y-6 rounded-3xl border border-border/80 bg-card/85 p-6 shadow-md backdrop-blur-xl transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl dark:border-white/10 dark:bg-card/85">
                                     <div className="space-y-4">
                                         <div className="space-y-1">
-                                            <h3 className="text-base font-bold text-foreground">
-                                                Scale & Agency
-                                            </h3>
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-base font-bold text-foreground">
+                                                    Scale & Agency
+                                                </h3>
+                                                <Badge variant="outline" className="text-[10px] font-bold text-muted-foreground">
+                                                    Multi-Brand
+                                                </Badge>
+                                            </div>
                                             <p className="text-xs text-muted-foreground">
-                                                For multi-brand retailers &
-                                                marketing agencies.
+                                                For multi-brand retailers & marketing agencies.
                                             </p>
                                         </div>
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="text-3xl font-extrabold text-foreground">
-                                                {billingCycle === 'monthly'
-                                                    ? '₱2,490'
-                                                    : '₱1,990'}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground">
-                                                / month
-                                            </span>
+                                        <div className="rounded-xl border border-border/60 bg-muted/20 p-3 text-center">
+                                            <p className="text-xs font-bold text-foreground">Agency Subscription</p>
+                                            <p className="text-[11px] text-muted-foreground">Dedicated workspace & support</p>
                                         </div>
                                         <ul className="space-y-2.5 pt-2 text-xs text-muted-foreground">
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-4 w-4 shrink-0 text-emerald-500" />
                                                 <span className="font-semibold text-foreground">
-                                                    Multi-Brand Workspace
-                                                    Management
+                                                    Multi-Brand Workspace Management
                                                 </span>
                                             </li>
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-4 w-4 shrink-0 text-emerald-500" />
                                                 <span>
-                                                    Bulk Asset Export & Campaign
-                                                    Packaging
+                                                    Bulk Asset Export & Campaign Packaging
                                                 </span>
                                             </li>
                                             <li className="flex items-center gap-2">
@@ -1603,8 +1551,7 @@ export default function Welcome() {
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-4 w-4 shrink-0 text-emerald-500" />
                                                 <span>
-                                                    Dedicated Account Manager &
-                                                    Training
+                                                    Dedicated Account Manager & Training
                                                 </span>
                                             </li>
                                         </ul>
@@ -1613,7 +1560,7 @@ export default function Welcome() {
                                     <Button
                                         asChild
                                         variant="outline"
-                                        className="h-10 w-full rounded-xl text-xs font-bold shadow-none"
+                                        className="h-10 w-full rounded-xl text-xs font-bold shadow-none transition-all hover:bg-muted/60"
                                     >
                                         <Link href={register()}>
                                             Contact Sales
@@ -1709,8 +1656,8 @@ export default function Welcome() {
                                         className="h-11 gap-2 rounded-xl px-6 text-xs font-bold shadow-sm"
                                     >
                                         <Link href={register()}>
-                                            <Sparkles className="h-4 w-4" />
-                                            Get Started for Free
+                                            <span>Get Started for Free</span>
+                                            <ArrowRight className="h-4 w-4" />
                                         </Link>
                                     </Button>
                                     <Button
