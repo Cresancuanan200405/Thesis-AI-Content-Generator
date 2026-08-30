@@ -36,5 +36,17 @@ it('generates compositing manifest with normalized tagline', function () {
         'aspect_ratio' => '16:9',
     ], $business);
 
-    expect($manifest3['exact_content']['tagline'])->toBe('Taste the magic!');
+    expect($manifest3['exact_content']['tagline'])->toBe('Taste the magic!')
+        ->and($manifest3['exact_content']['brand_name'])->toBe('CoffeYessir');
+
+    // Business name disabled
+    $manifestDisabled = $compositor->generateCompositingManifest([
+        'product_name' => 'Iced Caramel Macchiato',
+        'tagline' => 'Taste the magic!',
+        'include_business_name' => false,
+        'business_name' => 'CoffeYessir',
+        'aspect_ratio' => '1:1',
+    ], $business);
+
+    expect($manifestDisabled['exact_content']['brand_name'])->toBeNull();
 });

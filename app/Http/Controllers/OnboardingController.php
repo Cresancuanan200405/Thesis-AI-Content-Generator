@@ -56,11 +56,6 @@ class OnboardingController extends Controller
         return redirect()->route('onboarding.show', ['step' => $nextStep]);
     }
 
-    public function saveLogo(Request $request): RedirectResponse
-    {
-        return $this->complete($request);
-    }
-
     public function complete(Request $request): RedirectResponse
     {
         $user = $request->user();

@@ -38,7 +38,6 @@ class Business extends Model
         'industry',
         'category',
         'description',
-        'logo_path',
         'target_audience',
         'unique_selling_point',
         'content_style',

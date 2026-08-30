@@ -757,7 +757,7 @@ export default function Welcome() {
                                                 </div>
                                             </div>
 
-                                            {/* 3. Settings: Aspect Ratio & Logo Switch */}
+                                            {/* 3. Settings: Aspect Ratio & Shop Name */}
                                             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/50 pt-2 text-xs">
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-[11px] font-semibold text-muted-foreground">

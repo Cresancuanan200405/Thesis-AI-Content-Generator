@@ -46,7 +46,7 @@ class ModularPromptOrchestrator
             $preservationInstructions = "PRODUCT PRESERVATION:\nPreserve the recognizable identity of the actual supplied product, including when applicable: shape, proportions, container, glassware, packaging, labels, visible branding, colors, distinctive textures, liquid layers, toppings, and physical accessories. Do not reconstruct or invent a replacement product. Creative changes should primarily affect the environment, lighting, atmosphere, background, props, composition, and campaign presentation surrounding the product.";
 
             if (! $isFlagship) {
-                $preservationInstructions .= "\n• STRICT PRESERVATION RULE: The input image is the immutable physical product. Do NOT redraw, restyle, distort, or re-render the catalog item. Maintain exact container geometry, liquid layering, and label details.\n• NO AI TYPOGRAPHY: Do NOT render or embed text, letters, numbers, currency symbols, prices, or slogans inside the artwork. All marketing copy and price tags are composited deterministically post-generation.";
+                $preservationInstructions .= "\n• STRICT PRESERVATION RULE: The input image is the immutable physical product. Do NOT redraw, restyle, distort, or re-render the catalog item. Maintain exact container geometry, liquid layering, and label details.";
             }
 
             $modules[] = $preservationInstructions;
@@ -86,22 +86,49 @@ class ModularPromptOrchestrator
         }
 
         // ---------------------------------------------------------------------
-        // PRIORITY 3: MARKETING CONTENT MODULE (EXACT USER CONTENT)
+        // PRIORITY 3: FINAL MARKETING COPY — MUST APPEAR VISIBLY IN THE IMAGE
         // ---------------------------------------------------------------------
-        $contentLines = [];
-        $contentLines[] = "• Product Name: {$productName}";
+        $includeBusinessName = array_key_exists('include_business_name', $options)
+            ? (bool) $options['include_business_name']
+            : (! array_key_exists('business_name', $options) || ! empty($options['business_name']));
+
+        $brandName = null;
+        if ($includeBusinessName) {
+            $brandName = ! empty($options['business_name']) ? trim((string) $options['business_name']) : ($business?->name ?? null);
+        }
+
+        $copyLines = [];
+        $copyLines[] = "• Hero Product: \"{$productName}\"";
+
+        if ($brandName) {
+            $copyLines[] = "• BUSINESS / SHOP NAME: \"{$brandName}\"";
+            $copyLines[] = '  - Business Name Requirement: MUST appear visibly in the generated image as clean, readable commercial typography.';
+            $copyLines[] = "  - Exact Spelling: \"{$brandName}\" (maintain exact spelling, casing, and characters verbatim; do not abbreviate or rewrite).";
+            $copyLines[] = '  - Typography Only: Render as readable text typography. DO NOT transform into a logo, emblem, badge, cup/bean icon, watermark, or brand symbol.';
+        } else {
+            $copyLines[] = '• BUSINESS / SHOP NAME: Disabled. Do not render any business name, logo, or brand mark in the image.';
+        }
 
         if (! empty($options['price'])) {
             $rawPrice = trim((string) $options['price']);
-            $contentLines[] = "• Price: {$rawPrice} (exact price value, maintain exact currency symbol and digits)";
+            $copyLines[] = "• PRICE: \"{$rawPrice}\"";
+            $copyLines[] = "  - Price Requirement: MUST appear visibly in the image with crisp, legible typography maintaining the exact currency symbol and digits ({$rawPrice}).";
         }
 
         $normalizedTagline = TaglineNormalizationService::normalize($options['tagline'] ?? null);
         if ($normalizedTagline !== null) {
-            $contentLines[] = "• Tagline: \"{$normalizedTagline}\" (exact user tagline, do not alter or paraphrase)";
+            $copyLines[] = "• TAGLINE: \"{$normalizedTagline}\"";
+            $copyLines[] = '  - Tagline Requirement: MUST appear visibly in the image as commercial headline/supporting copy.';
+            $copyLines[] = "  - Strict Verbatim Rule: Use the exact wording \"{$normalizedTagline}\". Do not paraphrase, rewrite, shorten, expand, or invent additional wording.";
         }
 
-        $modules[] = "MARKETING CONTENT:\n".implode("\n", $contentLines);
+        $copyLines[] = '• COPY RENDERING RULES:';
+        $copyLines[] = '  - All enabled copy elements above MUST be visibly rendered in the final image as integrated commercial typography.';
+        $copyLines[] = '  - Do not omit, duplicate, or hallucinate additional copy.';
+        $copyLines[] = '  - Place copy in the designated copy zones inside the invisible safe area.';
+        $copyLines[] = '  - Maintain high contrast, clarity, and readability against the background.';
+
+        $modules[] = "FINAL MARKETING COPY — MUST APPEAR VISIBLY IN THE IMAGE:\n".implode("\n", $copyLines);
 
         // ---------------------------------------------------------------------
         // PRIORITY 4: CAMPAIGN MODULE
@@ -137,24 +164,13 @@ class ModularPromptOrchestrator
         // ---------------------------------------------------------------------
         // PRIORITY 7: BUSINESS CONTEXT & BRAND IDENTITY MODULE
         // ---------------------------------------------------------------------
-        $includeBusinessName = array_key_exists('include_business_name', $options)
-            ? (bool) $options['include_business_name']
-            : (! array_key_exists('business_name', $options) || ! empty($options['business_name']));
-
-        $brandName = null;
-        if ($includeBusinessName) {
-            $brandName = ! empty($options['business_name']) ? trim((string) $options['business_name']) : ($business?->name ?? null);
-        }
-
-        // Dedicated Business Context Module
-        $businessNameForContext = $includeBusinessName ? (! empty($options['business_name']) ? trim((string) $options['business_name']) : ($business?->name ?? null)) : null;
         $businessDesc = ! empty($options['business_description']) ? trim((string) $options['business_description']) : ($business?->description ?? null);
         $businessCategoryForContext = $options['product_category'] ?? $options['business_category'] ?? $business?->category ?? $industry;
 
-        if ($businessNameForContext || $businessDesc || ($businessCategoryForContext && $businessCategoryForContext !== 'General')) {
+        if ($brandName || $businessDesc || ($businessCategoryForContext && $businessCategoryForContext !== 'General')) {
             $bizContextLines = [];
-            if ($businessNameForContext) {
-                $bizContextLines[] = "• Business Name: {$businessNameForContext}";
+            if ($brandName) {
+                $bizContextLines[] = "• Business Name: {$brandName}";
             }
             if ($businessDesc) {
                 $bizContextLines[] = "• Business Description: {$businessDesc}";

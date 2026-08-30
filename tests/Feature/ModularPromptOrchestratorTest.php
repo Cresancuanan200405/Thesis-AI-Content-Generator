@@ -43,9 +43,9 @@ it('orchestrates prompt with strict priority hierarchy and product preservation 
         ->toContain('Observed Characteristics: Tall faceted clear glass with iced layered coffee and caramel topping')
         ->toContain('Supporting product metadata is supplemental and must not override, replace, reinterpret, or contradict the supplied product image.');
 
-    // Verify Priority 2: Exact Marketing Content
-    expect($prompt)->toContain('• Price: ₱149 (exact price value, maintain exact currency symbol and digits)')
-        ->toContain('• Tagline: "Rich caramel sweetness, brewed to perfection" (exact user tagline, do not alter or paraphrase)');
+    // Verify Priority 3: Exact Marketing Content
+    expect($prompt)->toContain('• PRICE: "₱149"')
+        ->toContain('• TAGLINE: "Rich caramel sweetness, brewed to perfection"');
 
     // Verify Priority 4: Structured Philippine Event Direction
     expect($prompt)->toContain('Event: Mother\'s Day Special')
@@ -177,8 +177,7 @@ it('strengthens product preservation and suppresses AI typography for non-defaul
 
     expect($adaptedPrompt)->toContain('PRIMARY PRODUCT IMAGE:')
         ->toContain('PRODUCT PRESERVATION:')
-        ->toContain('STRICT PRESERVATION RULE: The input image is the immutable physical product.')
-        ->toContain('NO AI TYPOGRAPHY: Do NOT render or embed text, letters, numbers, currency symbols, prices, or slogans inside the artwork.');
+        ->toContain('STRICT PRESERVATION RULE: The input image is the immutable physical product.');
 });
 
 it('attaches catalog product binary for image-input models and sends selected model in OpenAIImageService', function () {
@@ -331,10 +330,10 @@ it('generates a complete marketing creative brief in No-Reference Mode without d
         ->toContain('PRIMARY SCENE INSTRUCTION: Fulfill this specific scene setting, props, environment, and visual atmosphere');
 
     // 3. Marketing Content
-    expect($prompt)->toContain('MARKETING CONTENT:')
-        ->toContain('• Product Name: Caramel Machiato')
-        ->toContain('• Price: ₱149')
-        ->toContain('• Tagline: "A sweet gesture for mom"');
+    expect($prompt)->toContain('FINAL MARKETING COPY — MUST APPEAR VISIBLY IN THE IMAGE:')
+        ->toContain('• Hero Product: "Caramel Machiato"')
+        ->toContain('• PRICE: "₱149"')
+        ->toContain('• TAGLINE: "A sweet gesture for mom"');
 
     // 4. Campaign Objective
     expect($prompt)->toContain('CAMPAIGN:')
@@ -564,30 +563,30 @@ it('normalizes taglines deterministically in prompt orchestration across referen
         'product_name' => 'Caramel Macchiato',
         'tagline' => 'Fresh Taste.',
     ]);
-    expect($promptPeriod)->toContain('• Tagline: "Fresh Taste" (exact user tagline, do not alter or paraphrase)')
-        ->not->toContain('• Tagline: "Fresh Taste."');
+    expect($promptPeriod)->toContain('• TAGLINE: "Fresh Taste"')
+        ->not->toContain('• TAGLINE: "Fresh Taste."');
 
     // Test trailing dangling connector stripped
     $promptDangling = $orchestrator->orchestrate([
         'product_name' => 'Caramel Macchiato',
         'tagline' => 'Fresh Taste &',
     ]);
-    expect($promptDangling)->toContain('• Tagline: "Fresh Taste" (exact user tagline, do not alter or paraphrase)')
-        ->not->toContain('• Tagline: "Fresh Taste &"');
+    expect($promptDangling)->toContain('• TAGLINE: "Fresh Taste"')
+        ->not->toContain('• TAGLINE: "Fresh Taste &"');
 
     // Test intentional exclamation preserved
     $promptExclamation = $orchestrator->orchestrate([
         'product_name' => 'Caramel Macchiato',
         'tagline' => 'Taste the magic!',
     ]);
-    expect($promptExclamation)->toContain('• Tagline: "Taste the magic!" (exact user tagline, do not alter or paraphrase)');
+    expect($promptExclamation)->toContain('• TAGLINE: "Taste the magic!"');
 
     // Test internal punctuation preserved
     $promptInternal = $orchestrator->orchestrate([
         'product_name' => 'Caramel Macchiato',
         'tagline' => 'Sweet, savory & fresh',
     ]);
-    expect($promptInternal)->toContain('• Tagline: "Sweet, savory & fresh" (exact user tagline, do not alter or paraphrase)');
+    expect($promptInternal)->toContain('• TAGLINE: "Sweet, savory & fresh"');
 
     // Test Reference Product Mode with quotes stripped cleanly without double wrapping
     $promptRefMode = $orchestrator->orchestrate([
@@ -595,6 +594,6 @@ it('normalizes taglines deterministically in prompt orchestration across referen
         'reference_image_path' => 'products/coffee.png',
         'tagline' => '“The Ultimate Brew...”',
     ]);
-    expect($promptRefMode)->toContain('• Tagline: "The Ultimate Brew" (exact user tagline, do not alter or paraphrase)')
+    expect($promptRefMode)->toContain('• TAGLINE: "The Ultimate Brew"')
         ->not->toContain('""');
 });

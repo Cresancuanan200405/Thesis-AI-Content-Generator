@@ -1102,18 +1102,18 @@ export default function CampaignsPage({
                                         }}
                                         className={`group relative flex min-h-[160px] cursor-pointer flex-col justify-between overflow-hidden rounded-xl border bg-card text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:ring-2 focus:ring-primary/40 focus:outline-none ${currentGlow} `}
                                     >
-                                        {/* CARD TOP HEADER: LOGO BESIDE NAME + DOTTED MENU */}
+                                        {/* CARD TOP HEADER: ICON BESIDE NAME + DOTTED MENU */}
                                         <div className="border-b border-border/50 p-3.5 sm:p-4">
                                             <div className="flex items-start justify-between gap-2.5">
                                                 <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                                                    {/* ICON LOGO */}
+                                                    {/* CAMPAIGN ICON */}
                                                     <div
                                                         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105 ${currentIcon.bg} ${currentIcon.text}`}
                                                     >
                                                         <Layers className="h-4 w-4" />
                                                     </div>
 
-                                                    {/* NAME BESIDE ICON LOGO */}
+                                                    {/* NAME BESIDE ICON */}
                                                     <div className="min-w-0 flex-1">
                                                         <h2 className="truncate text-sm font-semibold text-foreground transition-colors group-hover:text-primary">
                                                             {campaign.name}

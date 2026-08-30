@@ -17,7 +17,7 @@ class MockupImageService
      *     visual_theme?: string|array<int, string>|null,
      *     event_name?: string|null,
      *     price?: string|float|int|null,
-     *     include_logo?: bool|null,
+     *     include_business_name?: bool|null,
      *     business_name?: string|null,
      *     aspect_ratio?: string|null,
      * } $data

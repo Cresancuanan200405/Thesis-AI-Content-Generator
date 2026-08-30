@@ -58,7 +58,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('onboarding', [OnboardingController::class, 'show'])->name('onboarding.show');
     Route::post('onboarding/business', [OnboardingController::class, 'saveBusiness'])->name('onboarding.business');
     Route::post('onboarding/preferences', [OnboardingController::class, 'savePreferences'])->name('onboarding.preferences');
-    Route::post('onboarding/logo', [OnboardingController::class, 'saveLogo'])->name('onboarding.logo');
     Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
 });
 

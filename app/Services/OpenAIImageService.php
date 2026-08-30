@@ -42,14 +42,13 @@ class OpenAIImageService
      *     visual_theme?: string|array<int, string>|null,
      *     event_name?: string|null,
      *     price?: string|float|int|null,
-     *     include_logo?: bool|null,
+     *     include_business_name?: bool|null,
      *     business_name?: string|null,
      *     business_industry?: string|null,
      *     aspect_ratio?: string|null,
      *     image_model?: string|null,
      *     image_quality?: string|null,
      *     reference_image_path?: string|null,
-     *     logo_path?: string|null,
      *     generation_mode?: string|null,
      * }  $options
      * @return string Relative storage path in public disk

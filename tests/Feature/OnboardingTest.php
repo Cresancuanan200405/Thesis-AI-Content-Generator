@@ -58,7 +58,7 @@ it('business information is saved correctly', function () {
         ->and($business->category)->toBe('Coffee Shop');
 });
 
-it('onboarding can be completed directly after business setup without logo', function () {
+it('onboarding can be completed directly after business setup', function () {
     $user = User::factory()->create();
     $user->business()->create([
         'name' => 'North Star Coffee',

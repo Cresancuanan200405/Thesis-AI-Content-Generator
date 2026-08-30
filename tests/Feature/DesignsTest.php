@@ -572,5 +572,5 @@ it('normalizes historical taglines with dangling symbols or terminal periods dur
 
     $newDesign = Design::query()->where('user_id', $user->id)->latest('id')->first();
     expect($newDesign->tagline)->toBe('Fresh, Hot & Delicious')
-        ->and($capturedPrompt)->toContain('• Tagline: "Fresh, Hot & Delicious" (exact user tagline, do not alter or paraphrase)');
+        ->and($capturedPrompt)->toContain('• TAGLINE: "Fresh, Hot & Delicious"');
 });
