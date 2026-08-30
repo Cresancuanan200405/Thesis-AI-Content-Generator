@@ -3,10 +3,12 @@ import {
     AlertTriangle,
     ArrowLeft,
     ArrowRight,
+    Briefcase,
     Building2,
     Calendar,
     CalendarDays,
     Camera,
+    Car,
     Check,
     ChevronDown,
     ChevronUp,
@@ -18,7 +20,10 @@ import {
     Edit3,
     ExternalLink,
     FolderPlus,
+    GraduationCap,
+    HeartPulse,
     ImageIcon,
+    Landmark,
     Laptop,
     Layers,
     Loader2,
@@ -29,15 +34,19 @@ import {
     PanelRightClose,
     PanelRightOpen,
     PenTool,
+    Plane,
     Plus,
     RefreshCcw,
     Search,
     ShieldCheck,
+    ShoppingBag,
+    ShoppingCart,
     SlidersHorizontal,
     Sparkles,
     Tag,
     Trash2,
     Upload,
+    UtensilsCrossed,
     Wand2,
     X,
     ZoomIn,
@@ -782,6 +791,37 @@ function formatEventDateLabel(value?: string | null): string {
     }).format(date);
 }
 
+const getIndustryIconComponent = (industry?: string | null) => {
+    switch (industry) {
+        case 'Food & Beverage':
+            return UtensilsCrossed;
+        case 'Retail':
+            return ShoppingBag;
+        case 'Technology':
+            return Cpu;
+        case 'Healthcare':
+            return HeartPulse;
+        case 'Real Estate':
+            return Building2;
+        case 'Education':
+            return GraduationCap;
+        case 'Beauty & Wellness':
+            return Sparkles;
+        case 'Professional Services':
+            return Briefcase;
+        case 'Travel & Hospitality':
+            return Plane;
+        case 'Automotive':
+            return Car;
+        case 'Finance':
+            return Landmark;
+        case 'E-commerce':
+            return ShoppingCart;
+        default:
+            return Building2;
+    }
+};
+
 export default function GeneratorPage() {
     const pageProps = usePage().props as any;
     const {
@@ -794,6 +834,10 @@ export default function GeneratorPage() {
         events = [],
         campaigns = [],
     } = pageProps;
+
+    const activeIndustry =
+        business?.industry || 'Food & Beverage';
+    const IndustryIcon = getIndustryIconComponent(activeIndustry);
 
     const ai_usage = pageProps.ai_usage;
     const budgetLimit = Number(
@@ -953,6 +997,61 @@ export default function GeneratorPage() {
             aspect_ratio: ar || prev.aspect_ratio,
         }));
     }, []);
+
+    // Tab visibility and exit warning when generating
+    useEffect(() => {
+        if (generationState !== 'generating') {
+            return;
+        }
+
+        const originalTitle = typeof document !== 'undefined' ? document.title : '';
+
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                if (typeof document !== 'undefined') {
+                    document.title = '⚠️ Generating... Keep Tab Open! — AI Marketing Studio';
+                }
+                toast.warning('Warning: You switched away from this tab!', {
+                    description:
+                        'Keep this tab active and in focus. Switching tabs or minimizing the browser will cancel or interrupt visual creative generation.',
+                    duration: 8000,
+                    id: 'tab-switch-warning',
+                });
+            } else {
+                if (typeof document !== 'undefined') {
+                    document.title = originalTitle;
+                }
+                toast.info('Visual generation in progress...', {
+                    description:
+                        'Please stay on this tab until your commercial creative finishes rendering.',
+                    duration: 4000,
+                    id: 'tab-active-info',
+                });
+            }
+        };
+
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            e.returnValue =
+                'Visual creative generation is currently in progress. Leaving or closing this tab will cancel it.';
+
+            return e.returnValue;
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            if (typeof document !== 'undefined' && originalTitle) {
+                document.title = originalTitle;
+            }
+            document.removeEventListener(
+                'visibilitychange',
+                handleVisibilityChange,
+            );
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [generationState]);
 
     // Reference image preview state
     const [referenceImagePreview, setReferenceImagePreview] = useState<
@@ -1528,6 +1627,17 @@ export default function GeneratorPage() {
             return;
         }
 
+        // Reset viewport scroll to top instantly to prevent any scroll-down jump during rendering
+        if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+            if (document.documentElement) {
+                document.documentElement.scrollTop = 0;
+            }
+            if (document.body) {
+                document.body.scrollTop = 0;
+            }
+        }
+
         setGenerationState('generating');
         setGenerationProgress(15);
         setGenerationStage(0);
@@ -2080,11 +2190,23 @@ export default function GeneratorPage() {
         <>
             <Head title="AI Marketing Studio" />
 
-            <div className="flex min-h-[calc(100vh-2.75rem)] w-full bg-background text-foreground sm:min-h-[calc(100vh-3rem)]">
+            <div
+                className={`flex w-full bg-background text-foreground ${
+                    generationState === 'generating'
+                        ? 'h-[calc(100vh-2.75rem)] overflow-hidden sm:h-[calc(100vh-3rem)]'
+                        : 'min-h-[calc(100vh-2.75rem)] sm:min-h-[calc(100vh-3rem)]'
+                }`}
+            >
                 {/* =====================================================
                     MAIN STUDIO WORKSPACE (LEFT/CENTER)
                 ====================================================== */}
-                <div className="min-w-0 flex-1 space-y-5 p-4 sm:p-6 lg:p-8">
+                <div
+                    className={`min-w-0 flex-1 ${
+                        generationState === 'generating'
+                            ? 'flex h-full max-h-full flex-col items-center justify-center overflow-hidden p-2 sm:p-4'
+                            : 'space-y-5 p-4 sm:p-6 lg:p-8'
+                    }`}
+                >
                     {/* COMPACT & PROFESSIONAL STICKY STUDIO HEADER (HIDDEN DURING SYNTHESIS) */}
                     {generationState !== 'generating' && (
                         <div className="sticky top-11 z-20 -mx-4 -mt-4 flex flex-col gap-3 border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur-xl transition-all sm:top-12 sm:-mx-6 sm:-mt-6 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:-mx-8 lg:-mt-8 lg:px-8 dark:bg-background/90">
@@ -2245,50 +2367,56 @@ export default function GeneratorPage() {
                     ====================================================== */}
 
                     {generationState === 'generating' ? (
-                        /* DEDICATED FULL-FOCUS NEURAL RENDERING STUDIO (NO TABS / CLEAN VIEW) */
-                        <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-4xl flex-col items-center justify-center px-2 py-4 sm:px-4 sm:py-8">
-                            <div className="relative w-full overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-b from-card via-card/95 to-background p-6 shadow-2xl backdrop-blur-2xl sm:p-8 md:p-10 dark:from-card/90 dark:via-card/75 dark:to-background">
+                        /* DEDICATED FULL-FOCUS NEURAL RENDERING STUDIO (PROFESSIONAL REDESIGN, INDUSTRY ICON/LOGO, ZERO SCROLL) */
+                        <div className="mx-auto flex h-full max-h-full w-full max-w-3xl flex-col items-center justify-center p-1 sm:p-2">
+                            <div className="relative flex max-h-full w-full flex-col justify-between overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-b from-card via-card/95 to-background p-4 shadow-2xl backdrop-blur-2xl sm:rounded-3xl sm:p-6 md:p-7 dark:from-card/90 dark:via-card/75 dark:to-background">
                                 {/* Ambient Background Glows */}
-                                <div className="pointer-events-none absolute -top-20 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
-                                <div className="pointer-events-none absolute -bottom-20 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
+                                <div className="pointer-events-none absolute -top-20 left-1/2 h-44 w-44 -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
+                                <div className="pointer-events-none absolute -bottom-20 left-1/2 h-44 w-44 -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
 
-                                {/* Top Bar: Neural Engine Telemetry Header */}
-                                <div className="relative mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-5">
-                                    <div className="flex items-center gap-3">
-                                        <span className="relative flex h-3 w-3">
-                                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                                            <span className="relative inline-flex h-3 w-3 rounded-full bg-primary" />
-                                        </span>
+                                {/* Top Bar: Neural Engine Telemetry Header with Industry Branding */}
+                                <div className="relative mb-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2.5 sm:mb-3 sm:pb-3">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-xs ring-1 ring-primary/20 sm:h-10 sm:w-10">
+                                            {business?.logo_url ? (
+                                                <img
+                                                    src={business.logo_url}
+                                                    alt={business.name || 'Brand Logo'}
+                                                    className="h-6 w-6 rounded-lg object-contain sm:h-7 sm:w-7"
+                                                />
+                                            ) : (
+                                                <IndustryIcon className="h-5 w-5 sm:h-5.5 sm:w-5.5" />
+                                            )}
+                                        </div>
                                         <div>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm font-extrabold tracking-tight text-foreground sm:text-base">
-                                                    Neural Creative Studio
+                                                <span className="text-xs font-extrabold tracking-tight text-foreground sm:text-sm md:text-base">
+                                                    {business?.name ? `${business.name} • ` : ''}Creative Studio
                                                 </span>
                                                 <Badge
                                                     variant="outline"
-                                                    className="border-primary/30 bg-primary/10 font-mono text-[10px] font-bold text-primary"
+                                                    className="border-primary/30 bg-primary/10 font-mono text-[9px] font-bold text-primary sm:text-[10px]"
                                                 >
                                                     Live Synthesis
                                                 </Badge>
                                             </div>
-                                            <p className="text-xs text-muted-foreground">
-                                                Synthesizing commercial visual
-                                                for{' '}
+                                            <p className="line-clamp-1 text-[11px] text-muted-foreground sm:text-xs">
+                                                Rendering commercial asset for{' '}
                                                 <strong className="font-semibold text-foreground">
-                                                    {form.product_name ||
-                                                        'Product'}
+                                                    {form.product_name || 'Product'}
                                                 </strong>
+                                                {' '}({activeIndustry})
                                             </p>
                                         </div>
                                     </div>
 
                                     {/* Right Telemetry Chips */}
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1.5 sm:gap-2">
                                         <Badge
                                             variant="secondary"
-                                            className="gap-1.5 px-3 py-1 font-mono text-xs font-semibold shadow-2xs"
+                                            className="gap-1 px-2 py-0.5 font-mono text-[11px] font-semibold shadow-2xs sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs"
                                         >
-                                            <Clock className="h-3.5 w-3.5 text-primary" />
+                                            <Clock className="h-3 w-3 text-primary sm:h-3.5 sm:w-3.5" />
                                             {String(
                                                 Math.floor(elapsedSeconds / 60),
                                             ).padStart(2, '0')}
@@ -2300,45 +2428,57 @@ export default function GeneratorPage() {
                                         </Badge>
                                         <Badge
                                             variant="outline"
-                                            className="border-primary/40 bg-primary/10 px-3 py-1 font-mono text-xs font-bold text-primary"
+                                            className="border-primary/40 bg-primary/10 px-2 py-0.5 font-mono text-[11px] font-bold text-primary sm:px-3 sm:py-1 sm:text-xs"
                                         >
                                             {generationProgress}%
                                         </Badge>
                                     </div>
                                 </div>
 
-                                {/* Center Dynamic Aspect Ratio Visualizer Canvas Frame */}
-                                <div className="relative mx-auto flex flex-col items-center justify-center py-2">
+                                {/* Center Dynamic Aspect Ratio Visualizer Canvas Frame with Industry Icon/Logo */}
+                                <div className="relative mx-auto flex flex-col items-center justify-center py-1 sm:py-2">
                                     <div
-                                        className={`relative flex flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-primary/30 bg-gradient-to-b from-primary/15 via-background/95 to-muted/50 p-6 shadow-2xl shadow-primary/10 backdrop-blur-xl transition-all duration-500 ${
+                                        className={`relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-b from-primary/15 via-background/95 to-muted/50 p-4 shadow-xl shadow-primary/10 backdrop-blur-xl transition-all duration-500 sm:rounded-3xl sm:p-5 ${
                                             form.aspect_ratio === '9:16'
-                                                ? 'h-[280px] w-[160px] sm:h-[320px] sm:w-[180px]'
+                                                ? 'h-[160px] w-[95px] sm:h-[190px] sm:w-[110px]'
                                                 : form.aspect_ratio === '16:9'
-                                                  ? 'h-[180px] w-[320px] sm:h-[200px] sm:w-[360px]'
-                                                  : 'h-[220px] w-[220px] sm:h-[260px] sm:w-[260px]'
+                                                  ? 'h-[105px] w-[185px] sm:h-[125px] sm:w-[220px]'
+                                                  : form.aspect_ratio === '4:5'
+                                                    ? 'h-[145px] w-[116px] sm:h-[170px] sm:w-[136px]'
+                                                    : form.aspect_ratio === '4:3'
+                                                      ? 'h-[120px] w-[160px] sm:h-[140px] sm:w-[185px]'
+                                                      : 'h-[130px] w-[130px] sm:h-[155px] sm:w-[155px]'
                                         }`}
                                     >
                                         {/* Concentric Pulsing Radar Waves */}
-                                        <div className="absolute inset-3 animate-ping rounded-2xl border border-primary/20 opacity-30 duration-1000" />
-                                        <div className="absolute inset-8 animate-pulse rounded-2xl border border-primary/30 duration-700" />
+                                        <div className="absolute inset-2 animate-ping rounded-xl border border-primary/20 opacity-30 duration-1000" />
+                                        <div className="absolute inset-5 animate-pulse rounded-xl border border-primary/30 duration-700" />
 
                                         {/* Scanning Neural Light Beam */}
                                         <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 animate-pulse bg-gradient-to-b from-primary/25 to-transparent opacity-60" />
 
-                                        {/* Center Core Glowing Orb & Icon */}
-                                        <div className="relative z-10 flex h-14 w-14 animate-bounce items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 text-primary-foreground shadow-xl ring-4 shadow-primary/40 ring-primary/20 sm:h-16 sm:w-16">
-                                            <Sparkles className="h-7 w-7 sm:h-8 sm:w-8" />
+                                        {/* Center Industry Emblem / Business Logo */}
+                                        <div className="relative z-10 flex h-12 w-12 sm:h-14 sm:w-14 animate-pulse items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 text-primary-foreground shadow-xl ring-4 shadow-primary/40 ring-primary/20">
+                                            {business?.logo_url ? (
+                                                <img
+                                                    src={business.logo_url}
+                                                    alt={business.name || 'Logo'}
+                                                    className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl object-contain"
+                                                />
+                                            ) : (
+                                                <IndustryIcon className="h-6 w-6 sm:h-7 sm:w-7" />
+                                            )}
                                         </div>
 
-                                        {/* Floating Live Badges */}
-                                        <div className="absolute top-2.5 left-2.5 z-10">
-                                            <span className="rounded-full border border-primary/30 bg-background/90 px-2 py-0.5 font-mono text-[9px] font-bold text-primary backdrop-blur-md">
+                                        {/* Floating Live Badges: Render Style & Canvas */}
+                                        <div className="absolute top-2 left-2 z-10">
+                                            <span className="rounded-full border border-primary/30 bg-background/90 px-1.5 py-0.5 font-mono text-[8px] font-bold text-primary backdrop-blur-md sm:text-[9px]">
                                                 {form.render_style ||
                                                     'Studio Product Still'}
                                             </span>
                                         </div>
-                                        <div className="absolute right-2.5 bottom-2.5 z-10">
-                                            <span className="rounded-full border border-border/70 bg-background/90 px-2 py-0.5 font-mono text-[9px] font-bold text-muted-foreground backdrop-blur-md">
+                                        <div className="absolute right-2 bottom-2 z-10">
+                                            <span className="rounded-full border border-border/70 bg-background/90 px-1.5 py-0.5 font-mono text-[8px] font-bold text-muted-foreground backdrop-blur-md sm:text-[9px]">
                                                 {form.aspect_ratio || '1:1'}{' '}
                                                 Canvas
                                             </span>
@@ -2346,8 +2486,8 @@ export default function GeneratorPage() {
                                     </div>
 
                                     {/* Live Stage Subtitle */}
-                                    <div className="mt-4 text-center">
-                                        <p className="text-sm font-bold text-foreground">
+                                    <div className="mt-2 text-center sm:mt-2.5">
+                                        <p className="text-xs font-bold text-foreground sm:text-sm">
                                             {generationStage === 0
                                                 ? 'Analyzing Campaign Brief & Product Truth'
                                                 : generationStage === 1
@@ -2356,7 +2496,7 @@ export default function GeneratorPage() {
                                                     ? 'Synthesizing Neural Lighting & Textures'
                                                     : 'Mastering & Finalizing Commercial Rendering'}
                                         </p>
-                                        <p className="mt-0.5 text-xs text-muted-foreground">
+                                        <p className="mt-0.5 text-[10px] text-muted-foreground sm:text-xs">
                                             {form.image_model === 'gpt-image-2'
                                                 ? 'GPT-Image-2 Photorealistic Pro Engine'
                                                 : form.image_model ||
@@ -2366,8 +2506,8 @@ export default function GeneratorPage() {
                                 </div>
 
                                 {/* Glowing Smooth Progress Bar */}
-                                <div className="relative mt-6 space-y-2">
-                                    <div className="flex items-center justify-between text-xs font-semibold">
+                                <div className="relative mt-2.5 space-y-1 sm:mt-3 sm:space-y-1.5">
+                                    <div className="flex items-center justify-between text-[11px] font-semibold sm:text-xs">
                                         <span className="text-muted-foreground">
                                             Synthesis Progress
                                         </span>
@@ -2375,7 +2515,7 @@ export default function GeneratorPage() {
                                             {generationProgress}% Completed
                                         </span>
                                     </div>
-                                    <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted/60 p-0.5">
+                                    <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted/60 p-0.5 sm:h-2.5">
                                         <div
                                             className="h-full rounded-full bg-gradient-to-r from-primary/80 via-primary to-emerald-500 shadow-sm shadow-primary/50 transition-all duration-300 ease-out"
                                             style={{
@@ -2386,16 +2526,16 @@ export default function GeneratorPage() {
                                 </div>
 
                                 {/* Dynamic Stage Tracker (4 Milestones) */}
-                                <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+                                <div className="mt-2.5 grid grid-cols-2 gap-2 sm:mt-3 sm:grid-cols-4 sm:gap-2.5">
                                     {[
                                         {
-                                            label: 'Prompt Analysis',
-                                            desc: 'Campaign & product context',
+                                            label: 'Brief & Fidelity',
+                                            desc: 'Product & brand context',
                                             stageIdx: 0,
                                         },
                                         {
-                                            label: 'Layout & Hierarchy',
-                                            desc: '20% safe zone & lighting',
+                                            label: 'Layout & Space',
+                                            desc: '20% safe zone & ratio',
                                             stageIdx: 1,
                                         },
                                         {
@@ -2405,7 +2545,7 @@ export default function GeneratorPage() {
                                         },
                                         {
                                             label: 'Canvas Render',
-                                            desc: 'Commercial grade output',
+                                            desc: 'Commercial output',
                                             stageIdx: 3,
                                         },
                                     ].map(({ label, desc, stageIdx }) => {
@@ -2419,7 +2559,7 @@ export default function GeneratorPage() {
                                         return (
                                             <div
                                                 key={label}
-                                                className={`rounded-2xl border p-3.5 text-left transition-all duration-300 ${
+                                                className={`rounded-xl border p-2 text-left transition-all duration-300 sm:rounded-2xl sm:p-2.5 ${
                                                     isDone
                                                         ? 'border-emerald-500/30 bg-emerald-500/10 shadow-2xs'
                                                         : isCurrent
@@ -2427,24 +2567,24 @@ export default function GeneratorPage() {
                                                           : 'border-border/60 bg-muted/20 opacity-50'
                                                 }`}
                                             >
-                                                <div className="mb-1.5 flex items-center justify-between">
-                                                    <span className="font-mono text-[10px] font-bold text-muted-foreground">
+                                                <div className="mb-1 flex items-center justify-between">
+                                                    <span className="font-mono text-[9px] font-bold text-muted-foreground sm:text-[10px]">
                                                         0{stageIdx + 1}
                                                     </span>
                                                     {isDone ? (
-                                                        <Check className="h-4 w-4 font-bold text-emerald-600 dark:text-emerald-400" />
+                                                        <Check className="h-3.5 w-3.5 font-bold text-emerald-600 dark:text-emerald-400" />
                                                     ) : isCurrent ? (
-                                                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                                                        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
                                                     ) : (
-                                                        <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+                                                        <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
                                                     )}
                                                 </div>
                                                 <p
-                                                    className={`text-xs font-bold ${isDone ? 'text-emerald-700 dark:text-emerald-300' : isCurrent ? 'text-primary' : 'text-muted-foreground'}`}
+                                                    className={`truncate text-[11px] font-bold sm:text-xs ${isDone ? 'text-emerald-700 dark:text-emerald-300' : isCurrent ? 'text-primary' : 'text-muted-foreground'}`}
                                                 >
                                                     {label}
                                                 </p>
-                                                <p className="mt-0.5 line-clamp-1 text-[10px] text-muted-foreground">
+                                                <p className="line-clamp-1 text-[9px] text-muted-foreground sm:text-[10px]">
                                                     {desc}
                                                 </p>
                                             </div>

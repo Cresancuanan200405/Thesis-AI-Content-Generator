@@ -4,20 +4,33 @@ import {
     AlertCircle,
     ArrowUpRight,
     BarChart3,
+    Briefcase,
+    Building2,
     Calendar,
     CalendarDays,
+    Car,
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
+    Coffee,
+    Cpu,
     Download,
     Eye,
+    GraduationCap,
+    HeartPulse,
     ImageIcon,
+    Landmark,
     Megaphone,
     Package,
     PieChart,
+    Plane,
     Plus,
     ShieldCheck,
+    ShoppingBag,
+    ShoppingCart,
     Sparkles,
+    Store,
+    UtensilsCrossed,
     X,
     Zap,
 } from 'lucide-react';
@@ -129,6 +142,9 @@ type Props = {
     business?: {
         name?: string;
         industry?: string;
+        category?: string;
+        tagline?: string;
+        logo_url?: string | null;
     };
 };
 
@@ -164,6 +180,37 @@ const formatEventCategory = (category?: string, type?: string): string => {
     return raw.charAt(0).toUpperCase() + raw.slice(1);
 };
 
+const getIndustryIcon = (industry?: string | null) => {
+    switch (industry) {
+        case 'Food & Beverage':
+            return UtensilsCrossed;
+        case 'Retail':
+            return ShoppingBag;
+        case 'Technology':
+            return Cpu;
+        case 'Healthcare':
+            return HeartPulse;
+        case 'Real Estate':
+            return Building2;
+        case 'Education':
+            return GraduationCap;
+        case 'Beauty & Wellness':
+            return Sparkles;
+        case 'Professional Services':
+            return Briefcase;
+        case 'Travel & Hospitality':
+            return Plane;
+        case 'Automotive':
+            return Car;
+        case 'Finance':
+            return Landmark;
+        case 'E-commerce':
+            return ShoppingCart;
+        default:
+            return Building2;
+    }
+};
+
 /* ==========================================================================
    MAIN DASHBOARD
 ========================================================================== */
@@ -182,6 +229,7 @@ export default function Dashboard({
     business = {},
 }: Props) {
     const user = auth?.user;
+    const IndustryIcon = getIndustryIcon(business?.industry);
 
     /* ----------------------------------------------------------------------
        DATE / GREETING
@@ -690,83 +738,121 @@ export default function Dashboard({
             <div className="min-h-screen bg-background pb-24 text-foreground selection:bg-primary selection:text-primary-foreground">
                 <div className="mx-auto max-w-7xl space-y-8 p-4 sm:p-6 lg:p-8">
                     {/* ======================================================
-                        SECTION 1 — HERO & QUICK ACTIONS
+                        SECTION 1 — HERO & BRAND HIGHLIGHT
                     ====================================================== */}
-                    <section className="relative overflow-hidden rounded-3xl border border-border/80 bg-gradient-to-br from-card via-card to-primary/[0.04] p-6 shadow-xs sm:p-8">
+                    <section className="relative overflow-hidden rounded-3xl border border-border/80 bg-gradient-to-br from-card via-card to-primary/[0.03] p-6 shadow-xs sm:p-8">
                         <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-primary/10 blur-[90px]" />
                         <div className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-blue-500/10 blur-[90px]" />
 
-                        <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="space-y-3">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-                                        <Sparkles className="h-3.5 w-3.5" />
-                                        <span>
-                                            {business?.name ||
-                                                'Marketing Studio Workspace'}
-                                        </span>
+                        <div className="relative z-10 space-y-6">
+                            {/* Executive Business Brand Highlight Header */}
+                            <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border/70 bg-background/70 p-4 shadow-2xs backdrop-blur-md dark:bg-background/40">
+                                <div className="flex items-center gap-3.5">
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-gradient-to-br from-primary/15 via-primary/10 to-transparent text-primary shadow-xs ring-1 ring-primary/20">
+                                        {business?.logo_url ? (
+                                            <img
+                                                src={business.logo_url}
+                                                alt={business.name || 'Brand Logo'}
+                                                className="h-8 w-8 rounded-lg object-contain"
+                                            />
+                                        ) : (
+                                            <IndustryIcon className="h-6 w-6" />
+                                        )}
                                     </div>
 
-                                    <span className="text-xs font-medium text-muted-foreground">
-                                        • {todayFormatted}
-                                    </span>
+                                    <div>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="text-lg font-black tracking-tight text-foreground sm:text-xl">
+                                                {business?.name || 'Marketing Studio Workspace'}
+                                            </span>
+                                            <Badge
+                                                variant="outline"
+                                                className="border-primary/30 bg-primary/10 px-2.5 py-0.5 font-mono text-[10px] font-bold text-primary"
+                                            >
+                                                {business?.industry || 'Commercial Profile'}
+                                            </Badge>
+                                        </div>
+
+                                        <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                            {business?.category && (
+                                                <span className="font-medium text-foreground/80">
+                                                    {business.category}
+                                                </span>
+                                            )}
+                                            {business?.category && business?.tagline && (
+                                                <span className="text-border">•</span>
+                                            )}
+                                            {business?.tagline && (
+                                                <span className="italic text-muted-foreground">
+                                                    "{business.tagline}"
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl md:text-4xl">
-                                    {greeting},{' '}
-                                    {user?.name?.split(' ')[0] || 'Marketer'}!
-                                </h1>
-
-                                <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                                    Your AI-driven marketing workspace overview
-                                    for planning campaigns, generating visuals,
-                                    managing catalog readiness, and scheduling
-                                    opportunities.
-                                </p>
+                                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                                    <Calendar className="h-3.5 w-3.5 text-primary" />
+                                    <span>{todayFormatted}</span>
+                                </div>
                             </div>
 
-                            <div className="flex shrink-0 flex-wrap gap-2.5">
-                                <Button
-                                    asChild
-                                    className="h-10 gap-2 rounded-xl px-4 text-xs font-bold shadow-xs transition-all hover:scale-[1.02] active:scale-95"
-                                >
-                                    <Link href="/generator">
-                                        <Sparkles className="h-4 w-4" />
-                                        Generate Visual
-                                    </Link>
-                                </Button>
+                            {/* Hero Greeting & Quick Actions */}
+                            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                                <div className="space-y-2">
+                                    <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl text-foreground">
+                                        {greeting}, {user?.name?.split(' ')[0] || 'Marketer'}!
+                                    </h1>
 
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setIsCreateCampaignOpen(true)}
-                                    className="h-10 gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
-                                >
-                                    <Plus className="h-4 w-4" />
-                                    Create Campaign
-                                </Button>
+                                    <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                                        Your AI-driven marketing workspace overview for planning campaigns, generating visuals,
+                                        managing catalog readiness, and scheduling opportunities.
+                                    </p>
+                                </div>
 
-                                <Button
-                                    asChild
-                                    variant="outline"
-                                    className="h-10 gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
-                                >
-                                    <Link href="/products/create">
-                                        <Package className="h-4 w-4" />
-                                        Add Product
-                                    </Link>
-                                </Button>
+                                <div className="flex shrink-0 flex-wrap gap-2.5">
+                                    <Button
+                                        asChild
+                                        className="h-10 gap-2 rounded-xl px-4 text-xs font-bold shadow-xs transition-all hover:scale-[1.02] active:scale-95"
+                                    >
+                                        <Link href="/generator">
+                                            <Sparkles className="h-4 w-4" />
+                                            Generate Visual
+                                        </Link>
+                                    </Button>
 
-                                <Button
-                                    asChild
-                                    variant="outline"
-                                    className="h-10 gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
-                                >
-                                    <Link href="/calendar">
-                                        <Calendar className="h-4 w-4" />
-                                        Calendar
-                                    </Link>
-                                </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setIsCreateCampaignOpen(true)}
+                                        className="h-10 gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        Create Campaign
+                                    </Button>
+
+                                    <Button
+                                        asChild
+                                        variant="outline"
+                                        className="h-10 gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
+                                    >
+                                        <Link href="/products/create">
+                                            <Package className="h-4 w-4" />
+                                            Add Product
+                                        </Link>
+                                    </Button>
+
+                                    <Button
+                                        asChild
+                                        variant="outline"
+                                        className="h-10 gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
+                                    >
+                                        <Link href="/calendar">
+                                            <Calendar className="h-4 w-4" />
+                                            Calendar
+                                        </Link>
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </section>
