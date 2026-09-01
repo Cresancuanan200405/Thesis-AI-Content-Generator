@@ -136,6 +136,8 @@ class OpenAIImageService
         // 4. Primary Image Input Execution Pipeline
         $binary = null;
         $generationMethod = 'text_to_image';
+        $fallbackUsed = false;
+        $fallbackReason = null;
 
         $hasImageInput = ! empty($referenceImagePath) && Storage::disk('public')->exists($referenceImagePath);
 
@@ -160,9 +162,13 @@ class OpenAIImageService
                     $binary = $this->extractBinaryFromResponse($response->json());
                     $generationMethod = 'image_to_image_edit';
                 } else {
+                    $fallbackUsed = true;
+                    $fallbackReason = $response->json('error.message') ?? 'OpenAI image edit endpoint failed; generated from creative text prompt.';
                     Log::info("OpenAI image edit fallback triggered: {$response->body()}");
                 }
             } catch (Exception $e) {
+                $fallbackUsed = true;
+                $fallbackReason = $e->getMessage();
                 Log::warning("OpenAI image edit attempt exception: {$e->getMessage()}");
             }
         }
@@ -193,7 +199,7 @@ class OpenAIImageService
             }
 
             $binary = $this->extractBinaryFromResponse($response->json());
-            $generationMethod = 'text_to_image_fidelity';
+            $generationMethod = $fallbackUsed ? 'text_to_image_fallback' : 'text_to_image_fidelity';
         }
 
         if (empty($binary)) {
@@ -207,18 +213,25 @@ class OpenAIImageService
         $duration = round(microtime(true) - $startTime, 2);
         $modelPolicy = $this->modelRegistry->getModelPolicy($requestedModel);
 
+        $resolvedGenerationMode = $hasImageInput
+            ? ($fallbackUsed ? 'TEXT_TO_IMAGE_FALLBACK' : 'PRODUCT_REFERENCE')
+            : 'CREATIVE_GENERATION';
+
         $this->lastGenerationMetadata = [
             'model' => $apiModel,
             'model_name' => $modelSpec['display_name'],
             'is_recommended' => (bool) ($modelSpec['is_recommended'] ?? false),
             'product_preservation_capability' => $modelPolicy['product_preservation_capability'],
             'generation_method' => $generationMethod,
-            'generation_mode' => $generationMode,
+            'generation_mode' => $resolvedGenerationMode,
             'size' => $size,
             'aspect_ratio' => $aspectRatio,
             'prompt' => $fullPrompt,
             'prompt_version' => 'marketing-pipeline-v1',
-            'product_preserved' => $hasImageInput && (bool) ($modelSpec['supports_image_input'] ?? false),
+            'product_preserved' => $generationMethod === 'image_to_image_edit',
+            'reference_image_used' => $generationMethod === 'image_to_image_edit',
+            'fallback_used' => $fallbackUsed,
+            'fallback_reason' => $fallbackReason,
             'supports_image_editing' => (bool) ($modelSpec['supports_image_editing'] ?? false),
             'business_name' => $options['business_name'] ?? null,
             'duration_seconds' => $duration,

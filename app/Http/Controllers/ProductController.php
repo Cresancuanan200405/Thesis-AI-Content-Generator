@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
+use App\Models\Design;
 use App\Models\Product;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -162,13 +163,19 @@ class ProductController extends Controller
     {
         $this->authorize('delete', $product);
 
-        $user = auth()->user();
-
-        if ($product->image_path && Storage::disk('public')->exists($product->image_path)) {
-            Storage::disk('public')->delete($product->image_path);
-        }
-
+        $imagePath = $product->image_path;
         $product->delete();
+
+        // Only delete file asset from disk if no historical designs reference it
+        if ($imagePath && Storage::disk('public')->exists($imagePath)) {
+            $isReferencedInDesigns = Design::query()
+                ->where('reference_image_path', $imagePath)
+                ->exists();
+
+            if (! $isReferencedInDesigns) {
+                Storage::disk('public')->delete($imagePath);
+            }
+        }
 
         return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
     }
@@ -190,10 +197,18 @@ class ProductController extends Controller
         }
 
         foreach ($products as $product) {
-            if ($product->image_path && Storage::disk('public')->exists($product->image_path)) {
-                Storage::disk('public')->delete($product->image_path);
-            }
+            $imagePath = $product->image_path;
             $product->delete();
+
+            if ($imagePath && Storage::disk('public')->exists($imagePath)) {
+                $isReferencedInDesigns = Design::query()
+                    ->where('reference_image_path', $imagePath)
+                    ->exists();
+
+                if (! $isReferencedInDesigns) {
+                    Storage::disk('public')->delete($imagePath);
+                }
+            }
         }
 
         return redirect()->route('products.index')->with('success', "{$count} products deleted successfully.");

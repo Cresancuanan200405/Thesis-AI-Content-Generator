@@ -148,6 +148,10 @@ class GeneratorController extends Controller
         /** @var Event|null $event */
         $event = ! empty($payload['event_id']) ? Event::query()->where('id', $payload['event_id'])->first() : null;
 
+        if (! $referenceImagePath && $product?->image_path) {
+            $referenceImagePath = $product->image_path;
+        }
+
         $includeBusinessName = $request->has('include_business_name')
             ? filter_var($request->input('include_business_name'), FILTER_VALIDATE_BOOLEAN)
             : true;
@@ -265,20 +269,25 @@ class GeneratorController extends Controller
             'tagline_mode' => $payload['tagline_mode'] ?? 'auto',
             'reference_image_path' => $referenceImagePath,
             'generated_image_path' => $generatedImagePath,
-            'generation_metadata' => [
-                'source' => 'openai',
-                'model' => $payload['image_model'] ?? 'gpt-image-2',
-                'quality' => $payload['image_quality'] ?? 'medium',
-                'render_style' => $payload['render_style'] ?? 'Studio Product Still',
-                'aspect_ratio' => $payload['aspect_ratio'] ?? '1:1',
-                'business_name' => $businessName,
-                'generation_mode' => 'PRODUCT_PRESERVING',
-                'prompt_version' => 'marketing-pipeline-v1',
-                'generation_meta' => $openAIService->getLastGenerationMetadata(),
-                'reference_blueprint' => $openAIService->getLastReferenceBlueprint(),
-                'generation_request_id' => $generationRequest->id,
-                'timestamp' => now()->toIso8601String(),
-            ],
+            'generation_metadata' => array_merge(
+                $openAIService->getLastGenerationMetadata() ?: [],
+                [
+                    'source' => 'openai',
+                    'model' => $payload['image_model'] ?? 'gpt-image-2',
+                    'quality' => $payload['image_quality'] ?? 'medium',
+                    'render_style' => $payload['render_style'] ?? 'Studio Product Still',
+                    'aspect_ratio' => $payload['aspect_ratio'] ?? '1:1',
+                    'business_name' => $businessName,
+                    'generation_mode' => $referenceImagePath ? 'PRODUCT_REFERENCE' : 'CREATIVE_GENERATION',
+                    'product_preserved' => (bool) ($openAIService->getLastGenerationMetadata()['product_preserved'] ?? (bool) $referenceImagePath),
+                    'reference_image_used' => (bool) ($openAIService->getLastGenerationMetadata()['reference_image_used'] ?? (bool) $referenceImagePath),
+                    'prompt_version' => 'marketing-pipeline-v1',
+                    'generation_meta' => $openAIService->getLastGenerationMetadata(),
+                    'reference_blueprint' => $openAIService->getLastReferenceBlueprint(),
+                    'generation_request_id' => $generationRequest->id,
+                    'timestamp' => now()->toIso8601String(),
+                ]
+            ),
             'status' => 'completed',
         ]);
 

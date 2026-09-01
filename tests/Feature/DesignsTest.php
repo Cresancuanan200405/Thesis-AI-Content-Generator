@@ -381,6 +381,25 @@ it('preserves reference product image mode during regeneration when original des
 
     $capturedPrompt = null;
     Http::fake([
+        'https://api.openai.com/v1/images/edits' => function ($request) use (&$capturedPrompt) {
+            if (is_array($request->data())) {
+                foreach ($request->data() as $field) {
+                    if (is_array($field) && ($field['name'] ?? '') === 'prompt') {
+                        $capturedPrompt = $field['contents'] ?? '';
+                    }
+                }
+                if (! $capturedPrompt && isset($request->data()['prompt'])) {
+                    $capturedPrompt = $request->data()['prompt'];
+                }
+            }
+            if (! $capturedPrompt) {
+                $capturedPrompt = (string) $request->body();
+            }
+
+            return Http::response([
+                'data' => [['b64_json' => base64_encode('fake-image-data')]],
+            ], 200);
+        },
         'https://api.openai.com/v1/images/generations' => function ($request) use (&$capturedPrompt) {
             $data = json_decode($request->body(), true);
             $capturedPrompt = $data['prompt'] ?? '';

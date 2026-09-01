@@ -134,7 +134,7 @@ it('user can delete own product when allowed', function () {
         ->delete('/products/'.$product->id)
         ->assertRedirect('/products');
 
-    $this->assertDatabaseMissing('products', ['id' => $product->id]);
+    $this->assertSoftDeleted('products', ['id' => $product->id]);
 });
 
 it('user cannot delete another users product', function () {
@@ -241,7 +241,7 @@ it('marketing prompt builder includes product information', function () {
 
     expect($prompt)->toContain('Hero Product: Signature Candle')
         ->and($prompt)->toContain('Description: Premium soy candle with cedar notes.')
-        ->and($prompt)->toContain('Price: $49.99');
+        ->and($prompt)->toContain('Price: ₱49.99');
 });
 
 it('campaign product ownership remains protected', function () {

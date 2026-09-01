@@ -58,7 +58,7 @@ class StoreDesignRequest extends FormRequest
             'include_business_name' => ['nullable', 'boolean'],
             'business_name' => ['nullable', 'string', 'max:255'],
             'aspect_ratio' => ['nullable', 'string', 'in:1:1,9:16,16:9,4:5,4:3'],
-            'reference_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+            'reference_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
     }
 

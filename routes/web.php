@@ -232,7 +232,6 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
                 'industry' => $user->business?->industry,
                 'category' => $user->business?->category,
                 'tagline' => $user->business?->tagline,
-                'logo_url' => $user->business?->logo_url ?? ($user->business?->logo_path ? asset('storage/'.$user->business->logo_path) : null),
             ],
         ]);
     })->name('dashboard');

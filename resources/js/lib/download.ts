@@ -65,7 +65,7 @@ export async function downloadVisualAsFormat(
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                toast.success(`Downloaded ${cleanName}.svg (Vector SVG)`);
+                toast.success(`Downloaded ${cleanName}.svg (SVG Wrapper)`);
             };
             img.onerror = () => {
                 const a = document.createElement('a');

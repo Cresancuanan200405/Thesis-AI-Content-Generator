@@ -4,7 +4,9 @@ use App\Models\Business;
 use App\Models\Campaign;
 use App\Models\Design;
 use App\Models\Event;
+use App\Models\Product;
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
@@ -326,4 +328,77 @@ it('user can delete a campaign', function () {
     $this->assertDatabaseMissing('campaigns', [
         'id' => $campaign->id,
     ]);
+});
+
+it('generator store passes catalog product image to reference image path and OpenAI pipeline', function () {
+    config(['services.openai.api_key' => 'test-key']);
+
+    $capturedPrompt = null;
+    $capturedMultipart = false;
+    Http::fake([
+        'https://api.openai.com/v1/images/edits' => function ($request) use (&$capturedPrompt, &$capturedMultipart) {
+            $capturedMultipart = true;
+
+            return Http::response([
+                'data' => [['b64_json' => base64_encode('fake-generated-image')]],
+            ], 200);
+        },
+        'https://api.openai.com/v1/images/generations' => function ($request) {
+            return Http::response([
+                'data' => [['b64_json' => base64_encode('fake-generated-image')]],
+            ], 200);
+        },
+    ]);
+
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+    $product = Product::factory()->create([
+        'business_id' => $business->id,
+        'name' => 'Barako Cold Brew',
+        'image_path' => 'products/barako-cold-brew.png',
+    ]);
+    Storage::disk('public')->put('products/barako-cold-brew.png', 'cold-brew-bytes');
+
+    $response = $this->actingAs($user)
+        ->post('/generator', [
+            'product_id' => $product->id,
+            'product_name' => 'Barako Cold Brew',
+            'marketing_goal' => 'Promote cold brew for summer',
+            'content_style' => ['Lifestyle'],
+            'brand_tone' => ['Energetic'],
+        ]);
+
+    $response->assertRedirect();
+    $design = Design::query()->where('user_id', $user->id)->latest('id')->first();
+
+    expect($design)->not->toBeNull()
+        ->and($design->reference_image_path)->toBe('products/barako-cold-brew.png')
+        ->and($design->generation_metadata['product_preserved'])->toBeTrue()
+        ->and($capturedMultipart)->toBeTrue();
+});
+
+it('deleting product preserves historical design reference image when referenced', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+    $product = Product::factory()->create([
+        'business_id' => $business->id,
+        'name' => 'Ube Cake',
+        'image_path' => 'products/ube-cake.png',
+    ]);
+    Storage::disk('public')->put('products/ube-cake.png', 'ube-bytes');
+
+    $design = Design::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'product_id' => $product->id,
+        'product_name' => 'Ube Cake',
+        'reference_image_path' => 'products/ube-cake.png',
+    ]);
+
+    $this->actingAs($user)
+        ->delete("/products/{$product->id}")
+        ->assertRedirect('/products');
+
+    $this->assertSoftDeleted('products', ['id' => $product->id]);
+    Storage::disk('public')->assertExists('products/ube-cake.png');
 });

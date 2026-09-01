@@ -29,7 +29,7 @@ class MarketingPromptBuilder
 
         $price = ! empty($payload['price'])
             ? $payload['price']
-            : ($product && $product->price > 0 ? '$'.number_format((float) $product->price, 2, '.', ',') : null);
+            : ($product && $product->price > 0 ? '₱'.number_format((float) $product->price, 2, '.', ',') : null);
 
         $lines = [];
         $lines[] = 'PROMOTIONAL ADVERTISEMENT BRIEF:';

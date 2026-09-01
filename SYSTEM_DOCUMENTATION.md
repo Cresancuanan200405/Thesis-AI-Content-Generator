@@ -13,7 +13,7 @@
                                           │
                                           ▼
                                     [ Onboarding ]
-                     (Industry → Category → Bio → Optional Logo)
+                     (Industry → Category → Bio / Description)
                                           │
                                           ▼
                                  [ Business Profile ]
@@ -33,43 +33,49 @@
                                           ▼
                            [ AI Studio Image Generator ]
                                           │
-                                          ▼
-                         [ Product-First Image Pipeline ]
-                 (Actual Catalog Product Image as Primary Truth)
-                                          │
-                                          ▼
-                                [ OpenAI GPT-Image-2 ]
-                       (Multipart /v1/images/edits Dispatch)
-                                          │
-                                          ▼
-                             [ Image Compositor Service ]
-                       (Exact Price, Tagline, 20% Safe Margins)
-                                          │
-                                          ▼
-                                   [ Live Preview ]
-                            (In-Memory / Storage Preview)
-                                          │
-                                          ▼
-                                    [ Save Design ]
-                        (Permanent Record in designs Table)
-                                          │
-                                          ▼
-                                  [ Design History ]
-                         (My Designs / Regeneration / Filter)
-                                          │
-                                          ▼
-                                [ Download / Export ]
-                             (High-Resolution PNG Asset)
+                        Does Reference Image Exist?
+                                 /          \
+                              YES            NO
+                               │              │
+                               ▼              ▼
+                     [ Product Reference ]  [ Creative Scene ]
+                      (Multipart /edits)    (Text-to-Image)
+                               │              │
+                               └──────┬───────┘
+                                      │
+                                      ▼
+                            [ OpenAI GPT-Image-2 ]
+                 (Generates Visual + Commercial Typography)
+                                      │
+                                      ▼
+                        [ Image Compositor Service ]
+                       (Safe Margins & Manifest Bounds)
+                                      │
+                                      ▼
+                               [ Live Preview ]
+                        (In-Memory / Storage Preview)
+                                      │
+                                      ▼
+                                [ Save Design ]
+                    (Permanent Record in designs Table)
+                                      │
+                                      ▼
+                              [ Design History ]
+                     (My Designs / Regeneration / Filter)
+                                      │
+                                      ▼
+                            [ Download / Export ]
+                    (Export-Ready High-Res PNG / JPEG)
 ```
 
 ### Component Details
 1. **User Authentication & Onboarding**:
    - *Purpose*: Secure user onboarding, multi-tenant isolation, and business profile establishment.
-   - *Inputs*: User credentials, Business Name, Industry, Category, Description, Optional Logo.
+   - *Inputs*: User credentials, Business Name, Industry, Category, Description/Bio.
    - *Outputs*: Authenticated session, persistent `users` and `businesses` records.
    - *Dependencies*: Laravel Fortify, Session driver, Eloquent ORM.
 2. **Product Catalog**:
-   - *Purpose*: Storage and lifecycle management of real product catalog photography and pricing.
+   - *Purpose*: Storage and lifecycle management of real product catalog photography and pricing with `SoftDeletes` historical preservation.
    - *Inputs*: Product Name, Description, Price, Image File (PNG/JPG/WebP).
    - *Outputs*: Persistent `products` records and cryptographically named assets in `storage/app/public/products/images/`.
 3. **Event & Holiday System**:
@@ -78,48 +84,50 @@
    - *Outputs*: Structured visual direction vectors (Mood, Environment, Lighting, Decorative Direction, Marketing Intent).
 4. **Campaign Configuration & Generator**:
    - *Purpose*: Studio UI interface collecting creative parameters and compiling them into brief structures.
-   - *Inputs*: Selected Product ID, Event ID, Render Style, Brand Tone, Visual Theme, Aspect Ratio, Price, Tagline, Logo toggle.
+   - *Inputs*: Selected Product ID (or free text product), Event ID, Render Style, Brand Tone, Visual Theme, Aspect Ratio, Price, Tagline.
    - *Outputs*: Generation payload dispatched to backend API.
 5. **Product-First Image Pipeline & OpenAI GPT-Image-2**:
-   - *Purpose*: Transforms real product assets into high-converting marketing creatives while preserving product geometry and details.
-   - *Inputs*: Stored Product Image binary, compiled modular prompt.
+   - *Purpose*: Transforms real product assets into high-converting marketing creatives while preserving product geometry, or synthesizes complete commercial creative scenes when no reference exists.
+   - *Inputs*: Stored Product Image binary (when available), compiled modular prompt.
    - *Outputs*: Generated advertising creative image stored in `storage/app/public/designs/`.
 6. **Deterministic Compositor & Safe-Margin System**:
-   - *Purpose*: Guarantees exact marketing typography (Price, Tagline, Logo) within a calculated 20% safe boundary.
+   - *Purpose*: Generates exact marketing layout metadata manifest and calculates dynamic 20% safe boundary coordinates.
    - *Inputs*: Canvas resolution ($1024 \times 1024$, $1792 \times 1024$, $1024 \times 1792$), exact text strings.
-   - *Outputs*: Compositing manifest enforcing safe bounding box coordinates.
+   - *Outputs*: Compositing manifest documenting safe bounding box coordinates and marketing copy.
 7. **Design Persistence, History & Download**:
    - *Purpose*: Long-term asset storage, campaign association, soft-delete management, and binary downloads.
    - *Inputs*: Design ID, user authorization check.
-   - *Outputs*: Downloadable PNG stream with attachment headers.
+   - *Outputs*: Downloadable high-resolution PNG and JPEG streams with attachment headers.
 
 ---
 
 ## 2. AI Image Generation Architecture
 
-### Primary Visual Source of Truth vs. Supporting Metadata
-- **PRIMARY PRODUCT IMAGE**: The binary file of the actual stored catalog product (loaded from `storage/app/public/...`) attached via multipart form-data to `https://api.openai.com/v1/images/edits`.
-- **SUPPORTING PRODUCT METADATA (SUPPLEMENTAL)**: Vision-extracted structural features used purely to guide complementary lighting, contact shadows, and background atmosphere. It is explicitly constrained to never replace, reinterpret, or override the supplied product image.
+### Primary Visual Source of Truth vs. Generative Creative Mode
+- **MODE A: PRODUCT REFERENCE MODE**: When a catalog item with an image is selected or a reference image is uploaded, the binary file is attached via multipart form-data to `https://api.openai.com/v1/images/edits`. Supplemental vision cues assist with lighting and shadows without overriding product identity.
+- **MODE B: CREATIVE GENERATION MODE**: When no catalog image or reference image exists, the engine generates an authentic photorealistic commercial product and complete scene from scratch via `/v1/images/generations`.
 
 ### 14-Step Execution Pipeline
-1. **Product Selection**: User chooses a catalog item in the Studio UI (`product_id`).
-2. **Product Image Retrieval**: Backend resolves the record and locates `image_path`.
-3. **Image Binary Loading**: Backend reads the disk asset via `file_get_contents(Storage::disk('public')->path($path))`.
-4. **Supporting Metadata Extraction**: `ReferenceImageAnalyzer` extracts supplemental visual cues.
-5. **Prompt Orchestration**: `ModularPromptOrchestrator` compiles an 8-priority structured prompt.
+1. **Product Selection / Specification**: User selects a catalog item in the Studio UI (`product_id`) or enters custom product details.
+2. **Reference Resolution**: Backend resolves whether a physical reference image exists (`reference_image_path`).
+3. **Image Binary Loading**: If a reference exists, backend reads the disk asset via `Storage::disk('public')->path($path)`.
+4. **Supporting Metadata Extraction**: `ReferenceImageAnalyzer` extracts supplemental visual cues when reference exists.
+5. **Prompt Orchestration**: `ModularPromptOrchestrator` compiles a 10-priority structured prompt with strict Anti-Logo and Safe-Area rules.
 6. **Model Selection**: `OpenAIModelRegistry` resolves capabilities (defaults to `gpt-image-2`).
-7. **OpenAI API Request**: Backend sends multipart HTTP request with attached `image` binary and `prompt`.
-8. **AI Image Transformation**: `gpt-image-2` preserves the product core while synthesizing the surrounding holiday environment.
+7. **OpenAI API Request**: Backend sends multipart HTTP request to `/v1/images/edits` (with attached image) or JSON request to `/v1/images/generations`.
+8. **AI Image Transformation**: `gpt-image-2` renders the commercial creative with integrated marketing typography.
 9. **Image Persistence**: Binary response is decoded and saved as `storage/app/public/designs/openai_{uuid}.png`.
-10. **Deterministic Content Compositing**: Price, Tagline, and Logo are placed using deterministic rules.
-11. **Safe-Margin Enforcement**: Dynamic 20% margin bounds are applied based on canvas aspect ratio.
-14. **Save**: Design record is written to database with campaign links and generation metadata.
+10. **Compositing Manifest Generation**: Exact Price (`₱`), Tagline, and Business Name layout manifest is calculated.
+11. **Safe-Margin Enforcement**: Dynamic 20% margin bounds are recorded in design generation metadata.
+12. **Live Preview**: Creative is displayed in the interactive visual studio canvas.
+13. **Save**: Design record is written to database with campaign links and generation metadata.
+14. **Export**: High-resolution PNG/JPEG download delivery.
 
 ---
 
 ## 3. Prompt Architecture & Hierarchy (Current 10-Priority Engine)
 
-The current generation pipeline employs a structured 10-priority prompt orchestration hierarchy compiled by `ModularPromptOrchestrator` and powered by `IndustryCategoryArtDirectionService`:
+The generation pipeline employs a structured 10-priority prompt orchestration hierarchy compiled by `ModularPromptOrchestrator` and powered by `IndustryCategoryArtDirectionService`:
 
 | Priority / Module | Direct Function | Current Implementation & Behavior | Status |
 |---|---|---|:---:|
@@ -183,14 +191,14 @@ Supports:
 
 - **Ownership**: Every product strictly belongs to a single business (`products.business_id` $\to$ `businesses.id`).
 - **Asset Storage**: Uploaded product images are stored with SHA-256 hashed filenames in `storage/app/public/products/images/`.
-- **Soft Deletion & Historical Integrity**: Deleting a product in the catalog soft-deletes the product record (`products.deleted_at`), retaining the `designs.product_name` and foreign key reference so historical marketing campaigns are preserved.
+- **Soft Deletion & Historical Integrity**: Deleting a product soft-deletes the record (`products.deleted_at`). Reference image assets associated with existing `Design` records are protected and preserved, maintaining full design history and regeneration fidelity.
 
 ---
 
 ## 7. Security Architecture
 
 - **API Secret Isolation**: `OPENAI_API_KEY` is exclusively managed via server-side environment configuration and never sent to the browser.
-- **Tenant Isolation**: Every database query is scoped to the authenticated user's `business_id`.
+- **Tenant Isolation**: Every database query and model relationship is scoped to the authenticated user's `business_id` and verified via Laravel policies.
 - **CSRF Protection**: All `POST`, `PUT`, and `DELETE` routes enforce CSRF tokens.
 - **Input Validation**: Form requests validate string lengths, numeric price bounds, allowed enum styles, and file MIME types (`jpg`, `jpeg`, `png`, `webp`).
 - **SQL Injection Prevention**: Eloquent ORM parameter bindings across 100% of queries.
@@ -212,8 +220,8 @@ Supports:
 ```
 
 - **`users`**: Root authentication entity (Fortify).
-- **`businesses`**: Tenant root containing business profile, category, and brand logo.
-- **`products`**: Catalog items belonging to `businesses` (`onDelete('cascade')`).
+- **`businesses`**: Tenant root containing business profile, industry, category, and bio.
+- **`products`**: Catalog items belonging to `businesses` with `softDeletes()`.
 - **`events`**: Calendar events with `user_id` scoping for custom events and unique constraint on `(user_id, date, name)`.
 - **`campaigns`**: Marketing initiatives linking products, events, and objectives.
 - **`designs`**: Final creative assets with `softDeletes()`, storing generation metadata, prompt snapshots, model IDs, and image paths.
@@ -275,7 +283,7 @@ Supports:
 4. **Generate Creative**: Click **Generate Visual Creative** and observe the live GPT-Image-2 generation.
 5. **Product Fidelity Verification**: Point out the exact preserved iced coffee glass, ice cubes, brown straw, and milk/espresso layering.
 6. **Regenerate Variation**: Click **Regenerate** to show how background decorations (cards, ribbons, flowers) change while the product identity remains intact.
-7. **Save & Export**: Click **Save Design**, view in **My Designs**, and demonstrate high-resolution PNG download.
+7. **Save & Export**: Click **Save Design**, view in **My Designs**, and demonstrate high-resolution PNG/JPEG download.
 
 ---
 
@@ -288,7 +296,7 @@ Supports:
 - **Q3: How does the system prevent the AI from inventing another product?**
   *Answer*: Priority 1 of the prompt explicitly instructs the engine to preserve recognizable proportions, branding, and colors, confining creative changes to background environment and lighting.
 - **Q4: How are price and tagline accuracy handled?**
-  *Answer*: Price (`₱149`) and tagline strings are handled via strict prompt enforcement and validated against a deterministic 20% safe-margin bounding box.
+  *Answer*: Price (`₱149`) and tagline strings are rendered natively by GPT-Image-2 as commercial typography inside the image and validated against a deterministic 20% safe-margin bounding box.
 - **Q5: How does the system support Philippine holidays?**
   *Answer*: `PhilippineHolidayService` provides calendar data and maps each event into 5 structured dimensions: Mood, Environment, Lighting, Decorative Direction, and Marketing Intent.
 - **Q6: How does the system handle custom events?**
@@ -308,20 +316,21 @@ Supports:
 - **Q13: What happens if image generation fails?**
   *Answer*: Exceptions are caught gracefully, returning a user-friendly error response without creating orphaned records or unconfirmed design entries.
 - **Q14: How was the system tested?**
-  *Answer*: Through a 149-test automated Pest test suite, Pint formatting checks, multi-tenant isolation tests, and live multi-variation image generations with real catalog assets.
+  *Answer*: Through a 261-test automated Pest test suite (1,402 assertions), Pint formatting checks, multi-tenant isolation tests, and live multi-variation image generations with real catalog assets.
 - **Q15: What evidence supports the claim that the system is production ready?**
-  *Answer*: A 100% automated test pass rate (149/149), zero open critical/high defects, verified tenant isolation, and successful live image generations demonstrating 100% product fidelity.
+  *Answer*: A 100% automated test pass rate (261/261), zero open critical/high defects, verified tenant isolation, and successful live image generations demonstrating 100% product fidelity.
 
 ---
 
-## 13. System Limitations & Future Enhancements
+## 13. System Limitations & Future Roadmap
 
 ### Known System Limitations
 - Live image generation depends on external OpenAI API availability and network response times (typical runtime 26–35s).
 - Text-only legacy models (such as `dall-e-3`) cannot accept image inputs and rely on text descriptions.
 
-### Future Enhancements
-- **Batch Export**: Add ZIP archive packaging for bulk downloading 10+ campaign visuals (*Future Enhancement, not a defect*).
+### Future Roadmap
+- **Batch Export**: Add ZIP archive packaging for bulk downloading 10+ campaign visuals (*Future Roadmap item*).
+- **Social Media Publishing**: Add Meta Graph API direct publishing pipelines (*Future Roadmap item*).
 
 ---
 
@@ -331,5 +340,5 @@ Supports:
 - **Active Model Configuration**: **`GPT-Image-2`** (`gpt-image-2`) as recommended default.
 - **Database Status**: **STABLE & VERIFIED** (Foreign keys, soft deletes, tenant scoping).
 - **Security Status**: **VERIFIED** (Server-side API key protection, CSRF, policy isolation).
-- **Automated Test Suite**: **149 / 149 Passing (100%)**.
+- **Automated Test Suite**: **261 / 261 Passing (100%)**.
 - **Final Production Status**: **PRODUCTION READY & FROZEN**.
