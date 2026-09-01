@@ -34,6 +34,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { AppPagination } from '@/components/ui/app-pagination';
 import {
     Dialog,
     DialogContent,
@@ -1849,62 +1850,12 @@ params.set('brand_tone', brandTone);
                             ================================================== */}
 
                             {lastPage > 1 && (
-                                <div className="mt-8 flex items-center justify-between rounded-xl border border-border bg-card p-3 shadow-sm">
-                                    <Button
-                                        variant="outline"
-                                        asChild={currentPage > 1}
-                                        disabled={currentPage <= 1}
-                                        className="shadow-none"
-                                    >
-                                        {currentPage > 1 ? (
-                                            <Link
-                                                href={buildPageUrl(
-                                                    Math.max(
-                                                        currentPage - 1,
-                                                        1,
-                                                    ),
-                                                )}
-                                            >
-                                                Previous
-                                            </Link>
-                                        ) : (
-                                            <span>Previous</span>
-                                        )}
-                                    </Button>
-
-                                    <p className="text-xs font-medium text-muted-foreground">
-                                        Page{' '}
-                                        <span className="font-semibold text-foreground">
-                                            {currentPage}
-                                        </span>{' '}
-                                        of{' '}
-                                        <span className="font-semibold text-foreground">
-                                            {lastPage}
-                                        </span>
-                                    </p>
-
-                                    <Button
-                                        variant="outline"
-                                        asChild={currentPage < lastPage}
-                                        disabled={currentPage >= lastPage}
-                                        className="shadow-none"
-                                    >
-                                        {currentPage < lastPage ? (
-                                            <Link
-                                                href={buildPageUrl(
-                                                    Math.min(
-                                                        currentPage + 1,
-                                                        lastPage,
-                                                    ),
-                                                )}
-                                            >
-                                                Next
-                                            </Link>
-                                        ) : (
-                                            <span>Next</span>
-                                        )}
-                                    </Button>
-                                </div>
+                                <AppPagination
+                                    currentPage={currentPage}
+                                    lastPage={lastPage}
+                                    buildHref={(page) => buildPageUrl(page)}
+                                    className="mt-8"
+                                />
                             )}
                         </>
                     )}

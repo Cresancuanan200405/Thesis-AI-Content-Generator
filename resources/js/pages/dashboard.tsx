@@ -735,47 +735,47 @@ export default function Dashboard({
         <>
             <Head title="Marketing Studio Dashboard" />
 
-            <div className="min-h-screen bg-background pb-24 text-foreground selection:bg-primary selection:text-primary-foreground">
-                <div className="mx-auto max-w-7xl space-y-8 p-4 sm:p-6 lg:p-8">
+            <div className="min-h-screen w-full min-w-0 bg-background pb-24 text-foreground selection:bg-primary selection:text-primary-foreground">
+                <div className="w-full min-w-0 space-y-6 sm:space-y-8 p-4 md:p-6 lg:p-8">
                     {/* ======================================================
                         SECTION 1 — HERO & BRAND HIGHLIGHT
                     ====================================================== */}
-                    <section className="relative overflow-hidden rounded-3xl border border-border/80 bg-gradient-to-br from-card via-card to-primary/[0.03] p-6 shadow-xs sm:p-8">
+                    <section className="relative overflow-hidden rounded-3xl border border-border/80 bg-gradient-to-br from-card via-card to-primary/[0.03] p-4 sm:p-6 lg:p-8 shadow-xs w-full min-w-0">
                         <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-primary/10 blur-[90px]" />
                         <div className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-blue-500/10 blur-[90px]" />
 
-                        <div className="relative z-10 space-y-6">
+                        <div className="relative z-10 space-y-6 w-full min-w-0">
                             {/* Executive Business Brand Highlight Header */}
-                            <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border/70 bg-background/70 p-4 shadow-2xs backdrop-blur-md dark:bg-background/40">
-                                <div className="flex items-center gap-3.5">
-                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-gradient-to-br from-primary/15 via-primary/10 to-transparent text-primary shadow-xs ring-1 ring-primary/20">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-border/70 bg-background/70 p-3.5 sm:p-4 shadow-2xs backdrop-blur-md dark:bg-background/40 w-full min-w-0">
+                                <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-3.5 flex-wrap sm:flex-nowrap">
+                                    <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-gradient-to-br from-primary/15 via-primary/10 to-transparent text-primary shadow-xs ring-1 ring-primary/20">
                                         {business?.logo_url ? (
                                             <img
                                                 src={business.logo_url}
                                                 alt={business.name || 'Brand Logo'}
-                                                className="h-8 w-8 rounded-lg object-contain"
+                                                className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg object-contain"
                                             />
                                         ) : (
-                                            <IndustryIcon className="h-6 w-6" />
+                                            <IndustryIcon className="h-5 w-5 sm:h-6 sm:w-6" />
                                         )}
                                     </div>
 
-                                    <div>
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <span className="text-lg font-black tracking-tight text-foreground sm:text-xl">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-2 min-w-0">
+                                            <span className="text-base sm:text-lg lg:text-xl font-black tracking-tight text-foreground break-words">
                                                 {business?.name || 'Marketing Studio Workspace'}
                                             </span>
                                             <Badge
                                                 variant="outline"
-                                                className="border-primary/30 bg-primary/10 px-2.5 py-0.5 font-mono text-[10px] font-bold text-primary"
+                                                className="border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-bold text-primary shrink-0"
                                             >
                                                 {business?.industry || 'Commercial Profile'}
                                             </Badge>
                                         </div>
 
-                                        <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground min-w-0">
                                             {business?.category && (
-                                                <span className="font-medium text-foreground/80">
+                                                <span className="font-medium text-foreground/80 break-words">
                                                     {business.category}
                                                 </span>
                                             )}
@@ -783,7 +783,7 @@ export default function Dashboard({
                                                 <span className="text-border">•</span>
                                             )}
                                             {business?.tagline && (
-                                                <span className="italic text-muted-foreground">
+                                                <span className="italic text-muted-foreground break-words">
                                                     "{business.tagline}"
                                                 </span>
                                             )}
@@ -791,16 +791,16 @@ export default function Dashboard({
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                                    <Calendar className="h-3.5 w-3.5 text-primary" />
+                                <div className="flex shrink-0 items-center gap-2 text-xs font-medium text-muted-foreground self-start sm:self-auto border-t border-border/40 sm:border-0 pt-2 sm:pt-0 w-full sm:w-auto">
+                                    <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
                                     <span>{todayFormatted}</span>
                                 </div>
                             </div>
 
                             {/* Hero Greeting & Quick Actions */}
-                            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                                <div className="space-y-2">
-                                    <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl text-foreground">
+                            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between w-full min-w-0">
+                                <div className="space-y-1.5 sm:space-y-2 min-w-0 flex-1">
+                                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-foreground break-words">
                                         {greeting}, {user?.name?.split(' ')[0] || 'Marketer'}!
                                     </h1>
 
@@ -810,10 +810,10 @@ export default function Dashboard({
                                     </p>
                                 </div>
 
-                                <div className="flex shrink-0 flex-wrap gap-2.5">
+                                <div className="flex shrink-0 flex-wrap gap-2 sm:gap-2.5 w-full lg:w-auto items-center">
                                     <Button
                                         asChild
-                                        className="h-10 gap-2 rounded-xl px-4 text-xs font-bold shadow-xs transition-all hover:scale-[1.02] active:scale-95"
+                                        className="h-10 flex-1 sm:flex-initial min-w-fit gap-2 rounded-xl px-4 text-xs font-bold shadow-xs transition-all hover:scale-[1.02] active:scale-95"
                                     >
                                         <Link href="/generator">
                                             <Sparkles className="h-4 w-4" />
@@ -825,7 +825,7 @@ export default function Dashboard({
                                         type="button"
                                         variant="outline"
                                         onClick={() => setIsCreateCampaignOpen(true)}
-                                        className="h-10 gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
+                                        className="h-10 flex-1 sm:flex-initial min-w-fit gap-1.5 rounded-xl px-3.5 text-xs font-semibold cursor-pointer"
                                     >
                                         <Plus className="h-4 w-4" />
                                         Create Campaign
@@ -834,7 +834,7 @@ export default function Dashboard({
                                     <Button
                                         asChild
                                         variant="outline"
-                                        className="h-10 gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
+                                        className="h-10 flex-1 sm:flex-initial min-w-fit gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
                                     >
                                         <Link href="/products/create">
                                             <Package className="h-4 w-4" />
@@ -845,7 +845,7 @@ export default function Dashboard({
                                     <Button
                                         asChild
                                         variant="outline"
-                                        className="h-10 gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
+                                        className="h-10 flex-1 sm:flex-initial min-w-fit gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
                                     >
                                         <Link href="/calendar">
                                             <Calendar className="h-4 w-4" />
@@ -860,7 +860,7 @@ export default function Dashboard({
                     {/* ======================================================
                         SECTION 2 — KEY MARKETING METRICS (4 CARDS)
                     ====================================================== */}
-                    <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4 w-full min-w-0">
                         {summaryMetrics.map((metric) => {
                             const Icon = metric.icon;
 
@@ -869,18 +869,18 @@ export default function Dashboard({
                                     key={metric.label}
                                     href={metric.href}
                                     className={cn(
-                                        'group relative overflow-hidden rounded-2xl border border-border/80 bg-card p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md',
+                                        'group relative overflow-hidden rounded-2xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md w-full min-w-0 flex flex-col justify-between',
                                         metric.borderColor,
                                     )}
                                 >
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs font-semibold text-muted-foreground">
+                                    <div className="flex items-center justify-between gap-2 min-w-0">
+                                        <span className="text-xs font-semibold text-muted-foreground truncate">
                                             {metric.label}
                                         </span>
 
                                         <div
                                             className={cn(
-                                                'flex h-9 w-9 items-center justify-center rounded-xl shadow-xs transition-transform duration-200 group-hover:scale-110',
+                                                'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-xs transition-transform duration-200 group-hover:scale-110',
                                                 metric.bgColor,
                                                 metric.color,
                                             )}
@@ -889,18 +889,18 @@ export default function Dashboard({
                                         </div>
                                     </div>
 
-                                    <div className="mt-3">
-                                        <span className="text-3xl font-extrabold tracking-tight">
+                                    <div className="mt-3 min-w-0">
+                                        <span className="text-2xl sm:text-3xl font-extrabold tracking-tight">
                                             {metric.value}
                                         </span>
                                     </div>
 
-                                    <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-2.5 text-[11px]">
-                                        <span className="text-muted-foreground">
+                                    <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-2.5 text-[11px] gap-2 min-w-0">
+                                        <span className="text-muted-foreground truncate">
                                             {metric.description}
                                         </span>
 
-                                        <span className="flex items-center gap-0.5 font-bold text-primary">
+                                        <span className="flex items-center gap-0.5 font-bold text-primary shrink-0">
                                             View
                                             <ArrowUpRight className="h-3 w-3" />
                                         </span>
@@ -913,19 +913,19 @@ export default function Dashboard({
                     {/* ======================================================
                         SECTION 3 & 4 — ACTIVITY & PIPELINE
                     ====================================================== */}
-                    <div className="grid gap-6 lg:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 w-full min-w-0">
                         {/* --------------------------------------------------
                             MARKETING ACTIVITY & OUTPUT
                         -------------------------------------------------- */}
-                        <Card className="rounded-3xl border-border/80 bg-card p-6 shadow-xs lg:col-span-2">
-                            <div className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
+                        <Card className="rounded-3xl border-border/80 bg-card p-4 sm:p-6 shadow-xs lg:col-span-2 w-full min-w-0 overflow-hidden">
+                            <div className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between w-full min-w-0">
+                                <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2">
-                                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                             <BarChart3 className="h-4 w-4" />
                                         </div>
 
-                                        <h2 className="text-base font-bold tracking-tight">
+                                        <h2 className="text-base font-bold tracking-tight truncate">
                                             Marketing Activity & Output
                                         </h2>
                                     </div>
@@ -936,14 +936,14 @@ export default function Dashboard({
                                     </p>
                                 </div>
 
-                                <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-border bg-muted/50 p-1">
+                                <div className="flex shrink-0 items-center gap-1 rounded-xl border border-border bg-muted/50 p-1 self-start sm:self-auto flex-wrap">
                                     <button
                                         type="button"
                                         onClick={() =>
                                             setChartTimeframe('monthly')
                                         }
                                         className={cn(
-                                            'rounded-lg px-3 py-1 text-xs font-bold transition-all',
+                                            'rounded-lg px-2.5 sm:px-3 py-1 text-xs font-bold transition-all cursor-pointer',
                                             chartTimeframe === 'monthly'
                                                 ? 'bg-card text-foreground shadow-xs'
                                                 : 'text-muted-foreground hover:text-foreground',
@@ -958,7 +958,7 @@ export default function Dashboard({
                                             setChartTimeframe('weekly')
                                         }
                                         className={cn(
-                                            'rounded-lg px-3 py-1 text-xs font-bold transition-all',
+                                            'rounded-lg px-2.5 sm:px-3 py-1 text-xs font-bold transition-all cursor-pointer',
                                             chartTimeframe === 'weekly'
                                                 ? 'bg-card text-foreground shadow-xs'
                                                 : 'text-muted-foreground hover:text-foreground',
@@ -969,10 +969,10 @@ export default function Dashboard({
                                 </div>
                             </div>
 
-                            <div className="mt-4 flex flex-wrap items-center justify-between gap-4 text-xs">
-                                <div className="flex items-center gap-4">
+                            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs w-full min-w-0">
+                                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                                     <div className="flex items-center gap-1.5">
-                                        <span className="h-3 w-3 rounded-md bg-primary" />
+                                        <span className="h-3 w-3 shrink-0 rounded-md bg-primary" />
                                         <span className="font-semibold">
                                             AI Visuals
                                         </span>
@@ -985,7 +985,7 @@ export default function Dashboard({
                                     </div>
 
                                     <div className="flex items-center gap-1.5">
-                                        <span className="h-3 w-3 rounded-md bg-emerald-500" />
+                                        <span className="h-3 w-3 shrink-0 rounded-md bg-emerald-500" />
                                         <span className="font-semibold">
                                             Campaigns
                                         </span>
@@ -1005,9 +1005,14 @@ export default function Dashboard({
                                 )}
                             </div>
 
-                            <div className="pt-6">
+                            <div className="pt-6 w-full min-w-0 overflow-x-auto">
                                 {hasActivity ? (
-                                    <div className="grid h-48 grid-cols-6 items-end gap-2 border-b border-border/60 px-2 sm:grid-cols-7 sm:gap-4">
+                                    <div
+                                        className="grid h-48 w-full items-end gap-2 border-b border-border/60 px-1 sm:px-2 sm:gap-4 min-w-0"
+                                        style={{
+                                            gridTemplateColumns: `repeat(${activeActivityData.length || 6}, minmax(0, 1fr))`,
+                                        }}
+                                    >
                                         {activeActivityData.map((item, index) => {
                                             const designs = item.designs || 0;
                                             const campaigns = item.campaigns || 0;
@@ -1042,7 +1047,7 @@ export default function Dashboard({
                                             return (
                                                 <div
                                                     key={`${item.period}-${index}`}
-                                                    className="group relative flex h-full cursor-pointer flex-col items-center justify-end"
+                                                    className="group relative flex h-full cursor-pointer flex-col items-center justify-end min-w-0"
                                                     onMouseEnter={() =>
                                                         setHoveredPointIndex(index)
                                                     }
@@ -1051,7 +1056,7 @@ export default function Dashboard({
                                                     }
                                                 >
                                                     {hovered && (
-                                                        <div className="absolute -top-12 z-30 rounded-xl border border-border bg-popover px-3 py-1.5 text-[11px] font-semibold text-popover-foreground shadow-lg">
+                                                        <div className="absolute -top-12 z-30 rounded-xl border border-border bg-popover px-3 py-1.5 text-[11px] font-semibold text-popover-foreground shadow-lg whitespace-nowrap">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="font-bold text-primary">
                                                                     {designs} visual
@@ -1072,7 +1077,7 @@ export default function Dashboard({
                                                         </div>
                                                     )}
 
-                                                    <div className="flex h-36 w-full max-w-[48px] items-end justify-center gap-1.5">
+                                                    <div className="flex h-36 w-full max-w-full items-end justify-center gap-1 sm:gap-1.5">
                                                         <div
                                                             style={{
                                                                 height: `${designHeight}%`,
@@ -1098,7 +1103,7 @@ export default function Dashboard({
                                                         />
                                                     </div>
 
-                                                    <span className="mt-2 text-xs font-bold text-muted-foreground">
+                                                    <span className="mt-2 text-xs font-bold text-muted-foreground truncate max-w-full text-center">
                                                         {item.period}
                                                     </span>
                                                 </div>
@@ -1121,7 +1126,7 @@ export default function Dashboard({
                                 )}
                             </div>
 
-                            <div className="mt-4 flex items-center justify-between border-t border-border/40 pt-3 text-xs text-muted-foreground">
+                            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border/40 pt-3 text-xs text-muted-foreground">
                                 <span>
                                     Average Output:{' '}
                                     <strong className="text-foreground">
@@ -1141,29 +1146,29 @@ export default function Dashboard({
                         {/* --------------------------------------------------
                             CAMPAIGN PIPELINE
                         -------------------------------------------------- */}
-                        <Card className="rounded-3xl border-border/80 bg-card p-5 shadow-xs">
-                            <div className="flex items-center justify-between border-b border-border/60 pb-3">
-                                <div className="flex items-center gap-2">
-                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+                        <Card className="rounded-3xl border-border/80 bg-card p-4 sm:p-5 shadow-xs min-w-0">
+                            <div className="flex items-center justify-between border-b border-border/60 pb-3 gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
                                         <PieChart className="h-4 w-4" />
                                     </div>
 
-                                    <h3 className="text-sm font-bold">
+                                    <h3 className="text-sm font-bold truncate">
                                         Campaign Pipeline
                                     </h3>
                                 </div>
 
                                 <Badge
                                     variant="outline"
-                                    className="text-[10px] font-bold"
+                                    className="text-[10px] font-bold shrink-0"
                                 >
                                     {totalCampaignsTracked} Total
                                 </Badge>
                             </div>
 
-                            <div className="mt-4 space-y-3">
+                            <div className="mt-4 space-y-3 min-w-0">
                                 {/* Pipeline Distribution Bar */}
-                                <div className="flex h-3 overflow-hidden rounded-full bg-muted/60">
+                                <div className="flex h-3 overflow-hidden rounded-full bg-muted/60 min-w-0">
                                     {[
                                         {
                                             status: 'active',
@@ -1204,7 +1209,7 @@ export default function Dashboard({
                                     ))}
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                     {[
                                         {
                                             label: 'Active',
@@ -1242,23 +1247,23 @@ export default function Dashboard({
                                             key={item.status}
                                             href="/campaigns"
                                             className={cn(
-                                                'flex items-center justify-between rounded-xl border border-border/60 bg-muted/20 p-2.5 transition-colors hover:bg-muted/60',
-                                                item.fullWidth && 'col-span-2',
+                                                'flex items-center justify-between rounded-xl border border-border/60 bg-muted/20 p-2.5 transition-colors hover:bg-muted/60 min-w-0',
+                                                item.fullWidth && 'sm:col-span-2',
                                             )}
                                         >
-                                            <div className="flex items-center gap-1.5">
+                                            <div className="flex items-center gap-1.5 min-w-0">
                                                 <span
                                                     className={cn(
-                                                        'h-2 w-2 rounded-full',
+                                                        'h-2 w-2 shrink-0 rounded-full',
                                                         item.color,
                                                     )}
                                                 />
-                                                <span className="text-xs font-medium text-muted-foreground">
+                                                <span className="text-xs font-medium text-muted-foreground truncate">
                                                     {item.label}
                                                 </span>
                                             </div>
 
-                                            <span className="text-xs font-bold">
+                                            <span className="text-xs font-bold shrink-0 ml-2">
                                                 {item.count}
                                             </span>
                                         </Link>
@@ -1271,22 +1276,22 @@ export default function Dashboard({
                     {/* ======================================================
                         SECTION 5 & 6 — RECENT VISUALS & UPCOMING OPPORTUNITIES
                     ====================================================== */}
-                    <div className="grid gap-6 lg:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 w-full min-w-0">
                         {/* --------------------------------------------------
                             RECENT AI VISUALS
                         -------------------------------------------------- */}
-                        <div className="space-y-4 lg:col-span-2">
-                            <div className="flex items-center justify-between">
-                                <h2 className="flex items-center gap-2 text-base font-bold sm:text-lg">
-                                    <ImageIcon className="h-4 w-4 text-primary" />
-                                    Recent AI Visuals
+                        <div className="space-y-4 lg:col-span-2 w-full min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                                <h2 className="flex items-center gap-2 text-base font-bold sm:text-lg truncate">
+                                    <ImageIcon className="h-4 w-4 text-primary shrink-0" />
+                                    <span>Recent AI Visuals</span>
                                 </h2>
 
                                 <Button
                                     asChild
                                     variant="ghost"
                                     size="sm"
-                                    className="text-xs font-bold text-primary"
+                                    className="text-xs font-bold text-primary shrink-0"
                                 >
                                     <Link href="/designs">
                                         View All ({totalDesigns})
@@ -1296,7 +1301,7 @@ export default function Dashboard({
                             </div>
 
                             {recent_designs.length === 0 ? (
-                                <Card className="rounded-3xl border-border/80 bg-card p-8 text-center shadow-xs">
+                                <Card className="rounded-3xl border-border/80 bg-card p-8 text-center shadow-xs w-full min-w-0">
                                     <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                                         <ImageIcon className="h-6 w-6" />
                                     </div>
@@ -1323,7 +1328,7 @@ export default function Dashboard({
                                     </Button>
                                 </Card>
                             ) : (
-                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4 w-full min-w-0">
                                     {recent_designs.map((design) => (
                                         <button
                                             type="button"
@@ -1331,9 +1336,9 @@ export default function Dashboard({
                                             onClick={() =>
                                                 setPreviewDesign(design)
                                             }
-                                            className="group overflow-hidden rounded-2xl border border-border/80 bg-card text-left shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md"
+                                            className="group overflow-hidden rounded-2xl border border-border/80 bg-card text-left shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md w-full min-w-0 flex flex-col cursor-pointer"
                                         >
-                                            <div className="relative h-44 overflow-hidden bg-muted">
+                                            <div className="relative aspect-4/3 sm:aspect-auto sm:h-44 w-full overflow-hidden bg-muted shrink-0">
                                                 {design.image_url ? (
                                                     <img
                                                         src={design.image_url}
@@ -1356,7 +1361,7 @@ export default function Dashboard({
                                                 </span>
                                             </div>
 
-                                            <div className="space-y-1 p-3.5">
+                                            <div className="space-y-1 p-3 sm:p-3.5 min-w-0 flex-1">
                                                 <p className="truncate text-xs font-bold group-hover:text-primary">
                                                     {design.product_name ||
                                                         'Marketing Creative'}
@@ -1378,18 +1383,18 @@ export default function Dashboard({
                         {/* --------------------------------------------------
                             UPCOMING MARKETING OPPORTUNITIES
                         -------------------------------------------------- */}
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h2 className="flex items-center gap-2 text-base font-bold sm:text-lg">
-                                    <Calendar className="h-4 w-4 text-primary" />
-                                    Upcoming Opportunities
+                        <div className="space-y-4 w-full min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                                <h2 className="flex items-center gap-2 text-base font-bold sm:text-lg truncate">
+                                    <Calendar className="h-4 w-4 text-primary shrink-0" />
+                                    <span>Upcoming Opportunities</span>
                                 </h2>
 
                                 <Button
                                     asChild
                                     variant="ghost"
                                     size="sm"
-                                    className="text-xs font-bold text-primary"
+                                    className="text-xs font-bold text-primary shrink-0"
                                 >
                                     <Link href="/calendar">
                                         Calendar
@@ -1399,7 +1404,7 @@ export default function Dashboard({
                             </div>
 
                             {upcoming_events.length === 0 ? (
-                                <Card className="rounded-3xl border-border/80 bg-card p-6 text-center shadow-xs">
+                                <Card className="rounded-3xl border-border/80 bg-card p-6 text-center shadow-xs w-full min-w-0">
                                     <CalendarDays className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
 
                                     <p className="text-xs text-muted-foreground">
@@ -1419,19 +1424,19 @@ export default function Dashboard({
                                     </Button>
                                 </Card>
                             ) : (
-                                <div className="space-y-3">
+                                <div className="space-y-3 w-full min-w-0">
                                     {upcoming_events.map((event) => (
                                         <div
                                             key={event.id}
-                                            className="group rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all hover:border-primary/40 hover:shadow-md"
+                                            className="group rounded-2xl border border-border/80 bg-card p-3.5 sm:p-4 shadow-xs transition-all hover:border-primary/40 hover:shadow-md w-full min-w-0"
                                         >
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div>
-                                                    <p className="text-xs font-bold group-hover:text-primary">
+                                            <div className="flex items-start justify-between gap-3 min-w-0">
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-xs font-bold group-hover:text-primary truncate">
                                                         {event.name}
                                                     </p>
 
-                                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                                    <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
                                                         {event.date ||
                                                             'Upcoming'}
                                                     </p>
@@ -1440,15 +1445,15 @@ export default function Dashboard({
                                                 {event.days && (
                                                     <Badge
                                                         variant="secondary"
-                                                        className="border-primary/20 bg-primary/10 text-[10px] font-bold text-primary"
+                                                        className="border-primary/20 bg-primary/10 text-[10px] font-bold text-primary shrink-0"
                                                     >
                                                         {event.days}
                                                     </Badge>
                                                 )}
                                             </div>
 
-                                            <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2">
-                                                <span className="text-[11px] font-medium text-muted-foreground">
+                                            <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 gap-2 min-w-0">
+                                                <span className="text-[11px] font-medium text-muted-foreground truncate">
                                                     {formatEventCategory(
                                                         event.category,
                                                         event.type,
@@ -1459,7 +1464,7 @@ export default function Dashboard({
                                                     asChild
                                                     variant="ghost"
                                                     size="sm"
-                                                    className="h-7 rounded-lg px-2 text-xs font-bold text-primary"
+                                                    className="h-7 rounded-lg px-2 text-xs font-bold text-primary shrink-0"
                                                 >
                                                     <Link
                                                         href={`/generator?event_id=${event.id}`}
@@ -1479,41 +1484,41 @@ export default function Dashboard({
                     {/* ======================================================
                         SECTION 7 — CATALOG COVERAGE & RECOMMENDATIONS
                     ====================================================== */}
-                    <section className="grid gap-6 lg:grid-cols-3">
+                    <section className="grid grid-cols-1 gap-6 lg:grid-cols-3 w-full min-w-0">
                         {/* CATALOG READINESS */}
-                        <Card className="rounded-3xl border-border/80 bg-card p-5 shadow-xs lg:col-span-2">
-                            <div className="flex items-center justify-between border-b border-border/60 pb-3">
-                                <div className="flex items-center gap-2">
-                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
+                        <Card className="rounded-3xl border-border/80 bg-card p-4 sm:p-5 shadow-xs lg:col-span-2 w-full min-w-0">
+                            <div className="flex items-center justify-between border-b border-border/60 pb-3 gap-2 min-w-0">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
                                         <Package className="h-4 w-4" />
                                     </div>
 
-                                    <div>
-                                        <h3 className="text-sm font-bold">
+                                    <div className="min-w-0 flex-1">
+                                        <h3 className="text-sm font-bold truncate">
                                             Catalog Visual Readiness
                                         </h3>
 
-                                        <p className="text-[10px] text-muted-foreground">
+                                        <p className="text-[10px] text-muted-foreground truncate">
                                             Product coverage for AI marketing
                                             creatives
                                         </p>
                                     </div>
                                 </div>
 
-                                <span className="text-xs font-bold text-emerald-500">
+                                <span className="text-xs font-bold text-emerald-500 shrink-0">
                                     {catalogCoverage}% Ready
                                 </span>
                             </div>
 
-                            <div className="mt-4 space-y-4">
+                            <div className="mt-4 space-y-4 w-full min-w-0">
                                 <Progress
                                     value={catalogCoverage}
                                     className="h-2"
                                 />
 
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
-                                        <span className="text-[11px] text-muted-foreground">
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 w-full min-w-0">
+                                    <div className="rounded-xl border border-border/60 bg-muted/20 p-3 min-w-0">
+                                        <span className="text-[11px] text-muted-foreground truncate block">
                                             With Visuals
                                         </span>
 
@@ -1522,8 +1527,8 @@ export default function Dashboard({
                                         </p>
                                     </div>
 
-                                    <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
-                                        <span className="text-[11px] text-muted-foreground">
+                                    <div className="rounded-xl border border-border/60 bg-muted/20 p-3 min-w-0">
+                                        <span className="text-[11px] text-muted-foreground truncate block">
                                             Needs Visuals
                                         </span>
 
@@ -1533,8 +1538,8 @@ export default function Dashboard({
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
-                                    <div>
+                                <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between w-full min-w-0">
+                                    <div className="min-w-0 flex-1">
                                         <p className="text-xs font-bold">
                                             {totalProducts === 0
                                                 ? 'Your catalog is empty. Add products to organize your marketing assets.'
@@ -1543,7 +1548,7 @@ export default function Dashboard({
                                                   : `${productsWithoutVisuals} ${productsWithoutVisuals === 1 ? 'product does' : 'products do'} not have marketing visuals yet.`}
                                         </p>
 
-                                        <p className="mt-1 text-[11px] text-muted-foreground">
+                                        <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
                                             {totalProducts === 0
                                                 ? 'Add your catalog products to start staging marketing creatives around your catalog.'
                                                 : catalogCoverage >= 100
@@ -1556,7 +1561,7 @@ export default function Dashboard({
                                         asChild
                                         size="sm"
                                         variant="outline"
-                                        className="shrink-0 rounded-xl text-xs font-bold"
+                                        className="shrink-0 rounded-xl text-xs font-bold self-start sm:self-auto"
                                     >
                                         <Link
                                             href={
@@ -1588,35 +1593,35 @@ export default function Dashboard({
                         </Card>
 
                         {/* MARKETING RECOMMENDATIONS */}
-                        <Card className="rounded-3xl border-border/80 bg-card p-5 shadow-xs">
-                            <div className="border-b border-border/60 pb-3">
-                                <div className="flex items-center gap-2">
-                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <Card className="rounded-3xl border-border/80 bg-card p-4 sm:p-5 shadow-xs w-full min-w-0">
+                            <div className="border-b border-border/60 pb-3 min-w-0">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                         <Zap className="h-4 w-4" />
                                     </div>
 
-                                    <div>
-                                        <h3 className="text-sm font-bold">
+                                    <div className="min-w-0 flex-1">
+                                        <h3 className="text-sm font-bold truncate">
                                             Marketing Recommendations
                                         </h3>
 
-                                        <p className="text-[10px] text-muted-foreground">
+                                        <p className="text-[10px] text-muted-foreground truncate">
                                             Workspace review actions
                                         </p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="mt-3 space-y-2.5">
+                            <div className="mt-3 space-y-2.5 w-full min-w-0">
                                 {recommendations.map((recommendation) => {
                                     const Icon = recommendation.icon;
 
                                     return (
                                         <div
                                             key={recommendation.id}
-                                            className="rounded-2xl border border-border/60 bg-muted/20 p-3 transition-colors hover:bg-muted/40"
+                                            className="rounded-2xl border border-border/60 bg-muted/20 p-3 transition-colors hover:bg-muted/40 w-full min-w-0"
                                         >
-                                            <div className="flex gap-3">
+                                            <div className="flex gap-3 min-w-0">
                                                 <div
                                                     className={cn(
                                                         'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl',
@@ -1627,11 +1632,11 @@ export default function Dashboard({
                                                 </div>
 
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="text-xs font-bold">
+                                                    <p className="text-xs font-bold truncate">
                                                         {recommendation.title}
                                                     </p>
 
-                                                    <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+                                                    <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground line-clamp-2">
                                                         {
                                                             recommendation.description
                                                         }
@@ -1666,12 +1671,12 @@ export default function Dashboard({
                     {/* ======================================================
                         SECTION 8 — SYSTEM AUTOMATION & PIPELINE STATUS
                     ====================================================== */}
-                    <section className="rounded-3xl border border-border/80 bg-card/60 p-5 shadow-xs">
-                        <div className="flex flex-col gap-2 border-b border-border/60 pb-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="flex items-center gap-2">
-                                <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                    <section className="rounded-3xl border border-border/80 bg-card/60 p-4 sm:p-5 shadow-xs w-full min-w-0">
+                        <div className="flex flex-col gap-2 border-b border-border/60 pb-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <ShieldCheck className="h-4 w-4 text-emerald-500 shrink-0" />
 
-                                <h3 className="text-xs font-bold uppercase tracking-wider">
+                                <h3 className="text-xs font-bold uppercase tracking-wider truncate">
                                     System Automation & Pipeline Status
                                 </h3>
                             </div>
@@ -1681,11 +1686,11 @@ export default function Dashboard({
                             </span>
                         </div>
 
-                        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
                             {systemStatusList.map((item) => (
                                 <div
                                     key={item.label}
-                                    className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-muted/20 p-3"
+                                    className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-muted/20 p-3 min-w-0"
                                 >
                                     <span
                                         className={cn(
@@ -1696,7 +1701,7 @@ export default function Dashboard({
                                         )}
                                     />
 
-                                    <div className="min-w-0">
+                                    <div className="min-w-0 flex-1">
                                         <p className="truncate text-xs font-semibold">
                                             {item.label}
                                         </p>
@@ -1724,15 +1729,15 @@ export default function Dashboard({
             ============================================================== */}
             {previewDesign && (
                 <div
-                    className="dark fixed inset-0 z-[150] overflow-auto bg-black/95 text-white backdrop-blur-2xl"
+                    className="dark fixed inset-0 z-[150] overflow-y-auto bg-black/95 text-white backdrop-blur-2xl"
                     onClick={() => setPreviewDesign(null)}
                 >
                     <div
-                        className="sticky top-0 z-[160] flex items-center justify-between border-b border-white/10 bg-black/80 px-5 py-3 backdrop-blur-md sm:px-8"
+                        className="sticky top-0 z-[160] flex items-center justify-between border-b border-white/10 bg-black/80 px-4 py-3 backdrop-blur-md sm:px-8 gap-3"
                         onClick={(event) => event.stopPropagation()}
                     >
                         <div className="flex min-w-0 items-center gap-3">
-                            <h2 className="max-w-[200px] truncate text-sm font-bold sm:max-w-md sm:text-base">
+                            <h2 className="truncate text-sm font-bold sm:text-base max-w-[180px] sm:max-w-md">
                                 {previewDesign.product_name ||
                                     'Marketing Visual'}
                             </h2>
@@ -1740,19 +1745,19 @@ export default function Dashboard({
                             {previewDesign.campaign_name && (
                                 <Badge
                                     variant="outline"
-                                    className="hidden border-white/20 bg-white/5 text-[10px] text-white sm:inline-flex"
+                                    className="hidden border-white/20 bg-white/5 text-[10px] text-white sm:inline-flex shrink-0"
                                 >
                                     {previewDesign.campaign_name}
                                 </Badge>
                             )}
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDownload(previewDesign)}
-                                className="h-8 gap-1.5 rounded-xl border border-white/10 bg-white/10 text-xs text-white hover:bg-white/20 hover:text-white"
+                                className="h-8 gap-1.5 rounded-xl border border-white/10 bg-white/10 text-xs text-white hover:bg-white/20 hover:text-white cursor-pointer"
                             >
                                 <Download className="h-3.5 w-3.5" />
                                 <span className="hidden sm:inline">
@@ -1765,16 +1770,16 @@ export default function Dashboard({
                                 size="icon"
                                 aria-label="Close image preview"
                                 onClick={() => setPreviewDesign(null)}
-                                className="h-8 w-8 rounded-full border border-white/10 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                                className="h-8 w-8 rounded-full border border-white/10 bg-white/10 text-white hover:bg-white/20 hover:text-white cursor-pointer"
                             >
                                 <X className="h-4 w-4" />
                             </Button>
                         </div>
                     </div>
 
-                    <div className="relative flex min-h-[calc(100vh-64px)] items-center justify-center px-4 py-8 sm:px-8">
+                    <div className="relative flex min-h-[calc(100vh-64px)] items-center justify-center p-4 sm:p-8">
                         <div
-                            className="relative"
+                            className="relative max-w-full"
                             onClick={(event) => event.stopPropagation()}
                         >
                             <div className="overflow-hidden rounded-2xl border border-white/15 bg-black/40 shadow-2xl">
@@ -1785,7 +1790,7 @@ export default function Dashboard({
                                             previewDesign.product_name ||
                                             'Visual Preview'
                                         }
-                                        className="max-h-[calc(100vh-12rem)] max-w-[86vw] rounded-xl object-contain"
+                                        className="max-h-[70vh] sm:max-h-[calc(100vh-10rem)] max-w-[90vw] rounded-xl object-contain"
                                     />
                                 )}
                             </div>
@@ -1796,7 +1801,7 @@ export default function Dashboard({
                                 type="button"
                                 aria-label="Previous visual"
                                 onClick={handlePrevDesign}
-                                className="absolute left-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl backdrop-blur-md transition-all hover:scale-110 hover:bg-black/90 sm:left-8"
+                                className="absolute left-2 sm:left-6 top-1/2 flex h-9 w-9 sm:h-10 sm:w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl backdrop-blur-md transition-all hover:scale-110 hover:bg-black/90 cursor-pointer"
                             >
                                 <ChevronLeft className="h-5 w-5" />
                             </button>
@@ -1807,7 +1812,7 @@ export default function Dashboard({
                                 type="button"
                                 aria-label="Next visual"
                                 onClick={handleNextDesign}
-                                className="absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl backdrop-blur-md transition-all hover:scale-110 hover:bg-black/90 sm:right-8"
+                                className="absolute right-2 sm:right-6 top-1/2 flex h-9 w-9 sm:h-10 sm:w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl backdrop-blur-md transition-all hover:scale-110 hover:bg-black/90 cursor-pointer"
                             >
                                 <ChevronRight className="h-5 w-5" />
                             </button>
@@ -1823,7 +1828,7 @@ export default function Dashboard({
                 open={isCreateCampaignOpen}
                 onOpenChange={setIsCreateCampaignOpen}
             >
-                <DialogContent className="rounded-3xl border-border bg-card p-6 shadow-2xl sm:max-w-md">
+                <DialogContent className="max-h-[90vh] overflow-y-auto w-[calc(100vw-2rem)] sm:max-w-md rounded-3xl border-border bg-card p-4 sm:p-6 shadow-2xl">
                     <DialogHeader>
                         <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">

@@ -1,5 +1,6 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
+    AlertCircle,
     AlertTriangle,
     ArrowLeft,
     ArrowRight,
@@ -14,9 +15,11 @@ import {
     ChevronUp,
     Clapperboard,
     Clock,
+    Coffee,
     Compass,
     Cpu,
     Download,
+    Dumbbell,
     Edit3,
     ExternalLink,
     FolderPlus,
@@ -39,13 +42,16 @@ import {
     RefreshCcw,
     Search,
     ShieldCheck,
+    Shirt,
     ShoppingBag,
+    ShoppingBasket,
     ShoppingCart,
     SlidersHorizontal,
     Sparkles,
     Tag,
     Trash2,
     Upload,
+    Utensils,
     UtensilsCrossed,
     Wand2,
     X,
@@ -58,6 +64,7 @@ import { toast } from 'sonner';
 import { HelpTooltip } from '@/components/help-tooltip';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -98,7 +105,7 @@ import { downloadVisualAsFormat } from '@/lib/download';
 
 type Step = 1 | 2 | 3;
 type TaglineMode = 'manual' | 'ai' | 'none';
-type GenerationState = 'idle' | 'generating' | 'ready';
+type GenerationState = 'idle' | 'generating' | 'ready' | 'error';
 export type ImageQuality = 'low' | 'medium' | 'high';
 
 interface EventItem {
@@ -771,6 +778,32 @@ const eventStyleBanks: Record<
     ],
 };
 
+const renderingStatusPhrases = [
+    'Understanding your creative...',
+    'Building the scene...',
+    'Balancing visual space...',
+    'Designing the typography...',
+    'Refining product details...',
+    'Applying campaign direction...',
+    'Finalizing the composition...',
+];
+
+const getCanvasAspectRatioClass = (ratio: string) => {
+    switch (ratio) {
+        case '9:16':
+            return 'aspect-[9/16] h-[32vh] max-h-[250px] w-auto';
+        case '16:9':
+            return 'aspect-[16/9] w-full max-w-[360px] sm:max-w-[420px] max-h-[190px] sm:max-h-[210px]';
+        case '4:5':
+            return 'aspect-[4/5] h-[30vh] max-h-[240px] w-auto';
+        case '4:3':
+            return 'aspect-[4/3] w-full max-w-[300px] sm:max-w-[360px] max-h-[210px]';
+        case '1:1':
+        default:
+            return 'aspect-square h-[28vh] max-h-[230px] w-auto';
+    }
+};
+
 function formatEventDateLabel(value?: string | null): string {
     if (!value) {
         return 'No date';
@@ -791,36 +824,159 @@ function formatEventDateLabel(value?: string | null): string {
     }).format(date);
 }
 
-const getIndustryIconComponent = (industry?: string | null) => {
-    switch (industry) {
-        case 'Food & Beverage':
-            return UtensilsCrossed;
-        case 'Retail':
-            return ShoppingBag;
-        case 'Technology':
-            return Cpu;
-        case 'Healthcare':
-            return HeartPulse;
-        case 'Real Estate':
-            return Building2;
-        case 'Education':
-            return GraduationCap;
-        case 'Beauty & Wellness':
-            return Sparkles;
-        case 'Professional Services':
-            return Briefcase;
-        case 'Travel & Hospitality':
-            return Plane;
-        case 'Automotive':
-            return Car;
-        case 'Finance':
-            return Landmark;
-        case 'E-commerce':
-            return ShoppingCart;
-        default:
-            return Building2;
+const resolveIndustryIcon = (
+    industry?: string | null,
+    category?: string | null,
+) => {
+    const raw = `${industry || ''} ${category || ''}`.toLowerCase().trim();
+
+    if (!raw) {
+        return Sparkles;
     }
+
+    if (
+        raw.includes('coffee') ||
+        raw.includes('cafe') ||
+        raw.includes('café') ||
+        raw.includes('tea') ||
+        raw.includes('beverage')
+    ) {
+        return Coffee;
+    }
+    if (
+        raw.includes('food') ||
+        raw.includes('restaurant') ||
+        raw.includes('dining') ||
+        raw.includes('eatery')
+    ) {
+        return UtensilsCrossed;
+    }
+    if (
+        raw.includes('bakery') ||
+        raw.includes('pastry') ||
+        raw.includes('bread') ||
+        raw.includes('dessert') ||
+        raw.includes('cake')
+    ) {
+        return Utensils;
+    }
+    if (
+        raw.includes('fashion') ||
+        raw.includes('apparel') ||
+        raw.includes('clothing') ||
+        raw.includes('wear') ||
+        raw.includes('garment')
+    ) {
+        return Shirt;
+    }
+    if (
+        raw.includes('beauty') ||
+        raw.includes('wellness') ||
+        raw.includes('cosmetic') ||
+        raw.includes('skincare') ||
+        raw.includes('salon')
+    ) {
+        return Sparkles;
+    }
+    if (
+        raw.includes('fitness') ||
+        raw.includes('gym') ||
+        raw.includes('sport') ||
+        raw.includes('workout')
+    ) {
+        return Dumbbell;
+    }
+    if (
+        raw.includes('grocery') ||
+        raw.includes('market') ||
+        raw.includes('supermarket') ||
+        raw.includes('produce')
+    ) {
+        return ShoppingBasket;
+    }
+    if (
+        raw.includes('retail') ||
+        raw.includes('e-commerce') ||
+        raw.includes('shop') ||
+        raw.includes('store')
+    ) {
+        return ShoppingBag;
+    }
+    if (
+        raw.includes('tech') ||
+        raw.includes('software') ||
+        raw.includes('app') ||
+        raw.includes('digital') ||
+        raw.includes('it')
+    ) {
+        return Cpu;
+    }
+    if (
+        raw.includes('health') ||
+        raw.includes('medical') ||
+        raw.includes('clinic') ||
+        raw.includes('care')
+    ) {
+        return HeartPulse;
+    }
+    if (
+        raw.includes('real estate') ||
+        raw.includes('property') ||
+        raw.includes('realty') ||
+        raw.includes('housing')
+    ) {
+        return Building2;
+    }
+    if (
+        raw.includes('education') ||
+        raw.includes('school') ||
+        raw.includes('academy') ||
+        raw.includes('learning')
+    ) {
+        return GraduationCap;
+    }
+    if (
+        raw.includes('professional') ||
+        raw.includes('consulting') ||
+        raw.includes('agency') ||
+        raw.includes('service') ||
+        raw.includes('legal')
+    ) {
+        return Briefcase;
+    }
+    if (
+        raw.includes('travel') ||
+        raw.includes('hospitality') ||
+        raw.includes('hotel') ||
+        raw.includes('tourism') ||
+        raw.includes('flight')
+    ) {
+        return Plane;
+    }
+    if (
+        raw.includes('auto') ||
+        raw.includes('vehicle') ||
+        raw.includes('car') ||
+        raw.includes('motor')
+    ) {
+        return Car;
+    }
+    if (
+        raw.includes('finance') ||
+        raw.includes('banking') ||
+        raw.includes('investment') ||
+        raw.includes('accounting')
+    ) {
+        return Landmark;
+    }
+
+    return Sparkles;
 };
+
+const getIndustryIconComponent = (
+    industry?: string | null,
+    category?: string | null,
+) => resolveIndustryIcon(industry, category);
 
 export default function GeneratorPage() {
     const pageProps = usePage().props as any;
@@ -1256,6 +1412,64 @@ export default function GeneratorPage() {
             null
         );
     }, [campaigns, form.campaign_id, initialCampaign]);
+
+    // Creative studio rendering status & contextual rotation
+    const [rotatingPhraseIndex, setRotatingPhraseIndex] = useState(0);
+    const [rotatingContextIndex, setRotatingContextIndex] = useState(0);
+
+    const renderingContextPhrases = useMemo(() => {
+        const list: string[] = [];
+        if (business?.name) {
+            list.push(`Creating for ${business.name}`);
+        }
+        if (form.product_name?.trim()) {
+            list.push(`Designing ${form.product_name.trim()}`);
+        }
+        if (activeCampaign?.name) {
+            list.push(`Composing ${activeCampaign.name}`);
+        } else if (selectedEvent?.name) {
+            list.push(`Celebrating ${selectedEvent.name}`);
+        }
+        if (form.render_style) {
+            list.push(`Styling ${form.render_style}`);
+        }
+        if (list.length === 0) {
+            list.push('Composing marketing visual');
+        }
+        return list;
+    }, [business?.name, form.product_name, activeCampaign?.name, selectedEvent?.name, form.render_style]);
+
+    const currentStatusMessage =
+        renderingStatusPhrases[
+            rotatingPhraseIndex % renderingStatusPhrases.length
+        ];
+    const currentContextText =
+        renderingContextPhrases[
+            rotatingContextIndex % renderingContextPhrases.length
+        ];
+
+    useEffect(() => {
+        if (generationState !== 'generating') {
+            setRotatingPhraseIndex(0);
+            setRotatingContextIndex(0);
+            return;
+        }
+
+        const phraseInterval = window.setInterval(() => {
+            setRotatingPhraseIndex(
+                (prev) => (prev + 1) % renderingStatusPhrases.length,
+            );
+        }, 2000);
+
+        const contextInterval = window.setInterval(() => {
+            setRotatingContextIndex((prev) => prev + 1);
+        }, 2600);
+
+        return () => {
+            window.clearInterval(phraseInterval);
+            window.clearInterval(contextInterval);
+        };
+    }, [generationState]);
 
     // Set URL query params on load (e.g. from My Designs "Edit in AI Studio", Products Catalog, or Campaign Visuals)
     useEffect(() => {
@@ -1794,9 +2008,8 @@ export default function GeneratorPage() {
             toast.success('Generated visual creative with OpenAI Studio!');
         } catch (err: any) {
             window.clearInterval(progressTimer);
-            setGenerationState('idle');
+            setGenerationState('error');
             console.error(err);
-            toast.error(err.message || 'Generation failed. Please try again.');
         }
     };
 
@@ -2367,231 +2580,132 @@ export default function GeneratorPage() {
                     ====================================================== */}
 
                     {generationState === 'generating' ? (
-                        /* DEDICATED FULL-FOCUS NEURAL RENDERING STUDIO (PROFESSIONAL REDESIGN, INDUSTRY ICON/LOGO, ZERO SCROLL) */
-                        <div className="mx-auto flex h-full max-h-full w-full max-w-3xl flex-col items-center justify-center p-1 sm:p-2">
-                            <div className="relative flex max-h-full w-full flex-col justify-between overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-b from-card via-card/95 to-background p-4 shadow-2xl backdrop-blur-2xl sm:rounded-3xl sm:p-6 md:p-7 dark:from-card/90 dark:via-card/75 dark:to-background">
-                                {/* Ambient Background Glows */}
-                                <div className="pointer-events-none absolute -top-20 left-1/2 h-44 w-44 -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
-                                <div className="pointer-events-none absolute -bottom-20 left-1/2 h-44 w-44 -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
+                        /* =====================================================
+                           PROFESSIONAL DYNAMIC AI CREATIVE STUDIO — RENDERING
+                        ====================================================== */
+                        <div className="mx-auto flex h-full w-full max-w-lg flex-col items-center justify-center p-2 sm:p-4 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500">
+                            <div className="relative flex w-full flex-col items-center justify-between gap-4 sm:gap-5 overflow-hidden rounded-3xl border border-border/80 bg-card/95 p-6 sm:p-8 shadow-2xl backdrop-blur-2xl">
+                                {/* Ambient Background Studio Aura */}
+                                <div className="pointer-events-none absolute -top-16 left-1/2 h-36 w-36 -translate-x-1/2 rounded-full bg-primary/10 blur-3xl motion-reduce:hidden" />
+                                <div className="pointer-events-none absolute -bottom-16 left-1/2 h-36 w-36 -translate-x-1/2 rounded-full bg-emerald-500/10 blur-3xl motion-reduce:hidden" />
 
-                                {/* Top Bar: Neural Engine Telemetry Header with Industry Branding */}
-                                <div className="relative mb-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2.5 sm:mb-3 sm:pb-3">
-                                    <div className="flex items-center gap-2.5">
-                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-xs ring-1 ring-primary/20 sm:h-10 sm:w-10">
-                                            {business?.logo_url ? (
-                                                <img
-                                                    src={business.logo_url}
-                                                    alt={business.name || 'Brand Logo'}
-                                                    className="h-6 w-6 rounded-lg object-contain sm:h-7 sm:w-7"
-                                                />
-                                            ) : (
-                                                <IndustryIcon className="h-5 w-5 sm:h-5.5 sm:w-5.5" />
-                                            )}
-                                        </div>
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xs font-extrabold tracking-tight text-foreground sm:text-sm md:text-base">
-                                                    {business?.name ? `${business.name} • ` : ''}Creative Studio
-                                                </span>
-                                                <Badge
-                                                    variant="outline"
-                                                    className="border-primary/30 bg-primary/10 font-mono text-[9px] font-bold text-primary sm:text-[10px]"
-                                                >
-                                                    Live Synthesis
-                                                </Badge>
-                                            </div>
-                                            <p className="line-clamp-1 text-[11px] text-muted-foreground sm:text-xs">
-                                                Rendering commercial asset for{' '}
-                                                <strong className="font-semibold text-foreground">
-                                                    {form.product_name || 'Product'}
-                                                </strong>
-                                                {' '}({activeIndustry})
+                                {/* 1. LIVE SYNTHESIS BADGE WITH GREEN INDICATOR DOT & TITLE */}
+                                <div className="relative flex flex-col items-center text-center space-y-2">
+                                    <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 shadow-2xs">
+                                        <span className="relative flex h-2 w-2">
+                                            <span className="absolute inline-flex h-full w-full motion-safe:animate-ping rounded-full bg-emerald-400 opacity-75 motion-reduce:hidden" />
+                                            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                                        </span>
+                                        <span>Live Synthesis</span>
+                                    </div>
+
+                                    <div className="flex flex-col items-center space-y-1">
+                                        <h2 className="text-base sm:text-lg md:text-xl font-bold tracking-tight text-foreground">
+                                            Designing your creative
+                                        </h2>
+
+                                        {business?.name && (
+                                            <p className="text-xs sm:text-sm text-muted-foreground font-medium">
+                                                for <span className="font-semibold text-foreground/90">{business.name}</span>
                                             </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Right Telemetry Chips */}
-                                    <div className="flex items-center gap-1.5 sm:gap-2">
-                                        <Badge
-                                            variant="secondary"
-                                            className="gap-1 px-2 py-0.5 font-mono text-[11px] font-semibold shadow-2xs sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs"
-                                        >
-                                            <Clock className="h-3 w-3 text-primary sm:h-3.5 sm:w-3.5" />
-                                            {String(
-                                                Math.floor(elapsedSeconds / 60),
-                                            ).padStart(2, '0')}
-                                            :
-                                            {String(
-                                                elapsedSeconds % 60,
-                                            ).padStart(2, '0')}
-                                            s
-                                        </Badge>
-                                        <Badge
-                                            variant="outline"
-                                            className="border-primary/40 bg-primary/10 px-2 py-0.5 font-mono text-[11px] font-bold text-primary sm:px-3 sm:py-1 sm:text-xs"
-                                        >
-                                            {generationProgress}%
-                                        </Badge>
+                                        )}
                                     </div>
                                 </div>
 
-                                {/* Center Dynamic Aspect Ratio Visualizer Canvas Frame with Industry Icon/Logo */}
-                                <div className="relative mx-auto flex flex-col items-center justify-center py-1 sm:py-2">
-                                    <div
-                                        className={`relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-b from-primary/15 via-background/95 to-muted/50 p-4 shadow-xl shadow-primary/10 backdrop-blur-xl transition-all duration-500 sm:rounded-3xl sm:p-5 ${
-                                            form.aspect_ratio === '9:16'
-                                                ? 'h-[160px] w-[95px] sm:h-[190px] sm:w-[110px]'
-                                                : form.aspect_ratio === '16:9'
-                                                  ? 'h-[105px] w-[185px] sm:h-[125px] sm:w-[220px]'
-                                                  : form.aspect_ratio === '4:5'
-                                                    ? 'h-[145px] w-[116px] sm:h-[170px] sm:w-[136px]'
-                                                    : form.aspect_ratio === '4:3'
-                                                      ? 'h-[120px] w-[160px] sm:h-[140px] sm:w-[185px]'
-                                                      : 'h-[130px] w-[130px] sm:h-[155px] sm:w-[155px]'
-                                        }`}
-                                    >
-                                        {/* Concentric Pulsing Radar Waves */}
-                                        <div className="absolute inset-2 animate-ping rounded-xl border border-primary/20 opacity-30 duration-1000" />
-                                        <div className="absolute inset-5 animate-pulse rounded-xl border border-primary/30 duration-700" />
+                                {/* 2. CENTER PIECE: PROMINENT CHOSEN INDUSTRY LOGO / PICTOGRAM */}
+                                <div className="relative flex w-full items-center justify-center py-2 sm:py-3">
+                                    {/* Ambient Radiant Glow */}
+                                    <div className="pointer-events-none absolute h-28 w-28 rounded-full bg-primary/20 blur-2xl motion-safe:animate-pulse motion-reduce:hidden" />
 
-                                        {/* Scanning Neural Light Beam */}
-                                        <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 animate-pulse bg-gradient-to-b from-primary/25 to-transparent opacity-60" />
-
-                                        {/* Center Industry Emblem / Business Logo */}
-                                        <div className="relative z-10 flex h-12 w-12 sm:h-14 sm:w-14 animate-pulse items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 text-primary-foreground shadow-xl ring-4 shadow-primary/40 ring-primary/20">
-                                            {business?.logo_url ? (
-                                                <img
-                                                    src={business.logo_url}
-                                                    alt={business.name || 'Logo'}
-                                                    className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl object-contain"
-                                                />
-                                            ) : (
-                                                <IndustryIcon className="h-6 w-6 sm:h-7 sm:w-7" />
-                                            )}
+                                    {/* Glassmorphic Industry Emblem Pedestal */}
+                                    <div className="relative flex h-28 w-28 sm:h-32 sm:w-32 flex-col items-center justify-center rounded-3xl border border-primary/25 bg-gradient-to-b from-primary/15 via-primary/5 to-muted/40 shadow-xl shadow-primary/10 ring-1 ring-primary/20 backdrop-blur-xl transition-all">
+                                        <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-xs ring-1 ring-primary/25">
+                                            <IndustryIcon className="h-6 w-6 sm:h-7 sm:w-7 text-primary motion-safe:animate-pulse" />
                                         </div>
-
-                                        {/* Floating Live Badges: Render Style & Canvas */}
-                                        <div className="absolute top-2 left-2 z-10">
-                                            <span className="rounded-full border border-primary/30 bg-background/90 px-1.5 py-0.5 font-mono text-[8px] font-bold text-primary backdrop-blur-md sm:text-[9px]">
-                                                {form.render_style ||
-                                                    'Studio Product Still'}
+                                        {activeIndustry && (
+                                            <span className="mt-1.5 max-w-[90px] truncate text-[10px] font-bold uppercase tracking-wider text-primary/80">
+                                                {activeIndustry}
                                             </span>
-                                        </div>
-                                        <div className="absolute right-2 bottom-2 z-10">
-                                            <span className="rounded-full border border-border/70 bg-background/90 px-1.5 py-0.5 font-mono text-[8px] font-bold text-muted-foreground backdrop-blur-md sm:text-[9px]">
-                                                {form.aspect_ratio || '1:1'}{' '}
-                                                Canvas
-                                            </span>
-                                        </div>
+                                        )}
                                     </div>
+                                </div>
 
-                                    {/* Live Stage Subtitle */}
-                                    <div className="mt-2 text-center sm:mt-2.5">
-                                        <p className="text-xs font-bold text-foreground sm:text-sm">
-                                            {generationStage === 0
-                                                ? 'Analyzing Campaign Brief & Product Truth'
-                                                : generationStage === 1
-                                                  ? 'Calibrating Composition & 20% Safe Zone'
-                                                  : generationStage === 2
-                                                    ? 'Synthesizing Neural Lighting & Textures'
-                                                    : 'Mastering & Finalizing Commercial Rendering'}
-                                        </p>
-                                        <p className="mt-0.5 text-[10px] text-muted-foreground sm:text-xs">
-                                            {form.image_model === 'gpt-image-2'
-                                                ? 'GPT-Image-2 Photorealistic Pro Engine'
-                                                : form.image_model ||
-                                                  'OpenAI Creative Studio'}
+                                {/* 3. DYNAMIC STATUS MESSAGE, PROGRESS BAR & CLEAN METADATA */}
+                                <div className="relative w-full space-y-3">
+                                    {/* Dynamic Creative Phase Message */}
+                                    <div className="flex items-center justify-center gap-1.5 text-center">
+                                        <Sparkles className="h-3.5 w-3.5 text-primary motion-safe:animate-pulse motion-reduce:hidden" />
+                                        <p className="text-xs sm:text-sm font-semibold text-foreground transition-opacity duration-500">
+                                            {currentStatusMessage}
                                         </p>
                                     </div>
-                                </div>
 
-                                {/* Glowing Smooth Progress Bar */}
-                                <div className="relative mt-2.5 space-y-1 sm:mt-3 sm:space-y-1.5">
-                                    <div className="flex items-center justify-between text-[11px] font-semibold sm:text-xs">
-                                        <span className="text-muted-foreground">
-                                            Synthesis Progress
-                                        </span>
-                                        <span className="font-mono text-primary">
-                                            {generationProgress}% Completed
-                                        </span>
-                                    </div>
-                                    <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted/60 p-0.5 sm:h-2.5">
-                                        <div
-                                            className="h-full rounded-full bg-gradient-to-r from-primary/80 via-primary to-emerald-500 shadow-sm shadow-primary/50 transition-all duration-300 ease-out"
-                                            style={{
-                                                width: `${generationProgress}%`,
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Dynamic Stage Tracker (4 Milestones) */}
-                                <div className="mt-2.5 grid grid-cols-2 gap-2 sm:mt-3 sm:grid-cols-4 sm:gap-2.5">
-                                    {[
-                                        {
-                                            label: 'Brief & Fidelity',
-                                            desc: 'Product & brand context',
-                                            stageIdx: 0,
-                                        },
-                                        {
-                                            label: 'Layout & Space',
-                                            desc: '20% safe zone & ratio',
-                                            stageIdx: 1,
-                                        },
-                                        {
-                                            label: 'Asset Synthesis',
-                                            desc: 'Neural photorealism',
-                                            stageIdx: 2,
-                                        },
-                                        {
-                                            label: 'Canvas Render',
-                                            desc: 'Commercial output',
-                                            stageIdx: 3,
-                                        },
-                                    ].map(({ label, desc, stageIdx }) => {
-                                        const isDone =
-                                            generationProgress >
-                                            (stageIdx + 1) * 24;
-                                        const isCurrent =
-                                            generationStage === stageIdx &&
-                                            !isDone;
-
-                                        return (
+                                    {/* Illuminated Modern Progress Bar with Dynamic Indicator */}
+                                    <div className="mx-auto w-full max-w-xs sm:max-w-sm space-y-1">
+                                        <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
+                                            <span>Synthesizing artwork</span>
+                                            <span className="font-mono font-semibold text-primary">
+                                                {generationProgress}%
+                                            </span>
+                                        </div>
+                                        <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted/80 p-0.5 ring-1 ring-border/50">
                                             <div
-                                                key={label}
-                                                className={`rounded-xl border p-2 text-left transition-all duration-300 sm:rounded-2xl sm:p-2.5 ${
-                                                    isDone
-                                                        ? 'border-emerald-500/30 bg-emerald-500/10 shadow-2xs'
-                                                        : isCurrent
-                                                          ? 'border-primary/50 bg-primary/10 shadow-md ring-1 shadow-primary/10 ring-primary/40'
-                                                          : 'border-border/60 bg-muted/20 opacity-50'
-                                                }`}
-                                            >
-                                                <div className="mb-1 flex items-center justify-between">
-                                                    <span className="font-mono text-[9px] font-bold text-muted-foreground sm:text-[10px]">
-                                                        0{stageIdx + 1}
-                                                    </span>
-                                                    {isDone ? (
-                                                        <Check className="h-3.5 w-3.5 font-bold text-emerald-600 dark:text-emerald-400" />
-                                                    ) : isCurrent ? (
-                                                        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                                                    ) : (
-                                                        <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
-                                                    )}
-                                                </div>
-                                                <p
-                                                    className={`truncate text-[11px] font-bold sm:text-xs ${isDone ? 'text-emerald-700 dark:text-emerald-300' : isCurrent ? 'text-primary' : 'text-muted-foreground'}`}
-                                                >
-                                                    {label}
-                                                </p>
-                                                <p className="line-clamp-1 text-[9px] text-muted-foreground sm:text-[10px]">
-                                                    {desc}
-                                                </p>
-                                            </div>
-                                        );
-                                    })}
+                                                className="h-full rounded-full bg-gradient-to-r from-primary via-indigo-500 to-emerald-500 shadow-xs shadow-primary/30 transition-all duration-500 ease-out"
+                                                style={{
+                                                    width: `${generationProgress}%`,
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Clean, Non-Flooded Single-Row Metadata Context */}
+                                    <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 pt-0.5 text-xs text-muted-foreground">
+                                        {form.product_name && (
+                                            <span className="truncate max-w-[140px] font-medium text-foreground/90">
+                                                {form.product_name}
+                                            </span>
+                                        )}
+                                        {form.product_name && form.render_style && (
+                                            <span className="text-muted-foreground/40">•</span>
+                                        )}
+                                        {form.render_style && (
+                                            <span className="truncate max-w-[140px] font-medium text-muted-foreground">
+                                                {form.render_style}
+                                            </span>
+                                        )}
+                                        {(form.product_name || form.render_style) && (activeCampaign?.name || selectedEvent?.name) && (
+                                            <span className="text-muted-foreground/40">•</span>
+                                        )}
+                                        {(activeCampaign?.name || selectedEvent?.name) && (
+                                            <span className="truncate max-w-[150px] font-semibold text-primary">
+                                                {activeCampaign?.name || selectedEvent?.name}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
+                        </div>
+                    ) : generationState === 'error' ? (
+                        /* =====================================================
+                           EDITORIAL ERROR STATE
+                        ====================================================== */
+                        <div className="mx-auto flex h-full w-full max-w-md flex-col items-center justify-center p-6 text-center motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive/10 text-destructive mb-4 shadow-2xs">
+                                <AlertCircle className="h-6 w-6" />
+                            </div>
+                            <h3 className="text-base sm:text-lg font-bold text-foreground">
+                                Unable to finish this creative
+                            </h3>
+                            <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-sm">
+                                Please check your settings and try again.
+                            </p>
+                            <Button
+                                type="button"
+                                onClick={() => setGenerationState('idle')}
+                                className="mt-5 rounded-xl px-5 text-xs font-bold shadow-xs cursor-pointer"
+                            >
+                                Try Again
+                            </Button>
                         </div>
                     ) : generationState === 'ready' ? (
                         /* READY RESULT VIEW */
@@ -3315,15 +3429,15 @@ export default function GeneratorPage() {
                                                                 true,
                                                             )
                                                         }
-                                                        className="flex h-11 w-full items-center justify-between rounded-xl border border-dashed border-border bg-muted/20 px-4 text-xs font-medium text-muted-foreground transition-all hover:border-primary/50 hover:bg-primary/5 hover:text-foreground"
+                                                        className="group relative flex h-11 w-full items-center justify-between overflow-hidden rounded-xl border border-primary/40 bg-gradient-to-r from-primary/10 via-primary/5 to-card px-4 text-xs font-medium text-foreground shadow-md shadow-primary/10 ring-1 ring-primary/30 transition-all duration-300 hover:border-primary/70 hover:bg-primary/15 hover:shadow-lg hover:shadow-primary/20 active:scale-[0.99]"
                                                     >
-                                                        <span className="flex items-center gap-2">
-                                                            <Calendar className="h-4 w-4 text-primary" />
-                                                            Choose a retail
-                                                            event, season, or
-                                                            holiday...
+                                                        {/* Subtle ambient radiant sweep */}
+                                                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-primary/15 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                                                        <span className="relative flex items-center gap-2 font-medium">
+                                                            <Calendar className="h-4 w-4 text-primary animate-pulse" />
+                                                            Choose a retail event, season, or holiday...
                                                         </span>
-                                                        <span className="font-semibold text-primary">
+                                                        <span className="relative inline-flex items-center gap-1 rounded-lg bg-primary/20 px-2.5 py-1 text-xs font-bold text-primary shadow-xs ring-1 ring-primary/30 transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-md group-hover:shadow-primary/30">
                                                             Browse Events →
                                                         </span>
                                                     </button>
@@ -3353,14 +3467,14 @@ export default function GeneratorPage() {
                                                     </div>
                                                     <Button
                                                         type="button"
-                                                        variant="ghost"
+                                                        variant="outline"
                                                         size="sm"
                                                         onClick={() =>
                                                             generateNewPrompt()
                                                         }
-                                                        className="h-7 gap-1 text-[11px] font-semibold text-primary hover:bg-primary/10"
+                                                        className="relative h-7 gap-1.5 rounded-lg border-primary/40 bg-primary/10 px-2.5 text-[11px] font-bold text-primary shadow-xs shadow-primary/20 ring-1 ring-primary/20 transition-all duration-300 hover:border-primary hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:shadow-primary/30 active:scale-95"
                                                     >
-                                                        <Sparkles className="h-3 w-3" />
+                                                        <Sparkles className="h-3 w-3 animate-pulse" />
                                                         {form.image_prompt.trim()
                                                             ? 'Suggest Different Angle'
                                                             : 'Generate Visual Prompt'}
@@ -3606,9 +3720,9 @@ export default function GeneratorPage() {
                                                     onClick={
                                                         applyDynamicSuggestions
                                                     }
-                                                    className="h-8 gap-1.5 self-start text-xs font-semibold shadow-none sm:self-auto"
+                                                    className="relative h-8 gap-1.5 self-start rounded-lg border-primary/40 bg-primary/10 px-3 text-xs font-bold text-primary shadow-md shadow-primary/20 ring-1 ring-primary/30 transition-all duration-300 hover:border-primary hover:bg-primary hover:text-primary-foreground hover:shadow-lg hover:shadow-primary/30 active:scale-95 sm:self-auto"
                                                 >
-                                                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                                                    <Sparkles className="h-3.5 w-3.5 animate-pulse" />
                                                     {form.content_style.length >
                                                         0 ||
                                                     form.brand_tone.length > 0
@@ -4016,9 +4130,9 @@ export default function GeneratorPage() {
                                                             variant="outline"
                                                             size="sm"
                                                             onClick={generateTagline}
-                                                            className="h-7 gap-1 text-[11px] font-semibold text-primary shadow-none hover:bg-primary/10"
+                                                            className="relative h-7.5 gap-1.5 rounded-lg border-primary/40 bg-primary/10 px-3 text-xs font-bold text-primary shadow-md shadow-primary/20 ring-1 ring-primary/30 transition-all duration-300 hover:border-primary hover:bg-primary hover:text-primary-foreground hover:shadow-lg hover:shadow-primary/30 active:scale-95"
                                                         >
-                                                            <Sparkles className="h-3 w-3" />
+                                                            <Sparkles className="h-3.5 w-3.5 animate-pulse" />
                                                             Suggest Tagline
                                                         </Button>
                                                     </div>

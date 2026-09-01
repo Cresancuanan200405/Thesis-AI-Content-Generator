@@ -28,10 +28,10 @@ class ProductController extends Controller
             });
         }
 
-        $products = $query->get();
+        $products = $query->paginate(12)->withQueryString();
 
         return Inertia::render('products/index', [
-            'products' => $products->map(fn (Product $product) => [
+            'products' => $products->through(fn (Product $product) => [
                 'id' => $product->id,
                 'name' => $product->name,
                 'description' => $product->description,
@@ -41,11 +41,17 @@ class ProductController extends Controller
                 'created_at' => $product->created_at?->format('M j, Y'),
                 'edit_url' => route('products.edit', $product),
                 'show_url' => route('products.show', $product),
-            ])->values()->all(),
+            ]),
             'filters' => [
                 'search' => $search,
             ],
-            'count' => $products->count(),
+            'count' => $products->total(),
+            'pagination' => [
+                'current_page' => $products->currentPage(),
+                'last_page' => $products->lastPage(),
+                'per_page' => $products->perPage(),
+                'total' => $products->total(),
+            ],
         ]);
     }
 

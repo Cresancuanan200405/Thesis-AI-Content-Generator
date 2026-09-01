@@ -104,6 +104,7 @@ class ModularPromptOrchestrator
             $copyLines[] = "• BUSINESS / SHOP NAME: \"{$brandName}\"";
             $copyLines[] = '  - Business Name Requirement: MUST appear visibly in the generated image as clean, readable commercial typography.';
             $copyLines[] = "  - Exact Spelling: \"{$brandName}\" (maintain exact spelling, casing, and characters verbatim; do not abbreviate or rewrite).";
+            $copyLines[] = '  - Designed Brand Typography: Render as professionally designed commercial brand typography (e.g., refined editorial, modern bold display, elegant serif, or modern sans-serif tailored to the business category and brand tone). NEVER render as unstyled plain body text, default browser text, or tiny metadata.';
             $copyLines[] = '  - Typography Only: Render as readable text typography. DO NOT transform into a logo, emblem, badge, cup/bean icon, watermark, or brand symbol.';
         } else {
             $copyLines[] = '• BUSINESS / SHOP NAME: Disabled. Do not render any business name, logo, or brand mark in the image.';
@@ -120,13 +121,17 @@ class ModularPromptOrchestrator
             $copyLines[] = "• TAGLINE: \"{$normalizedTagline}\"";
             $copyLines[] = '  - Tagline Requirement: MUST appear visibly in the image as commercial headline/supporting copy.';
             $copyLines[] = "  - Strict Verbatim Rule: Use the exact wording \"{$normalizedTagline}\". Do not paraphrase, rewrite, shorten, expand, or invent additional wording.";
+            $copyLines[] = '  - Designed Advertising Typography: Render the tagline as a professionally art-directed advertising typography element (e.g., bold celebratory headline, high-impact display, dimensional promotional typography, or sophisticated editorial lettering matched to the campaign goal). NEVER render as plain unstyled paragraph copy.';
         }
 
         $copyLines[] = '• COPY RENDERING RULES:';
         $copyLines[] = '  - All enabled copy elements above MUST be visibly rendered in the final image as integrated commercial typography.';
+        $copyLines[] = '  - Content is fixed and immutable; visual typographic styling and artistic layout are creatively art-directed.';
+        $copyLines[] = '  - Composition-Aware Placement: Dynamically place typography in available negative-space regions relative to the product silhouette, lighting, and aspect ratio. Do NOT place text arbitrarily or cover the primary product, packaging, or labels.';
+        $copyLines[] = '  - Typographic Hierarchy & Spacing: Maintain intentional visual rhythm and scale distinction between Headline/Tagline, Business Name, and Price. Prevent typography elements from colliding or stacking into an unreadable block.';
+        $copyLines[] = '  - Contrast & Readability: Ensure crisp legibility against the scene environment using natural tonal contrast, soft contact shadows, or subtle dimensional separation without generic UI boxes.';
         $copyLines[] = '  - Do not omit, duplicate, or hallucinate additional copy.';
         $copyLines[] = '  - Place copy in the designated copy zones inside the invisible safe area.';
-        $copyLines[] = '  - Maintain high contrast, clarity, and readability against the background.';
 
         $modules[] = "FINAL MARKETING COPY — MUST APPEAR VISIBLY IN THE IMAGE:\n".implode("\n", $copyLines);
 
@@ -188,6 +193,7 @@ class ModularPromptOrchestrator
                 "BUSINESS / SHOP: \"{$brandName}\"".($industry && $industry !== 'General' ? " ({$industry})" : ''),
                 "• Exact Text & Spelling: Render the exact business name \"{$brandName}\" as visible text integrated naturally into the overall advertisement composition.",
                 '• Creative Typographic Integration: Visually integrate the name into the creative design using elegant, bold, modern, premium, playful, handwritten, editorial, or stylized typography harmonized with the Brand Tone, colors, lighting, atmosphere, and Render Style. Creative typography treatments and decorative design accents (such as decorative lines, shapes, flourishes, patterns, textures, shadows, or lighting highlights around the text) are permitted and encouraged so the typography feels naturally designed as part of the advertisement.',
+                '• Composition-Aware Brand Placement: Position the business name in an intentional negative-space zone (e.g. upper safe zone or refined brand header region) with deliberate hierarchy that balances the hero product and campaign tagline without visual crowding.',
                 '• STRICT TYPOGRAPHY ONLY (NO LOGO/EMBLEM/SYMBOL): The business name must remain TYPOGRAPHY ONLY. DO NOT create a logo or emblem for the business name. DO NOT create a coffee cup logo, coffee bean logo, café icon, crown, badge, seal, crest, monogram, mascot, watermark, or brand symbol. DO NOT place the name inside a logo-shaped mark or invent a graphical brand identity. Decorative elements surrounding the name are allowed but must remain purely decorative design elements and must NOT form a recognizable logo, emblem, icon, or brand mark.',
             ];
             $modules[] = "BRAND IDENTITY:\n".implode("\n", $brandLines);
@@ -234,6 +240,7 @@ class ModularPromptOrchestrator
             $compositionProfile,
             "• Keep {$productName} visually dominant with realistic contact shadows and natural environmental integration.",
             '• Maintain visual hierarchy: Product as primary focal centerpiece, environmental styling and props subordinate.',
+            '• Composition-Aware Typographic Placement: Intelligently anchor typography into negative space regions corresponding to the aspect ratio format. Prevent text from covering the physical product, packaging labels, faces, or essential scene details.',
             '• INVISIBLE SAFE AREA: The 20% safe margin is an internal, invisible layout constraint only. Keep all important visual subjects, focal elements, and textual regions comfortably inside the designated inner safe area.',
             '• OUTPUT CLEANLINESS & FORBIDDEN ELEMENTS (CRITICAL): The safe margin must NEVER appear in the final artwork. DO NOT render safe-margin boundaries, dotted or dashed borders, frames, guides, grids, rulers, crop marks, alignment marks, measurement indicators, percentage labels, technical annotations, "20% SAFE MARGIN", "SAFE MARGIN", or any production/layout instructions.',
             '• FINISHED COMMERCIAL ADVERTISEMENT: The final image must look like a finished professional commercial advertisement, not a design template, production proof, wireframe, or editing canvas.',
@@ -248,7 +255,7 @@ class ModularPromptOrchestrator
             ? 'The supplied catalog product image is the primary visual source of truth. Product preservation overrides lower-priority styling. Do not replace the supplied product with a newly invented product.'
             : 'Fulfill the full commercial advertising scene with product fidelity and user scene direction prioritized over subordinate styling.';
 
-        $modules[] = "OUTPUT & SAFETY RULES:\n• Framing: Format intentionally for {$aspectRatio} canvas.\n• Invisible Safe Area: Compose key visual and text regions inside the designated safe area with negative space along borders, without rendering visible lines or border guides.\n• Output Cleanliness: Deliver a pristine, finished professional commercial advertisement with zero template artifacts, wireframes, or annotations.\n• No Logos/Emblems: No logos, emblems, badges, or invented branding symbols.\n• PRIORITY ENFORCEMENT: {$priorityEnforcement}";
+        $modules[] = "OUTPUT & SAFETY RULES:\n• Framing: Format intentionally for {$aspectRatio} canvas.\n• Invisible Safe Area: Compose key visual and text regions inside the designated safe area with negative space along borders, without rendering visible lines or border guides.\n• Composition-Aware Typography: Professionally design Business Name and Tagline typography with deliberate negative-space placement, high contrast, and clear visual hierarchy without covering the product or using unstyled plain body text.\n• Output Cleanliness: Deliver a pristine, finished professional commercial advertisement with zero template artifacts, wireframes, or annotations.\n• No Logos/Emblems: No logos, emblems, badges, or invented branding symbols.\n• PRIORITY ENFORCEMENT: {$priorityEnforcement}";
 
         return implode("\n\n", $modules);
     }

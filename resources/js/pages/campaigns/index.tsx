@@ -32,6 +32,7 @@ import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { AppPagination } from '@/components/ui/app-pagination';
 import {
     Dialog,
     DialogContent,
@@ -779,7 +780,7 @@ export default function CampaignsPage({
         <>
             <Head title="Campaigns" />
 
-            <div className="min-h-screen bg-background text-foreground">
+            <div className="min-h-screen bg-background pb-28 text-foreground">
                 <div className="p-4 md:p-6 lg:p-8">
                     {/* =====================================================
                         HEADER
@@ -1496,58 +1497,23 @@ export default function CampaignsPage({
                     ====================================================== */}
 
                     {lastPage > 1 && (
-                        <div className="mt-8 flex items-center justify-center gap-3">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-1 shadow-none"
-                                disabled={currentPage <= 1}
-                                onClick={() =>
-                                    router.get(
-                                        '/campaigns',
-                                        {
-                                            page: Math.max(1, currentPage - 1),
-                                            status: statusFilter,
-                                        },
-                                        {
-                                            preserveScroll: true,
-                                        },
-                                    )
-                                }
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                                Previous
-                            </Button>
-
-                            <span className="text-xs font-medium text-muted-foreground">
-                                Page {currentPage} of {lastPage}
-                            </span>
-
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-1 shadow-none"
-                                disabled={currentPage >= lastPage}
-                                onClick={() =>
-                                    router.get(
-                                        '/campaigns',
-                                        {
-                                            page: Math.min(
-                                                lastPage,
-                                                currentPage + 1,
-                                            ),
-                                            status: statusFilter,
-                                        },
-                                        {
-                                            preserveScroll: true,
-                                        },
-                                    )
-                                }
-                            >
-                                Next
-                                <ChevronRight className="h-4 w-4" />
-                            </Button>
-                        </div>
+                        <AppPagination
+                            currentPage={currentPage}
+                            lastPage={lastPage}
+                            onPageChange={(page) =>
+                                router.get(
+                                    '/campaigns',
+                                    {
+                                        page,
+                                        status: statusFilter,
+                                    },
+                                    {
+                                        preserveScroll: true,
+                                    },
+                                )
+                            }
+                            className="mt-8"
+                        />
                     )}
                 </div>
             </div>

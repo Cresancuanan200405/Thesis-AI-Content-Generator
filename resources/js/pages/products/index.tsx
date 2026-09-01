@@ -24,6 +24,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { AppPagination } from '@/components/ui/app-pagination';
 import {
     Dialog,
     DialogContent,
@@ -46,7 +47,23 @@ export default function ProductsIndexPage({
     products = [],
     filters = {},
     count = 0,
+    pagination = {},
 }: any) {
+    const productList = Array.isArray(products)
+        ? products
+        : (products?.data ?? []);
+    const currentPage = pagination?.current_page ?? 1;
+    const lastPage = pagination?.last_page ?? 1;
+
+    const buildProductPageUrl = (pageNumber: number) => {
+        const params = new URLSearchParams();
+        if (filters?.search) {
+            params.set('search', filters.search);
+        }
+        params.set('page', String(pageNumber));
+        return `/products?${params.toString()}`;
+    };
+
     const [previewProduct, setPreviewProduct] = useState<any>(null);
     const [isZoomed, setIsZoomed] = useState(false);
     const [zoomOrigin, setZoomOrigin] = useState({ x: 50, y: 50 });
@@ -78,11 +95,11 @@ export default function ProductsIndexPage({
     const [isScrolledToDetails, setIsScrolledToDetails] = useState(false);
 
     const currentPreviewIndex = previewProduct
-        ? products.findIndex((p: any) => p.id === previewProduct.id)
+        ? productList.findIndex((p: any) => p.id === previewProduct.id)
         : -1;
     const hasPrevProduct = currentPreviewIndex > 0;
     const hasNextProduct =
-        currentPreviewIndex !== -1 && currentPreviewIndex < products.length - 1;
+        currentPreviewIndex !== -1 && currentPreviewIndex < productList.length - 1;
 
     const handlePrevProduct = (e?: React.MouseEvent) => {
         if (e) {
@@ -90,7 +107,7 @@ export default function ProductsIndexPage({
         }
 
         if (hasPrevProduct) {
-            setPreviewProduct(products[currentPreviewIndex - 1]);
+            setPreviewProduct(productList[currentPreviewIndex - 1]);
             setIsZoomed(false);
             setZoomOrigin({ x: 50, y: 50 });
             setIsScrolledToDetails(false);
@@ -103,7 +120,7 @@ export default function ProductsIndexPage({
         }
 
         if (hasNextProduct) {
-            setPreviewProduct(products[currentPreviewIndex + 1]);
+            setPreviewProduct(productList[currentPreviewIndex + 1]);
             setIsZoomed(false);
             setZoomOrigin({ x: 50, y: 50 });
             setIsScrolledToDetails(false);
@@ -217,14 +234,14 @@ export default function ProductsIndexPage({
                 setIsScrolledToDetails(false);
             } else if (e.key === 'ArrowLeft') {
                 if (hasPrevProduct) {
-                    setPreviewProduct(products[currentPreviewIndex - 1]);
+                    setPreviewProduct(productList[currentPreviewIndex - 1]);
                     setIsZoomed(false);
                     setZoomOrigin({ x: 50, y: 50 });
                     setIsScrolledToDetails(false);
                 }
             } else if (e.key === 'ArrowRight') {
                 if (hasNextProduct) {
-                    setPreviewProduct(products[currentPreviewIndex + 1]);
+                    setPreviewProduct(productList[currentPreviewIndex + 1]);
                     setIsZoomed(false);
                     setZoomOrigin({ x: 50, y: 50 });
                     setIsScrolledToDetails(false);
@@ -240,7 +257,7 @@ export default function ProductsIndexPage({
         currentPreviewIndex,
         hasPrevProduct,
         hasNextProduct,
-        products,
+        productList,
     ]);
 
     return (
@@ -390,7 +407,7 @@ export default function ProductsIndexPage({
                     {/* =====================================================
                         PRODUCTS CONTENT (GRID OR LIST)
                     ====================================================== */}
-                    {products.length === 0 ? (
+                    {productList.length === 0 ? (
                         <div className="rounded-3xl border border-dashed border-border bg-card/60 p-12 text-center shadow-xs">
                             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
                                 <Tag className="h-7 w-7 opacity-60" />
@@ -419,7 +436,7 @@ export default function ProductsIndexPage({
                     ) : viewMode === 'grid' ? (
                         /* COMPACT GRID VIEW WITH ACTUAL FULL IMAGE */
                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                            {products.map((product: any) => {
+                            {productList.map((product: any) => {
                                 return (
                                     <div
                                         key={product.id}
@@ -576,7 +593,7 @@ export default function ProductsIndexPage({
                     ) : (
                         /* LIST VIEW */
                         <div className="space-y-1.5">
-                            {products.map((product: any) => {
+                            {productList.map((product: any) => {
                                 return (
                                     <div
                                         key={product.id}
@@ -708,6 +725,18 @@ export default function ProductsIndexPage({
                             })}
                         </div>
                     )}
+
+                    {/* =====================================================
+                        PAGINATION
+                    ====================================================== */}
+                    {lastPage > 1 && (
+                        <AppPagination
+                            currentPage={currentPage}
+                            lastPage={lastPage}
+                            buildHref={(page) => buildProductPageUrl(page)}
+                            className="mt-8"
+                        />
+                    )}
                 </div>
             </div>
 
@@ -739,7 +768,7 @@ export default function ProductsIndexPage({
                                 className="hidden border-white/20 bg-white/5 text-[10px] text-white/90 sm:inline-flex"
                             >
                                 Product {currentPreviewIndex + 1} of{' '}
-                                {products.length}
+                                {productList.length}
                             </Badge>
                         </div>
 
