@@ -1841,6 +1841,14 @@ export default function GeneratorPage() {
             return;
         }
 
+        if (!form.event_id) {
+            toast.error(
+                'Please select a Philippine holiday or marketing event for your campaign creative.',
+            );
+
+            return;
+        }
+
         // Reset viewport scroll to top instantly to prevent any scroll-down jump during rendering
         if (typeof window !== 'undefined') {
             window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -2301,7 +2309,8 @@ export default function GeneratorPage() {
     // Step Validation
     const stepOneValid =
         form.product_name.trim().length > 0 &&
-        form.image_prompt.trim().length > 0;
+        form.image_prompt.trim().length > 0 &&
+        Boolean(form.event_id);
     const canGenerate =
         stepOneValid && !isQuotaExceeded && generationState !== 'generating';
 
@@ -3348,12 +3357,12 @@ export default function GeneratorPage() {
                                                         <HelpTooltip text="Choose an official Philippine holiday or commercial sale date to tailor seasonal themes and promotions." />
                                                     </div>
                                                     {selectedEvent ? (
-                                                        <span className="flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                                                        <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
                                                             <Check className="h-3 w-3" /> Selected
                                                         </span>
                                                     ) : (
-                                                        <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                                                            Optional
+                                                        <span className="flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" /> Required
                                                         </span>
                                                     )}
                                                 </div>

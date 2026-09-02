@@ -2,6 +2,7 @@
 
 use App\Models\Business;
 use App\Models\Design;
+use App\Models\Event;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\DesignRegenerationService;
@@ -29,9 +30,11 @@ it('validates generation requests without requiring any logo parameters', functi
         'name' => 'Caramel Machiato',
         'price' => 149.00,
     ]);
+    $event = Event::factory()->create(['user_id' => $user->id]);
 
     $response = $this->actingAs($user)->post('/generator', [
         'product_id' => $product->id,
+        'event_id' => $event->id,
         'product_name' => 'Caramel Machiato',
         'business_name' => 'CoffeYessir',
         'include_business_name' => true,

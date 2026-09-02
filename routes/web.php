@@ -13,7 +13,6 @@ use App\Http\Controllers\UserProfileController;
 use App\Models\Event;
 use App\Services\OpenAIUsageService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
@@ -22,19 +21,6 @@ Route::get('auth/{provider}/redirect', [SocialAuthController::class, 'redirect']
     ->name('auth.social.redirect');
 Route::get('auth/{provider}/callback', [SocialAuthController::class, 'callback'])
     ->name('auth.social.callback');
-
-Route::get('/test-resend', function () {
-    Mail::raw('This is a test email from MarketPilot using Resend.', function ($message) {
-        $message->to('cresancuanan182@gmail.com')
-            ->subject('MarketPilot Resend Test')
-            ->from(config('mail.from.address'), config('mail.from.name'));
-    });
-
-    return response()->json([
-        'status' => 'queued',
-        'recipient' => 'cresancuanan182@gmail.com',
-    ]);
-})->name('test.resend');
 
 Route::middleware('auth')->group(function () {
     Route::post('email/verify-code', function (Request $request) {

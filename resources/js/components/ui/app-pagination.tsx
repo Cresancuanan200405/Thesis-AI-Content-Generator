@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import React from 'react';
+import { useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 
 export interface AppPaginationProps {
@@ -12,6 +13,14 @@ export interface AppPaginationProps {
     className?: string;
 }
 
+function useOptionalSidebar() {
+    try {
+        return useSidebar();
+    } catch {
+        return null;
+    }
+}
+
 export function AppPagination({
     currentPage,
     lastPage,
@@ -20,6 +29,8 @@ export function AppPagination({
     floating = true,
     className,
 }: AppPaginationProps) {
+    const sidebar = useOptionalSidebar();
+
     if (lastPage <= 1) {
         return null;
     }
@@ -65,9 +76,9 @@ export function AppPagination({
     const renderPageElement = (pageNumber: number) => {
         const isActive = pageNumber === currentPage;
         const activeStyles =
-            'h-7 w-7 sm:h-7.5 sm:w-7.5 rounded-full bg-primary text-primary-foreground font-bold shadow-md shadow-primary/30 ring-2 ring-primary/30 scale-105 transition-all text-xs flex items-center justify-center select-none';
+            'h-6 w-6 sm:h-6.5 sm:w-6.5 rounded-full bg-primary text-primary-foreground font-bold shadow-xs shadow-primary/30 ring-1 ring-primary/40 scale-105 transition-all text-[11px] sm:text-xs flex items-center justify-center select-none';
         const inactiveStyles =
-            'h-7 w-7 sm:h-7.5 sm:w-7.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-foreground/5 dark:hover:bg-white/10 font-medium transition-all cursor-pointer text-xs flex items-center justify-center select-none';
+            'h-6 w-6 sm:h-6.5 sm:w-6.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/80 dark:hover:bg-white/10 font-medium transition-all cursor-pointer text-[11px] sm:text-xs flex items-center justify-center select-none';
 
         if (isActive) {
             return (
@@ -108,43 +119,55 @@ export function AppPagination({
     const hasPrev = currentPage > 1;
     const hasNext = currentPage < lastPage;
 
+    // Responsive alignment with sidebar state
+    const sidebarAlignmentClass = React.useMemo(() => {
+        if (!floating) return '';
+        if (!sidebar || sidebar.isMobile) return 'inset-x-0';
+        return sidebar.state === 'expanded'
+            ? 'left-0 right-0 md:left-64'
+            : 'left-0 right-0 md:left-12';
+    }, [floating, sidebar?.isMobile, sidebar?.state]);
+
     return (
         <nav
             aria-label="Pagination Navigation"
             className={cn(
                 floating
-                    ? 'fixed bottom-6 inset-x-0 z-40 flex justify-center pointer-events-none transition-all duration-300 animate-in fade-in slide-in-from-bottom-3'
+                    ? cn(
+                          'fixed bottom-4 sm:bottom-5 z-40 flex justify-center pointer-events-none transition-[left,right,padding,bottom] duration-200 ease-linear animate-in fade-in slide-in-from-bottom-2',
+                          sidebarAlignmentClass,
+                      )
                     : 'flex items-center justify-center pt-6 pb-2',
                 className,
             )}
         >
-            <div className="pointer-events-auto inline-flex items-center justify-center gap-0.5 sm:gap-1 rounded-full border border-white/40 bg-background/80 px-2 py-1 sm:px-2.5 sm:py-1 shadow-xl shadow-black/10 backdrop-blur-2xl ring-1 ring-black/5 transition-all hover:border-white/60 dark:border-white/15 dark:bg-card/80 dark:shadow-black/50 dark:ring-white/10">
+            <div className="pointer-events-auto inline-flex items-center justify-center gap-0.5 sm:gap-1 rounded-full border border-border/80 bg-background/85 px-1.5 py-0.5 sm:px-2 sm:py-0.5 shadow-lg shadow-black/5 backdrop-blur-xl ring-1 ring-black/5 transition-all hover:border-border dark:border-white/15 dark:bg-card/85 dark:shadow-black/40 dark:ring-white/10">
                 {/* Previous Button */}
                 {hasPrev ? (
                     buildHref ? (
                         <Link
                             href={buildHref(currentPage - 1)}
-                            className="flex h-7 w-7 sm:h-7.5 sm:w-7.5 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-foreground/5 hover:text-foreground active:scale-95 cursor-pointer dark:hover:bg-white/10"
+                            className="flex h-6 w-6 sm:h-6.5 sm:w-6.5 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-muted/80 hover:text-foreground active:scale-95 cursor-pointer dark:hover:bg-white/10"
                             aria-label="Previous page"
                         >
-                            <ChevronLeft className="h-3.5 w-3.5" />
+                            <ChevronLeft className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         </Link>
                     ) : (
                         <button
                             type="button"
                             onClick={() => onPageChange?.(currentPage - 1)}
-                            className="flex h-7 w-7 sm:h-7.5 sm:w-7.5 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-foreground/5 hover:text-foreground active:scale-95 cursor-pointer dark:hover:bg-white/10"
+                            className="flex h-6 w-6 sm:h-6.5 sm:w-6.5 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-muted/80 hover:text-foreground active:scale-95 cursor-pointer dark:hover:bg-white/10"
                             aria-label="Previous page"
                         >
-                            <ChevronLeft className="h-3.5 w-3.5" />
+                            <ChevronLeft className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         </button>
                     )
                 ) : (
                     <span
-                        className="flex h-7 w-7 sm:h-7.5 sm:w-7.5 items-center justify-center rounded-full text-muted-foreground/30 cursor-not-allowed select-none"
+                        className="flex h-6 w-6 sm:h-6.5 sm:w-6.5 items-center justify-center rounded-full text-muted-foreground/30 cursor-not-allowed select-none"
                         aria-disabled="true"
                     >
-                        <ChevronLeft className="h-3.5 w-3.5" />
+                        <ChevronLeft className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     </span>
                 )}
 
@@ -158,7 +181,7 @@ export function AppPagination({
                         return (
                             <span
                                 key={`ellipsis-${index}`}
-                                className="flex h-7 w-7 sm:h-7.5 sm:w-7.5 items-center justify-center text-[10px] sm:text-xs font-semibold text-muted-foreground/70 select-none"
+                                className="flex h-6 w-6 sm:h-6.5 sm:w-6.5 items-center justify-center text-[10px] font-semibold text-muted-foreground/60 select-none"
                             >
                                 …
                             </span>
@@ -171,27 +194,27 @@ export function AppPagination({
                     buildHref ? (
                         <Link
                             href={buildHref(currentPage + 1)}
-                            className="flex h-7 w-7 sm:h-7.5 sm:w-7.5 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-foreground/5 hover:text-foreground active:scale-95 cursor-pointer dark:hover:bg-white/10"
+                            className="flex h-6 w-6 sm:h-6.5 sm:w-6.5 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-muted/80 hover:text-foreground active:scale-95 cursor-pointer dark:hover:bg-white/10"
                             aria-label="Next page"
                         >
-                            <ChevronRight className="h-3.5 w-3.5" />
+                            <ChevronRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         </Link>
                     ) : (
                         <button
                             type="button"
                             onClick={() => onPageChange?.(currentPage + 1)}
-                            className="flex h-7 w-7 sm:h-7.5 sm:w-7.5 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-foreground/5 hover:text-foreground active:scale-95 cursor-pointer dark:hover:bg-white/10"
+                            className="flex h-6 w-6 sm:h-6.5 sm:w-6.5 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-muted/80 hover:text-foreground active:scale-95 cursor-pointer dark:hover:bg-white/10"
                             aria-label="Next page"
                         >
-                            <ChevronRight className="h-3.5 w-3.5" />
+                            <ChevronRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         </button>
                     )
                 ) : (
                     <span
-                        className="flex h-7 w-7 sm:h-7.5 sm:w-7.5 items-center justify-center rounded-full text-muted-foreground/30 cursor-not-allowed select-none"
+                        className="flex h-6 w-6 sm:h-6.5 sm:w-6.5 items-center justify-center rounded-full text-muted-foreground/30 cursor-not-allowed select-none"
                         aria-disabled="true"
                     >
-                        <ChevronRight className="h-3.5 w-3.5" />
+                        <ChevronRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     </span>
                 )}
             </div>

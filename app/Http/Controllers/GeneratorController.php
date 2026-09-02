@@ -320,6 +320,7 @@ class GeneratorController extends Controller
         $request->validate([
             'product_name' => ['required', 'string', 'max:255'],
             'image_prompt' => ['nullable', 'string'],
+            'event_id' => ['required', 'exists:events,id'],
         ]);
 
         $referenceImagePath = null;

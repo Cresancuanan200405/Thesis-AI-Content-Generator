@@ -131,3 +131,24 @@ it('25. is purely idempotent', function () {
             ->and($thrice)->toBe($once);
     }
 });
+
+it('26. handles exact production audit test matrix', function () {
+    expect(TaglineNormalizationService::normalize('Hello World&'))->toBe('Hello World')
+        ->and(TaglineNormalizationService::normalize('Hello World &'))->toBe('Hello World')
+        ->and(TaglineNormalizationService::normalize('Hello World...'))->toBe('Hello World')
+        ->and(TaglineNormalizationService::normalize('"Hello World"'))->toBe('Hello World')
+        ->and(TaglineNormalizationService::normalize('“Hello World”'))->toBe('Hello World')
+        ->and(TaglineNormalizationService::normalize('Hello World,'))->toBe('Hello World')
+        ->and(TaglineNormalizationService::normalize('Hello World:'))->toBe('Hello World')
+        ->and(TaglineNormalizationService::normalize('Hello World;'))->toBe('Hello World')
+        ->and(TaglineNormalizationService::normalize('Hello World -'))->toBe('Hello World')
+        ->and(TaglineNormalizationService::normalize('Hello World —'))->toBe('Hello World')
+        ->and(TaglineNormalizationService::normalize('Hello World /'))->toBe('Hello World')
+        ->and(TaglineNormalizationService::normalize('Hello World |'))->toBe('Hello World')
+        ->and(TaglineNormalizationService::normalize('Hello World !'))->toBe('Hello World !')
+        ->and(TaglineNormalizationService::normalize('Hello World ?'))->toBe('Hello World ?')
+        ->and(TaglineNormalizationService::normalize('Hello & World'))->toBe('Hello & World')
+        ->and(TaglineNormalizationService::normalize('Rock & Roll'))->toBe('Rock & Roll')
+        ->and(TaglineNormalizationService::normalize('R&B Coffee'))->toBe('R&B Coffee')
+        ->and(TaglineNormalizationService::normalize('A&B Café'))->toBe('A&B Café');
+});

@@ -1,22 +1,36 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft,
+    Briefcase,
+    Building2,
+    Car,
     ChevronDown,
     ChevronUp,
+    Coffee,
     Cpu,
     Download,
+    Dumbbell,
     ExternalLink,
+    GraduationCap,
     Heart,
+    HeartPulse,
     ImageIcon,
+    Landmark,
+    Plane,
     RefreshCw,
     ShieldCheck,
+    Shirt,
+    ShoppingBag,
+    ShoppingBasket,
     Sparkles,
     Trash2,
+    Utensils,
+    UtensilsCrossed,
     X,
     ZoomIn,
     ZoomOut,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -31,6 +45,163 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 
+const resolveIndustryIcon = (
+    industry?: string | null,
+    category?: string | null,
+) => {
+    const raw = `${industry || ''} ${category || ''}`.toLowerCase().trim();
+
+    if (!raw) {
+        return Sparkles;
+    }
+
+    if (
+        raw.includes('coffee') ||
+        raw.includes('cafe') ||
+        raw.includes('café') ||
+        raw.includes('tea') ||
+        raw.includes('beverage')
+    ) {
+        return Coffee;
+    }
+    if (
+        raw.includes('food') ||
+        raw.includes('restaurant') ||
+        raw.includes('dining') ||
+        raw.includes('eatery')
+    ) {
+        return UtensilsCrossed;
+    }
+    if (
+        raw.includes('bakery') ||
+        raw.includes('pastry') ||
+        raw.includes('bread') ||
+        raw.includes('dessert') ||
+        raw.includes('cake')
+    ) {
+        return Utensils;
+    }
+    if (
+        raw.includes('fashion') ||
+        raw.includes('apparel') ||
+        raw.includes('clothing') ||
+        raw.includes('wear') ||
+        raw.includes('garment')
+    ) {
+        return Shirt;
+    }
+    if (
+        raw.includes('beauty') ||
+        raw.includes('wellness') ||
+        raw.includes('cosmetic') ||
+        raw.includes('skincare') ||
+        raw.includes('salon')
+    ) {
+        return Sparkles;
+    }
+    if (
+        raw.includes('fitness') ||
+        raw.includes('gym') ||
+        raw.includes('sport') ||
+        raw.includes('workout')
+    ) {
+        return Dumbbell;
+    }
+    if (
+        raw.includes('grocery') ||
+        raw.includes('market') ||
+        raw.includes('supermarket') ||
+        raw.includes('produce')
+    ) {
+        return ShoppingBasket;
+    }
+    if (
+        raw.includes('retail') ||
+        raw.includes('e-commerce') ||
+        raw.includes('shop') ||
+        raw.includes('store')
+    ) {
+        return ShoppingBag;
+    }
+    if (
+        raw.includes('tech') ||
+        raw.includes('software') ||
+        raw.includes('app') ||
+        raw.includes('digital') ||
+        raw.includes('it')
+    ) {
+        return Cpu;
+    }
+    if (
+        raw.includes('health') ||
+        raw.includes('medical') ||
+        raw.includes('clinic') ||
+        raw.includes('care')
+    ) {
+        return HeartPulse;
+    }
+    if (
+        raw.includes('real estate') ||
+        raw.includes('property') ||
+        raw.includes('realty') ||
+        raw.includes('housing')
+    ) {
+        return Building2;
+    }
+    if (
+        raw.includes('education') ||
+        raw.includes('school') ||
+        raw.includes('academy') ||
+        raw.includes('learning')
+    ) {
+        return GraduationCap;
+    }
+    if (
+        raw.includes('professional') ||
+        raw.includes('consulting') ||
+        raw.includes('agency') ||
+        raw.includes('service') ||
+        raw.includes('legal')
+    ) {
+        return Briefcase;
+    }
+    if (
+        raw.includes('travel') ||
+        raw.includes('hospitality') ||
+        raw.includes('hotel') ||
+        raw.includes('tourism') ||
+        raw.includes('flight')
+    ) {
+        return Plane;
+    }
+    if (
+        raw.includes('auto') ||
+        raw.includes('vehicle') ||
+        raw.includes('car') ||
+        raw.includes('motor')
+    ) {
+        return Car;
+    }
+    if (
+        raw.includes('finance') ||
+        raw.includes('banking') ||
+        raw.includes('investment') ||
+        raw.includes('accounting')
+    ) {
+        return Landmark;
+    }
+
+    return Sparkles;
+};
+
+const regenerationStatusPhrases = [
+    'Analyzing creative parameters & scene...',
+    'Composing lighting, shadows & atmosphere...',
+    'Synthesizing fresh visual variation...',
+    'Applying commercial typography hierarchy...',
+    'Finalizing high-fidelity rendering...',
+];
+
 export default function DesignShowPage({ design }: any) {
     const [isFavorite, setIsFavorite] = useState<boolean>(
         Boolean(design.is_favorite),
@@ -40,6 +211,94 @@ export default function DesignShowPage({ design }: any) {
     const [isPreviewZoomed, setIsPreviewZoomed] = useState(false);
     const [isRegenerateModalOpen, setIsRegenerateModalOpen] = useState(false);
     const [isRegenerating, setIsRegenerating] = useState(false);
+    const [generationProgress, setGenerationProgress] = useState(15);
+    const [rotatingPhraseIndex, setRotatingPhraseIndex] = useState(0);
+
+    const activeIndustry = design.business_industry || 'Creative Marketing';
+    const IndustryIcon = resolveIndustryIcon(activeIndustry);
+
+    const currentStatusMessage =
+        regenerationStatusPhrases[
+            rotatingPhraseIndex % regenerationStatusPhrases.length
+        ];
+
+    // Progress animation and message rotation during regeneration
+    useEffect(() => {
+        if (!isRegenerating) {
+            setGenerationProgress(15);
+            setRotatingPhraseIndex(0);
+            return;
+        }
+
+        const progressInterval = window.setInterval(() => {
+            setGenerationProgress((prev) => {
+                if (prev < 35) return prev + 6;
+                if (prev < 65) return prev + 4;
+                if (prev < 85) return prev + 2;
+                if (prev < 95) return prev + 1;
+                return prev;
+            });
+        }, 500);
+
+        const phraseInterval = window.setInterval(() => {
+            setRotatingPhraseIndex(
+                (prev) => (prev + 1) % regenerationStatusPhrases.length,
+            );
+        }, 2200);
+
+        return () => {
+            window.clearInterval(progressInterval);
+            window.clearInterval(phraseInterval);
+        };
+    }, [isRegenerating]);
+
+    // Tab visibility and exit warning during regeneration
+    useEffect(() => {
+        if (!isRegenerating) return;
+
+        const originalTitle =
+            typeof document !== 'undefined' ? document.title : '';
+
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                if (typeof document !== 'undefined') {
+                    document.title =
+                        '⚠️ Regenerating... Keep Tab Open! — MarketPilot';
+                }
+                toast.warning('Warning: You switched away from this tab!', {
+                    description:
+                        'Keep this tab active and in focus. Switching tabs or minimizing the browser may interrupt visual creative regeneration.',
+                    duration: 8000,
+                    id: 'tab-switch-warning',
+                });
+            } else {
+                if (typeof document !== 'undefined') {
+                    document.title = originalTitle;
+                }
+            }
+        };
+
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            e.returnValue =
+                'Visual creative regeneration is in progress. Leaving this page will interrupt it.';
+            return e.returnValue;
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            if (typeof document !== 'undefined' && originalTitle) {
+                document.title = originalTitle;
+            }
+            document.removeEventListener(
+                'visibilitychange',
+                handleVisibilityChange,
+            );
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [isRegenerating]);
 
     const meta = design.generation_metadata || {};
     const isProductPreserved = Boolean(
@@ -669,6 +928,114 @@ export default function DesignShowPage({ design }: any) {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <span>Click anywhere on image to toggle 100% zoom & fit</span>
+                    </div>
+                </div>
+            )}
+
+            {/* =============================================================
+                LIVE REGENERATION STUDIO RENDERING OVERLAY (STUDIO EXPERIENCE)
+            ============================================================= */}
+            {isRegenerating && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-background/80 backdrop-blur-2xl p-4 sm:p-6 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300">
+                    <div className="relative flex w-full max-w-lg flex-col items-center justify-between gap-5 overflow-hidden rounded-3xl border border-border/80 bg-card/95 p-6 sm:p-8 shadow-2xl backdrop-blur-2xl">
+                        {/* Ambient Background Studio Aura */}
+                        <div className="pointer-events-none absolute -top-16 left-1/2 h-36 w-36 -translate-x-1/2 rounded-full bg-primary/15 blur-3xl motion-reduce:hidden" />
+                        <div className="pointer-events-none absolute -bottom-16 left-1/2 h-36 w-36 -translate-x-1/2 rounded-full bg-emerald-500/15 blur-3xl motion-reduce:hidden" />
+
+                        {/* 1. LIVE SYNTHESIS BADGE WITH GREEN INDICATOR DOT & TITLE */}
+                        <div className="relative flex flex-col items-center text-center space-y-2">
+                            <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 shadow-2xs">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="absolute inline-flex h-full w-full motion-safe:animate-ping rounded-full bg-emerald-400 opacity-75 motion-reduce:hidden" />
+                                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                                </span>
+                                <span>Live Regeneration</span>
+                            </div>
+
+                            <div className="flex flex-col items-center space-y-1">
+                                <h2 className="text-base sm:text-lg md:text-xl font-bold tracking-tight text-foreground">
+                                    Regenerating visual creative
+                                </h2>
+
+                                {design.business_name && (
+                                    <p className="text-xs sm:text-sm text-muted-foreground font-medium">
+                                        for <span className="font-semibold text-foreground/90">{design.business_name}</span>
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* 2. CENTER PIECE: PROMINENT CHOSEN INDUSTRY LOGO / PICTOGRAM */}
+                        <div className="relative flex w-full items-center justify-center py-2 sm:py-3">
+                            {/* Ambient Radiant Glow */}
+                            <div className="pointer-events-none absolute h-28 w-28 rounded-full bg-primary/20 blur-2xl motion-safe:animate-pulse motion-reduce:hidden" />
+
+                            {/* Glassmorphic Industry Emblem Pedestal */}
+                            <div className="relative flex h-28 w-28 sm:h-32 sm:w-32 flex-col items-center justify-center rounded-3xl border border-primary/25 bg-gradient-to-b from-primary/15 via-primary/5 to-muted/40 shadow-xl shadow-primary/10 ring-1 ring-primary/20 backdrop-blur-xl transition-all">
+                                <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-xs ring-1 ring-primary/25">
+                                    <IndustryIcon className="h-6 w-6 sm:h-7 sm:w-7 text-primary motion-safe:animate-pulse" />
+                                </div>
+                                {activeIndustry && (
+                                    <span className="mt-1.5 max-w-[90px] truncate text-[10px] font-bold uppercase tracking-wider text-primary/80">
+                                        {activeIndustry}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* 3. DYNAMIC STATUS MESSAGE, PROGRESS BAR & CLEAN METADATA */}
+                        <div className="relative w-full space-y-3">
+                            {/* Dynamic Creative Phase Message */}
+                            <div className="flex items-center justify-center gap-1.5 text-center">
+                                <Sparkles className="h-3.5 w-3.5 text-primary motion-safe:animate-pulse motion-reduce:hidden" />
+                                <p className="text-xs sm:text-sm font-semibold text-foreground transition-opacity duration-500">
+                                    {currentStatusMessage}
+                                </p>
+                            </div>
+
+                            {/* Illuminated Modern Progress Bar with Dynamic Indicator */}
+                            <div className="mx-auto w-full max-w-xs sm:max-w-sm space-y-1">
+                                <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
+                                    <span>Synthesizing variation</span>
+                                    <span className="font-mono font-semibold text-primary">
+                                        {generationProgress}%
+                                    </span>
+                                </div>
+                                <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted/80 p-0.5 ring-1 ring-border/50">
+                                    <div
+                                        className="h-full rounded-full bg-gradient-to-r from-primary via-indigo-500 to-emerald-500 shadow-xs shadow-primary/30 transition-all duration-500 ease-out"
+                                        style={{
+                                            width: `${generationProgress}%`,
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Clean, Non-Flooded Single-Row Metadata Context */}
+                            <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 pt-0.5 text-xs text-muted-foreground">
+                                {design.product_name && (
+                                    <span className="truncate max-w-[140px] font-medium text-foreground/90">
+                                        {design.product_name}
+                                    </span>
+                                )}
+                                {design.product_name && (design.visual_theme || design.brand_tone) && (
+                                    <span className="text-muted-foreground/40">•</span>
+                                )}
+                                {(design.visual_theme || design.brand_tone) && (
+                                    <span className="truncate max-w-[140px] font-medium text-muted-foreground">
+                                        {design.visual_theme || design.brand_tone}
+                                    </span>
+                                )}
+                                {(design.product_name || design.visual_theme || design.brand_tone) && (design.campaign_name || design.event_name) && (
+                                    <span className="text-muted-foreground/40">•</span>
+                                )}
+                                {(design.campaign_name || design.event_name) && (
+                                    <span className="truncate max-w-[150px] font-semibold text-primary">
+                                        {design.campaign_name || design.event_name}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

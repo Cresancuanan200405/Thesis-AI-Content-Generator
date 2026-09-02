@@ -426,6 +426,7 @@ class DesignController extends Controller
                 'id' => $design->id,
                 'product_name' => $design->product_name,
                 'business_name' => $design->business?->name,
+                'business_industry' => $design->business?->industry ?? $design->user?->business?->industry,
                 'campaign_name' => $design->campaign?->name,
                 'event_name' => $design->event?->name,
                 'brand_tone' => $design->brand_tone,

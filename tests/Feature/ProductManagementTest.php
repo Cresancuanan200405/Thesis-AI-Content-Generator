@@ -2,6 +2,7 @@
 
 use App\Models\Business;
 use App\Models\Campaign;
+use App\Models\Event;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\MarketingPromptBuilder;
@@ -190,12 +191,14 @@ it('generator rejects another users product', function () {
     $owner = User::factory()->create(['onboarding_completed' => true]);
     $ownerBusiness = Business::factory()->create(['user_id' => $owner->id]);
     $product = Product::factory()->create(['business_id' => $ownerBusiness->id]);
+    $event = Event::factory()->create(['user_id' => $user->id]);
 
     $this->actingAs($user)
         ->post('/generator', [
             'product_id' => $product->id,
             'product_name' => 'Test Product',
             'marketing_goal' => 'Increase awareness',
+            'event_id' => $event->id,
             'content_style' => ['Lifestyle'],
             'brand_tone' => ['Professional'],
         ])
@@ -206,12 +209,14 @@ it('generator accepts the authenticated users product', function () {
     $user = User::factory()->create(['onboarding_completed' => true]);
     $business = Business::factory()->create(['user_id' => $user->id]);
     $product = Product::factory()->create(['business_id' => $business->id]);
+    $event = Event::factory()->create(['user_id' => $user->id]);
 
     $this->actingAs($user)
         ->post('/generator', [
             'product_id' => $product->id,
             'product_name' => $product->name,
             'marketing_goal' => 'Increase awareness',
+            'event_id' => $event->id,
             'content_style' => ['Lifestyle'],
             'brand_tone' => ['Professional'],
         ])

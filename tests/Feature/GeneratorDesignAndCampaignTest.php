@@ -357,11 +357,13 @@ it('generator store passes catalog product image to reference image path and Ope
         'name' => 'Barako Cold Brew',
         'image_path' => 'products/barako-cold-brew.png',
     ]);
+    $event = Event::factory()->create(['user_id' => $user->id]);
     Storage::disk('public')->put('products/barako-cold-brew.png', 'cold-brew-bytes');
 
     $response = $this->actingAs($user)
         ->post('/generator', [
             'product_id' => $product->id,
+            'event_id' => $event->id,
             'product_name' => 'Barako Cold Brew',
             'marketing_goal' => 'Promote cold brew for summer',
             'content_style' => ['Lifestyle'],

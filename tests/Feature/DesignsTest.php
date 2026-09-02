@@ -461,11 +461,13 @@ it('user cannot regenerate another users design', function () {
 
 it('failed generation does not produce a completed design record', function () {
     $user = User::factory()->create(['onboarding_completed' => true]);
+    $event = Event::factory()->create(['user_id' => $user->id]);
 
     $this->actingAs($user)
         ->post('/generator', [
             'product_name' => 'Failed Product',
             'marketing_goal' => 'Create a design',
+            'event_id' => $event->id,
             'content_style' => ['Product-focused'],
             'brand_tone' => ['Professional'],
         ]);

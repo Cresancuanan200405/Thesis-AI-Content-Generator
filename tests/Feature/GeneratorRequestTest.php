@@ -118,7 +118,7 @@ it('generates fallback visual when OpenAI API key is missing', function () {
         'name' => 'Signature Latte',
     ]);
 
-    Event::factory()->create([
+    $event = Event::factory()->create([
         'user_id' => $user->id,
         'name' => 'Spring Launch',
     ]);
@@ -128,6 +128,7 @@ it('generates fallback visual when OpenAI API key is missing', function () {
     $this->actingAs($user)
         ->post('/generator', [
             'product_id' => $product->id,
+            'event_id' => $event->id,
             'product_name' => 'Signature Latte',
             'marketing_goal' => 'Drive early spring sales',
             'content_style' => ['Product-focused'],
@@ -138,8 +139,26 @@ it('generates fallback visual when OpenAI API key is missing', function () {
 
     $this->assertDatabaseHas('generation_requests', [
         'user_id' => $user->id,
+        'event_id' => $event->id,
         'status' => 'completed',
     ]);
+});
+
+it('validates event_id is required for generator request', function () {
+    $user = User::factory()->create([
+        'onboarding_completed' => true,
+    ]);
+
+    Business::factory()->create([
+        'user_id' => $user->id,
+    ]);
+
+    $this->actingAs($user)
+        ->post('/generator', [
+            'product_name' => 'Signature Latte',
+            'marketing_goal' => 'Drive sales',
+        ])
+        ->assertSessionHasErrors(['event_id']);
 });
 
 it('validates image quality input', function () {
@@ -151,10 +170,15 @@ it('validates image quality input', function () {
         'user_id' => $user->id,
     ]);
 
+    $event = Event::factory()->create([
+        'user_id' => $user->id,
+    ]);
+
     $this->actingAs($user)
         ->post('/generator', [
             'product_name' => 'Signature Latte',
             'marketing_goal' => 'Drive sales',
+            'event_id' => $event->id,
             'image_quality' => 'ultra-extreme',
         ])
         ->assertSessionHasErrors(['image_quality']);
@@ -165,6 +189,10 @@ it('normalizes tagline during preview generation', function () {
     $business = Business::factory()->create([
         'user_id' => $user->id,
         'name' => 'North Star Coffee',
+    ]);
+    $event = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Spring Launch',
     ]);
 
     config()->set('services.openai.api_key', 'test-key');
@@ -179,6 +207,7 @@ it('normalizes tagline during preview generation', function () {
     $response = $this->actingAs($user)
         ->postJson('/generator/preview', [
             'product_name' => 'Signature Latte',
+            'event_id' => $event->id,
             'tagline' => '“Fresh Flavor Daily...” &',
             'marketing_goal' => 'Drive sales',
             'aspect_ratio' => '1:1',

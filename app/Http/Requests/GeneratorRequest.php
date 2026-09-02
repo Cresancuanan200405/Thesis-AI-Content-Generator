@@ -22,7 +22,7 @@ class GeneratorRequest extends FormRequest
         return [
             'product_id' => ['nullable', 'exists:products,id'],
             'campaign_id' => ['nullable', 'exists:campaigns,id'],
-            'event_id' => ['nullable', 'exists:events,id'],
+            'event_id' => ['required', 'exists:events,id'],
             'product_name' => ['required', 'string', 'max:255'],
             'price' => ['nullable', 'numeric', 'min:0'],
             'marketing_goal' => ['required', 'string', 'max:2000'],

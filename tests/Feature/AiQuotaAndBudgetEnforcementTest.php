@@ -2,6 +2,7 @@
 
 use App\Models\Business;
 use App\Models\Design;
+use App\Models\Event;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
@@ -79,10 +80,12 @@ test('generator store endpoint blocks new generation when budget limit is reache
 
     $user = User::factory()->create(['onboarding_completed' => true]);
     Business::factory()->create(['user_id' => $user->id]);
+    $event = Event::factory()->create(['user_id' => $user->id]);
 
     $response = $this->actingAs($user)->post(route('generator.store'), [
         'product_name' => 'Sample Product',
         'marketing_goal' => 'Holiday Sale',
+        'event_id' => $event->id,
     ]);
 
     $response->assertRedirect(route('generator.index'));
@@ -108,10 +111,12 @@ test('generator direct visual endpoint blocks generation with json response when
 
     $user = User::factory()->create(['onboarding_completed' => true]);
     Business::factory()->create(['user_id' => $user->id]);
+    $event = Event::factory()->create(['user_id' => $user->id]);
 
     $response = $this->actingAs($user)->postJson(route('generator.preview'), [
         'product_name' => 'Premium Coffee',
         'marketing_goal' => 'Brand Awareness',
+        'event_id' => $event->id,
     ]);
 
     $response->assertStatus(403);
