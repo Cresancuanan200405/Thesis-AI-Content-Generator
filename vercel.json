@@ -27,7 +27,8 @@
     ],
     "env": {
         "APP_ENV": "production",
-        "APP_DEBUG": "true",
+        "APP_DEBUG": "false",
+        "APP_MAINTENANCE_DRIVER": "file",
         "LOG_CHANNEL": "stderr",
         "VERCEL": "1",
         "APP_CONFIG_CACHE": "/tmp/config.php",
