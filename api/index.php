@@ -8,7 +8,7 @@ register_shutdown_function(function () {
     if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
         http_response_code(500);
         header('Content-Type: text/plain');
-        echo "FATAL ERROR: ".$err['message']." in ".$err['file']." on line ".$err['line']."\n";
+        echo 'FATAL ERROR: '.$err['message'].' in '.$err['file'].' on line '.$err['line']."\n";
     }
 });
 
@@ -26,15 +26,23 @@ $storageDirs = [
     '/tmp/views',
 ];
 
+putenv('APP_STORAGE=/tmp/storage');
+$_ENV['APP_STORAGE'] = '/tmp/storage';
+$_SERVER['APP_STORAGE'] = '/tmp/storage';
+
 foreach ($storageDirs as $dir) {
     if (! is_dir($dir)) {
         @mkdir($dir, 0755, true);
     }
 }
 
+if (! file_exists('/tmp/storage/logs/laravel.log')) {
+    @touch('/tmp/storage/logs/laravel.log');
+}
+
 try {
     require __DIR__.'/../public/index.php';
-} catch (\Throwable $e) {
+} catch (Throwable $e) {
     http_response_code(500);
     header('Content-Type: text/plain');
     echo 'UNCAUGHT EXCEPTION: '.$e->getMessage().' in '.$e->getFile().':'.$e->getLine()."\n".$e->getTraceAsString();
