@@ -30,6 +30,12 @@ putenv('APP_STORAGE=/tmp/storage');
 $_ENV['APP_STORAGE'] = '/tmp/storage';
 $_SERVER['APP_STORAGE'] = '/tmp/storage';
 
+if (empty($_ENV['APP_MAINTENANCE_DRIVER'])) {
+    putenv('APP_MAINTENANCE_DRIVER=file');
+    $_ENV['APP_MAINTENANCE_DRIVER'] = 'file';
+    $_SERVER['APP_MAINTENANCE_DRIVER'] = 'file';
+}
+
 foreach ($storageDirs as $dir) {
     if (! is_dir($dir)) {
         @mkdir($dir, 0755, true);
