@@ -1,541 +1,200 @@
 ================================================================================
-SYSTEM AUDIT REPORT: AI-DRIVEN MARKETING CONTENT GENERATOR
-Audit Type: Comprehensive Architectural, Prompt Engineering & AI Pipeline Inspection
-Status: STRICTLY INSPECTION ONLY — NO CODE MODIFIED
+SYSTEM AUDIT REPORT: FINAL AI-DRIVEN MARKETING IMAGE GENERATION SYSTEM
+Audit date: September 2, 2026
+Audit basis: repository source, configuration, tests, and local commands
 ================================================================================
 
---------------------------------------------------------------------------------
-1. EXECUTIVE SUMMARY
---------------------------------------------------------------------------------
-The "AI-Driven Marketing Content Generator" (MarketPilot / AI Marketing Automation) 
-is a full-stack web application designed for micro, small, and medium enterprises (MSMEs), 
-specifically targeting Philippine businesses. Its core function is allowing business 
-owners to generate promotional marketing visual assets aligned with Philippine national 
-and cultural holidays, localized marketing calendar events, product catalog items, 
-and customizable branding preferences.
-
-The application allows users to:
-1. Define business profiles (industry, category, branding, tone, logo).
-2. Maintain a catalog of products (name, description, price, category, product photography).
-3. Browse a Philippine Holiday and Marketing Calendar with automated and custom events.
-4. Launch an AI Visual Marketing Studio with 4 render styles, brand tones, visual themes, 
-   aspect ratios, price tags, taglines, and image uploads.
-5. Generate promotional graphics using OpenAI image models with Vision-assisted 
-   visual analysis and store them in a persistent design portfolio.
-
-Key Findings from Audit:
-- [CONFIRMED FROM CODE] The system uses Laravel 12 / PHP 8.5 on the backend and React 19 / 
-  Inertia.js v2/v3 / TypeScript / Tailwind CSS / Lucide icons on the frontend.
-- [CONFIRMED FROM CODE] Database layer is SQLite (with MySQL/PostgreSQL compatibility via Eloquent).
-- [CONFIRMED FROM CODE] AI Image generation is performed via direct HTTP POST requests to OpenAI 
-  `https://api.openai.com/v1/images/generations` using models `chatgpt-image-latest` / `gpt-image-1` 
-  / `dall-e-3`.
-- [CONFIRMED FROM CODE] Reference/product image analysis is performed using OpenAI Vision 
-  (`gpt-4o-mini` via `https://api.openai.com/v1/chat/completions`) in `ReferenceImageAnalyzer.php`.
-- [CONFIRMED FROM CODE] Text rendering is generated entirely within the raster image by OpenAI's 
-  image diffusion model (no separate canvas/SVG typography post-compositing is performed).
-
-
---------------------------------------------------------------------------------
-2. TECHNOLOGY STACK
---------------------------------------------------------------------------------
-- Core Framework: Laravel 12 (PHP 8.5)
-- SPA Architecture: Inertia.js (React client-side SPA with server-driven routing)
-- Frontend Framework: React 19 + TypeScript
-- Styling: Tailwind CSS v4 + Radix UI primitives + Lucide React
-- Database: SQLite (`database/database.sqlite`) via Eloquent ORM
-- Image Generation API: OpenAI Images API (`https://api.openai.com/v1/images/generations`)
-- Multimodal Vision API: OpenAI Chat Completions API with Vision (`gpt-4o-mini`)
-- Storage System: Laravel Storage Local Public Disk (`storage/app/public/`) with symlink to `public/storage/`
-- Authentication: Laravel Breeze / Session-based authentication with bcrypt password hashing
-- Formatter & Linting: Laravel Pint, ESLint, TypeScript Compiler (`tsc`)
-
-
---------------------------------------------------------------------------------
-3. SYSTEM ARCHITECTURE
---------------------------------------------------------------------------------
-The end-to-end architecture follows a unified pipeline:
-
-[ USER INTERFACE (React / Inertia.js) ]
-  ├── Studio Form State (Product, Price, Tagline, Style, Tone, Theme, Event, Aspect Ratio, Reference Image)
-  └── Dispatches multipart/form-data POST via fetch() to `/generator/preview` or form submit to `/generator/store`
-       ↓
-[ ROUTING & CONTROLLER LAYER ]
-  ├── `routes/web.php` -> `GeneratorController::generatePreview` / `GeneratorController::store`
-  └── Form validation (`product_name` required, `image_prompt` nullable, uploaded files validated)
-       ↓
-[ STORAGE & ASSET MANAGEMENT ]
-  ├── Uploaded Reference / Catalog Image stored in `storage/app/public/generation-requests/`
-  └── Fallback to catalog product path (`storage/app/public/products/...`)
-       ↓
-[ AI ORCHESTRATION & PROMPT BUILDER ]
-  ├── `MarketingPromptBuilder.php` -> Builds user content brief
-  ├── `ReferenceImageAnalyzer.php` -> Calls OpenAI Vision (gpt-4o-mini) to extract structured JSON blueprint
-  └── `OpenAIImageService.php` -> Assembles Product-First prompt (Product Truth + 5-Level Typography + Safe Margins)
-       ↓
-[ OPENAI IMAGE GENERATION API ]
-  └── POST `https://api.openai.com/v1/images/generations` (model, prompt, size, n=1, quality)
-       ↓
-[ RESPONSE HANDLING & IMAGE PERSISTENCE ]
-  ├── Downloads binary from temporary URL / base64 response
-  ├── Saves final PNG to `storage/app/public/designs/openai_{uuid}.png`
-  ├── Records entry in `designs` table with `generation_metadata`
-  └── Returns JSON with `image_url` to React frontend for instant preview / download
-
-
---------------------------------------------------------------------------------
-4. USER ONBOARDING
---------------------------------------------------------------------------------
-[CONFIRMED FROM CODE]
-File: `app/Http/Controllers/OnboardingController.php`
-Frontend: `resources/js/pages/onboarding/`
-
-Onboarding collects business identity attributes stored in the `businesses` table:
-
-| Input Field               | Required? | Database Field               | Data Type | Used in AI Gen? | Purpose                                       |
-|---------------------------|-----------|------------------------------|-----------|-----------------|-----------------------------------------------|
-| Business Name             | YES       | `businesses.name`            | string    | YES             | Included as brand identity in prompt          |
-| Industry                  | YES       | `businesses.industry`        | string    | YES             | Categorizes visual mood & context             |
-| Category / Specialization | NO        | `businesses.category`        | string    | YES             | Narrows product context                       |
-| Description / Bio         | NO        | `businesses.description`     | text      | YES             | Injected into context brief                   |
-| Target Audience           | NO        | `businesses.target_audience` | string    | YES             | Guides scene audience context                 |
-| Unique Selling Point      | NO        | `businesses.unique_selling_point` | string | YES           | Injected into product messaging brief         |
-| Logo File                 | NO        | `businesses.logo_path`       | string    | YES (Optional)  | Used when include_logo=true is selected       |
-| Content Style Prefs       | NO        | `businesses.content_style`   | json      | YES             | Default content tags                          |
-| Marketing Preferences     | NO        | `businesses.marketing_preferences` | json | YES          | Default tone and visual options               |
-
-
---------------------------------------------------------------------------------
-5. BUSINESS PROFILE
---------------------------------------------------------------------------------
-[CONFIRMED FROM CODE]
-Model: `app/Models/Business.php`
-Table: `businesses`
-
-Attributes & Relationships:
-- `user_id` -> Foreign key to `users.id` (One user has one or many businesses; active business stored in session / first record).
-- `name`, `industry`, `category`, `description`, `target_audience`, `unique_selling_point`.
-- `logo_path` -> Path in `storage/app/public/logos/`.
-- HasMany `products` -> `products` table.
-- HasMany `campaigns` -> `campaigns` table.
-- HasMany `designs` -> `designs` table.
-
-
---------------------------------------------------------------------------------
-6. PRODUCT CATALOG & PRODUCT IMAGE HANDLING
---------------------------------------------------------------------------------
-[CONFIRMED FROM CODE]
-Model: `app/Models/Product.php`
-Controller: `app/Http/Controllers/ProductController.php`
-Frontend: `resources/js/pages/products/index.tsx`, `create.tsx`, `edit.tsx`
-Table: `products`
-
-Product Entity Fields:
-- `id` (integer, primary key)
-- `business_id` (foreign key)
-- `name` (string, required)
-- `description` (text, nullable)
-- `category` (string, nullable)
-- `price` (decimal 10,2, nullable)
-- `image_path` (string, nullable, stored in `storage/app/public/products/{hash}.{ext}`)
-- `sku` (string, nullable)
-- `stock` (integer, nullable)
-- `is_active` (boolean, default true)
-
-HOW THE PRODUCT IMAGE IS CURRENTLY USED BY THE IMAGE GENERATION SYSTEM:
-Current Implementation: [CONFIRMED FROM CODE - Combination of A, C, G]
-1. When a user selects a product from the catalog or uploads a desktop photo, the file path 
-   (`storage/app/public/...`) is passed to `OpenAIImageService.php` in the `$options['reference_image_path']`.
-2. `ReferenceImageAnalyzer.php` reads the local image file, base64-encodes it, and sends it to 
-   OpenAI Vision (`gpt-4o-mini`) via the Chat Completions API with multimodal image payload.
-3. OpenAI Vision inspects the image and returns a structured JSON blueprint describing:
-   - `product_identity`: Exact visual characteristics (container, layers, ingredients, toppings, etc.).
-   - `product_physical_details`: Mandatory physical details to preserve.
-   - `composition`, `layout`, `background`, `lighting`, `color_palette`, `typography`, `negative_space`.
-4. `OpenAIImageService.php` converts this blueprint into an authoritative textual prompt directive:
-   "AUTHORITATIVE PRODUCT FIDELITY (SOURCE OF TRUTH)..." and passes it to the OpenAI Image Generation endpoint.
-5. The DALL-E / ChatGPT image model generates the raster output based on this detailed prompt.
-
-
---------------------------------------------------------------------------------
-7. IMPORTANT PRODUCT-PRESERVATION EVALUATION
---------------------------------------------------------------------------------
-Evaluation of Current Behavior:
-- The system extracts the physical features of the product via Vision and instructs the text-to-image 
-  model to recreate the exact physical characteristics.
-- LIMITATION OF TEXT-TO-IMAGE GENERATION: Because OpenAI's `images/generations` endpoint is a pure 
-  text-to-image diffusion process rather than a pixel-compositing / inpainting pipeline, the image model 
-  *synthesizes a new rendering* of the product described in the prompt rather than keeping the 
-  exact original pixels of the uploaded photograph.
-- If true pixel preservation (e.g. keeping the 100% exact photographed burger cutout with untouched 
-  original pixels and only generating a background around it) is required, the architecture requires 
-  a hybrid canvas compositing pipeline (e.g. background removal -> AI background generation -> 
-  raster compositing) or OpenAI Inpainting / Image Edit API (`https://api.openai.com/v1/images/edits`).
-
-
---------------------------------------------------------------------------------
-8. PHILIPPINE HOLIDAY & MARKETING EVENT SYSTEM
---------------------------------------------------------------------------------
-[CONFIRMED FROM CODE]
-Model: `app/Models/Event.php`
-Service: `app/Services/PhilippineHolidayService.php`
-Seeder: `database/seeders/DatabaseSeeder.php`
-Frontend: `resources/js/pages/calendar/index.tsx`, `resources/js/pages/generator/index.tsx`
-Table: `events`
-
-Event Entity Fields:
-- `id` (integer, primary key)
-- `business_id` (nullable for system/national holidays, integer for custom events)
-- `name` (string, e.g. "New Year's Day", "Araw ng Kagitingan", "1.1 New Year Kickoff Mega Sale")
-- `date` (date, YYYY-MM-DD)
-- `type` (enum: 'regular_holiday', 'special_non_working', 'commercial', 'custom')
-- `description` (text)
-- `visual_concept` (text, visual staging idea)
-- `visual_prompt` (text, automated styling prompt)
-- `is_system` (boolean)
-
-Event Types Supported:
-1. Philippine Regular Holidays (New Year's Day, Araw ng Kagitingan, Labor Day, Independence Day, 
-   National Heroes Day, Bonifacio Day, Christmas Day, Rizal Day, Maundy Thursday, Good Friday).
-2. Special Non-Working Holidays (Chinese New Year, EDSA Anniversary, Black Saturday, Ninoy Aquino Day, 
-   All Saints' Day, Feast of the Immaculate Conception, New Year's Eve).
-3. E-Commerce Mega Sale Days (1.1, 2.2, 3.3 ... 11.11, 12.12, Payday Sale).
-4. Cultural & Regional Festivals (Sinulog, Dinagyang, Panagbenga, Kadayawan, MassKara, Pahiyas).
-5. Custom User-Created Events (via Calendar "Add Custom Event" modal).
-
-
---------------------------------------------------------------------------------
-9. AUTOMATED VISUAL PROMPTS & DYNAMIC GENERATION
---------------------------------------------------------------------------------
-[CONFIRMED FROM CODE]
-Location: `resources/js/pages/generator/index.tsx` (function `generateNewPrompt`)
-And `app/Services/MarketingPromptBuilder.php`
-
-How Visual Prompts are Formed:
-In `generator/index.tsx`, `generateNewPrompt(event, productName)` constructs creative visual concepts:
-1. Detects product type from keywords:
-   - Coffee/Drink -> Staging with fresh coffee beans, espresso steam, crystal glassware, condensation.
-   - Food/Bakery -> Warm rustic wood staging, herbs, delicate sauce drizzle, steam.
-   - Fashion/Beauty -> Pristine satin fabric, soft natural window shadows, botanical elements.
-   - Tech/Electronics -> Minimalist architectural concrete, sleek studio rim lighting.
-2. Formats seasonal theme:
-   - New Year -> Festive golden confetti accents, elegant ribbon accents, celebration mood.
-   - Independence Day -> Subtle festive Philippine sunburst & ribbon motifs, celebratory vibrancy.
-   - Christmas -> Warm pine sprigs, golden bokeh shimmer, holiday celebration depth.
-3. User Can Override:
-   - "Auto-Generate Prompt" button generates fresh variations.
-   - "Auto Suggest Styles" button dynamically rotates through 4 render styles.
-   - User can manually edit or replace the prompt text in the textarea.
-
-
---------------------------------------------------------------------------------
-10. IMAGE GENERATION INPUTS MATRIX
---------------------------------------------------------------------------------
-[CONFIRMED FROM CODE]
-
-| Input                      | Collected by UI? | Stored in DB? | Sent to AI? | How Passed to AI?                                   | Current Effect on Output                               |
-|----------------------------|------------------|---------------|-------------|-----------------------------------------------------|--------------------------------------------------------|
-| Product Name               | YES              | YES (designs) | YES         | Hero subject in prompt (`HERO PRODUCT CENTERPIECE`) | Defines main object identity                           |
-| Product Description        | YES              | YES (designs) | YES         | Level 3 promotional detail in prompt                | Adds ingredient / flavor context                       |
-| Product Price              | YES              | YES (designs) | YES         | Level 4 price tag in prompt                         | Renders clean price label badge                        |
-| Philippine Event / Holiday | YES              | YES (designs) | YES         | Level 2 tagline / seasonal context in prompt        | Injects festive atmosphere & badge                     |
-| Tagline / Headline         | YES              | YES (designs) | YES         | Level 1 main headline in prompt                     | Rendered as prominent text in image                    |
-| Product Catalog Image      | YES              | YES (designs) | YES         | Vision API extraction -> Fidelity Prompt Directive  | Preserves physical details of product                  |
-| Reference Ad Image         | YES              | YES (designs) | YES         | Vision API extraction -> Layout Blueprint Directive | Sets layout, lighting, and composition                 |
-| Render Style               | YES              | YES (designs) | YES         | Visual execution directive in prompt                | Sets Studio / Cinematic / Lifestyle / Minimalist look |
-| Brand Tone Tags            | YES              | YES (designs) | YES         | Content style tags in prompt                        | Adjusts visual mood & palette warmth                   |
-| Visual Theme Tags          | YES              | YES (designs) | YES         | Content style tags in prompt                        | Adds contextual background elements                    |
-| Aspect Ratio               | YES              | YES (designs) | YES         | API `size` parameter (`1024x1024`, `1792x1024`, etc)| Sets canvas dimensions & composition framing           |
-| Include Logo               | YES              | YES (designs) | YES         | Level 5 brand identity in prompt                    | Directs model to place brand emblem                    |
-| Custom Prompt Overrides    | YES              | YES (designs) | YES         | Appended as highest priority override               | Directly directs creative output                       |
-
-
---------------------------------------------------------------------------------
-11. RENDER STYLE SYSTEM
---------------------------------------------------------------------------------
-[CONFIRMED FROM CODE]
-The 4 available render styles in `generator/index.tsx` and `OpenAIImageService.php`:
-
-1. Studio Product Still:
-   - UI Label: "Studio Product Still"
-   - Prompt Directive: "Visual Environment: Clean neutral background, balanced three-point studio lighting, crisp focus, generous negative space."
-   - Characteristics: Solid/seamless backdrop, soft diffuse lighting, razor-sharp product clarity.
-
-2. Cinematic Marketing:
-   - UI Label: "Cinematic Marketing"
-   - Prompt Directive: "Visual Environment: Dynamic volumetric rim lighting, rich color grading, shallow depth of field, authentic environment."
-   - Characteristics: High contrast, dramatic atmospheric lighting, rich editorial color grading.
-
-3. Lifestyle Capture:
-   - UI Label: "Lifestyle Capture"
-   - Prompt Directive: "Visual Environment: Authentic contextual setting, warm natural sunlight, candid lifestyle depth."
-   - Characteristics: Real-world contextual environment (cafe, kitchen, outdoor), warm sunlight, organic textures.
-
-4. Minimalist Graphic:
-   - UI Label: "Minimalist Graphic Vector"
-   - Prompt Directive: "Visual Environment: Clean modern layout, sharp vector geometry, bold graphic color contrast."
-   - Characteristics: Flat/vector shapes, strong typography, bold color blocking, graphic minimalism.
-
-
---------------------------------------------------------------------------------
-12. BRAND TONE SYSTEM
---------------------------------------------------------------------------------
-[CONFIRMED FROM CODE]
-Defined in `resources/js/pages/generator/index.tsx` (constant `BRAND_TONE_OPTIONS`):
-1. Professional & Clean (Authoritative, polished, pristine, corporate clarity)
-2. Vibrant & Energetic (High-saturation, exciting, bold, festive, high-contrast)
-3. Warm & Welcoming (Cozy, earthy, approachable, golden-hour, wholesome)
-4. Playful & Creative (Fun, quirky, pastel pops, dynamic composition)
-5. Minimalist & Elegant (Sophisticated, high-fashion, monochrome, spacious)
-6. Bold & Direct (Punchy, unapologetic, strong geometric contrast)
-
-Relationship: Passed as content tags in the prompt to calibrate the color grading and scene mood.
-
-
---------------------------------------------------------------------------------
-13. VISUAL THEME SYSTEM
---------------------------------------------------------------------------------
-[CONFIRMED FROM CODE]
-Defined in `resources/js/pages/generator/index.tsx` (constant `CONTENT_STYLE_OPTIONS`):
-- Modern Minimalist
-- Festive Celebration
-- Luxury Premium
-- Street & Urban
-- Organic & Natural
-- High-Tech Future
-- Vintage & Retro
-- Cozy Cafe Vibe
-
-Relationship: Combined with Brand Tone in the user prompt brief to provide contextual prop recommendations.
-
-
---------------------------------------------------------------------------------
-14. LOGO HANDLING
---------------------------------------------------------------------------------
-[CONFIRMED FROM CODE]
-Implementation:
-- User uploads logo during Onboarding or in Business Settings (`storage/app/public/logos/`).
-- In Generator UI, user toggles `include_logo: true`.
-- Current Model Integration:
-  - In `OpenAIImageService.php`, the prompt instructs:
-    `LEVEL 5 (BRAND IDENTITY): "{Business Name}" (place brand logo cleanly in the top quadrant with ample safe padding)`.
-- Limitation:
-  - Text-to-image models (DALL-E 3) synthesize a generic text emblem / brand mark based on the business name.
-  - The model does NOT perform lossless bitmap alpha-channel compositing of the user's actual uploaded PNG logo file.
-
-
---------------------------------------------------------------------------------
-15. TYPOGRAPHY & TEXT HANDLING
---------------------------------------------------------------------------------
-[CONFIRMED FROM CODE]
-Current Text Architecture:
-- Method: Type A (Generated entirely inside the raster image by OpenAI diffusion model).
-- Hierarchy Structure:
-  - Level 1: Main Headline (largest, top prominence)
-  - Level 2: Tagline (supporting campaign text)
-  - Level 3: Short product description
-  - Level 4: Price Badge (clean modern badge)
-  - Level 5: Brand / Event Badge
-- Safe Margins:
-  - Prompt enforces a mandatory **20% inner safe margin** padding from all canvas borders to prevent letter cropping.
-
-
---------------------------------------------------------------------------------
-16. ASPECT RATIO & DIMENSIONS
---------------------------------------------------------------------------------
-[CONFIRMED FROM CODE]
-Available Options in UI (`resources/js/pages/generator/index.tsx`):
-1. `1:1` Square (Feed Post / Instagram / Facebook) -> Sent as `1024x1024` to OpenAI API.
-2. `16:9` Landscape (Banner / Desktop / YouTube / Billboard) -> Sent as `1792x1024` to OpenAI API.
-3. `9:16` Portrait (Stories / TikTok / Reels / Vertical Ad) -> Sent as `1024x1792` to OpenAI API.
-4. Custom ratios (e.g. `4:5`, `3:4`) -> Handled with `1024x1024` and custom ratio composition framing directives in the prompt.
-
-
---------------------------------------------------------------------------------
-17. IMAGE GENERATION API INTEGRATION
---------------------------------------------------------------------------------
-[CONFIRMED FROM CODE]
-File: `app/Services/OpenAIImageService.php`
-
-Endpoint: `POST https://api.openai.com/v1/images/generations`
-Headers:
-  `Authorization: Bearer [REDACTED]`
-  `Content-Type: application/json`
-  `OpenAI-Organization: [REDACTED]` (if configured)
-
-Payload Structure:
-```json
-{
-  "model": "chatgpt-image-latest",
-  "prompt": "[PRODUCT-FIRST PROMPT STRING - max 3900 chars]",
-  "n": 1,
-  "size": "1024x1024",
-  "quality": "standard"
-}
-```
-
-Response Handling:
-- Checks HTTP status; if non-200, extracts error message and logs.
-- Retrieves image from `b64_json` or downloads binary from temporary `url`.
-- Generates unique filename `designs/openai_{uuid}.png`.
-- Writes binary to Laravel `Storage::disk('public')->put($filename, $binary)`.
-- Returns relative path for database storage and client rendering.
-
-
---------------------------------------------------------------------------------
-18. COMPLETE IMAGE GENERATION EXECUTION TRACE
---------------------------------------------------------------------------------
-[CONFIRMED FROM CODE]
-
-1. USER INTERACTION:
-   - User navigates to `/generator` (or clicks "Generate AI Visuals" from Product Catalog / Event Calendar).
-   - Form state populated (Product, Price, Event, Tagline, Style, Tone, Aspect Ratio, Reference Photo).
-   - User clicks "Generate Visual Creative".
-
-2. FRONTEND SUBMISSION:
-   - `resources/js/pages/generator/index.tsx` constructs `FormData` with all fields and attached files.
-   - Dispatches `POST /generator/preview` via `fetch()`.
-
-3. BACKEND ROUTING & CONTROLLER:
-   - `routes/web.php` routes to `GeneratorController::generatePreview`.
-   - `GeneratorController` validates request payload.
-   - Saves uploaded `reference_image` to `storage/app/public/generation-requests/`.
-
-4. AI VISION ANALYSIS:
-   - `ReferenceImageAnalyzer::analyze()` sends image to OpenAI Vision (`gpt-4o-mini`).
-   - Returns structured JSON blueprint (Product Source of Truth + Layout + Lighting + Colors).
-
-5. PROMPT SYNTHESIS:
-   - `OpenAIImageService::buildCommercialPrompt()` builds Product-First prompt:
-     [Product Truth] + [Visual Blueprint] + [5-Level Typography] + [20% Safe Margins].
-
-6. API CALL TO OPENAI:
-   - `OpenAIImageService::executeDallEImageGeneration()` calls `https://api.openai.com/v1/images/generations`.
-
-7. IMAGE PERSISTENCE:
-   - Decodes response binary and writes to `storage/app/public/designs/openai_{uuid}.png`.
-
-8. METADATA RECORD & CLIENT DISPLAY:
-   - Controller returns JSON containing `image_url`, `prompt`, `reference_blueprint`, and design params.
-   - Frontend sets `generationState = 'ready'` and renders the interactive preview canvas with Download, Save to Portfolio, and Export options.
-
-
---------------------------------------------------------------------------------
-19. CODEBASE MAP
---------------------------------------------------------------------------------
-[CONFIRMED FROM CODE]
-
-| Area                   | File / Path                                                     | Key Classes / Functions                       | Purpose                                                      |
-|------------------------|-----------------------------------------------------------------|-----------------------------------------------|--------------------------------------------------------------|
-| Generator Controller   | `app/Http/Controllers/GeneratorController.php`                  | `index()`, `store()`, `generatePreview()`     | Orchestrates form validation, vision analysis & gen preview  |
-| Product Controller     | `app/Http/Controllers/ProductController.php`                    | `index()`, `store()`, `update()`, `destroy()` | Manages catalog items, prices, and product photography       |
-| Design Controller      | `app/Http/Controllers/DesignController.php`                     | `index()`, `store()`, `show()`, `destroy()`   | Manages saved marketing visual portfolio                     |
-| Calendar Controller    | `app/Http/Controllers/CalendarController.php`                   | `index()`, `storeEvent()`, `syncHolidays()`   | Displays Philippine holidays and marketing calendar          |
-| Campaign Controller    | `app/Http/Controllers/CampaignController.php`                   | `index()`, `store()`, `show()`                | Manages marketing campaigns and linked creative assets       |
-| Onboarding Controller  | `app/Http/Controllers/OnboardingController.php`                 | `index()`, `store()`                          | Onboards MSME users and saves business profile               |
-| OpenAI Image Service   | `app/Services/OpenAIImageService.php`                           | `generate()`, `buildCommercialPrompt()`       | Executes OpenAI image API requests & prompt synthesis        |
-| Reference Analyzer     | `app/Services/ReferenceImageAnalyzer.php`                       | `analyze()`, `performVisionAnalysis()`        | Analyzes uploaded product/reference images via Vision API    |
-| Prompt Builder         | `app/Services/MarketingPromptBuilder.php`                       | `build()`                                     | Compiles user content brief from form payload                |
-| Philippine Holidays    | `app/Services/PhilippineHolidayService.php`                     | `getHolidaysForYear()`, `syncToDatabase()`    | Provides official Philippine holidays and observance data   |
-| OpenAI Usage Tracker   | `app/Services/OpenAIUsageService.php`                           | `getUsage()`, `getAiTotalSpent()`             | Tracks OpenAI usage and enforces budget limits ($10.00)      |
-| Generator UI Page      | `resources/js/pages/generator/index.tsx`                        | `GeneratorIndex`, `generateMarketingImage()`  | Main AI visual studio interface                              |
-| Product Catalog UI     | `resources/js/pages/products/index.tsx`                         | `ProductsIndex`                               | Catalog grid, table, and product detail preview modal        |
-| Marketing Calendar UI  | `resources/js/pages/calendar/index.tsx`                         | `CalendarIndex`                               | Interactive monthly calendar with event linking to studio    |
-
-
---------------------------------------------------------------------------------
-20. DATABASE MAP
---------------------------------------------------------------------------------
-[CONFIRMED FROM CODE]
-
-| Entity (Table)      | Key Fields                                                                 | Relationships                                  | Purpose                                                      |
-|---------------------|----------------------------------------------------------------------------|------------------------------------------------|--------------------------------------------------------------|
-| `users`             | `id`, `name`, `email`, `password`, `created_at`                           | HasOne `business`, HasMany `designs`           | Authentication and account ownership                         |
-| `businesses`        | `id`, `user_id`, `name`, `industry`, `category`, `logo_path`, `description`| BelongsTo `user`, HasMany `products`, `events` | Business identity and default marketing profile              |
-| `products`          | `id`, `business_id`, `name`, `description`, `price`, `image_path`         | BelongsTo `business`, HasMany `designs`        | Catalog products available for promotional generation        |
-| `events`            | `id`, `business_id`, `name`, `date`, `type`, `description`, `visual_prompt`| BelongsTo `business`, HasMany `campaigns`      | Philippine holidays and seasonal marketing events            |
-| `campaigns`         | `id`, `business_id`, `event_id`, `name`, `objective`, `status`             | BelongsTo `business`, BelongsTo `event`        | Multi-asset marketing campaigns                              |
-| `designs`           | `id`, `user_id`, `business_id`, `product_id`, `generated_image_path`, `generation_metadata` | BelongsTo `user`, `business`, `product` | Persistent record of generated marketing assets              |
-| `generation_requests`| `id`, `user_id`, `business_id`, `prompt`, `status`, `reference_image_path` | BelongsTo `user`, `business`                   | Audit log of all generation attempts                         |
-
-
---------------------------------------------------------------------------------
-21. SAMPLE OUTPUT ANALYSIS (Flame-Grilled Ribeye Steak Case Study)
---------------------------------------------------------------------------------
-Audit Analysis of Previous Output Discrepancies:
-1. Product Identity Drift:
-   - Root Cause: In earlier builds, the system passed product information as pure text ("Flame-Grilled Ribeye Steak") without extracting or enforcing visual characteristics from the uploaded photo, causing the AI model to invent its own interpretation.
-2. Hardcoded Dark Pedestal Overrides:
-   - Root Cause: Earlier versions hardcoded "sleek dark pedestal with flowing metallic ribbons and gold double-ring seal" in `OpenAIImageService.php`, which overrode all user-selected styles.
-3. Typography Cropping:
-   - Root Cause: Text positioned too close to canvas boundaries without mandatory 20% safe margin padding.
-
-
---------------------------------------------------------------------------------
-22. PROMPT ARCHITECTURE & POTENTIAL CONFLICTS
---------------------------------------------------------------------------------
-Analysis of Potential Conflicts:
-- Conflict Scenario 1 (Render Style vs. Background Theme):
-  If user selects "Minimalist Graphic" (flat 2D vector style) but selects "Cozy Cafe Vibe" (3D realistic photography environment), the prompt previously sent contradictory directives.
-- Conflict Scenario 2 (Dark Theme Overrides vs. Pastel Food Photography):
-  Hardcoded lighting strings previously overrode organic food styling.
-- Solution Implemented:
-  The prompt architecture now strictly enforces:
-  `ART DIRECTION PRINCIPLE: PRODUCT FIRST -> MARKETING MESSAGE SECOND -> DECORATIVE ELEMENTS THIRD`
-  with explicit hierarchy layers and safe margins.
-
-
---------------------------------------------------------------------------------
-23. PRIORITIZED PROBLEMS
---------------------------------------------------------------------------------
-### CRITICAL
-1. Text-to-Image Diffusion Re-synthesis vs. Pixel Preservation:
-   - Pure text-to-image models re-render products based on descriptions rather than compositing the exact raw pixels of uploaded photography. For 100% pixel-accurate product preservation, a background-removal + canvas-compositing pipeline is required.
-
-### HIGH
-2. Logo Redrawing:
-   - DALL-E redacts/re-renders logos as text emblems rather than preserving vector/PNG brand logos.
-
-### MEDIUM
-3. Typography Flexibility:
-   - Diffusion-generated text cannot be edited after generation without regenerating the entire image.
-
-### LOW
-4. Resolution Customization:
-   - Standard DALL-E sizes are capped at 1024x1024, 1792x1024, and 1024x1792.
-
-
---------------------------------------------------------------------------------
-24. WHAT SHOULD BE PRESERVED
---------------------------------------------------------------------------------
-1. Philippine Holiday & Marketing Event System (`PhilippineHolidayService.php`, `events` table).
-2. Product Catalog Data Model & Fast Selection Workflow.
-3. Onboarding & Business Profile Infrastructure.
-4. Vision-Assisted Reference Analyzer (`ReferenceImageAnalyzer.php`).
-5. Live OpenAI Usage & Budget Enforcement ($10.00 limit tracking).
-6. React / Inertia.js Studio Interface with dynamic suggestions and responsive preview canvas.
-
-
---------------------------------------------------------------------------------
-25. WHAT SHOULD BE REPLACED / REDESIGNED
---------------------------------------------------------------------------------
-1. Separate Image Generation from Typography Compositing (Hybrid Canvas Architecture):
-   - Redesign to generate the background/scene via AI, remove background from product photo, composite the authentic product onto the scene, and overlay crisp, editable typography using SVG / HTML5 Canvas / Fabric.js.
-2. Direct Logo Alpha Compositing:
-   - Overlay the user's actual transparent PNG logo deterministically onto the canvas rather than asking the AI image model to draw it.
-3. Inpainting / Image-to-Image Pipeline:
-   - Utilize OpenAI Inpainting / Image Edit API (`v1/images/edits`) or dedicated background-replacement models for 100% product fidelity.
-
-
---------------------------------------------------------------------------------
-26. FINAL TECHNICAL ASSESSMENT
---------------------------------------------------------------------------------
-The existing Laravel + Inertia.js application has a robust, clean foundation for business onboarding, product catalog management, localized Philippine calendar events, and AI studio workflows.
-
-The current image generation pipeline utilizes OpenAI Vision (`gpt-4o-mini`) to extract product truth and reference design blueprints, then generates high-quality raster marketing visuals with strict 5-level typography hierarchy and 20% safe margins.
-
-For the future architecture remake:
-Transitioning to a **Hybrid AI Generation + Deterministic Layout Engine** (where the AI generates the background scene and lighting, while the product cutout, logo PNG, and text typography are composited deterministically) will provide 100% product fidelity, zero text typos, lossless logos, and fully editable marketing graphics.
+1. EXECUTIVE FINDING
+
+The final application is an AI-driven marketing image generation system for product-based promotional content. It combines business context, product information, optional product imagery, a selected Philippine holiday or marketing event, campaign information, and creative preferences to produce a marketing image.
+
+The primary output is an AI-generated marketing image that can be previewed, saved, downloaded, or regenerated. The application does not implement external content publishing, social account management, or automatic posting.
+
+2. IMPLEMENTATION CLASSIFICATION
+
+ACTIVE CORE FUNCTIONALITY
+- Fortify authentication, email verification, password reset, login throttling, and two-factor support.
+- Google and Facebook OAuth login through Socialite.
+- Onboarding and business profile management.
+- Product catalog and image upload.
+- Philippine holiday, observance, commercial-date, and custom-event calendar.
+- Campaign records and product/event associations.
+- AI Marketing Studio preview and generation.
+- Product-reference editing and text-to-image fallback.
+- Design history, saving, downloading, favorites, filtering, and regeneration.
+- OpenAI usage telemetry, budget checks, and AI notifications.
+
+ACTIVE SUPPORTING FUNCTIONALITY
+- Vision-based supplemental reference analysis.
+- Industry/category art direction.
+- Modular prompt orchestration.
+- Tagline normalization.
+- Safe-area and content metadata manifest generation.
+- Soft deletion and persisted generation requests.
+
+AUTHENTICATION-ONLY FUNCTIONALITY
+- Facebook appears in Socialite configuration, OAuth routes, UI buttons, and auth tests. It is not a publishing integration.
+
+MAINTENANCE SCHEDULING
+- Console scheduling/archival behavior is application maintenance, not external content scheduling.
+
+DOCUMENTATION-ONLY OR LEGACY CLAIMS
+- Meta Graph API publishing and automatic posting claims in older documents.
+- Deterministic raster text compositing claims.
+- Pixel-perfect preservation claims.
+- Old Laravel versions, old model defaults, old prompt hierarchy, old test counts, and old event relationships.
+
+3. VERIFIED TECHNOLOGY STACK
+
+- Laravel Framework 13.25.0; PHP 8.3+ compatibility in Composer configuration.
+- React 19, TypeScript, Inertia Laravel 3.3.1, and Tailwind CSS 4.
+- Fortify 1.38.0 and Socialite 5.30.0.
+- Pest 5.1.0 and Pest Laravel plugin 5.0.1.
+- Eloquent ORM and Laravel public storage.
+- OpenAI HTTP APIs through server-side services.
+- CI workflow with Vite build, ESLint, Prettier, TypeScript, Pint, PHPStan, and Pest.
+
+4. VERIFIED ROUTE WORKFLOW
+
+The active routes include authentication/OAuth, onboarding, dashboard, profile/settings, products, events/calendar, campaigns, generator, designs, notifications, subscriptions, and OpenAI telemetry. The generation-specific routes are:
+
+- GET `/generator` -> `GeneratorController::index`
+- POST `/generator/preview` -> synchronous preview without a permanent Design record
+- POST `/generator` -> validated generation and persistent Design creation
+- GET `/designs` -> My Designs
+- GET `/designs/{design}` -> design detail
+- POST `/designs/{design}/regenerate` -> synchronous new variation and new Design
+- GET `/designs/{design}/download` -> authorized binary download
+
+No publishing, Graph API, external post, platform-token, webhook, or social-scheduling route exists.
+
+5. AI MARKETING STUDIO INPUT AUDIT
+
+Required by the main GeneratorRequest:
+- Product name.
+- Event ID.
+- Marketing goal.
+
+The preview endpoint separately validates product name, image prompt, and event ID; its validation/ownership parity is a remaining concern.
+
+Optional inputs include product ID, campaign ID, price, product description, tagline, tagline mode, content style, brand tone, visual theme, render style, aspect ratio, image model, image quality, business-name inclusion/name, notes, scene/image prompt, and a JPG/JPEG/PNG/WebP reference image up to 5 MB.
+
+The UI requires product name, image prompt, and event selection before initiating preview generation. A catalog product may supply the product image automatically. A custom uploaded reference may also be supplied.
+
+6. VERIFIED AI PIPELINE
+
+1. The Studio collects the creative form data.
+2. The controller resolves the authenticated business and selected product/campaign/event context.
+3. Uploaded references are stored under `generation-requests/`; catalog images are resolved from product storage paths.
+4. `MarketingPromptBuilder` constructs a promotional advertisement brief.
+5. `ReferenceImageAnalyzer` may call OpenAI Vision (`gpt-4o-mini`) to obtain supplemental observations.
+6. `ModularPromptOrchestrator` adds root/output guardrails and ten ordered modules.
+7. `OpenAIImageService` resolves the model and API canvas size.
+8. A supported reference image is attached to `/v1/images/edits`.
+9. Without a usable reference, or after an edit failure, `/v1/images/generations` is called.
+10. Base64 or temporary URL response data is converted to binary.
+11. The binary is stored at `designs/openai_{uuid}.png` on the public disk.
+12. Preview returns image URL/path and metadata. Save creates a Design. Regeneration creates a GenerationRequest and a new Design.
+
+Generation is synchronous. Frontend progress messages represent UX feedback, not separately measured backend phases.
+
+7. PROMPT ORCHESTRATION AUDIT
+
+The active `ModularPromptOrchestrator` uses a root commercial objective and anti-logo rule, ten ordered priority modules, and output/safety guardrails:
+
+1. Primary product image and preservation.
+2. User scene/visual direction.
+3. Final marketing copy.
+4. Campaign name/objective.
+5. Event/Philippine holiday direction.
+6. Industry/category art direction.
+7. Business context and brand identity.
+8. Render style.
+9. Visual theme.
+10. Responsive composition and invisible safe area.
+
+The prompt tells the model to keep product identity primary, preserve enabled copy text, and keep environmental styling subordinate. It forbids invented logos, emblems, watermarks, badges, and brand marks.
+
+8. PRODUCT IMAGE AUDIT
+
+Catalog product uploads and Studio reference uploads are stored using Laravel's public disk. Main generation validation accepts JPG, JPEG, PNG, and WebP up to 5 MB. The actual stored binary is used in an image-edit request when the selected model supports image input. Vision metadata is supplemental and does not replace the binary.
+
+Without a reference image, the model synthesizes a product and full commercial scene from the product and business prompt. With a reference image, the prompt asks the model to preserve recognizable identity, geometry, colors, labels, textures, and accessories while changing primarily the surrounding scene. This does not guarantee pixel identity. If image editing fails, text-to-image fallback may occur.
+
+9. INDUSTRY AND EVENT AUDIT
+
+`IndustryCategoryArtDirectionService` has dedicated branches for food/beverage, beauty/wellness, automotive, technology, retail/fashion, real estate, travel/hospitality, healthcare, fitness, professional services, and education, with a generic fallback. Each branch supplies environment, materials, lighting, props, commercial conventions, and exclusions.
+
+`PhilippineHolidayService` creates repository-defined regular holidays, special non-working holidays, special working observances, Islamic holidays, commercial shopping dates, shifted dates, long-weekend metadata, and custom events. Events are global or user-scoped. The repository contains proclamation labels; independent government-source verification was not performed.
+
+Recognized event names are translated by the orchestrator into mood, environment, lighting, decorative direction, spatial staging, and marketing intent. The event guides the image's atmosphere and promotional context; it does not automatically create or publish a campaign.
+
+10. COPY, TAGLINE, LOGO, AND COMPOSITING AUDIT
+
+- Product name, enabled business/shop name, price, and normalized tagline are sent as exact model instructions for visible commercial typography.
+- `TaglineNormalizationService` trims whitespace, removes enclosing straight/smart quotes, removes repeated trailing dots/ellipses and dangling punctuation/connectors, preserves internal text and trailing `!`/`?`, and returns null when empty. It does not generate wording.
+- Business-name typography is allowed; logo/emblem/watermark generation is explicitly prohibited.
+- `ImageCompositorService` creates a manifest with canvas, safe margins, and exact content metadata. It does not load pixels, draw text, or create a final composited raster image.
+- `MockupImageService` can generate an SVG fallback for tests/local operation and is not evidence of the production OpenAI compositor.
+
+11. SECURITY AUDIT
+
+VERIFIED POSITIVE CONTROLS
+- Authenticated, verified, onboarding-gated application routes where configured.
+- Policies for products, events, campaigns, and designs.
+- Main generator/store request ownership checks.
+- CSRF protection on state-changing requests.
+- Server-side OpenAI credentials.
+- Image type/size validation on primary upload paths.
+- User-scoped notification queries.
+- Eloquent/parameterized query access.
+- Budget checks before generation and regeneration.
+
+REMAINING CONCERNS
+- Preview endpoint inline validation does not repeat all product, event, and campaign ownership checks in `GeneratorRequest`.
+- `generated_image_path` accepted during save should be verified as belonging to the current user's generation.
+- Stateless OAuth handling should receive a separate state/CSRF security review.
+- No dedicated image-generation rate limiter beyond quota checks was verified.
+- Production debug, storage, queue, mail, backup, HTTPS, and monitoring settings require deployment verification.
+
+12. DATABASE AUDIT
+
+- User has one Business and many Product, Event, Campaign, Design, GenerationRequest, and AppNotification records.
+- Business has many Product, Campaign, and Design records.
+- Event belongs to a User or is global, and has Campaign/Design associations. It has no final business_id relationship.
+- Campaign may reference Product/Event and has Design associations.
+- Design may reference Product/Event/Campaign and stores generated path and metadata.
+- GenerationRequest records request context, prompt, reference path, and processing status.
+- Product and Design use soft deletes.
+- Foreign-key nulling/cascade behavior is defined in migrations.
+
+13. TESTING AUDIT
+
+Full local command executed on September 2, 2026:
+- Pest: 269 passed.
+- Assertions: 1,496.
+- Duration: approximately 94 seconds.
+
+Coverage areas found include auth/OAuth, onboarding, tenant/resource authorization, products, events, campaigns, design generation/regeneration, prompt orchestration, tagline normalization, industry art direction, quotas, notifications, and OpenAI telemetry.
+
+Other local checks passed: TypeScript, targeted ESLint, Pint, and Vite production build. No live OpenAI, OAuth-provider, proclamation-source, browser, or production-deployment verification was performed.
+
+14. PRODUCTION READINESS
+
+FINAL DECISION: YELLOW CONDITIONAL GO.
+
+The local automated suite and build checks pass, and the primary architecture is implemented. Staging verification remains required for live AI response behavior, product/copy quality, provider callbacks, event-date accuracy, preview tenant isolation, durable storage, queues/workers, mail, backups, monitoring, HTTPS, and production configuration.
+
+15. FINAL REPOSITORY SEARCH CLASSIFICATION
+
+- Facebook: active OAuth provider, auth UI, auth tests, and generated prompt/output-format text; not publishing.
+- Instagram: output-format wording in UI/documentation or stored historical prompt data; no API or publishing flow.
+- Social media: creative format/marketing terminology and legacy documentation wording; not an external publishing capability.
+- Publishing: outdated roadmap/documentation claims; no active publishing implementation found.
+- Automatic posting / Graph API / social scheduling: no active implementation found; remove capability claims from final documentation.
+- Socialite: active authentication dependency and tests only.
+- Console scheduling: active maintenance scheduling, unrelated to external content publishing.
+
 ================================================================================
-END OF AUDIT REPORT
+END OF FINAL IMPLEMENTATION-ALIGNED AUDIT REPORT
 ================================================================================

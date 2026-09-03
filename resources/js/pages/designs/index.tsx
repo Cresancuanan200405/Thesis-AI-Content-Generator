@@ -1,6 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
-    ArrowRight,
     Calendar,
     CalendarDays,
     Check,
@@ -31,10 +30,10 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { AppPagination } from '@/components/ui/app-pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { AppPagination } from '@/components/ui/app-pagination';
 import {
     Dialog,
     DialogContent,
@@ -61,7 +60,16 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useSidebar } from '@/components/ui/sidebar';
 import { downloadVisualAsFormat } from '@/lib/download';
+
+const regenerationStatusPhrases = [
+    'Analyzing creative parameters & scene...',
+    'Composing lighting, shadows & atmosphere...',
+    'Synthesizing fresh visual variation...',
+    'Applying commercial typography hierarchy...',
+    'Finalizing high-fidelity rendering...',
+];
 
 export default function DesignsPage({
     designs = [],
@@ -71,7 +79,11 @@ export default function DesignsPage({
     filters = {},
     pagination = {},
 }: any) {
-    const designList = Array.isArray(designs) ? designs : (designs.data ?? []);
+    const { state: sidebarState } = useSidebar();
+    const designList = useMemo(
+        () => (Array.isArray(designs) ? designs : (designs.data ?? [])),
+        [designs],
+    );
 
     const currentPage = pagination.current_page ?? 1;
 
@@ -88,6 +100,9 @@ export default function DesignsPage({
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
     const [designToRegenerate, setDesignToRegenerate] = useState<any | null>(null);
     const [isRegenerating, setIsRegenerating] = useState(false);
+    const [regeneratingDesign, setRegeneratingDesign] = useState<any | null>(null);
+    const [generationProgress, setGenerationProgress] = useState(15);
+    const [rotatingPhraseIndex, setRotatingPhraseIndex] = useState(0);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('marketpilot_designs_view_mode');
@@ -176,18 +191,77 @@ params.set('brand_tone', brandTone);
 
     const handleRegenerate = (design: any) => {
         setDesignToRegenerate(null);
+        setRegeneratingDesign(design);
         setIsRegenerating(true);
         router.post(
             `/designs/${design.id}/regenerate`,
             {},
             {
-                onFinish: () => setIsRegenerating(false),
+                onFinish: () => {
+                    setIsRegenerating(false);
+                    setRegeneratingDesign(null);
+                },
                 onError: () => {
                     toast.error('Unable to regenerate design. Please try again.');
                 },
             },
         );
     };
+
+    useEffect(() => {
+        if (!isRegenerating) {
+            setGenerationProgress(15);
+            setRotatingPhraseIndex(0);
+
+            return;
+        }
+
+        const progressInterval = window.setInterval(() => {
+            setGenerationProgress((previous) => {
+                if (previous < 35) {
+                    return previous + 6;
+                }
+
+                if (previous < 65) {
+                    return previous + 4;
+                }
+
+                if (previous < 85) {
+                    return previous + 2;
+                }
+
+                if (previous < 95) {
+                    return previous + 1;
+                }
+
+                return previous;
+            });
+        }, 500);
+
+        const phraseInterval = window.setInterval(() => {
+            setRotatingPhraseIndex(
+                (previous) => (previous + 1) % regenerationStatusPhrases.length,
+            );
+        }, 2200);
+
+        return () => {
+            window.clearInterval(progressInterval);
+            window.clearInterval(phraseInterval);
+        };
+    }, [isRegenerating]);
+
+    useEffect(() => {
+        if (!isRegenerating) {
+            return;
+        }
+
+        const originalBodyOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        return () => {
+            document.body.style.overflow = originalBodyOverflow;
+        };
+    }, [isRegenerating]);
 
     const isAllSelected =
         designList.length > 0 && selectedIds.length === designList.length;
@@ -722,7 +796,7 @@ params.set('brand_tone', brandTone);
                         PAGE HEADER & CREATE ACTION
                     ====================================================== */}
 
-                    <div className="flex flex-col gap-3 border-b border-border/60 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className={`flex flex-col gap-3 border-b border-border/60 pb-3 sm:flex-row sm:items-center sm:justify-between ${isRegenerating ? 'hidden' : ''}`}>
                         <div className="flex items-center gap-2.5">
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                                 <ImageIcon className="h-4 w-4" />
@@ -758,7 +832,7 @@ params.set('brand_tone', brandTone);
                         STICKY FILTER TOOLBAR (SYSTEM DESIGN COMPATIBLE)
                     ====================================================== */}
 
-                    <div className="sticky top-11 z-30 mb-6 rounded-2xl border border-white/25 bg-card/95 p-3 shadow-md backdrop-blur-xl transition-all sm:top-12 dark:border-white/10 dark:bg-card/95">
+                    <div className={`sticky top-11 z-30 mb-6 rounded-2xl border border-white/25 bg-card/95 p-3 shadow-md backdrop-blur-xl transition-all sm:top-12 dark:border-white/10 dark:bg-card/95 ${isRegenerating ? 'hidden' : ''}`}>
                         <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
                             {/* Search */}
                             <div className="relative min-w-0 flex-1">
@@ -1849,7 +1923,7 @@ params.set('brand_tone', brandTone);
                                 PAGINATION
                             ================================================== */}
 
-                            {lastPage > 1 && (
+                            {!isRegenerating && lastPage > 1 && (
                                 <AppPagination
                                     currentPage={currentPage}
                                     lastPage={lastPage}
@@ -1866,7 +1940,7 @@ params.set('brand_tone', brandTone);
                 FLOATING MULTI-SELECT ACTION BAR
             ============================================================= */}
 
-            {selectedIds.length > 0 && (
+            {selectedIds.length > 0 && !isRegenerating && (
                 <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 animate-in duration-300 slide-in-from-bottom-5 fade-in">
                     <div className="card-elevated flex items-center gap-3 rounded-2xl border border-border/80 bg-card/95 px-4 py-2.5 shadow-2xl backdrop-blur-xl">
                         <div className="flex items-center gap-2 border-r border-border/80 pr-3">
@@ -2826,6 +2900,91 @@ setDesignToRegenerate(null);
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {isRegenerating && regeneratingDesign && (
+                <div
+                    className={`fixed top-11 right-0 bottom-0 left-0 z-20 flex items-center justify-center overflow-hidden bg-background/80 p-4 backdrop-blur-2xl sm:top-12 sm:p-6 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 ${sidebarState === 'collapsed' ? 'md:left-[var(--sidebar-width-icon)]' : 'md:left-[var(--sidebar-width)]'}`}
+                    role="status"
+                    aria-live="polite"
+                    aria-label="Regenerating visual creative"
+                >
+                    <div className="relative flex max-h-full w-full max-w-lg flex-col items-center gap-5 overflow-hidden rounded-3xl border border-border/80 bg-card/95 p-6 shadow-2xl backdrop-blur-2xl sm:p-8">
+                        <div className="pointer-events-none absolute -top-16 left-1/2 h-36 w-36 -translate-x-1/2 rounded-full bg-primary/15 blur-3xl motion-reduce:hidden" />
+                        <div className="pointer-events-none absolute -bottom-16 left-1/2 h-36 w-36 -translate-x-1/2 rounded-full bg-emerald-500/15 blur-3xl motion-reduce:hidden" />
+
+                        <div className="relative flex flex-col items-center space-y-2 text-center">
+                            <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600 shadow-2xs dark:text-emerald-400">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 motion-safe:animate-ping motion-reduce:hidden" />
+                                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                                </span>
+                                Live Regeneration
+                            </div>
+
+                            <h2 className="text-base font-bold tracking-tight text-foreground sm:text-lg md:text-xl">
+                                Regenerating visual creative
+                            </h2>
+                            <p className="max-w-sm truncate text-xs font-medium text-muted-foreground sm:text-sm">
+                                for{' '}
+                                <span className="font-semibold text-foreground/90">
+                                    {regeneratingDesign.product_name || 'your design'}
+                                </span>
+                            </p>
+                        </div>
+
+                        <div className="relative flex w-full items-center justify-center py-2 sm:py-3">
+                            <div className="pointer-events-none absolute h-28 w-28 rounded-full bg-primary/20 blur-2xl motion-safe:animate-pulse motion-reduce:hidden" />
+                            <div className="relative flex h-28 w-28 items-center justify-center rounded-3xl border border-primary/25 bg-gradient-to-b from-primary/15 via-primary/5 to-muted/40 shadow-xl shadow-primary/10 ring-1 ring-primary/20 backdrop-blur-xl sm:h-32 sm:w-32">
+                                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-xs ring-1 ring-primary/25">
+                                    <Sparkles className="h-7 w-7 text-primary motion-safe:animate-pulse" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="relative w-full space-y-3">
+                            <div className="flex items-center justify-center gap-1.5 text-center">
+                                <Sparkles className="h-3.5 w-3.5 text-primary motion-safe:animate-pulse motion-reduce:hidden" />
+                                <p className="text-xs font-semibold text-foreground transition-opacity duration-500 sm:text-sm">
+                                    {regenerationStatusPhrases[rotatingPhraseIndex]}
+                                </p>
+                            </div>
+
+                            <div className="mx-auto w-full max-w-xs space-y-1 sm:max-w-sm">
+                                <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
+                                    <span>Synthesizing variation</span>
+                                    <span className="font-mono font-semibold text-primary">
+                                        {generationProgress}%
+                                    </span>
+                                </div>
+                                <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted/80 p-0.5 ring-1 ring-border/50">
+                                    <div
+                                        className="h-full rounded-full bg-gradient-to-r from-primary via-indigo-500 to-emerald-500 shadow-xs shadow-primary/30 transition-all duration-500 ease-out"
+                                        style={{ width: `${generationProgress}%` }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 pt-0.5 text-xs text-muted-foreground">
+                                {regeneratingDesign.campaign_name && (
+                                    <span className="font-semibold text-primary">
+                                        {regeneratingDesign.campaign_name}
+                                    </span>
+                                )}
+                                {regeneratingDesign.event_name && (
+                                    <>
+                                        {regeneratingDesign.campaign_name && (
+                                            <span className="text-muted-foreground/40">•</span>
+                                        )}
+                                        <span className="font-medium text-muted-foreground">
+                                            {regeneratingDesign.event_name}
+                                        </span>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

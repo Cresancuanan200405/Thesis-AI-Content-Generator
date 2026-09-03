@@ -1,344 +1,244 @@
-# AI Marketing Automation Platform — System Architecture & Production Evidence Package
+# Final System Documentation: AI-Driven Marketing Image Generation
 
----
+**System:** MarketPilot / AI Marketing Automation  
+**Document status:** Final implementation-aligned documentation  
+**Evidence date:** September 2, 2026
 
-## 1. Final System Architecture
+## 1. System Understanding
 
-```
-                                  [ User / Client ]
-                                          │
-                                          ▼
-                                 [ Authentication ]
-                           (Fortify / Email Verification)
-                                          │
-                                          ▼
-                                    [ Onboarding ]
-                     (Industry → Category → Bio / Description)
-                                          │
-                                          ▼
-                                 [ Business Profile ]
-                                          │
-                                          ▼
-                                  [ Product Catalog ]
-                          (CRUD + Actual Asset File Uploads)
-                                          │
-                                          ▼
-                               [ Event / Holiday System ]
-                      (Philippine Holidays + Custom User Events)
-                                          │
-                                          ▼
-                              [ Campaign Configuration ]
-                 (Goal, Pricing, Tagline, Style, Tone, Theme, Ratio)
-                                          │
-                                          ▼
-                           [ AI Studio Image Generator ]
-                                          │
-                        Does Reference Image Exist?
-                                 /          \
-                              YES            NO
-                               │              │
-                               ▼              ▼
-                     [ Product Reference ]  [ Creative Scene ]
-                      (Multipart /edits)    (Text-to-Image)
-                               │              │
-                               └──────┬───────┘
-                                      │
-                                      ▼
-                            [ OpenAI GPT-Image-2 ]
-                 (Generates Visual + Commercial Typography)
-                                      │
-                                      ▼
-                        [ Image Compositor Service ]
-                       (Safe Margins & Manifest Bounds)
-                                      │
-                                      ▼
-                               [ Live Preview ]
-                        (In-Memory / Storage Preview)
-                                      │
-                                      ▼
-                                [ Save Design ]
-                    (Permanent Record in designs Table)
-                                      │
-                                      ▼
-                              [ Design History ]
-                     (My Designs / Regeneration / Filter)
-                                      │
-                                      ▼
-                            [ Download / Export ]
-                    (Export-Ready High-Res PNG / JPEG)
+The final system is an **AI-driven marketing image generation system for product-based promotional content**. It helps an authenticated business user combine business context, product information, product imagery when available, a selected Philippine holiday or marketing event, and creative preferences to produce an AI-generated marketing image.
+
+The primary output is a marketing image. Users can preview it, save it to My Designs, download it, or regenerate a new variation. The system does not publish images to external platforms and does not manage external social accounts.
+
+## 2. Complete Architecture
+
+```text
+User
+  -> Fortify authentication and email verification
+  -> Optional social OAuth login (Google or Facebook)
+  -> Onboarding and business profile
+  -> Product catalog and product image upload
+  -> Philippine holiday / marketing event selection
+  -> Optional campaign context
+  -> AI Marketing Studio
+  -> Prompt brief and modular creative direction
+  -> Product-aware OpenAI image generation
+  -> Preview image stored on the public disk
+  -> Save Design creates a persistent Design record
+  -> My Designs: view, filter, download, regenerate, delete
 ```
 
-### Component Details
-1. **User Authentication & Onboarding**:
-   - *Purpose*: Secure user onboarding, multi-tenant isolation, and business profile establishment.
-   - *Inputs*: User credentials, Business Name, Industry, Category, Description/Bio.
-   - *Outputs*: Authenticated session, persistent `users` and `businesses` records.
-   - *Dependencies*: Laravel Fortify, Session driver, Eloquent ORM.
-2. **Product Catalog**:
-   - *Purpose*: Storage and lifecycle management of real product catalog photography and pricing with `SoftDeletes` historical preservation.
-   - *Inputs*: Product Name, Description, Price, Image File (PNG/JPG/WebP).
-   - *Outputs*: Persistent `products` records and cryptographically named assets in `storage/app/public/products/images/`.
-3. **Event & Holiday System**:
-   - *Purpose*: Supplies official Philippine regular holidays, special non-working days, observances, commercial promo dates, and custom business events.
-   - *Inputs*: Year (e.g., 2026), user custom event inputs.
-   - *Outputs*: Structured visual direction vectors (Mood, Environment, Lighting, Decorative Direction, Marketing Intent).
-4. **Campaign Configuration & Generator**:
-   - *Purpose*: Studio UI interface collecting creative parameters and compiling them into brief structures.
-   - *Inputs*: Selected Product ID (or free text product), Event ID, Render Style, Brand Tone, Visual Theme, Aspect Ratio, Price, Tagline.
-   - *Outputs*: Generation payload dispatched to backend API.
-5. **Product-First Image Pipeline & OpenAI GPT-Image-2**:
-   - *Purpose*: Transforms real product assets into high-converting marketing creatives while preserving product geometry, or synthesizes complete commercial creative scenes when no reference exists.
-   - *Inputs*: Stored Product Image binary (when available), compiled modular prompt.
-   - *Outputs*: Generated advertising creative image stored in `storage/app/public/designs/`.
-6. **Deterministic Compositor & Safe-Margin System**:
-   - *Purpose*: Generates exact marketing layout metadata manifest and calculates dynamic 20% safe boundary coordinates.
-   - *Inputs*: Canvas resolution ($1024 \times 1024$, $1792 \times 1024$, $1024 \times 1792$), exact text strings.
-   - *Outputs*: Compositing manifest documenting safe bounding box coordinates and marketing copy.
-7. **Design Persistence, History & Download**:
-   - *Purpose*: Long-term asset storage, campaign association, soft-delete management, and binary downloads.
-   - *Inputs*: Design ID, user authorization check.
-   - *Outputs*: Downloadable high-resolution PNG and JPEG streams with attachment headers.
+### Verified technology stack
 
----
+- Laravel Framework 13.25.0; Composer allows PHP 8.3 or newer.
+- Inertia Laravel 3.3.1, React 19, TypeScript, and Tailwind CSS 4.
+- Laravel Fortify 1.38.0 for authentication, verification, password reset, and two-factor support.
+- Laravel Socialite 5.30.0 for Google and Facebook login only.
+- Pest 5.1.0 with the Laravel plugin for automated tests.
+- Eloquent ORM with the configured database connection and Laravel public storage disk.
+- OpenAI HTTP API integration through server-side Laravel services.
 
-## 2. AI Image Generation Architecture
+## 3. Feature Inventory
 
-### Primary Visual Source of Truth vs. Generative Creative Mode
-- **MODE A: PRODUCT REFERENCE MODE**: When a catalog item with an image is selected or a reference image is uploaded, the binary file is attached via multipart form-data to `https://api.openai.com/v1/images/edits`. Supplemental vision cues assist with lighting and shadows without overriding product identity.
-- **MODE B: CREATIVE GENERATION MODE**: When no catalog image or reference image exists, the engine generates an authentic photorealistic commercial product and complete scene from scratch via `/v1/images/generations`.
+### Core
 
-### 14-Step Execution Pipeline
-1. **Product Selection / Specification**: User selects a catalog item in the Studio UI (`product_id`) or enters custom product details.
-2. **Reference Resolution**: Backend resolves whether a physical reference image exists (`reference_image_path`).
-3. **Image Binary Loading**: If a reference exists, backend reads the disk asset via `Storage::disk('public')->path($path)`.
-4. **Supporting Metadata Extraction**: `ReferenceImageAnalyzer` extracts supplemental visual cues when reference exists.
-5. **Prompt Orchestration**: `ModularPromptOrchestrator` compiles a 10-priority structured prompt with strict Anti-Logo and Safe-Area rules.
-6. **Model Selection**: `OpenAIModelRegistry` resolves capabilities (defaults to `gpt-image-2`).
-7. **OpenAI API Request**: Backend sends multipart HTTP request to `/v1/images/edits` (with attached image) or JSON request to `/v1/images/generations`.
-8. **AI Image Transformation**: `gpt-image-2` renders the commercial creative with integrated marketing typography.
-9. **Image Persistence**: Binary response is decoded and saved as `storage/app/public/designs/openai_{uuid}.png`.
-10. **Compositing Manifest Generation**: Exact Price (`₱`), Tagline, and Business Name layout manifest is calculated.
-11. **Safe-Margin Enforcement**: Dynamic 20% margin bounds are recorded in design generation metadata.
-12. **Live Preview**: Creative is displayed in the interactive visual studio canvas.
-13. **Save**: Design record is written to database with campaign links and generation metadata.
-14. **Export**: High-resolution PNG/JPEG download delivery.
+- Business profile creation and editing.
+- Product catalog with name, description, category, price, and optional image.
+- Philippine holiday, observance, commercial-date, and custom-event selection.
+- Campaign records with objectives and optional event/product associations.
+- AI Marketing Studio for configuring and generating promotional images.
+- Product-reference image editing when a supported reference image is available.
+- Text-to-image generation when no usable reference image is available.
+- Marketing image preview, save, download, and regeneration.
 
----
+### Supporting
 
-## 3. Prompt Architecture & Hierarchy (Current 10-Priority Engine)
+- Brand tone, visual theme, render style, tagline, price, aspect ratio, and business-name controls.
+- Vision analysis as supplemental reference metadata.
+- OpenAI usage telemetry, budget checks, and quota notifications.
+- Design metadata snapshots, generation request records, and campaign linking.
+- Soft deletion for products and designs.
 
-The generation pipeline employs a structured 10-priority prompt orchestration hierarchy compiled by `ModularPromptOrchestrator` and powered by `IndustryCategoryArtDirectionService`:
+### UX
 
-| Priority / Module | Direct Function | Current Implementation & Behavior | Status |
-|---|---|---|:---:|
-| **Root Objective & Anti-Logo Mandate** | Top-level directive forbidding logos, emblems, badges, and invented brand marks. | Enforces strict prohibition against generating any logo, emblem, cup/bean logo, or watermark. | ✅ ACTIVE |
-| **Priority 1: Primary Product & Preservation** | Sets catalog product image as primary source of truth (or generative prompt in no-reference mode). | In Reference Mode: locks physical product container, geometry, liquid layers, and label. In Generative Mode: specifies product name and category. | ✅ ACTIVE |
-| **Priority 2: User Scene / Visual Direction** | Integrates explicit user scene notes or prompt instructions. | Directly sets the physical setting, props, and lighting atmosphere around the product. | ✅ ACTIVE |
-| **Priority 3: Marketing Content** | Handles exact Product Name, Price (`₱149`), and Tagline. | Enforces exact price formatting and verbatim tagline string retention. | ✅ ACTIVE |
-| **Priority 4: Campaign Objective** | States campaign name and business goal. | Contextualizes promotional intent (e.g. drive in-store foot traffic). | ✅ ACTIVE |
-| **Priority 5: Event / Philippine Holiday** | Localized holiday direction (Mood, Environment, Lighting, Decor, Spatial Staging). | Adapts spatial depth and festive props dynamically to canvas aspect ratio. | ✅ ACTIVE |
-| **Priority 6: Industry & Category Art Direction** | Dedicated commercial staging, authentic materials, lighting, and restrained props. | Translates business industry and category into active visual guidance (e.g. café surfaces, automotive lighting, skincare vanity, tech studios). | ✅ ACTIVE |
-| **Priority 7: Brand Identity & Brand Tone** | Business / Shop Name with Creative Typographic Integration + Tone + Supplemental Context. | Formats business name as creative typography without logos. Incorporates target audience appeal, USP, and business description as supplemental context. | ✅ ACTIVE |
-| **Priority 8: Render Style** | Strictly activates **one** active render style (e.g. `Studio Product Still`, `Cinematic Marketing`). | Eliminates style confusion and prompt collisions. | ✅ ACTIVE |
-| **Priority 9: Visual Theme** | Sets environmental backdrop textures (e.g. `Cozy Cafe Vibe`, `Warm Seasonal`). | Enriches peripheral environment outside product boundary. | ✅ ACTIVE |
-| **Priority 10: Responsive Composition & Safe Area** | Ratio-specific composition profile (`1:1`, `9:16`, `16:9`, `4:5`, `4:3`) + Invisible Safe Area. | Directs ratio-tailored product scale, copy zones, and forbidden overlay rules. | ✅ ACTIVE |
+- Inertia React pages with responsive layouts.
+- AI Marketing Studio loading state with status phrases, animated progress indication, and error state.
+- Preview and design-detail views with zoom, download, favorite, and regeneration actions.
+- Responsive aspect-ratio preview presentation.
+- Toast notifications and tab-leave warnings during synchronous generation.
 
----
+### Security
 
-## 4. Model Selection & Canvas Format Support
+- Fortify authentication, verified email, password reset, login throttling, and two-factor authentication support.
+- Laravel policies for products, events, campaigns, and designs.
+- Server-side OpenAI credentials.
+- CSRF protection on state-changing web requests.
+- Form-request validation for the main generator/store flows and image uploads.
+- Ownership checks for normal product, event, campaign, and design workflows.
 
-### Supported Models
-| Model ID | Display Name | Supports Image Input | Editing Endpoint | Recommended Status |
-|---|---|:---:|:---:|:---:|
-| `gpt-image-2` | **GPT-Image-2** | **YES** | `/v1/images/edits` | **Recommended (Default)** |
-| `gpt-image-1.5` | **GPT-Image-1.5** | **YES** | `/v1/images/edits` | Active |
-| `gpt-image-1` | **GPT-Image-1** | **YES** | `/v1/images/edits` | Active |
-| `gpt-image-1-mini` | **GPT-Image-1 Mini** | **YES** | `/v1/images/edits` | Fast / Lightweight |
-| `chatgpt-image-latest`| **ChatGPT Image Latest**| **YES** | `/v1/images/edits` | Active |
-| `dall-e-3` | **DALL-E 3** | NO | `/v1/images/generations` | Legacy (Text-Only) |
+### Infrastructure
 
-### Supported Aspect Ratios & Responsive Composition Engine
-| Ratio | Target Format | Canvas Dimensions | Responsive Composition Architecture |
+- Laravel migrations and Eloquent relationships.
+- Wayfinder-generated route/action types for the frontend.
+- CI workflow running build, lint, formatting, type checking, PHPStan, Pint, and Pest.
+- Public storage symlink for browser image retrieval and downloads.
+
+## 4. AI Pipeline
+
+1. The Studio collects product, business, event, campaign, and creative settings.
+2. The backend resolves the selected product, campaign, event, business, and reference image path.
+3. `MarketingPromptBuilder` creates a promotional advertisement brief.
+4. `ReferenceImageAnalyzer` may inspect a reference image with OpenAI Vision and returns supplemental metadata.
+5. `ModularPromptOrchestrator` creates the final structured prompt.
+6. `OpenAIImageService` chooses the configured model and maps the selected aspect ratio to an API canvas size.
+7. With a supported reference image, the service attaches the binary to `/v1/images/edits`.
+8. Without a usable reference image, or when editing fails, the service calls `/v1/images/generations`.
+9. The returned base64 image or temporary URL is decoded/downloaded and saved as `designs/openai_{uuid}.png` on the public disk.
+10. Preview returns the generated image path and metadata without creating a permanent Design record.
+11. Save creates the Design record; regeneration creates a new GenerationRequest and a new Design.
+
+The generation request is synchronous. The progress bar and rotating messages are user-interface feedback, not independently measured backend stages.
+
+## 5. Industry and Event Logic
+
+`IndustryCategoryArtDirectionService` contains explicit art-direction branches for food and beverage, beauty and wellness, automotive, technology, retail and fashion, real estate, travel and hospitality, healthcare, fitness, professional services, and education, plus a generic commerce fallback. Each branch supplies environment, surfaces/materials, lighting, restrained props, commercial conventions, and things to avoid.
+
+The selected industry and category are passed into the orchestrator. They influence the environmental and commercial presentation around the product; they do not replace product identity or override an explicit user scene direction.
+
+`PhilippineHolidayService` generates repository-defined calendar data for regular holidays, special non-working holidays, special working observances, Islamic holidays, commercial shopping dates, shifted dates, long-weekend metadata, and custom events. The system stores event data and exposes global events plus the authenticated user's events. The repository contains proclamation labels, but external legal or government verification is outside the local test evidence.
+
+The orchestrator maps recognized event names to structured direction including mood, environment, lighting, decorative direction, spatial staging, and marketing intent. This direction is environmental and promotional context. It does not automatically create or publish a campaign.
+
+## 6. Product Pipeline
+
+Product images may be uploaded through the product catalog or supplied as a Studio reference image. Main image uploads are validated as JPG, JPEG, PNG, or WebP files up to 5 MB and stored through Laravel's public disk. Product catalog images are referenced by their stored path; generated images use UUID-based filenames such as `designs/openai_{uuid}.png`.
+
+When a product image exists, the backend uses the stored binary as the primary visual reference for the image-edit request when the selected model supports image input. Vision analysis can provide supplemental observations such as identity and visual characteristics, but it does not replace the binary reference.
+
+When no usable product/reference image exists, the model receives product name, description, category, business context, and the creative prompt and synthesizes the product and scene from text.
+
+The implementation directs the model to preserve recognizable product identity and to keep environmental changes around the product. This is a model-dependent image-editing result, not a guarantee of pixel-perfect preservation. If the edit request fails, the service may fall back to text-to-image generation.
+
+## 7. Prompt Orchestration and Copy
+
+The active orchestrator contains a root objective and output/safety guardrails around ten ordered priority modules:
+
+1. Primary product image and product-preservation handling.
+2. User scene or visual direction.
+3. Final marketing copy.
+4. Campaign name and objective.
+5. Event or Philippine holiday direction.
+6. Industry and category art direction.
+7. Business context and brand identity.
+8. Render style.
+9. Visual theme.
+10. Responsive composition profile and invisible safe area.
+
+The prompt also includes an anti-logo mandate and output-cleanliness rules. Lower-priority environmental styling is instructed not to replace the product or contradict the user's explicit scene direction.
+
+Business/shop name, product name, price, and normalized tagline are supplied as exact copy instructions when enabled. The model is asked to render them as commercial typography. AI-generated text may still contain visual or spelling errors and should be reviewed by the user.
+
+The final implementation does not generate or composite a user logo. Business-name typography is explicitly distinguished from a logo, emblem, watermark, or brand mark.
+
+### Tagline normalization
+
+`TaglineNormalizationService` trims whitespace, removes enclosing straight or smart quotes, removes repeated trailing periods/ellipses, and removes trailing connector/punctuation characters including commas, colons, semicolons, ampersands, dashes, slashes, pipes, underscores, and tildes. It preserves intentional trailing `!` and `?`, preserves legitimate internal characters, and returns `null` for an empty result. It normalizes wording; it does not generate a new tagline.
+
+## 8. Rendering and Persistence
+
+The Studio displays an idle state, synchronous generating state, error state, and ready preview. The generating state includes rotating status text, a simulated progress indication, contextual product/event information, tab-leave warning behavior, and responsive preview handling.
+
+`ImageCompositorService` currently generates a compositing **manifest** containing canvas dimensions, 20% safe-margin coordinates, and exact content metadata. It does not load image pixels, draw text, or produce a composited raster file. The generated marketing image and its copy therefore come from the OpenAI image-generation response, except for the testing/local SVG fallback in `MockupImageService`.
+
+The supported requested ratios are `1:1`, `9:16`, `16:9`, `4:5`, and `4:3`. OpenAI request mapping currently uses `1024x1024`, `1024x1792`, or `1792x1024`; the manifest uses `1024x1280` for `4:5` and `1365x1024` for `4:3`. These implementation differences should be treated as a known technical limitation rather than described as a single deterministic canvas specification.
+
+## 9. Security Audit
+
+### Verified protections
+
+- Authenticated routes are protected by session authentication, email verification, and onboarding middleware where configured.
+- Resource policies authorize design, product, event, and campaign actions.
+- Normal generator and save requests validate resource ownership after existence validation.
+- Notification queries are user-scoped.
+- OpenAI keys remain in server-side configuration.
+- Uploaded reference images are constrained by type and size on the main generation paths.
+- Eloquent and parameterized query builders are used for database access.
+
+### Remaining concerns
+
+- `GeneratorController::generatePreview` uses a smaller inline validation set and does not repeat all ownership checks performed by `GeneratorRequest`; preview tenant isolation requires hardening and live verification.
+- The save shortcut accepting `generated_image_path` should verify that the path belongs to the current user's generation before persisting it.
+- Social OAuth uses stateless handling and should be reviewed against the desired CSRF/state threat model.
+- Production configuration must disable debug mode, configure durable storage, and provide a production queue/mail/database strategy.
+- Generation endpoints have quota protection, but no separate image-generation rate limiter was verified.
+
+## 10. Database Audit
+
+```text
+User 1--1 Business
+User 1--N Event, Campaign, Design, GenerationRequest, AppNotification, Product
+Business 1--N Product, Campaign, Design
+Campaign N--1 Event/Product (optional) and 1--N Design
+Design N--1 Event/Product/Campaign (optional)
+GenerationRequest N--1 Event/Product/Campaign (optional)
+```
+
+Events are user-scoped or global; they do not use a `business_id` relationship in the final model. Products and designs use soft deletes. Foreign-key nulling/cascade behavior is defined by the migrations and should be checked before destructive production operations.
+
+## 11. Testing Audit
+
+The current local Pest run completed successfully:
+
+- **269 tests passed**
+- **1,496 assertions**
+- **Duration:** approximately 94 seconds in the current environment
+
+The tests cover authentication and Socialite login, onboarding, business/profile behavior, product and event workflows, campaign behavior, design creation and regeneration, prompt orchestration, tagline normalization, industry art direction, quotas, notifications, and ownership/security cases. The exact declaration count is less useful than the executed Pest total above; it should be refreshed whenever the suite changes.
+
+Additional local verification completed for the final implementation includes `npm run types:check`, targeted ESLint checks, and `npm run build`. The build reports only existing advisory warnings about optional `fontaine` and bundle size.
+
+## 12. Production Readiness
+
+**Decision: YELLOW CONDITIONAL GO.**
+
+### Verified locally
+
+- Full Pest suite passes at 269/269 with 1,496 assertions.
+- TypeScript compilation passes.
+- Production Vite build passes.
+- CI workflow defines frontend build, lint, formatting, PHPStan, Pint, and Pest stages.
+- Routes, migrations, authentication configuration, storage paths, and OpenAI service wiring are present.
+
+### Requires staging or production verification
+
+- Live OpenAI image generation, latency, model availability, and account billing behavior.
+- Actual product-reference fidelity and generated typography quality.
+- OAuth callback behavior with provider credentials.
+- Accuracy of proclamation dates against current Philippine government sources.
+- Preview tenant isolation and generated-path ownership validation.
+- Production storage durability, queue/worker operation, mail delivery, backups, monitoring, HTTPS, and debug settings.
+
+## 13. Documentation Discrepancies
+
+| Documentation claim | Actual implementation | Status | Required revision |
 |---|---|---|---|
-| **`1:1`** | Square Feed / Catalog | `1024x1024` | Symmetrical square canvas, central/offset hero (40–55% area), 360° breathing room. |
-| **`9:16`** | Mobile Story / Reel / TikTok | `1024x1792` | Vertical hierarchy (Headline → Hero Product → Price/Tagline), vertical depth, no landscape squeeze. |
-| **`16:9`** | Wide Landscape Banner | `1792x1024` | Lateral rule-of-thirds hero placement (30–45% width), dedicated copy lateral third, wide depth. |
-| **`4:5`** | Portrait Social Media Feed | `1024x1792` | High-impact vertical centerpiece (45–60% height) with wide horizontal margin breathing room. |
-| **`4:3`** | Standard Landscape Display | `1792x1024` | Balanced traditional commercial landscape with lateral/upper copy zones. |
+| Laravel 12 | Laravel 13.25.0 is installed | Outdated | Use Laravel 13.25.0 |
+| 8-priority prompt system | Ten ordered modules plus root/output guardrails | Outdated | Document the active ten-priority hierarchy |
+| Deterministic compositor renders exact copy | Compositor returns a manifest only; OpenAI is instructed to render copy | Incorrect | Describe manifest metadata and model-dependent text |
+| Exact/pixel-perfect product preservation | Image edits use the reference binary, but output remains model-dependent | Overstated | Use qualified product-reference wording |
+| SHA-256 product filenames | Laravel-generated stored paths; generated designs use UUID names | Incorrect | Describe actual storage naming |
+| Events belong to businesses | Events belong to users or are global | Incorrect | Correct relationships |
+| 153 or 261 tests | Current run is 269 tests and 1,496 assertions | Outdated | Use dated current evidence |
+| Meta Graph API/social publishing roadmap as system capability | No publishing routes, API, jobs, or platform-token model exists | Out of scope | State manual download/export only |
+| Facebook integration | Facebook exists only as Socialite login | Ambiguous | Label it authentication-only |
 
----
+## 14. Scope and Limitations
 
-## 5. Philippine Event & Holiday System
-
-Converts calendar events into 5 structured visual direction dimensions:
-- **Event**: `Mother's Day Special`
-  - **Mood**: Warm, heartwarming & appreciative
-  - **Environment**: Cozy family dining or premium gifting presentation
-  - **Lighting**: Warm golden hour or gentle morning window light
-  - **Decorative Direction**: Elegant gift wrapping, subtle floral or rustic accents
-  - **Marketing Intent**: Appreciation holiday feature
-
-Supports:
-1. **Regular Philippine Holidays**: `New Year's Day`, `Araw ng Kagitingan`, `Independence Day`, `National Heroes Day`, `Bonifacio Day`, `Christmas Day`, `Rizal Day`.
-2. **Special Non-Working Days**: `Ninoy Aquino Day`, `All Saints' Day`, `Feast of the Immaculate Conception`.
-3. **Observances & Cultural Events**: `Valentine's Day`, `Mother's Day`, `Father's Day`, `Sinulog`, `Panagbenga`.
-4. **Commercial Marketing Events**: `2.2 Flash Sale`, `8.8 Mega Sale`, `11.11 Single's Day`, `12.12 Grand Year-End Sale`.
-5. **Custom Business Events**: User-defined promotions with date and goal specification.
-
----
-
-## 6. Product Catalog Architecture
-
-- **Ownership**: Every product strictly belongs to a single business (`products.business_id` $\to$ `businesses.id`).
-- **Asset Storage**: Uploaded product images are stored with SHA-256 hashed filenames in `storage/app/public/products/images/`.
-- **Soft Deletion & Historical Integrity**: Deleting a product soft-deletes the record (`products.deleted_at`). Reference image assets associated with existing `Design` records are protected and preserved, maintaining full design history and regeneration fidelity.
-
----
-
-## 7. Security Architecture
-
-- **API Secret Isolation**: `OPENAI_API_KEY` is exclusively managed via server-side environment configuration and never sent to the browser.
-- **Tenant Isolation**: Every database query and model relationship is scoped to the authenticated user's `business_id` and verified via Laravel policies.
-- **CSRF Protection**: All `POST`, `PUT`, and `DELETE` routes enforce CSRF tokens.
-- **Input Validation**: Form requests validate string lengths, numeric price bounds, allowed enum styles, and file MIME types (`jpg`, `jpeg`, `png`, `webp`).
-- **SQL Injection Prevention**: Eloquent ORM parameter bindings across 100% of queries.
-
----
-
-## 8. Database Entity Relationships
-
-```
-┌──────────────┐       1:1       ┌────────────────┐       1:N       ┌────────────────┐
-│    users     │ ──────────────> │   businesses   │ ──────────────> │    products    │
-└──────────────┘                 └────────────────┘                 └────────────────┘
-       │                                 │                                  │
-       │ 1:N                             │ 1:N                              │ 1:N
-       ▼                                 ▼                                  ▼
-┌──────────────┐                 ┌────────────────┐                 ┌────────────────┐
-│    events    │                 │   campaigns    │                 │    designs     │
-└──────────────┘                 └────────────────┘                 └────────────────┘
-```
-
-- **`users`**: Root authentication entity (Fortify).
-- **`businesses`**: Tenant root containing business profile, industry, category, and bio.
-- **`products`**: Catalog items belonging to `businesses` with `softDeletes()`.
-- **`events`**: Calendar events with `user_id` scoping for custom events and unique constraint on `(user_id, date, name)`.
-- **`campaigns`**: Marketing initiatives linking products, events, and objectives.
-- **`designs`**: Final creative assets with `softDeletes()`, storing generation metadata, prompt snapshots, model IDs, and image paths.
-
----
-
-## 9. Testing & Evidence Matrix
-
-| Requirement | Test Method | Expected Result | Actual Result | Status |
-|---|---|---|---|:---:|
-| **Authentication & Tenant Isolation** | Automated Pest Feature Test | User B cannot view or modify User A assets | Cross-tenant access returns 403/404 | **VERIFIED** |
-| **Product Image Preservation** | Live GPT-Image-2 Generation | Catalog drink image preserved in variations | Exact glass facets, ice, straw, layers kept | **VERIFIED** |
-| **Exact Price Handling** | Automated QA + Live Generation | Exact `₱149` preserved with currency glyph | `₱149` displayed accurately in output | **VERIFIED** |
-| **Exact Tagline Handling & Normalization** | Unit & Feature Pest Tests | Pure, deterministic tagline normalization stripping outer quotes, trailing periods, dangling connectors (&, -, —, /, \|) while preserving intentional ! and ? | Dedicated `TaglineNormalizationService` with universal pipeline parity | **VERIFIED** |
-| **Industry & Category Art Direction** | Service & Orchestrator Pest Tests | Active environmental staging, lighting, materials, and props per industry/category | Dedicated art-direction vectors for F&B, Beauty, Auto, Tech, Fashion, Real Estate | **VERIFIED** |
-| **5 Responsive Aspect Ratios** | Orchestrator String Assertion + Pint | Dedicated composition profiles for 1:1, 9:16, 16:9, 4:5, 4:3 | 5 distinct composition architectures confirmed | **VERIFIED** |
-| **Strict Anti-Logo Enforcement** | Orchestrator Prompt Assertion | Zero logo/emblem/badge generation | Strict anti-logo & plain typography rules | **VERIFIED** |
-| **Creative Typographic Integration** | Orchestrator Prompt Assertion | Styled typography permitted without logos | Natural typographic integration confirmed | **VERIFIED** |
-| **Render Style Exclusivity** | Orchestrator String Assertion | Exactly 1 style active per prompt compilation | Single active render style confirmed | **VERIFIED** |
-| **Philippine Holiday Direction** | Holiday Service + Generator Test | Holiday provides structured mood/lighting | Mother's Day decor generated cleanly | **VERIFIED** |
-| **Regeneration Input Fidelity** | Pest Feature Test | All 14+ creative inputs & 5 ratios restored | Complete regeneration fidelity confirmed | **VERIFIED** |
-| **Automated Test Suite** | Pest PHP CLI Execution | 261 tests execute with zero failures | 261 passed / 261 total (1,402 assertions) | **VERIFIED** |
-| **TypeScript Typecheck** | `tsc --noEmit` CLI | 0 compilation or typing errors | Clean pass across entire TSX codebase | **VERIFIED** |
-| **Code Formatting** | Laravel Pint CLI | 100% PSR-12 / Laravel guideline compliance | Clean pass (`pint --format agent`) | **VERIFIED** |
-
----
-
-## 10. Production Acceptance Summary
-
-- **Automated Tests**: **261 / 261 Passing** (100% Pass Rate)
-- **Assertions**: **1,402 Assertions**
-- **Critical Defects**: **0**
-- **High Defects**: **0**
-- **Medium Defects**: **0**
-- **AI Budget & Quota Engine**: **ACTIVE & VERIFIED** (`OpenAIUsageService`)
-- **Notification & Alerts Center**: **ACTIVE & VERIFIED** (`NotificationService`)
-- **Industry & Category Art Direction Engine**: **ACTIVE & VERIFIED** (`IndustryCategoryArtDirectionService`)
-- **Tagline Normalization Engine**: **ACTIVE & VERIFIED** (`TaglineNormalizationService`)
-- **Production Acceptance Decision**: **ACCEPTED**
-
----
-
-## 11. Project Demonstration Script
-
-- **Business**: `CoffeYessir` (Cafe & Beverages)
-- **Product**: `Caramel Machiato`
-- **Event**: `Mother's Day Special`
-- **Price**: `₱149`
-- **Tagline**: `"Rich caramel sweetness, brewed to perfection."`
-- **Render Style**: `Studio Product Still`
-- **Brand Tone**: `Warm & Welcoming`
-- **Visual Theme**: `Cozy Cafe Vibe`
-- **Model**: `GPT-Image-2`
-
-### Demonstration Flow
-1. **Login & Business Profile**: Open browser, log into `CoffeYessir`, and review business profile and brand settings.
-2. **Product Catalog**: Navigate to Products and display the stored `Caramel Machiato` image asset.
-3. **AI Marketing Studio**: Select the product, choose `Mother's Day Special`, set price `₱149`, enter tagline, and select `Studio Product Still`.
-4. **Generate Creative**: Click **Generate Visual Creative** and observe the live GPT-Image-2 generation.
-5. **Product Fidelity Verification**: Point out the exact preserved iced coffee glass, ice cubes, brown straw, and milk/espresso layering.
-6. **Regenerate Variation**: Click **Regenerate** to show how background decorations (cards, ribbons, flowers) change while the product identity remains intact.
-7. **Save & Export**: Click **Save Design**, view in **My Designs**, and demonstrate high-resolution PNG/JPEG download.
-
----
-
-## 12. Project Defense Q&A
-
-- **Q1: How does the system preserve the actual product?**
-  *Answer*: The system utilizes a Product-First Architecture where the stored catalog image binary is passed directly to the OpenAI Image Edits API (`/v1/images/edits`), treating the catalog photo as the Primary Visual Source of Truth.
-- **Q2: Why does the system use the catalog image as the primary source?**
-  *Answer*: Generating promotional posters purely from text prompts causes AI models to invent generic replacement products. Supplying the actual image binary guarantees authentic product identity.
-- **Q3: How does the system prevent the AI from inventing another product?**
-  *Answer*: Priority 1 of the prompt explicitly instructs the engine to preserve recognizable proportions, branding, and colors, confining creative changes to background environment and lighting.
-- **Q4: How are price and tagline accuracy handled?**
-  *Answer*: Price (`₱149`) and tagline strings are rendered natively by GPT-Image-2 as commercial typography inside the image and validated against a deterministic 20% safe-margin bounding box.
-- **Q5: How does the system support Philippine holidays?**
-  *Answer*: `PhilippineHolidayService` provides calendar data and maps each event into 5 structured dimensions: Mood, Environment, Lighting, Decorative Direction, and Marketing Intent.
-- **Q6: How does the system handle custom events?**
-  *Answer*: Users can create custom business promotions that are stored in the database with user-scoped uniqueness constraints.
-- **Q7: How does the system maintain brand consistency?**
-  *Answer*: Brand tones and visual themes calibrate environmental lighting and props without overriding product fidelity.
-- **Q8: How does regeneration work?**
-  *Answer*: Regeneration retains the exact product image binary and marketing parameters while allowing the AI to explore different compositions, props, and lighting angles.
-- **Q9: How is user data isolated?**
-  *Answer*: All database queries and storage operations are strictly scoped by the authenticated user's `business_id` and enforced via Laravel policies.
-- **Q10: How is the OpenAI API key protected?**
-  *Answer*: The API key is stored strictly on the server in `.env` and accessed via `config('services.openai.api_key')`, never exposed to the client.
-- **Q11: Why is GPT-Image-2 the recommended model?**
-  *Answer*: `gpt-image-2` natively supports image input editing, commercial text rendering, and high-fidelity texture preservation.
-- **Q12: How does the safe-margin system work?**
-  *Answer*: `ImageCompositorService` calculates a dynamic 20% margin on all four canvas edges (e.g. $614 \times 614\text{px}$ safe area on $1024 \times 1024$ canvas).
-- **Q13: What happens if image generation fails?**
-  *Answer*: Exceptions are caught gracefully, returning a user-friendly error response without creating orphaned records or unconfirmed design entries.
-- **Q14: How was the system tested?**
-  *Answer*: Through a 261-test automated Pest test suite (1,402 assertions), Pint formatting checks, multi-tenant isolation tests, and live multi-variation image generations with real catalog assets.
-- **Q15: What evidence supports the claim that the system is production ready?**
-  *Answer*: A 100% automated test pass rate (261/261), zero open critical/high defects, verified tenant isolation, and successful live image generations demonstrating 100% product fidelity.
-
----
-
-## 13. System Limitations & Future Roadmap
-
-### Known System Limitations
-- Live image generation depends on external OpenAI API availability and network response times (typical runtime 26–35s).
-- Text-only legacy models (such as `dall-e-3`) cannot accept image inputs and rely on text descriptions.
-
-### Future Roadmap
-- **Batch Export**: Add ZIP archive packaging for bulk downloading 10+ campaign visuals (*Future Roadmap item*).
-- **Social Media Publishing**: Add Meta Graph API direct publishing pipelines (*Future Roadmap item*).
-
----
-
-## 14. Final System Freeze Report
-
-- **Architecture Status**: **FROZEN** (Product-First Pipeline, Modular Orchestrator, Model Registry, Deterministic Compositor).
-- **Active Model Configuration**: **`GPT-Image-2`** (`gpt-image-2`) as recommended default.
-- **Database Status**: **STABLE & VERIFIED** (Foreign keys, soft deletes, tenant scoping).
-- **Security Status**: **VERIFIED** (Server-side API key protection, CSRF, policy isolation).
-- **Automated Test Suite**: **261 / 261 Passing (100%)**.
-- **Final Production Status**: **PRODUCTION READY & FROZEN**.
+- The final system focuses on marketing image generation and design management.
+- It does not directly publish to Facebook, Instagram, or any other external platform.
+- It does not automatically manage external social accounts or schedule posts to external platforms.
+- AI output, product fidelity, and rendered copy require user review.
+- Preview files can be written to public storage before a user saves a permanent Design record.
+- Aspect-ratio request and manifest dimensions are not fully uniform for `4:5` and `4:3`.
+- External OpenAI availability, account quota, network latency, and model behavior affect generation.
+- The repository includes an OAuth login flow for Google and Facebook; that is authentication, not content publishing.

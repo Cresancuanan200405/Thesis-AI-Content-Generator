@@ -1,194 +1,132 @@
-# FINAL EVIDENCE REPORT — AI MARKETING AUTOMATION PLATFORM
+# Final Evidence Report: AI-Driven Marketing Image Generation
 
-**Document Version:** 1.0.0 (Production Acceptance & Thesis Defense Edition)  
-**Date:** August 27, 2026  
-**Status:** ACCEPTED & DEFENSE-READY  
+**Document version:** 2.0  
+**Evidence date:** September 2, 2026  
+**Status:** Implementation-aligned local evidence
 
----
+## 1. Final System Purpose
 
-## 1. Project Overview
+MarketPilot is an **AI-driven marketing image generation system for product-based promotional content**. It combines business context, product information, optional product imagery, a selected Philippine holiday or marketing event, campaign information, and creative preferences to produce an AI-generated marketing image.
 
-The **AI Marketing Automation Platform** is an enterprise-grade web application designed for micro, small, and medium enterprises (MSMEs). It automates the generation of culturally contextualized, brand-aligned commercial marketing visuals tailored for Philippine holidays and marketing events.
+The final output is previewed, optionally saved to My Designs, downloaded, or regenerated. External content publishing is outside the implemented scope.
 
-The platform solves the core limitation of conventional text-to-image AI tools: **hallucinated, inconsistent, and distorted product representations**. By employing an innovative **Product-First Image Generation Architecture**, the actual catalog product binary serves as the immutable visual source of truth, synthesizing high-conversion promotional environments around the authentic item while deterministically preserving prices, taglines, and branding.
+## 2. Verified Architecture
 
----
+- **Frontend:** React 19, TypeScript, Inertia.js 3, Tailwind CSS 4, Radix UI, and Lucide icons.
+- **Backend:** Laravel Framework 13.25.0 with PHP 8.3+ Composer compatibility.
+- **Authentication:** Laravel Fortify 1.38.0, email verification, password reset, throttling, and two-factor support.
+- **OAuth:** Laravel Socialite 5.30.0 supports Google and Facebook login. This is authentication only.
+- **AI services:** `MarketingPromptBuilder`, `ModularPromptOrchestrator`, `ReferenceImageAnalyzer`, `OpenAIModelRegistry`, and `OpenAIImageService`.
+- **Persistence:** Eloquent models, migrations, public Laravel storage, `Design`, and `GenerationRequest` records.
+- **No publishing layer:** No Graph API calls, publishing routes, platform-token model, post queue, or automatic external posting workflow was found.
 
-## 2. System Architecture
+## 3. Verified Generation Flow
 
-```
-+-----------------------------------------------------------------------------------+
-|                                CLIENT APPLICATION                                 |
-|               React 19 + Inertia.js v3 + TypeScript + Tailwind CSS               |
-+-----------------------------------------------------------------------------------+
-                                         │ HTTPS / JSON / Inertia
-                                         ▼
-+-----------------------------------------------------------------------------------+
-|                             LARAVEL 12 APPLICATION CORE                           |
-|  - Routing & Multi-Tenant Middleware      - Fortify Authentication & Policies     |
-|  - Product Catalog Management             - Philippine Holiday / Event Engine     |
-+-----------------------------------------------------------------------------------+
-                                         │
-        ┌────────────────────────────────┼────────────────────────────────┐
-        ▼                                ▼                                ▼
-+─────────────────────+        +─────────────────────+        +─────────────────────+
-|   MODULAR PROMPT    |        |    OPENAI IMAGE     |        |   DETERMINISTIC     |
-|    ORCHESTRATOR     |        |       SERVICE       |        |   IMAGE COMPOSITOR  |
-| 8-Priority Dynamic  |        | GPT-Image-2 Edits   |        | Exact Price & Text  |
-| Prompt Synthesis    |        | Multipart Binary    |        | 20% Safe Margin     |
-+─────────────────────+        +─────────────────────+        +─────────────────────+
-        │                                │                                │
-        └────────────────────────────────┴────────────────────────────────┘
-                                         │
-                                         ▼
-+-----------------------------------------------------------------------------------+
-|                           EXTERNAL & PERSISTENCE LAYER                            |
-|  - SQLite / MySQL Multi-Tenant Database      - Local Public Storage Disk          |
-|  - OpenAI Image Edits API (GPT-Image-2)      - GD / ImageMagick Typography Layer  |
-+-----------------------------------------------------------------------------------+
-```
+1. An authenticated user completes onboarding and maintains a business profile.
+2. The user selects or enters a product, optionally selects a product image, chooses a Philippine holiday or marketing event, and configures creative settings.
+3. The Studio sends a preview request to `/generator/preview`.
+4. Uploaded references are stored under `generation-requests/`; catalog images are resolved from the product record.
+5. Vision analysis may produce supplemental product observations.
+6. The prompt builder and orchestrator construct the promotional brief and structured prompt.
+7. A supported reference image is sent as multipart input to `/v1/images/edits`; otherwise `/v1/images/generations` is used. A failed edit can fall back to text-to-image.
+8. The response is decoded from base64 or downloaded from its temporary URL and stored as `designs/openai_{uuid}.png`.
+9. Preview returns the image and metadata without creating a permanent Design record.
+10. Save creates a Design; regeneration creates a new GenerationRequest and a new Design based on recovered inputs.
 
----
+## 4. Verified Prompt System
 
-## 3. Product-First Image Generation Architecture
+The active prompt contains root anti-logo/output guardrails and ten ordered modules:
 
-Conventional AI tools attempt to describe products using text prompts, resulting in distorted bottles, altered labels, and incorrect glassware. MarketPilot enforces a strict **Product-First Architecture**:
+1. Product image and preservation handling.
+2. User scene or visual direction.
+3. Final marketing copy.
+4. Campaign name and objective.
+5. Event or Philippine holiday direction.
+6. Industry/category art direction.
+7. Business context and brand identity.
+8. Render style.
+9. Visual theme.
+10. Responsive composition and invisible safe area.
 
-```
-[ Catalog Product Image ]
-          │
-          ▼
-[ Actual Binary Stored on Disk ] ───► (Primary Visual Source of Truth)
-          │
-          ├─────────────────────────► [ Vision Analyzer ] (Supplemental Blueprint)
-          │
-          ▼
-[ Multipart Form Upload ]
-  - image: Original Product PNG/JPG
-  - prompt: 8-Priority Orchestrated Prompt
-          │
-          ▼
-[ OpenAI Image Edits API (GPT-Image-2) ]
-          │
-          ▼
-[ Environmental Creative Synthesis ] (Lighting, Backdrops, Props, Holiday Accents)
-          │
-          ▼
-[ ImageCompositorService ] (Deterministic Layering of Exact ₱ Price & Tagline)
-          │
-          ▼
-[ 20% Safe Margin Enforced Final Creative ]
-```
+The prompt instructs the model to render enabled product name, business name, price, and normalized tagline as commercial typography. The implementation does not guarantee perfect generated text or product pixels.
 
-### Core Architectural Invariants:
-1. **Catalog Binary Integrity:** The stored product image binary is sent directly to the OpenAI Image Edits endpoint.
-2. **Supplemental Vision Metadata:** Geometric aspect ratios, dominant palettes, and structural features extracted via Vision analysis serve solely as prompt reinforcement, never replacing the raw pixel binary.
-3. **No Hallucination:** Backgrounds, surfaces, atmospheric lighting, and festive decorations adapt dynamically to the selected event while product geometry remains anchored.
+## 5. Product and Event Evidence
 
----
+A supplied product image is used as the primary visual reference when the selected model supports image input. Vision metadata is supplemental. Without an image, the model synthesizes the product and scene from text and business context.
 
-## 4. 8-Priority Modular Prompt Orchestration
+Industry/category branches provide environment, materials, lighting, props, commercial conventions, and exclusions for multiple business domains. The Philippine holiday service provides repository-defined regular, special, observance, Islamic, commercial, shifted-date, long-weekend, and custom-event data. Recognized event names are mapped to mood, environment, lighting, decoration, staging, and marketing intent.
 
-The `ModularPromptOrchestrator` constructs commercial prompts using an immutable 8-priority hierarchy where critical constraints strictly dominate aesthetic preferences:
+These features guide generation; they do not automatically publish or distribute the resulting image.
 
-| Priority | Level Name | Purpose & Inputs | Overrides & Precedence |
-| :---: | :--- | :--- | :--- |
-| **1** | **Primary Product Preservation** | Enforces exact retention of container, label, liquid layering, facets, straw, and proportions based on original binary. | Dominates all other priorities. No theme or holiday may alter product form. |
-| **2** | **Exact Marketing Content** | Preserves exact promotional price (e.g., `₱149`) and marketing tagline without AI paraphrasing. | Overrides tone or holiday styling; handled deterministically. |
-| **3** | **Campaign Objective** | Embeds marketing purpose (e.g., direct-response sales, seasonal promotion, brand awareness). | Subordinate to product fidelity. |
-| **4** | **Philippine Event / Holiday** | Injects cultural ambiance, colors, and contextual props (e.g., Mother's Day floral accents, Independence Day motifs). | Environmental only; prohibited from obstructing product center. |
-| **5** | **Brand Identity & Tone** | Applies business voice (e.g., Warm & Welcoming, Luxury, Modern, Energetic). | Shapes lighting warmth and secondary styling. |
-| **6** | **Single Render Style** | Strictly selects exactly ONE active render style (Studio Product Still, Cinematic Marketing, Lifestyle Capture, or Minimalist Graphic Vec). | Enforces uniform aesthetic rendering. |
-| **7** | **Visual Theme** | Sets environmental backdrop textures (e.g., Cozy Cafe Vibe, Modern Obsidian, Rustic Wood). | Governs peripheral environment outside product boundary. |
-| **8** | **Composition & Safe Margins** | Applies 20% perimeter padding rule for typography, price tags, and logo badges. | Dictates framing, camera distance, and negative space allocation. |
+## 6. Compositor and Rendering Finding
 
----
+`ImageCompositorService` produces a metadata manifest containing canvas values, safe-margin coordinates, and exact content fields. It does not load pixels, draw text, or write a composited raster output. OpenAI is instructed to render copy in the generated image. `MockupImageService` can produce an SVG fallback for tests/local operation.
 
-## 5. Deterministic Image Compositor & 20% Safe-Margin System
+The OpenAI request maps ratios to `1024x1024`, `1024x1792`, or `1792x1024`. The manifest uses different values for `4:5` and `4:3`; this is a known implementation inconsistency.
 
-To eliminate AI typography errors (common in generative models), all marketing text elements are composited deterministically post-synthesis:
-- **Exact Price Tagging:** Rendered using vector geometry and crisp typography directly over the synthesized asset.
-- **Tagline Preservation:** Verbatim tagline placement with contrast backing.
-- **Dynamic 20% Safe-Margin Calculation:** Automatically reserves 20% inset boundaries along all 4 edges, guaranteeing text and logos are never clipped across responsive displays (1:1 feed, 9:16 story/reel, 16:9 landscape).
+## 7. Security Evidence and Open Concerns
 
----
+### Verified locally
 
-## 6. Philippine Holiday & Event Engine
+- Authenticated, verified, and onboarding-gated application routes.
+- Laravel policies for product, event, campaign, and design actions.
+- Ownership validation in the main generator/store requests.
+- CSRF protection and server-side API credentials.
+- Image type/size validation on main upload paths.
+- User-scoped notification access and Eloquent query binding.
+- AI budget checks before generation and regeneration.
 
-The platform features a localized event engine supporting:
-1. **Official Regular & Special Non-Working Holidays:** Proclamation-backed Philippine dates (e.g., Rizal Day, Independence Day, Christmas).
-2. **Commercial & Cultural E-Commerce Dates:** 11.11 Singles' Day, 12.12 Mega Sale, Payday Sales, Mother's Day, Valentine's Day.
-3. **Custom Business Events:** User-defined milestones, anniversaries, and limited-time store promotions.
-4. **Cultural Color Harmonies:** Automatically associates appropriate color banks with Philippine festivities.
+### Requires hardening or live verification
 
----
+- Preview validation is narrower than `GeneratorRequest` and should enforce product, event, and campaign ownership equivalently.
+- The `generated_image_path` save shortcut should verify path ownership/integrity.
+- Stateless OAuth handling should be reviewed for the desired provider-state protection.
+- Production debug, storage, queue, mail, backup, and monitoring configuration must be verified outside this local repository.
 
-## 7. Multi-Tenant Authorization & Security Architecture
+## 8. Database Evidence
 
-```
-+─────────────────────────────────────────────────────────────────────────────+
-|                            SECURITY PERIMETER                               |
-+─────────────────────────────────────────────────────────────────────────────+
-|  1. Server-Side Secret Storage:                                             |
-|     - OPENAI_API_KEY stored strictly in .env / config/services.php          |
-|     - Zero client-side API key leakage across React props, HTML, or logs    |
-|                                                                             |
-|  2. Multi-Tenant Isolation:                                                 |
-|     - Every query strictly scoped: `auth()->user()->business->products()`   |
-|     - Laravel Policies enforce 403 Forbidden on unauthorized cross-tenant   |
-|       resource access (Designs, Products, Campaigns, Events)                |
-|                                                                             |
-|  3. Safe File Handling:                                                     |
-|     - Strict MIME-type and size validation on image uploads                 |
-|     - Cryptographically secure UUID file naming on public storage disk      |
-|                                                                             |
-|  4. Generation Quota & Protection:                                          |
-|     - User AI budget limit ceiling ($10.00 / $20.00) enforced pre-request   |
-|     - Idempotency & duplicate click prevention during active generation     |
-+─────────────────────────────────────────────────────────────────────────────+
-```
+- `User` has one `Business` and many products, events, campaigns, designs, generation requests, and app notifications.
+- `Business` has many products, campaigns, and designs.
+- `Event` belongs to a user or is global and has campaigns/designs; it has no final `business_id` relationship.
+- `Campaign` and `Design` may reference products and events.
+- `GenerationRequest` records the generation context and status.
+- Products and designs use soft deletes.
+- Exact foreign-key actions are defined in migrations and should be considered before destructive operations.
 
----
+## 9. Current Test and Build Evidence
 
-## 8. Automated Test Evidence & Verification Metrics
+Executed locally on September 2, 2026:
 
-| Test Suite / Metric | Result | Status |
-| :--- | :---: | :---: |
-| **Pest PHP Test Suite** | **153 / 153 Passing** | **100% PASS** |
-| **Total Test Assertions** | **591 Assertions** | **100% PASS** |
-| **Test Execution Duration** | **24.36s** | **OPTIMAL** |
-| **Regressions / Failures** | **0 Failures** | **CLEAN** |
-| **Laravel Pint Code Quality** | **100% Compliant** | **PASS** |
-| **TypeScript Type Checking** | **0 Errors (`tsc --noEmit`)** | **PASS** |
-| **Vite Production Bundler** | **Built in 17.59s** | **PASS** |
+| Check | Result |
+|---|---:|
+| Pest suite | **269 passed** |
+| Assertions | **1,496** |
+| TypeScript | **Passed** |
+| Targeted ESLint | **Passed** |
+| Production Vite build | **Passed** |
+| Laravel Pint | **Passed** |
 
----
+The build reports advisory warnings for optional `fontaine` optimization and bundle size. No live OpenAI, OAuth provider, government-date, or production deployment verification was performed.
 
-## 9. Demonstration Verification Summary
+## 10. Production Readiness
 
-- **Business Profile:** CoffeYessir (Cafe & Beverages, Warm & Welcoming)
-- **Product Tested:** Caramel Machiato (ID: 6)
-- **Holiday Context:** Mother's Day Special
-- **Marketing Offer:** ₱149 | *"Rich caramel sweetness, brewed to perfection."*
-- **Active Model:** GPT-Image-2 (`gpt-image-2`)
-- **Render Style:** Studio Product Still
-- **Fidelity Results:** Faceted glass container shape, straw, ice cubes, caramel/milk layering, and natural proportions preserved. Atmospheric lighting and floral celebration cues placed in periphery.
-- **Compositing Results:** Exact ₱149 price tag rendered cleanly with 20% safe margin compliance.
+**Decision: YELLOW CONDITIONAL GO.**
 
----
+The local code, tests, type check, build, and CI definitions provide a strong implementation baseline. Staging verification remains required for live AI behavior, generated copy/product fidelity, provider callbacks, event-date accuracy, tenant isolation in preview, durable storage, worker operation, mail, backups, HTTPS, monitoring, and production configuration.
 
-## 10. Final Production Acceptance Status
+## 11. Discrepancy Table
 
-```
-===================================================================
-                  FINAL SYSTEM STATUS: ACCEPTED
-===================================================================
-  Architecture:               VERIFIED (Product-First Pipeline)
-  Model Engine:               VERIFIED (GPT-Image-2 Default)
-  Deterministic Compositor:   VERIFIED (20% Safe Margins)
-  Security & Multi-Tenancy:   VERIFIED (Zero Credential Leakage)
-  Automated Quality:          153 / 153 Tests Passing (591 Assertions)
-  Code Formatting:            Pint Passed / TypeScript 0 Errors
-  Readiness for Defense:      100% READY
-===================================================================
-```
+| Historical claim | Verified final behavior | Revision |
+|---|---|---|
+| Laravel 12 | Laravel 13.25.0 | Correct version |
+| 8-priority orchestrator | Ten ordered modules plus guardrails | Correct hierarchy |
+| Deterministic final text compositor | Manifest only; OpenAI renders requested copy | Remove deterministic-rendering claim |
+| 100% product/pixel preservation | Reference-guided, model-dependent preservation | Qualify claim |
+| 153 or 261 tests | 269 tests and 1,496 assertions in current run | Use dated evidence |
+| Social publishing integration | No publishing implementation; Facebook is OAuth login | Remove capability claim |
+| Business-owned events | User-owned or global events | Correct data model |
+| SHA-256 filenames | Laravel paths and UUID generated design filenames | Correct storage description |
+
+## 12. Scope Statement
+
+The system creates and manages AI-generated promotional marketing images. Users review, save, regenerate, and download those assets. It does not directly publish, schedule, or manage external social-platform content.

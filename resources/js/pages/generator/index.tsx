@@ -14,7 +14,6 @@ import {
     ChevronDown,
     ChevronUp,
     Clapperboard,
-    Clock,
     Coffee,
     Compass,
     Cpu,
@@ -22,16 +21,13 @@ import {
     Dumbbell,
     Edit3,
     ExternalLink,
-    FolderPlus,
     GraduationCap,
     HeartPulse,
     ImageIcon,
     Landmark,
-    Laptop,
     Layers,
     Loader2,
     Maximize2,
-    Minimize2,
     Package,
     Palette,
     PanelRightClose,
@@ -45,11 +41,9 @@ import {
     Shirt,
     ShoppingBag,
     ShoppingBasket,
-    ShoppingCart,
     SlidersHorizontal,
     Sparkles,
     Tag,
-    Trash2,
     Upload,
     Utensils,
     UtensilsCrossed,
@@ -58,14 +52,13 @@ import {
     ZoomIn,
     ZoomOut,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { createElement, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { HelpTooltip } from '@/components/help-tooltip';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
@@ -233,32 +226,6 @@ interface EventItem {
     event_date?: string | null;
     type?: string | null;
     description?: string | null;
-}
-
-interface CampaignItem {
-    id: number | string;
-    name: string;
-    status?: string | null;
-    start_date?: string | null;
-    end_date?: string | null;
-    event_id?: number | string | null;
-    product_id?: number | string | null;
-    product_name?: string | null;
-    objective?: string | null;
-}
-
-interface BusinessProfile {
-    id?: number | string;
-    name?: string;
-    industry?: string;
-    category?: string;
-    description?: string;
-    unique_selling_point?: string;
-    brand_tone?: string | string[];
-    content_style?: string | string[];
-    color_palette?: string;
-    font_style?: string;
-    marketing_preferences?: string;
 }
 
 export const EXACT_MODEL_QUALITY_PRICING: Record<
@@ -788,22 +755,6 @@ const renderingStatusPhrases = [
     'Finalizing the composition...',
 ];
 
-const getCanvasAspectRatioClass = (ratio: string) => {
-    switch (ratio) {
-        case '9:16':
-            return 'aspect-[9/16] h-[32vh] max-h-[250px] w-auto';
-        case '16:9':
-            return 'aspect-[16/9] w-full max-w-[360px] sm:max-w-[420px] max-h-[190px] sm:max-h-[210px]';
-        case '4:5':
-            return 'aspect-[4/5] h-[30vh] max-h-[240px] w-auto';
-        case '4:3':
-            return 'aspect-[4/3] w-full max-w-[300px] sm:max-w-[360px] max-h-[210px]';
-        case '1:1':
-        default:
-            return 'aspect-square h-[28vh] max-h-[230px] w-auto';
-    }
-};
-
 function formatEventDateLabel(value?: string | null): string {
     if (!value) {
         return 'No date';
@@ -843,6 +794,7 @@ const resolveIndustryIcon = (
     ) {
         return Coffee;
     }
+
     if (
         raw.includes('food') ||
         raw.includes('restaurant') ||
@@ -851,6 +803,7 @@ const resolveIndustryIcon = (
     ) {
         return UtensilsCrossed;
     }
+
     if (
         raw.includes('bakery') ||
         raw.includes('pastry') ||
@@ -860,6 +813,7 @@ const resolveIndustryIcon = (
     ) {
         return Utensils;
     }
+
     if (
         raw.includes('fashion') ||
         raw.includes('apparel') ||
@@ -869,6 +823,7 @@ const resolveIndustryIcon = (
     ) {
         return Shirt;
     }
+
     if (
         raw.includes('beauty') ||
         raw.includes('wellness') ||
@@ -878,6 +833,7 @@ const resolveIndustryIcon = (
     ) {
         return Sparkles;
     }
+
     if (
         raw.includes('fitness') ||
         raw.includes('gym') ||
@@ -886,6 +842,7 @@ const resolveIndustryIcon = (
     ) {
         return Dumbbell;
     }
+
     if (
         raw.includes('grocery') ||
         raw.includes('market') ||
@@ -894,6 +851,7 @@ const resolveIndustryIcon = (
     ) {
         return ShoppingBasket;
     }
+
     if (
         raw.includes('retail') ||
         raw.includes('e-commerce') ||
@@ -902,6 +860,7 @@ const resolveIndustryIcon = (
     ) {
         return ShoppingBag;
     }
+
     if (
         raw.includes('tech') ||
         raw.includes('software') ||
@@ -911,6 +870,7 @@ const resolveIndustryIcon = (
     ) {
         return Cpu;
     }
+
     if (
         raw.includes('health') ||
         raw.includes('medical') ||
@@ -919,6 +879,7 @@ const resolveIndustryIcon = (
     ) {
         return HeartPulse;
     }
+
     if (
         raw.includes('real estate') ||
         raw.includes('property') ||
@@ -927,6 +888,7 @@ const resolveIndustryIcon = (
     ) {
         return Building2;
     }
+
     if (
         raw.includes('education') ||
         raw.includes('school') ||
@@ -935,6 +897,7 @@ const resolveIndustryIcon = (
     ) {
         return GraduationCap;
     }
+
     if (
         raw.includes('professional') ||
         raw.includes('consulting') ||
@@ -944,6 +907,7 @@ const resolveIndustryIcon = (
     ) {
         return Briefcase;
     }
+
     if (
         raw.includes('travel') ||
         raw.includes('hospitality') ||
@@ -953,6 +917,7 @@ const resolveIndustryIcon = (
     ) {
         return Plane;
     }
+
     if (
         raw.includes('auto') ||
         raw.includes('vehicle') ||
@@ -961,6 +926,7 @@ const resolveIndustryIcon = (
     ) {
         return Car;
     }
+
     if (
         raw.includes('finance') ||
         raw.includes('banking') ||
@@ -993,8 +959,6 @@ export default function GeneratorPage() {
 
     const activeIndustry =
         business?.industry || 'Food & Beverage';
-    const IndustryIcon = getIndustryIconComponent(activeIndustry);
-
     const ai_usage = pageProps.ai_usage;
     const budgetLimit = Number(
         ai_usage?.budget_limit ?? ai_usage?.application_configured_limit ?? 20.0,
@@ -1167,6 +1131,7 @@ export default function GeneratorPage() {
                 if (typeof document !== 'undefined') {
                     document.title = '⚠️ Generating... Keep Tab Open! — AI Marketing Studio';
                 }
+
                 toast.warning('Warning: You switched away from this tab!', {
                     description:
                         'Keep this tab active and in focus. Switching tabs or minimizing the browser will cancel or interrupt visual creative generation.',
@@ -1177,6 +1142,7 @@ export default function GeneratorPage() {
                 if (typeof document !== 'undefined') {
                     document.title = originalTitle;
                 }
+
                 toast.info('Visual generation in progress...', {
                     description:
                         'Please stay on this tab until your commercial creative finishes rendering.',
@@ -1201,6 +1167,7 @@ export default function GeneratorPage() {
             if (typeof document !== 'undefined' && originalTitle) {
                 document.title = originalTitle;
             }
+
             document.removeEventListener(
                 'visibilitychange',
                 handleVisibilityChange,
@@ -1213,7 +1180,7 @@ export default function GeneratorPage() {
     const [referenceImagePreview, setReferenceImagePreview] = useState<
         string | null
     >(null);
-    const [referenceImageSource, setReferenceImageSource] = useState<
+    const [, setReferenceImageSource] = useState<
         'none' | 'desktop' | 'product'
     >('none');
     const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(
@@ -1270,8 +1237,8 @@ export default function GeneratorPage() {
     };
 
     // Interactive Generation Progress states
-    const [generationStage, setGenerationStage] = useState(0);
-    const [elapsedSeconds, setElapsedSeconds] = useState(0);
+    const [, setGenerationStage] = useState(0);
+    const [, setElapsedSeconds] = useState(0);
 
     // Save & Campaign Link states
     const [isSavedToDesigns, setIsSavedToDesigns] = useState(false);
@@ -1285,7 +1252,6 @@ export default function GeneratorPage() {
         useState<string>('');
     const [isAttachingCampaign, setIsAttachingCampaign] = useState(false);
     const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
-    const [isCampaignCreated, setIsCampaignCreated] = useState(false);
     const [campaignFormData, setCampaignFormData] = useState({
         name: '',
         event_id: '',
@@ -1415,43 +1381,15 @@ export default function GeneratorPage() {
 
     // Creative studio rendering status & contextual rotation
     const [rotatingPhraseIndex, setRotatingPhraseIndex] = useState(0);
-    const [rotatingContextIndex, setRotatingContextIndex] = useState(0);
-
-    const renderingContextPhrases = useMemo(() => {
-        const list: string[] = [];
-        if (business?.name) {
-            list.push(`Creating for ${business.name}`);
-        }
-        if (form.product_name?.trim()) {
-            list.push(`Designing ${form.product_name.trim()}`);
-        }
-        if (activeCampaign?.name) {
-            list.push(`Composing ${activeCampaign.name}`);
-        } else if (selectedEvent?.name) {
-            list.push(`Celebrating ${selectedEvent.name}`);
-        }
-        if (form.render_style) {
-            list.push(`Styling ${form.render_style}`);
-        }
-        if (list.length === 0) {
-            list.push('Composing marketing visual');
-        }
-        return list;
-    }, [business?.name, form.product_name, activeCampaign?.name, selectedEvent?.name, form.render_style]);
 
     const currentStatusMessage =
         renderingStatusPhrases[
             rotatingPhraseIndex % renderingStatusPhrases.length
         ];
-    const currentContextText =
-        renderingContextPhrases[
-            rotatingContextIndex % renderingContextPhrases.length
-        ];
-
     useEffect(() => {
         if (generationState !== 'generating') {
             setRotatingPhraseIndex(0);
-            setRotatingContextIndex(0);
+
             return;
         }
 
@@ -1461,13 +1399,8 @@ export default function GeneratorPage() {
             );
         }, 2000);
 
-        const contextInterval = window.setInterval(() => {
-            setRotatingContextIndex((prev) => prev + 1);
-        }, 2600);
-
         return () => {
             window.clearInterval(phraseInterval);
-            window.clearInterval(contextInterval);
         };
     }, [generationState]);
 
@@ -1852,9 +1785,11 @@ export default function GeneratorPage() {
         // Reset viewport scroll to top instantly to prevent any scroll-down jump during rendering
         if (typeof window !== 'undefined') {
             window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+
             if (document.documentElement) {
                 document.documentElement.scrollTop = 0;
             }
+
             if (document.body) {
                 document.body.scrollTop = 0;
             }
@@ -2629,7 +2564,9 @@ export default function GeneratorPage() {
                                     {/* Glassmorphic Industry Emblem Pedestal */}
                                     <div className="relative flex h-28 w-28 sm:h-32 sm:w-32 flex-col items-center justify-center rounded-3xl border border-primary/25 bg-gradient-to-b from-primary/15 via-primary/5 to-muted/40 shadow-xl shadow-primary/10 ring-1 ring-primary/20 backdrop-blur-xl transition-all">
                                         <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-xs ring-1 ring-primary/25">
-                                            <IndustryIcon className="h-6 w-6 sm:h-7 sm:w-7 text-primary motion-safe:animate-pulse" />
+                                            {createElement(getIndustryIconComponent(activeIndustry), {
+                                                className: 'h-6 w-6 sm:h-7 sm:w-7 text-primary motion-safe:animate-pulse',
+                                            })}
                                         </div>
                                         {activeIndustry && (
                                             <span className="mt-1.5 max-w-[90px] truncate text-[10px] font-bold uppercase tracking-wider text-primary/80">

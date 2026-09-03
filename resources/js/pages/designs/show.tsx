@@ -30,7 +30,7 @@ import {
     ZoomIn,
     ZoomOut,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { createElement, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import { useSidebar } from '@/components/ui/sidebar';
 
 const resolveIndustryIcon = (
     industry?: string | null,
@@ -64,6 +65,7 @@ const resolveIndustryIcon = (
     ) {
         return Coffee;
     }
+
     if (
         raw.includes('food') ||
         raw.includes('restaurant') ||
@@ -72,6 +74,7 @@ const resolveIndustryIcon = (
     ) {
         return UtensilsCrossed;
     }
+
     if (
         raw.includes('bakery') ||
         raw.includes('pastry') ||
@@ -81,6 +84,7 @@ const resolveIndustryIcon = (
     ) {
         return Utensils;
     }
+
     if (
         raw.includes('fashion') ||
         raw.includes('apparel') ||
@@ -90,6 +94,7 @@ const resolveIndustryIcon = (
     ) {
         return Shirt;
     }
+
     if (
         raw.includes('beauty') ||
         raw.includes('wellness') ||
@@ -99,6 +104,7 @@ const resolveIndustryIcon = (
     ) {
         return Sparkles;
     }
+
     if (
         raw.includes('fitness') ||
         raw.includes('gym') ||
@@ -107,6 +113,7 @@ const resolveIndustryIcon = (
     ) {
         return Dumbbell;
     }
+
     if (
         raw.includes('grocery') ||
         raw.includes('market') ||
@@ -115,6 +122,7 @@ const resolveIndustryIcon = (
     ) {
         return ShoppingBasket;
     }
+
     if (
         raw.includes('retail') ||
         raw.includes('e-commerce') ||
@@ -123,6 +131,7 @@ const resolveIndustryIcon = (
     ) {
         return ShoppingBag;
     }
+
     if (
         raw.includes('tech') ||
         raw.includes('software') ||
@@ -132,6 +141,7 @@ const resolveIndustryIcon = (
     ) {
         return Cpu;
     }
+
     if (
         raw.includes('health') ||
         raw.includes('medical') ||
@@ -140,6 +150,7 @@ const resolveIndustryIcon = (
     ) {
         return HeartPulse;
     }
+
     if (
         raw.includes('real estate') ||
         raw.includes('property') ||
@@ -148,6 +159,7 @@ const resolveIndustryIcon = (
     ) {
         return Building2;
     }
+
     if (
         raw.includes('education') ||
         raw.includes('school') ||
@@ -156,6 +168,7 @@ const resolveIndustryIcon = (
     ) {
         return GraduationCap;
     }
+
     if (
         raw.includes('professional') ||
         raw.includes('consulting') ||
@@ -165,6 +178,7 @@ const resolveIndustryIcon = (
     ) {
         return Briefcase;
     }
+
     if (
         raw.includes('travel') ||
         raw.includes('hospitality') ||
@@ -174,6 +188,7 @@ const resolveIndustryIcon = (
     ) {
         return Plane;
     }
+
     if (
         raw.includes('auto') ||
         raw.includes('vehicle') ||
@@ -182,6 +197,7 @@ const resolveIndustryIcon = (
     ) {
         return Car;
     }
+
     if (
         raw.includes('finance') ||
         raw.includes('banking') ||
@@ -203,6 +219,7 @@ const regenerationStatusPhrases = [
 ];
 
 export default function DesignShowPage({ design }: any) {
+    const { state: sidebarState } = useSidebar();
     const [isFavorite, setIsFavorite] = useState<boolean>(
         Boolean(design.is_favorite),
     );
@@ -215,8 +232,6 @@ export default function DesignShowPage({ design }: any) {
     const [rotatingPhraseIndex, setRotatingPhraseIndex] = useState(0);
 
     const activeIndustry = design.business_industry || 'Creative Marketing';
-    const IndustryIcon = resolveIndustryIcon(activeIndustry);
-
     const currentStatusMessage =
         regenerationStatusPhrases[
             rotatingPhraseIndex % regenerationStatusPhrases.length
@@ -227,15 +242,28 @@ export default function DesignShowPage({ design }: any) {
         if (!isRegenerating) {
             setGenerationProgress(15);
             setRotatingPhraseIndex(0);
+
             return;
         }
 
         const progressInterval = window.setInterval(() => {
             setGenerationProgress((prev) => {
-                if (prev < 35) return prev + 6;
-                if (prev < 65) return prev + 4;
-                if (prev < 85) return prev + 2;
-                if (prev < 95) return prev + 1;
+                if (prev < 35) {
+return prev + 6;
+}
+
+                if (prev < 65) {
+return prev + 4;
+}
+
+                if (prev < 85) {
+return prev + 2;
+}
+
+                if (prev < 95) {
+return prev + 1;
+}
+
                 return prev;
             });
         }, 500);
@@ -252,9 +280,24 @@ export default function DesignShowPage({ design }: any) {
         };
     }, [isRegenerating]);
 
+    useEffect(() => {
+        if (!isRegenerating) {
+            return;
+        }
+
+        const originalBodyOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        return () => {
+            document.body.style.overflow = originalBodyOverflow;
+        };
+    }, [isRegenerating]);
+
     // Tab visibility and exit warning during regeneration
     useEffect(() => {
-        if (!isRegenerating) return;
+        if (!isRegenerating) {
+return;
+}
 
         const originalTitle =
             typeof document !== 'undefined' ? document.title : '';
@@ -265,6 +308,7 @@ export default function DesignShowPage({ design }: any) {
                     document.title =
                         '⚠️ Regenerating... Keep Tab Open! — MarketPilot';
                 }
+
                 toast.warning('Warning: You switched away from this tab!', {
                     description:
                         'Keep this tab active and in focus. Switching tabs or minimizing the browser may interrupt visual creative regeneration.',
@@ -282,6 +326,7 @@ export default function DesignShowPage({ design }: any) {
             e.preventDefault();
             e.returnValue =
                 'Visual creative regeneration is in progress. Leaving this page will interrupt it.';
+
             return e.returnValue;
         };
 
@@ -292,6 +337,7 @@ export default function DesignShowPage({ design }: any) {
             if (typeof document !== 'undefined' && originalTitle) {
                 document.title = originalTitle;
             }
+
             document.removeEventListener(
                 'visibilitychange',
                 handleVisibilityChange,
@@ -344,7 +390,7 @@ export default function DesignShowPage({ design }: any) {
                         ? 'Added to favorites'
                         : 'Removed from favorites'),
             );
-        } catch (err) {
+        } catch {
             setIsFavorite(!nextVal);
             toast.error('Unable to update favorite status.');
         }
@@ -936,8 +982,8 @@ export default function DesignShowPage({ design }: any) {
                 LIVE REGENERATION STUDIO RENDERING OVERLAY (STUDIO EXPERIENCE)
             ============================================================= */}
             {isRegenerating && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-background/80 backdrop-blur-2xl p-4 sm:p-6 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300">
-                    <div className="relative flex w-full max-w-lg flex-col items-center justify-between gap-5 overflow-hidden rounded-3xl border border-border/80 bg-card/95 p-6 sm:p-8 shadow-2xl backdrop-blur-2xl">
+                <div className={`fixed top-11 right-0 bottom-0 left-0 z-20 flex items-center justify-center overflow-hidden bg-background/80 p-4 backdrop-blur-2xl sm:top-12 sm:p-6 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 ${sidebarState === 'collapsed' ? 'md:left-[var(--sidebar-width-icon)]' : 'md:left-[var(--sidebar-width)]'}`}>
+                    <div className="relative flex max-h-full w-full max-w-lg flex-col items-center justify-between gap-5 overflow-hidden rounded-3xl border border-border/80 bg-card/95 p-6 shadow-2xl backdrop-blur-2xl sm:p-8">
                         {/* Ambient Background Studio Aura */}
                         <div className="pointer-events-none absolute -top-16 left-1/2 h-36 w-36 -translate-x-1/2 rounded-full bg-primary/15 blur-3xl motion-reduce:hidden" />
                         <div className="pointer-events-none absolute -bottom-16 left-1/2 h-36 w-36 -translate-x-1/2 rounded-full bg-emerald-500/15 blur-3xl motion-reduce:hidden" />
@@ -973,7 +1019,9 @@ export default function DesignShowPage({ design }: any) {
                             {/* Glassmorphic Industry Emblem Pedestal */}
                             <div className="relative flex h-28 w-28 sm:h-32 sm:w-32 flex-col items-center justify-center rounded-3xl border border-primary/25 bg-gradient-to-b from-primary/15 via-primary/5 to-muted/40 shadow-xl shadow-primary/10 ring-1 ring-primary/20 backdrop-blur-xl transition-all">
                                 <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-xs ring-1 ring-primary/25">
-                                    <IndustryIcon className="h-6 w-6 sm:h-7 sm:w-7 text-primary motion-safe:animate-pulse" />
+                                    {createElement(resolveIndustryIcon(activeIndustry), {
+                                        className: 'h-6 w-6 sm:h-7 sm:w-7 text-primary motion-safe:animate-pulse',
+                                    })}
                                 </div>
                                 {activeIndustry && (
                                     <span className="mt-1.5 max-w-[90px] truncate text-[10px] font-bold uppercase tracking-wider text-primary/80">

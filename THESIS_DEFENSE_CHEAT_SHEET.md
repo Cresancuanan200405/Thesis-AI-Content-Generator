@@ -1,85 +1,76 @@
-# THESIS DEFENSE CHEAT SHEET — AI MARKETING AUTOMATION PLATFORM
+# Thesis Defense Cheat Sheet: Final System
 
-**Target Audience:** Thesis Defense Presenter / Defense Panelist Q&A  
-**Focus:** High-Impact, Technically Grounded Explanations  
+**System description:** AI-driven marketing image generation system for product-based promotional content  
+**Evidence date:** September 2, 2026
 
----
+## 30-Second Explanation
 
-## 1. Quick Pitches & System Explanations
+MarketPilot helps a business owner create a promotional marketing image by combining business and industry context, product information, an optional product image, a selected Philippine holiday or marketing event, and creative preferences. The AI Marketing Studio constructs a structured creative prompt and uses OpenAI image generation to produce an image that can be previewed, saved, downloaded, or regenerated.
 
-### ⏱️ 30-Second Elevator Pitch
-> "Our platform is an AI marketing automation system built for Filipino MSMEs. Unlike conventional tools that generate random, distorted product images from text descriptions, our system uses a **Product-First Architecture**: it takes the actual catalog product photo as the primary visual source of truth, generates high-converting Philippine holiday-themed environments around it using OpenAI's GPT-Image-2 image-editing pipeline, and deterministically overlays exact prices and taglines within a 20% safe margin."
+The system does not directly publish content to external platforms. Google and Facebook are available only as OAuth authentication providers.
 
-### ⏱️ 1-Minute Technical Explanation
-> "Architecturally, the application is built on Laravel 12 and React 19 with Inertia.js v3. When a merchant selects a catalog item and an event, our 10-Priority Modular Prompt Orchestrator structures commercial instructions while the stored binary image is passed directly to the OpenAI Image Edits endpoint. This allows the AI model to preserve the physical geometry, textures, and glassware of the product while transforming the surrounding lighting and props. Following AI synthesis, our server-side Image Compositor deterministically applies the exact Philippine Peso price, tagline, and business name within calculated 20% safe boundaries, ensuring zero AI spelling hallucinations and complete multi-tenant data isolation."
+## Technical Architecture
 
-### ⏱️ 2-Minute Full Architecture Walkthrough
-> "The platform is structured into four cohesive layers:
-> 1. **Client & Presentation Layer:** An Inertia + React single-page interface offering dark-mode UI, single-style render selection, live budget quota tracking, and real-time generation previews.
-> 2. **Context & Orchestration Layer:** The Philippine Holiday Engine matches upcoming national and commercial events. The Modular Prompt Orchestrator executes a 10-priority hierarchy where product preservation strictly dominates aesthetic styling.
-> 3. **AI Synthesis Layer:** The OpenAI Image Service transmits a multipart payload containing the actual product image binary and the orchestrated prompt to `gpt-image-2`. Supplemental Vision metadata reinforces color palettes and aspect ratios.
-> 4. **Compositing & Persistence Layer:** Generated assets pass through the `ImageCompositorService` to overlay exact vector prices and verbatim taglines with 20% safe margin protection. Metadata including prompt version (`marketing-pipeline-v1`), generation duration, and model parameters are persisted to the database under strict tenant-scoped policies."
+1. React 19, TypeScript, Inertia.js 3, and Tailwind CSS provide the client experience.
+2. Laravel 13.25 handles routing, validation, authentication, policies, persistence, and server-side AI calls.
+3. The Studio sends product, event, campaign, business, and creative inputs to the backend.
+4. `MarketingPromptBuilder` and `ModularPromptOrchestrator` construct the promotional brief and ten ordered prompt modules.
+5. A supported product/reference image is sent to OpenAI's `/v1/images/edits`; otherwise the service uses `/v1/images/generations`.
+6. The returned image is stored on Laravel's public disk, previewed, and optionally persisted as a Design.
 
----
+## Defensible Answers
 
-## 2. 20 Likely Panel Questions & Defensible Answers
+### Q1. What is the primary output?
+An AI-generated marketing image for a product promotion. The user can save, download, or regenerate it.
 
-### Q1: How does the system preserve the actual product?
-**Answer:** We supply the actual stored catalog product image binary directly to OpenAI's image-to-image edit pipeline (`gpt-image-2`). The AI modifies only the background environment and lighting while treating the product pixels as the primary visual anchor.
+### Q2. What inputs affect generation?
+Product name and optional description, product image, price, selected Philippine holiday or marketing event, optional campaign name/objective, business name, industry, category, tagline, brand tone, visual theme, render style, aspect ratio, image model, quality, and user scene direction.
 
-### Q2: Why use an image-editing pipeline instead of generating the product entirely from text?
-**Answer:** Text-to-image models inevitably hallucinate details—they cannot reliably replicate a merchant's exact bottle shape, label typography, or liquid layering. Image-to-image editing anchors on the real item.
+### Q3. Is event selection important?
+Yes. The main Studio flow requires an event ID. The selected event is included in the prompt and can contribute mood, environment, lighting, decoration, spatial staging, and marketing intent.
 
-### Q3: What is the role of Vision analysis?
-**Answer:** Vision analysis generates a structural blueprint (dominant colors, container type, aspect ratio) used as supplemental prompt reinforcement. It assists the model in understanding composition without replacing the image binary.
+### Q4. How does product-aware generation work?
+When a usable reference exists, the stored binary is attached to OpenAI's image-edit endpoint and the prompt identifies it as the primary visual reference. Vision analysis can add supplemental observations. This improves product-aware generation but does not guarantee identical pixels or perfect details.
 
-### Q4: Why is Vision metadata not considered the primary product source?
-**Answer:** Textual descriptions can never capture the millions of pixel details present in an authentic photograph. The raw image binary is the true source of visual truth.
+### Q5. What happens without a product image?
+The service uses text-to-image generation. Product name, description, category, business context, event, and creative settings guide synthesis of the product and promotional scene.
 
-### Q5: How does the system prevent the AI from changing the product?
-**Answer:** In our 10-Priority Modular Prompt Orchestrator, Priority 1 explicitly mandates product preservation and overrides all subsequent background, holiday, and artistic styling rules.
+### Q6. What is the prompt hierarchy?
+The active orchestrator has a root objective and output guardrails around ten modules: product preservation; user scene; marketing copy; campaign; event; industry/category art direction; business context/identity; render style; visual theme; and responsive composition/safe area.
 
-### Q6: How are price and tagline accuracy handled?
-**Answer:** They are NOT generated by the AI image model. We use a deterministic server-side compositor (`ImageCompositorService`) that renders the exact ₱ price and tagline with perfect typographical clarity.
+### Q7. How is industry used?
+The art-direction service has dedicated branches for food/beverage, beauty/wellness, automotive, technology, retail/fashion, real estate, travel/hospitality, healthcare, fitness, professional services, and education, plus a generic fallback. These branches guide environment, materials, lighting, restrained props, commercial conventions, and exclusions.
 
-### Q7: Why is the ImageCompositorService necessary?
-**Answer:** Generative image models frequently distort text, misspell words, and produce unreadable currency symbols. Deterministic compositing guarantees 100% text and price accuracy every time.
+### Q8. How is tagline normalization different from tagline generation?
+Normalization cleans user text: it trims whitespace, removes surrounding quotes, removes repeated trailing dots/ellipses and dangling punctuation/connectors, preserves internal text and final `!`/`?`, and returns null when empty. It does not invent or rewrite a tagline.
 
-### Q8: What is the purpose of the 20% safe margin?
-**Answer:** It ensures that crucial promotional elements—prices, taglines, and business names—are never clipped when the creative is cropped or displayed across different social media aspect ratios (1:1, 9:16, 16:9).
+### Q9. Does the compositor render final text?
+No. `ImageCompositorService` creates a metadata manifest containing canvas, safe-margin, and exact-content values. It does not draw pixels or text. The OpenAI prompt asks the image model to render enabled copy, so text accuracy remains model-dependent.
 
-### Q9: How does the system handle different aspect ratios?
-**Answer:** The prompt orchestrator specifies dimensions (e.g., 1024×1024 for feed, 1024×1792 for stories) and calculates dynamic coordinate offsets so safe margins scale proportionally.
+### Q10. Does the system generate logos?
+No. The active prompt explicitly prohibits invented logos, emblems, badges, watermarks, and brand marks. An enabled business name may appear as typography, which is not a generated logo.
 
-### Q10: How does the Philippine Holiday System work?
-**Answer:** It incorporates official proclamation dates (regular and special non-working holidays) and commercial dates (11.11, Payday Sales). It automatically supplies cultural contexts and seasonal color schemes.
+### Q11. How does regeneration work?
+`DesignRegenerationService` recovers the original design's product, reference path, event, campaign, prompt, style, tone, theme, price, tagline, business context, and aspect ratio. It creates a new GenerationRequest, reruns the AI pipeline, and stores a new Design. The output is a new model-generated variation, not a guaranteed pixel-identical copy.
 
-### Q11: How does the system prevent users from accessing each other's data?
-**Answer:** Multi-tenancy is enforced at the database and application levels. Every query is scoped to `auth()->user()->business_id`, backed by Laravel Authorization Policies on all models.
+### Q12. How is user data protected?
+Authentication, email verification, onboarding middleware, CSRF protection, request validation, Laravel policies, resource ownership checks, user-scoped notifications, and server-side API credentials are implemented. Preview ownership validation and client-supplied generated paths remain areas for hardening.
 
-### Q12: How is the OpenAI API key protected?
-**Answer:** The API key is stored strictly server-side in environment configuration (`.env`). It is never passed to React props, HTML responses, or client logs.
+### Q13. What are the event data limitations?
+The repository generates and stores Philippine holiday and marketing-event data, including proclamation labels. External government-source verification was not performed for this audit.
 
-### Q13: Why is GPT-Image-2 the recommended model?
-**Answer:** `gpt-image-2` provides native image-to-image edit capabilities, photorealistic lighting synthesis, ray-traced shadows, and superior adherence to commercial composition prompts.
+### Q14. What are the current test results?
+The full local Pest run passed **269 tests with 1,496 assertions** on September 2, 2026. TypeScript, targeted ESLint, Pint, and the production Vite build also passed.
 
-### Q14: How does regeneration work?
-**Answer:** The user can request a variation which re-executes the pipeline with the identical product binary and campaign parameters under new environmental seeds, giving new creative backdrops while keeping the product unchanged.
+### Q15. Is the system production-ready?
+**Yellow Conditional Go.** Local automated checks pass, but staging verification is still required for live OpenAI behavior, generated product/copy quality, OAuth callbacks, event-date accuracy, preview tenant isolation, durable storage, workers, mail, backups, monitoring, HTTPS, and production configuration.
 
-### Q15: Why doesn't preview automatically create a permanent design?
-**Answer:** To prevent database clutter and allow merchants to experiment freely. Only visuals explicitly approved via "Save to Designs" or campaign linking are permanently recorded.
+## Scope and Limitations
 
-### Q16: How does the system handle OpenAI generation latency?
-**Answer:** We provide real-time staged loading feedback, dynamic progress bars, and an upfront observed runtime notice (`~26–36s`) while preventing duplicate click submissions.
-
-### Q17: What happens if image generation fails?
-**Answer:** The error is safely caught server-side and logged without leaking credentials. A human-readable message is returned to the user, and all campaign form values are preserved for an instant retry.
-
-### Q18: How do you verify the generated output?
-**Answer:** We run a 153-test automated Pest test suite covering prompt assembly, multi-tenancy, compositing math, and API payloads, combined with live visual fidelity inspection during acceptance.
-
-### Q19: What are the system's current limitations?
-**Answer:** Image generation relies on external OpenAI API availability and network latency. Complex product images with heavily cluttered original backgrounds produce best results when photographed against neutral backdrops.
-
-### Q20: What future improvements can be added?
-**Answer:** Automated background removal pre-processing, video reel animation synthesis, automated multi-platform social media auto-posting, and fine-tuned localized image models.
+- The system focuses on marketing image generation and design management.
+- It does not publish directly to external platforms or manage external accounts.
+- AI-generated product details and text require human review.
+- Product-reference editing is model-dependent and does not guarantee pixel-perfect preservation.
+- Preview files may be stored before the user saves a permanent Design.
+- Requested and manifest canvas dimensions differ for some ratios.
+- OpenAI availability, account budget, network latency, and model behavior affect results.

@@ -16,10 +16,12 @@ export default function AuthSplitLayout({
                 <div className="absolute inset-0 bg-zinc-900" />
                 <Link
                     href={home()}
-                    className="relative z-20 flex items-center text-lg font-medium"
+                    className="relative z-20 flex items-center gap-3 text-lg font-bold text-white group"
                 >
-                    <AppLogoIcon className="mr-2 size-8 fill-current text-white" />
-                    {name}
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-900/90 p-1 shadow-lg ring-1 ring-white/20 transition-transform duration-200 group-hover:scale-105">
+                        <AppLogoIcon className="size-full rounded-xl object-contain" />
+                    </div>
+                    {name || 'MarketPilot'}
                 </Link>
             </div>
             <div className="w-full lg:p-8">
@@ -28,7 +30,9 @@ export default function AuthSplitLayout({
                         href={home()}
                         className="relative z-20 flex items-center justify-center lg:hidden"
                     >
-                        <AppLogoIcon className="h-10 fill-current text-black sm:h-12" />
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-card p-1 shadow-md ring-1 ring-border/80 dark:bg-zinc-900 dark:ring-white/15">
+                            <AppLogoIcon className="size-full rounded-xl object-contain" />
+                        </div>
                     </Link>
                     <div className="flex flex-col items-start gap-2 text-left sm:items-center sm:text-center">
                         <h1 className="text-xl font-medium">{title}</h1>

@@ -457,12 +457,12 @@ class DesignController extends Controller
         );
     }
 
-    public function regenerate(Design $design): RedirectResponse
+    public function regenerate(Request $request, Design $design): RedirectResponse
     {
         $this->authorize('regenerate', $design);
 
         /** @var User $user */
-        $user = auth()->user();
+        $user = $request->user();
         $budgetLimit = (float) config('services.openai.budget_limit', 10.00);
         if ($user && $user->hasReachedAiBudgetLimit($budgetLimit)) {
             return redirect()->route('designs.index')->with('error', 'You have reached your $'.number_format($budgetLimit, 2).' AI generation limit quota. Visual regeneration is disabled.');
@@ -480,9 +480,6 @@ class DesignController extends Controller
     public function destroy(Design $design): RedirectResponse
     {
         $this->authorize('delete', $design);
-
-        $user = auth()->user();
-        $productName = $design->product_name;
 
         if ($design->generated_image_path && Storage::disk('public')->exists($design->generated_image_path)) {
             Storage::disk('public')->delete($design->generated_image_path);

@@ -357,9 +357,9 @@ export default function Welcome() {
                             href={home()}
                             className="group flex items-center gap-3 focus:outline-none"
                         >
-                            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/25 transition-transform duration-200 group-hover:scale-105">
-                                <AppLogoIcon className="h-5 w-5 fill-current" />
-                                <div className="absolute inset-0 -z-10 rounded-xl bg-primary/30 blur-sm transition-all group-hover:blur-md" />
+                            <div className="relative flex h-9.5 w-9.5 items-center justify-center rounded-2xl bg-card p-1 shadow-md ring-1 ring-border/80 transition-all duration-300 group-hover:scale-105 group-hover:ring-primary/40 dark:bg-zinc-900/90 dark:ring-white/15">
+                                <AppLogoIcon className="size-full rounded-xl object-contain" />
+                                <div className="absolute inset-0 -z-10 rounded-2xl bg-primary/25 blur-sm opacity-70 transition-all group-hover:opacity-100 group-hover:blur-md" />
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-base font-extrabold tracking-tight text-foreground">
@@ -1443,8 +1443,8 @@ export default function Welcome() {
                             {/* Brand Summary Column */}
                             <div className="col-span-2 space-y-4">
                                 <div className="flex items-center gap-2.5">
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
-                                        <AppLogoIcon className="h-4 w-4 fill-current" />
+                                    <div className="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-card p-0.5 shadow-xs ring-1 ring-border/80 dark:bg-zinc-900 dark:ring-white/10">
+                                        <AppLogoIcon className="size-full rounded-lg object-contain" />
                                     </div>
                                     <span className="text-sm font-bold tracking-tight text-foreground">
                                         MarketPilot
