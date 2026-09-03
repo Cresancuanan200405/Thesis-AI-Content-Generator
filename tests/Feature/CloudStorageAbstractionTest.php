@@ -4,7 +4,9 @@ use App\Models\Business;
 use App\Models\Design;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\ReferenceImageAnalyzer;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
 
@@ -55,4 +57,54 @@ it('downloads design files through Storage abstraction without requiring local p
 
 it('can resolve S3 storage disk driver without missing class errors', function () {
     expect(class_exists(AwsS3V3Adapter::class))->toBeTrue();
+});
+
+it('preserves product image in storage when referenced in historical design upon product deletion', function () {
+    Storage::fake();
+
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+
+    $imagePath = 'products/images/test_preserve.jpg';
+    Storage::put($imagePath, 'fake-binary-product-data');
+
+    $product = Product::factory()->create([
+        'business_id' => $business->id,
+        'image_path' => $imagePath,
+    ]);
+
+    Design::factory()->create([
+        'user_id' => $user->id,
+        'product_id' => $product->id,
+        'reference_image_path' => $imagePath,
+    ]);
+
+    $response = $this->actingAs($user)->delete(route('products.destroy', $product));
+
+    $response->assertRedirect(route('products.index'));
+    expect(Product::find($product->id))->toBeNull()
+        ->and(Storage::exists($imagePath))->toBeTrue();
+});
+
+it('retrieves reference image contents using Storage::get in ReferenceImageAnalyzer', function () {
+    Storage::fake();
+
+    $imagePath = 'generation-requests/test_ref.jpg';
+    Storage::put($imagePath, 'dummy-image-contents-for-vision');
+
+    config()->set('services.openai.api_key', 'sk-test-key');
+
+    Http::fake([
+        'https://api.openai.com/v1/chat/completions' => Http::response([
+            'choices' => [
+                ['message' => ['content' => json_encode(['composition' => 'minimalist', 'layout' => 'centered'])]],
+            ],
+        ], 200),
+    ]);
+
+    $analyzer = app(ReferenceImageAnalyzer::class);
+    $result = $analyzer->analyze($imagePath);
+
+    expect($result)->not->toBeNull()
+        ->and($result['composition'])->toBe('minimalist');
 });
