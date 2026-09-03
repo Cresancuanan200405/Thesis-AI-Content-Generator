@@ -27,7 +27,7 @@
     ],
     "env": {
         "APP_ENV": "production",
-        "APP_DEBUG": "true",
+        "APP_DEBUG": "false",
         "APP_MAINTENANCE_DRIVER": "file",
         "LOG_CHANNEL": "stderr",
         "VERCEL": "1",
