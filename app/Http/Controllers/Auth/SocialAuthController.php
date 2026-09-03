@@ -73,54 +73,62 @@ class SocialAuthController extends Controller
             return redirect()->route('login')->with('error', "Authentication with {$provider} failed: ".$e->getMessage());
         }
 
-        $socialId = $socialUser->getId();
-        $email = $socialUser->getEmail();
-        $name = $socialUser->getName() ?: (explode('@', (string) $email)[0] ?: ucfirst($provider).' User');
-        $avatar = $socialUser->getAvatar();
+        try {
+            $socialId = $socialUser->getId();
+            $email = $socialUser->getEmail();
+            $name = $socialUser->getName() ?: (explode('@', (string) $email)[0] ?: ucfirst($provider).' User');
+            $avatar = $socialUser->getAvatar();
 
-        if (empty($email)) {
-            $email = "{$provider}_{$socialId}@social.marketpilot.test";
-        }
-
-        // 1. Check if user with matching provider credentials exists
-        $user = User::where('provider_name', $provider)
-            ->where('provider_id', $socialId)
-            ->first();
-
-        // 2. If not found by provider ID, look up by email
-        if (! $user) {
-            $user = User::where('email', $email)->first();
-
-            if ($user) {
-                $user->forceFill([
-                    'provider_name' => $provider,
-                    'provider_id' => $socialId,
-                    'avatar' => $user->avatar ?: $avatar,
-                    'email_verified_at' => $user->email_verified_at ?? now(),
-                ])->save();
-            } else {
-                // 3. Create a brand new user
-                $user = User::create([
-                    'name' => $name,
-                    'email' => $email,
-                    'password' => Hash::make(Str::random(32)),
-                    'provider_name' => $provider,
-                    'provider_id' => $socialId,
-                    'avatar' => $avatar,
-                    'email_verified_at' => now(),
-                    'onboarding_completed' => false,
-                ]);
+            if (empty($email)) {
+                $email = "{$provider}_{$socialId}@social.marketpilot.test";
             }
+
+            // 1. Check if user with matching provider credentials exists
+            $user = User::where('provider_name', $provider)
+                ->where('provider_id', $socialId)
+                ->first();
+
+            // 2. If not found by provider ID, look up by email
+            if (! $user) {
+                $user = User::where('email', $email)->first();
+
+                if ($user) {
+                    $user->forceFill([
+                        'provider_name' => $provider,
+                        'provider_id' => $socialId,
+                        'avatar' => $user->avatar ?: $avatar,
+                        'email_verified_at' => $user->email_verified_at ?? now(),
+                    ])->save();
+                } else {
+                    // 3. Create a brand new user
+                    $user = User::create([
+                        'name' => $name,
+                        'email' => $email,
+                        'password' => Hash::make(Str::random(32)),
+                        'provider_name' => $provider,
+                        'provider_id' => $socialId,
+                        'avatar' => $avatar,
+                        'email_verified_at' => now(),
+                        'onboarding_completed' => false,
+                    ]);
+                }
+            }
+
+            Auth::login($user, true);
+
+            $request->session()->regenerate();
+
+            if (! $user->onboarding_completed) {
+                return redirect()->route('onboarding.show')->with('success', "Signed in with {$provider}! Let's set up your workspace.");
+            }
+
+            return redirect()->intended(route('dashboard'))->with('success', "Welcome back, {$user->name}!");
+        } catch (Throwable $e) {
+            Log::error("Social auth {$provider} database/session error: ".$e->getMessage(), [
+                'exception' => $e,
+            ]);
+
+            return redirect()->route('login')->with('error', "Failed to complete {$provider} sign-in. Please try again or use your email.");
         }
-
-        Auth::login($user, true);
-
-        $request->session()->regenerate();
-
-        if (! $user->onboarding_completed) {
-            return redirect()->route('onboarding.show')->with('success', "Signed in with {$provider}! Let's set up your workspace.");
-        }
-
-        return redirect()->intended(route('dashboard'))->with('success', "Welcome back, {$user->name}!");
     }
 }
