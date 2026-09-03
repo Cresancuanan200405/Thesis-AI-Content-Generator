@@ -36,6 +36,16 @@ if (empty($_ENV['APP_MAINTENANCE_DRIVER'])) {
     $_SERVER['APP_MAINTENANCE_DRIVER'] = 'file';
 }
 
+if ((isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+    || (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on')
+    || (isset($_SERVER['HTTP_X_FORWARDED_PORT']) && $_SERVER['HTTP_X_FORWARDED_PORT'] === '443')
+    || (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'production')
+    || (isset($_SERVER['APP_ENV']) && $_SERVER['APP_ENV'] === 'production')
+) {
+    $_SERVER['HTTPS'] = 'on';
+    $_SERVER['SERVER_PORT'] = '443';
+}
+
 foreach ($storageDirs as $dir) {
     if (! is_dir($dir)) {
         @mkdir($dir, 0755, true);
