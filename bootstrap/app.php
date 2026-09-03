@@ -29,9 +29,15 @@ $app = Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
-        );
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if (env('APP_DEBUG')) {
+                return response(
+                    'LARAVEL EXCEPTION: '.get_class($e)."\nMessage: ".$e->getMessage()."\nFile: ".$e->getFile().':'.$e->getLine()."\n\nTrace:\n".$e->getTraceAsString(),
+                    500,
+                    ['Content-Type' => 'text/plain']
+                );
+            }
+        });
     })->create();
 
 if (isset($_ENV['VERCEL']) || isset($_SERVER['VERCEL']) || getenv('VERCEL')) {
