@@ -181,12 +181,17 @@ it('strengthens product preservation and suppresses AI typography for non-defaul
 });
 
 it('attaches catalog product binary for image-input models and sends selected model in OpenAIImageService', function () {
-    Storage::fake('public');
-    Storage::disk('public')->put('products/coffee.png', 'fake-binary-bytes');
+    Storage::fake();
+    Storage::put('products/coffee.png', 'fake-binary-bytes');
 
     config()->set('services.openai.api_key', 'sk-test-secret-key');
 
     Http::fake([
+        'https://api.openai.com/v1/chat/completions' => Http::response([
+            'choices' => [
+                ['message' => ['content' => json_encode(['composition' => 'hero product centered'])]],
+            ],
+        ], 200),
         'https://api.openai.com/v1/images/edits' => function (Request $request) {
             $hasImage = $request->isMultipart();
             $body = $request->data();

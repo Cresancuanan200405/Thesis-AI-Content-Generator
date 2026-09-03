@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\GenerationRequest;
 use App\Models\Product;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -52,7 +53,7 @@ class DesignRegenerationService
         $dbPrice = $numericPrice ?: ($product?->price ?? ($priceForPrompt ? (float) preg_replace('/[^0-9.]/', '', $priceForPrompt) : null));
 
         $referenceImagePath = $design->reference_image_path ?? $product?->image_path ?? null;
-        $productImageUrl = $product?->image_path ? asset('storage/'.$product->image_path) : ($referenceImagePath ? asset('storage/'.$referenceImagePath) : null);
+        $productImageUrl = $product?->image_path ? Storage::url($product->image_path) : ($referenceImagePath ? Storage::url($referenceImagePath) : null);
 
         // 2. Recover Campaign Details
         /** @var Campaign|null $campaign */

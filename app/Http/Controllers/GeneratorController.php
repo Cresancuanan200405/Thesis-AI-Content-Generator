@@ -20,6 +20,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
@@ -102,7 +103,7 @@ class GeneratorController extends Controller
                 'description' => $product->description,
                 'price' => $product->price,
                 'image_path' => $product->image_path,
-                'image_url' => $product->image_path ? asset('storage/'.$product->image_path) : null,
+                'image_url' => $product->image_path ? Storage::url($product->image_path) : null,
             ])->values()->all(),
             'events' => $events->map(fn (Event $event): array => [
                 'id' => $event->id,
@@ -137,7 +138,7 @@ class GeneratorController extends Controller
 
         $referenceImagePath = null;
         if ($request->hasFile('reference_image')) {
-            $referenceImagePath = $request->file('reference_image')->store('generation-requests', 'public');
+            $referenceImagePath = $request->file('reference_image')->store('generation-requests');
         }
 
         // Resolve product details for context
@@ -163,7 +164,7 @@ class GeneratorController extends Controller
 
         $payload['include_business_name'] = $includeBusinessName;
         $payload['business_name'] = $businessName;
-        $productImageUrl = $product?->image_path ? asset('storage/'.$product->image_path) : null;
+        $productImageUrl = $product?->image_path ? Storage::url($product->image_path) : null;
 
         $prompt = app(MarketingPromptBuilder::class)->build($payload, $business);
 
@@ -325,7 +326,7 @@ class GeneratorController extends Controller
 
         $referenceImagePath = null;
         if ($request->hasFile('reference_image')) {
-            $referenceImagePath = $request->file('reference_image')->store('generation-requests', 'public');
+            $referenceImagePath = $request->file('reference_image')->store('generation-requests');
         }
 
         /** @var Product|null $product */
@@ -347,7 +348,7 @@ class GeneratorController extends Controller
         if ($includeBusinessName) {
             $businessName = $request->filled('business_name') ? trim((string) $request->input('business_name')) : $business->name;
         }
-        $productImageUrl = $product?->image_path ? asset('storage/'.$product->image_path) : null;
+        $productImageUrl = $product?->image_path ? Storage::url($product->image_path) : null;
         $normalizedTagline = TaglineNormalizationService::normalize($request->input('tagline'));
 
         $previewPayload = $request->all();
@@ -401,7 +402,7 @@ class GeneratorController extends Controller
 
             return response()->json([
                 'success' => true,
-                'image_url' => asset('storage/'.$generatedImagePath),
+                'image_url' => Storage::url($generatedImagePath),
                 'generated_image_path' => $generatedImagePath,
                 'prompt' => $prompt,
                 'product_name' => $request->input('product_name'),

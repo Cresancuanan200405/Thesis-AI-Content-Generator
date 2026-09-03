@@ -14,6 +14,7 @@ use App\Models\Event;
 use App\Services\OpenAIUsageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 Route::inertia('/', 'welcome')->name('home');
 
@@ -79,7 +80,7 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
                 'event_name' => $design->event?->name,
                 'status' => $design->status,
                 'created_at' => $design->created_at?->format('M j, Y'),
-                'image_url' => $design->generated_image_path ? asset('storage/'.$design->generated_image_path) : null,
+                'image_url' => $design->generated_image_path ? Storage::url($design->generated_image_path) : null,
                 'url' => route('designs.show', $design),
             ])->values()->all();
 

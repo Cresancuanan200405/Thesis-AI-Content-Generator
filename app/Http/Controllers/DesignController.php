@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class DesignController extends Controller
 {
@@ -183,7 +183,7 @@ class DesignController extends Controller
         ]);
     }
 
-    public function store(StoreDesignRequest $request): \Symfony\Component\HttpFoundation\Response
+    public function store(StoreDesignRequest $request): SymfonyResponse
     {
         @set_time_limit(120);
         @ini_set('max_execution_time', '120');
@@ -216,7 +216,7 @@ class DesignController extends Controller
 
         $referenceImagePath = null;
         if ($request->hasFile('reference_image')) {
-            $referenceImagePath = $request->file('reference_image')->store('generation-requests', 'public');
+            $referenceImagePath = $request->file('reference_image')->store('generation-requests');
         }
 
         /** @var Product|null $product */
@@ -253,7 +253,7 @@ class DesignController extends Controller
         $normalizedTagline = TaglineNormalizationService::normalize($request->input('tagline'));
 
         // Resolve product image URL (for reference when product chosen from catalog)
-        $productImageUrl = $product?->image_path ? asset('storage/'.$product->image_path) : null;
+        $productImageUrl = $product?->image_path ? Storage::url($product->image_path) : null;
 
         $prompt = (string) ($request->input('prompt') ?? $request->input('image_prompt') ?? ('Marketing visual for '.$request->input('product_name')));
 
@@ -350,7 +350,7 @@ class DesignController extends Controller
         return redirect()->route('designs.show', $design)->with('success', 'Design saved to My Designs.');
     }
 
-    public function attachCampaign(Request $request, Design $design): \Symfony\Component\HttpFoundation\Response
+    public function attachCampaign(Request $request, Design $design): SymfonyResponse
     {
         $this->authorize('update', $design);
 
@@ -396,7 +396,7 @@ class DesignController extends Controller
         return back()->with('success', 'Design attached to campaign successfully.');
     }
 
-    public function toggleFavorite(Request $request, Design $design): \Symfony\Component\HttpFoundation\Response
+    public function toggleFavorite(Request $request, Design $design): SymfonyResponse
     {
         $this->authorize('update', $design);
 
@@ -443,16 +443,16 @@ class DesignController extends Controller
         ]);
     }
 
-    public function download(Design $design): BinaryFileResponse
+    public function download(Design $design): SymfonyResponse
     {
         $this->authorize('download', $design);
 
-        if (! $design->generated_image_path || ! Storage::disk('public')->exists($design->generated_image_path)) {
+        if (! $design->generated_image_path || ! Storage::exists($design->generated_image_path)) {
             abort(404, 'The requested design image is no longer available.');
         }
 
-        return response()->download(
-            Storage::disk('public')->path($design->generated_image_path),
+        return Storage::download(
+            $design->generated_image_path,
             $design->product_name.'.png'
         );
     }
@@ -481,8 +481,8 @@ class DesignController extends Controller
     {
         $this->authorize('delete', $design);
 
-        if ($design->generated_image_path && Storage::disk('public')->exists($design->generated_image_path)) {
-            Storage::disk('public')->delete($design->generated_image_path);
+        if ($design->generated_image_path && Storage::exists($design->generated_image_path)) {
+            Storage::delete($design->generated_image_path);
         }
 
         $design->delete();
@@ -507,8 +507,8 @@ class DesignController extends Controller
         }
 
         foreach ($designs as $design) {
-            if ($design->generated_image_path && Storage::disk('public')->exists($design->generated_image_path)) {
-                Storage::disk('public')->delete($design->generated_image_path);
+            if ($design->generated_image_path && Storage::exists($design->generated_image_path)) {
+                Storage::delete($design->generated_image_path);
             }
             $design->delete();
         }
@@ -522,6 +522,6 @@ class DesignController extends Controller
             return null;
         }
 
-        return asset('storage/'.$design->generated_image_path);
+        return Storage::url($design->generated_image_path);
     }
 }

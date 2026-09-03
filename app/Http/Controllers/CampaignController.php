@@ -12,6 +12,7 @@ use Carbon\CarbonInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -104,7 +105,7 @@ class CampaignController extends Controller
                     'designs' => $campaign->designs->map(fn (Design $design): array => [
                         'id' => $design->id,
                         'product_name' => $design->product_name,
-                        'image_url' => $design->generated_image_path ? asset('storage/'.$design->generated_image_path) : null,
+                        'image_url' => $design->generated_image_path ? Storage::url($design->generated_image_path) : null,
                         'download_url' => route('designs.download', $design),
                     ])->values()->all(),
                     'show_url' => route('campaigns.show', $campaign),
@@ -137,36 +138,26 @@ class CampaignController extends Controller
         ]);
     }
 
-    public function show(Request $request, Campaign $campaign): Response
+    public function show(Campaign $campaign): Response
     {
         $this->authorize('view', $campaign);
 
-        $campaign->load(['product', 'event', 'business', 'designs']);
+        $campaign->load(['product', 'event', 'designs' => fn ($query) => $query->latest()]);
+        $startDate = $campaign->start_date;
+        $endDate = $campaign->end_date;
 
-        /** @var User|null $user */
-        $user = $request->user() ?? $campaign->user;
+        /** @var User $user */
+        $user = auth()->user();
+        $events = $user->events()->orderBy('date')->get();
 
-        $startDate = $campaign->getAttributeValue('start_date');
-        $endDate = $campaign->getAttributeValue('end_date');
-
-        $events = Event::query()
-            ->where(fn ($query) => $query->where('user_id', $campaign->user_id)->orWhere('is_global', true))
-            ->orderBy('date')
-            ->get()
-            ->map(fn (Event $event): array => [
-                'id' => $event->id,
-                'name' => $event->name,
-                'date' => $event->date->format('Y-m-d'),
-                'type' => $event->type,
-            ])->values()->all();
-
+        // Get designs for this business that are not yet assigned to any campaign
         $availableDesigns = [];
-        if ($campaign->event_id && $user) {
+        if ($campaign->event_id) {
             $availableDesigns = $user->designs()
-                ->where('event_id', $campaign->event_id)
-                ->where(function ($q) use ($campaign) {
-                    $q->whereNull('campaign_id')
-                        ->orWhere('campaign_id', '!=', $campaign->id);
+                ->whereNull('campaign_id')
+                ->where(function ($query) use ($campaign) {
+                    $query->where('event_id', $campaign->event_id)
+                        ->orWhereNull('event_id');
                 })
                 ->latest()
                 ->get()
@@ -176,13 +167,18 @@ class CampaignController extends Controller
                     'event_id' => $d->event_id,
                     'event_name' => $d->event?->name,
                     'is_matching_event' => true,
-                    'image_url' => $d->generated_image_path ? asset('storage/'.$d->generated_image_path) : null,
+                    'image_url' => $d->generated_image_path ? Storage::url($d->generated_image_path) : null,
                     'created_at' => $d->created_at->format('M d, Y'),
                 ])->values()->all();
         }
 
         return Inertia::render('campaigns/show', [
-            'events' => $events,
+            'events' => $events->map(fn (Event $event): array => [
+                'id' => $event->id,
+                'name' => $event->name,
+                'date' => $event->date->format('Y-m-d'),
+                'type' => $event->type,
+            ])->values()->all(),
             'available_designs' => $availableDesigns,
             'campaign' => [
                 'id' => $campaign->id,
@@ -207,7 +203,7 @@ class CampaignController extends Controller
                     'brand_tone' => $design->brand_tone,
                     'status' => $design->status,
                     'is_favorite' => (bool) $design->is_favorite,
-                    'image_url' => $design->generated_image_path ? asset('storage/'.$design->generated_image_path) : null,
+                    'image_url' => $design->generated_image_path ? Storage::url($design->generated_image_path) : null,
                     'download_url' => route('designs.download', $design),
                 ])->values()->all(),
                 'generator_url' => route('generator.index', array_filter([

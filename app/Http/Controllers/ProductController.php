@@ -37,7 +37,7 @@ class ProductController extends Controller
                 'description' => $product->description,
                 'price' => $product->price,
                 'image_path' => $product->image_path,
-                'image_url' => $product->image_path ? asset('storage/'.$product->image_path) : null,
+                'image_url' => $product->image_path ? Storage::url($product->image_path) : null,
                 'created_at' => $product->created_at?->format('M j, Y'),
                 'edit_url' => route('products.edit', $product),
                 'show_url' => route('products.show', $product),
@@ -71,7 +71,7 @@ class ProductController extends Controller
 
         $imagePath = null;
         if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('products/images', 'public');
+            $imagePath = $request->file('image')->store('products/images');
         }
 
         $name = trim((string) $request->input('name'));
@@ -102,14 +102,14 @@ class ProductController extends Controller
                 'description' => $product->description,
                 'price' => $product->price,
                 'image_path' => $product->image_path,
-                'image_url' => $product->image_path ? asset('storage/'.$product->image_path) : null,
+                'image_url' => $product->image_path ? Storage::url($product->image_path) : null,
                 'business_name' => $product->business?->name,
                 'created_at' => $product->created_at?->format('M j, Y'),
                 'designs' => $product->designs->map(fn ($design) => [
                     'id' => $design->id,
                     'product_name' => $design->product_name,
                     'status' => $design->status,
-                    'image_url' => $design->generated_image_path ? asset('storage/'.$design->generated_image_path) : null,
+                    'image_url' => $design->generated_image_path ? Storage::url($design->generated_image_path) : null,
                 ])->values()->all(),
             ],
         ]);
@@ -126,7 +126,7 @@ class ProductController extends Controller
                 'description' => $product->description,
                 'price' => $product->price,
                 'image_path' => $product->image_path,
-                'image_url' => $product->image_path ? asset('storage/'.$product->image_path) : null,
+                'image_url' => $product->image_path ? Storage::url($product->image_path) : null,
             ],
         ]);
     }
@@ -138,13 +138,13 @@ class ProductController extends Controller
         $imagePath = $product->image_path;
 
         if ($request->hasFile('image')) {
-            if ($product->image_path && Storage::disk('public')->exists($product->image_path)) {
-                Storage::disk('public')->delete($product->image_path);
+            if ($product->image_path && Storage::exists($product->image_path)) {
+                Storage::delete($product->image_path);
             }
-            $imagePath = $request->file('image')->store('products/images', 'public');
+            $imagePath = $request->file('image')->store('products/images');
         } elseif ($request->boolean('remove_image')) {
-            if ($product->image_path && Storage::disk('public')->exists($product->image_path)) {
-                Storage::disk('public')->delete($product->image_path);
+            if ($product->image_path && Storage::exists($product->image_path)) {
+                Storage::delete($product->image_path);
             }
             $imagePath = null;
         }
@@ -173,13 +173,13 @@ class ProductController extends Controller
         $product->delete();
 
         // Only delete file asset from disk if no historical designs reference it
-        if ($imagePath && Storage::disk('public')->exists($imagePath)) {
+        if ($imagePath && Storage::exists($imagePath)) {
             $isReferencedInDesigns = Design::query()
                 ->where('reference_image_path', $imagePath)
                 ->exists();
 
             if (! $isReferencedInDesigns) {
-                Storage::disk('public')->delete($imagePath);
+                Storage::delete($imagePath);
             }
         }
 
@@ -206,13 +206,13 @@ class ProductController extends Controller
             $imagePath = $product->image_path;
             $product->delete();
 
-            if ($imagePath && Storage::disk('public')->exists($imagePath)) {
+            if ($imagePath && Storage::exists($imagePath)) {
                 $isReferencedInDesigns = Design::query()
                     ->where('reference_image_path', $imagePath)
                     ->exists();
 
                 if (! $isReferencedInDesigns) {
-                    Storage::disk('public')->delete($imagePath);
+                    Storage::delete($imagePath);
                 }
             }
         }

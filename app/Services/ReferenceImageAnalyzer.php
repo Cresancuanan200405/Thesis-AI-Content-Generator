@@ -35,14 +35,13 @@ class ReferenceImageAnalyzer
      */
     public function analyze(string $imagePath): ?array
     {
-        if (! Storage::disk('public')->exists($imagePath)) {
+        if (! Storage::exists($imagePath)) {
             return null;
         }
 
-        $fullPath = Storage::disk('public')->path($imagePath);
-        $fileContents = @file_get_contents($fullPath);
+        $fileContents = Storage::get($imagePath);
 
-        if ($fileContents === false || strlen($fileContents) === 0) {
+        if (empty($fileContents)) {
             return null;
         }
 

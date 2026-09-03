@@ -100,7 +100,7 @@ it('authenticated user can create a generator request', function () {
     $design = Design::query()->where('user_id', $user->id)->first();
     expect($design)->not->toBeNull()
         ->and($design->generated_image_path)->not->toBeEmpty()
-        ->and(Storage::disk('public')->exists($design->generated_image_path))->toBeTrue();
+        ->and(Storage::exists($design->generated_image_path))->toBeTrue();
 });
 
 it('generates fallback visual when OpenAI API key is missing', function () {

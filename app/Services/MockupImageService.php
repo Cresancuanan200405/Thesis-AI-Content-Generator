@@ -171,7 +171,7 @@ PRICE : '';
 </svg>
 SVG;
 
-        Storage::disk('public')->put($filename, $svg);
+        Storage::put($filename, $svg);
 
         return $filename;
     }

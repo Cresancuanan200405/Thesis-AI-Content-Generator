@@ -114,7 +114,7 @@ class OpenAIImageService
         // 2. Vision Analysis as Supporting Metadata (Does NOT replace the actual image)
         $referenceImagePath = $options['reference_image_path'] ?? null;
         $visionBlueprint = null;
-        if (! empty($referenceImagePath) && Storage::disk('public')->exists($referenceImagePath)) {
+        if (! empty($referenceImagePath) && Storage::exists($referenceImagePath)) {
             $visionBlueprint = $this->referenceAnalyzer->analyze($referenceImagePath);
             $this->lastReferenceBlueprint = $visionBlueprint;
         }
@@ -139,12 +139,11 @@ class OpenAIImageService
         $fallbackUsed = false;
         $fallbackReason = null;
 
-        $hasImageInput = ! empty($referenceImagePath) && Storage::disk('public')->exists($referenceImagePath);
+        $hasImageInput = ! empty($referenceImagePath) && Storage::exists($referenceImagePath);
 
         if ($hasImageInput && $modelSpec['supports_image_input']) {
             try {
-                $fullDiskPath = Storage::disk('public')->path($referenceImagePath);
-                $fileContents = file_get_contents($fullDiskPath);
+                $fileContents = Storage::get($referenceImagePath);
                 $fileName = basename($referenceImagePath);
 
                 // Send actual product image as multipart file to OpenAI Image Edits API
@@ -208,7 +207,7 @@ class OpenAIImageService
 
         // 6. Save image to disk
         $filename = 'designs/openai_'.Str::uuid().'.png';
-        Storage::disk('public')->put($filename, $binary);
+        Storage::put($filename, $binary);
 
         $duration = round(microtime(true) - $startTime, 2);
         $modelPolicy = $this->modelRegistry->getModelPolicy($requestedModel);
@@ -273,7 +272,7 @@ class OpenAIImageService
     {
         $referenceImagePath = $options['reference_image_path'] ?? null;
         $visionBlueprint = null;
-        if (! empty($referenceImagePath) && Storage::disk('public')->exists($referenceImagePath)) {
+        if (! empty($referenceImagePath) && Storage::exists($referenceImagePath)) {
             $visionBlueprint = $this->referenceAnalyzer->analyze($referenceImagePath);
             $this->lastReferenceBlueprint = $visionBlueprint;
         }

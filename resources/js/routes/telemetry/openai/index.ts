@@ -1,6 +1,6 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../wayfinder'
 /**
- * @see routes/web.php:268
+ * @see routes/web.php:269
  * @route '/telemetry/openai/refresh'
  */
 export const refresh = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -14,7 +14,7 @@ refresh.definition = {
 } satisfies RouteDefinition<["post"]>
 
 /**
- * @see routes/web.php:268
+ * @see routes/web.php:269
  * @route '/telemetry/openai/refresh'
  */
 refresh.url = (options?: RouteQueryOptions) => {
@@ -22,7 +22,7 @@ refresh.url = (options?: RouteQueryOptions) => {
 }
 
 /**
- * @see routes/web.php:268
+ * @see routes/web.php:269
  * @route '/telemetry/openai/refresh'
  */
 refresh.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -31,7 +31,7 @@ refresh.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 })
 
     /**
- * @see routes/web.php:268
+ * @see routes/web.php:269
  * @route '/telemetry/openai/refresh'
  */
     const refreshForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -40,7 +40,7 @@ refresh.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     })
 
             /**
- * @see routes/web.php:268
+ * @see routes/web.php:269
  * @route '/telemetry/openai/refresh'
  */
         refreshForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
