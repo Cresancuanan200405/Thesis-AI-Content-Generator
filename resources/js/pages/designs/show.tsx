@@ -223,7 +223,8 @@ export default function DesignShowPage({ design }: any) {
     const [isFavorite, setIsFavorite] = useState<boolean>(
         Boolean(design.is_favorite),
     );
-    const [isGenerationDetailsOpen, setIsGenerationDetailsOpen] = useState(false);
+    const [isGenerationDetailsOpen, setIsGenerationDetailsOpen] =
+        useState(false);
     const [isPreviewFullViewOpen, setIsPreviewFullViewOpen] = useState(false);
     const [isPreviewZoomed, setIsPreviewZoomed] = useState(false);
     const [isRegenerateModalOpen, setIsRegenerateModalOpen] = useState(false);
@@ -249,20 +250,20 @@ export default function DesignShowPage({ design }: any) {
         const progressInterval = window.setInterval(() => {
             setGenerationProgress((prev) => {
                 if (prev < 35) {
-return prev + 6;
-}
+                    return prev + 6;
+                }
 
                 if (prev < 65) {
-return prev + 4;
-}
+                    return prev + 4;
+                }
 
                 if (prev < 85) {
-return prev + 2;
-}
+                    return prev + 2;
+                }
 
                 if (prev < 95) {
-return prev + 1;
-}
+                    return prev + 1;
+                }
 
                 return prev;
             });
@@ -296,8 +297,8 @@ return prev + 1;
     // Tab visibility and exit warning during regeneration
     useEffect(() => {
         if (!isRegenerating) {
-return;
-}
+            return;
+        }
 
         const originalTitle =
             typeof document !== 'undefined' ? document.title : '';
@@ -350,13 +351,18 @@ return;
     const isProductPreserved = Boolean(
         meta.product_preserved ||
         meta.generation_mode === 'PRODUCT_PRESERVING' ||
-        meta.generation_method === 'image_to_image_edit'
+        meta.generation_method === 'image_to_image_edit',
     );
     const promptVersion = meta.prompt_version || 'marketing-pipeline-v1';
-    const modelName = meta.model_name || (meta.model === 'gpt-image-2' ? 'GPT-Image-2' : (meta.model || 'GPT-Image-2'));
-    const generationMethod = meta.generation_method === 'image_to_image_edit'
-        ? 'Image-to-Image Edit'
-        : (meta.generation_method || 'Image-to-Image Edit');
+    const modelName =
+        meta.model_name ||
+        (meta.model === 'gpt-image-2'
+            ? 'GPT-Image-2'
+            : meta.model || 'GPT-Image-2');
+    const generationMethod =
+        meta.generation_method === 'image_to_image_edit'
+            ? 'Image-to-Image Edit'
+            : meta.generation_method || 'Image-to-Image Edit';
     const aspectRatio = meta.aspect_ratio || '1:1';
     const duration = meta.duration_seconds ? `${meta.duration_seconds}s` : null;
 
@@ -409,7 +415,9 @@ return;
             {
                 onFinish: () => setIsRegenerating(false),
                 onError: () => {
-                    toast.error('Unable to regenerate design. Please try again.');
+                    toast.error(
+                        'Unable to regenerate design. Please try again.',
+                    );
                 },
             },
         );
@@ -487,8 +495,12 @@ return;
                                 disabled={isRegenerating}
                                 className="gap-2 bg-background/60 text-primary hover:bg-primary/10 hover:text-primary"
                             >
-                                <RefreshCw className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`} />
-                                {isRegenerating ? 'Regenerating...' : 'Regenerate Design'}
+                                <RefreshCw
+                                    className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`}
+                                />
+                                {isRegenerating
+                                    ? 'Regenerating...'
+                                    : 'Regenerate Design'}
                             </Button>
 
                             <Button asChild className="gap-2">
@@ -548,7 +560,11 @@ return;
                                             Regenerate Creative Design?
                                         </DialogTitle>
                                         <DialogDescription className="text-xs leading-relaxed">
-                                            This will create a fresh creative variation using your original product, scene prompt, brand styling, pricing, and campaign settings.
+                                            This will create a fresh creative
+                                            variation using your original
+                                            product, scene prompt, brand
+                                            styling, pricing, and campaign
+                                            settings.
                                         </DialogDescription>
                                     </DialogHeader>
 
@@ -556,7 +572,9 @@ return;
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            onClick={() => setIsRegenerateModalOpen(false)}
+                                            onClick={() =>
+                                                setIsRegenerateModalOpen(false)
+                                            }
                                         >
                                             Cancel
                                         </Button>
@@ -566,8 +584,12 @@ return;
                                             disabled={isRegenerating}
                                             className="gap-2"
                                         >
-                                            <RefreshCw className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`} />
-                                            {isRegenerating ? 'Regenerating...' : 'Yes, Regenerate'}
+                                            <RefreshCw
+                                                className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`}
+                                            />
+                                            {isRegenerating
+                                                ? 'Regenerating...'
+                                                : 'Yes, Regenerate'}
                                         </Button>
                                     </DialogFooter>
                                 </DialogContent>
@@ -744,7 +766,11 @@ return;
                         <Card className="border-border/80 bg-card/80 shadow-[0_10px_35px_rgba(15,23,42,0.06)] backdrop-blur-xl">
                             <CardHeader
                                 className="cursor-pointer border-b border-border/70 pb-4 transition-colors hover:bg-muted/20"
-                                onClick={() => setIsGenerationDetailsOpen(!isGenerationDetailsOpen)}
+                                onClick={() =>
+                                    setIsGenerationDetailsOpen(
+                                        !isGenerationDetailsOpen,
+                                    )
+                                }
                             >
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
@@ -770,10 +796,10 @@ return;
                             </CardHeader>
 
                             {isGenerationDetailsOpen && (
-                                <CardContent className="pt-4 space-y-4">
+                                <CardContent className="space-y-4 pt-4">
                                     <div className="grid grid-cols-2 gap-3 text-xs">
                                         <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
-                                            <p className="font-mono text-[10px] font-semibold uppercase text-muted-foreground">
+                                            <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
                                                 Model
                                             </p>
                                             <p className="mt-1 font-semibold text-foreground">
@@ -781,7 +807,7 @@ return;
                                             </p>
                                         </div>
                                         <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
-                                            <p className="font-mono text-[10px] font-semibold uppercase text-muted-foreground">
+                                            <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
                                                 Method
                                             </p>
                                             <p className="mt-1 font-semibold text-foreground">
@@ -789,15 +815,17 @@ return;
                                             </p>
                                         </div>
                                         <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
-                                            <p className="font-mono text-[10px] font-semibold uppercase text-muted-foreground">
+                                            <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
                                                 Product Source
                                             </p>
                                             <p className="mt-1 font-semibold text-foreground">
-                                                {isProductPreserved ? 'Catalog Product Preserved' : 'Text Concept'}
+                                                {isProductPreserved
+                                                    ? 'Catalog Product Preserved'
+                                                    : 'Text Concept'}
                                             </p>
                                         </div>
                                         <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
-                                            <p className="font-mono text-[10px] font-semibold uppercase text-muted-foreground">
+                                            <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
                                                 Prompt Version
                                             </p>
                                             <p className="mt-1 font-mono text-foreground">
@@ -805,7 +833,7 @@ return;
                                             </p>
                                         </div>
                                         <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
-                                            <p className="font-mono text-[10px] font-semibold uppercase text-muted-foreground">
+                                            <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
                                                 Aspect Ratio
                                             </p>
                                             <p className="mt-1 font-semibold text-foreground">
@@ -813,7 +841,7 @@ return;
                                             </p>
                                         </div>
                                         <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">
-                                            <p className="font-mono text-[10px] font-semibold uppercase text-muted-foreground">
+                                            <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
                                                 Safe Margin
                                             </p>
                                             <p className="mt-1 font-semibold text-foreground">
@@ -822,7 +850,7 @@ return;
                                         </div>
                                         {duration && (
                                             <div className="col-span-2 rounded-xl border border-border/60 bg-muted/20 p-2.5">
-                                                <p className="font-mono text-[10px] font-semibold uppercase text-muted-foreground">
+                                                <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
                                                     Generation Duration
                                                 </p>
                                                 <p className="mt-1 font-semibold text-foreground">
@@ -886,19 +914,29 @@ return;
                             {/* Zoom Toggle Button */}
                             <button
                                 type="button"
-                                onClick={() => setIsPreviewZoomed(!isPreviewZoomed)}
+                                onClick={() =>
+                                    setIsPreviewZoomed(!isPreviewZoomed)
+                                }
                                 className="flex h-9 items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 text-xs font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20"
-                                title={isPreviewZoomed ? 'Fit to Screen' : 'Zoom 100% Full Size'}
+                                title={
+                                    isPreviewZoomed
+                                        ? 'Fit to Screen'
+                                        : 'Zoom 100% Full Size'
+                                }
                             >
                                 {isPreviewZoomed ? (
                                     <>
                                         <ZoomOut className="h-4 w-4" />
-                                        <span className="hidden sm:inline">Fit Screen</span>
+                                        <span className="hidden sm:inline">
+                                            Fit Screen
+                                        </span>
                                     </>
                                 ) : (
                                     <>
                                         <ZoomIn className="h-4 w-4" />
-                                        <span className="hidden sm:inline">Zoom 100%</span>
+                                        <span className="hidden sm:inline">
+                                            Zoom 100%
+                                        </span>
                                     </>
                                 )}
                             </button>
@@ -921,7 +959,9 @@ return;
                                 title="Download Image"
                             >
                                 <Download className="h-4 w-4" />
-                                <span className="hidden sm:inline">Download</span>
+                                <span className="hidden sm:inline">
+                                    Download
+                                </span>
                             </a>
 
                             {/* Close Button */}
@@ -941,8 +981,10 @@ return;
 
                     {/* Main Full View Canvas - Responsive & Uncut */}
                     <div
-                        className={`relative flex h-full w-full flex-1 items-center justify-center p-3 sm:p-6 transition-all duration-300 ${
-                            isPreviewZoomed ? 'overflow-auto cursor-zoom-out' : 'overflow-hidden cursor-zoom-in'
+                        className={`relative flex h-full w-full flex-1 items-center justify-center p-3 transition-all duration-300 sm:p-6 ${
+                            isPreviewZoomed
+                                ? 'cursor-zoom-out overflow-auto'
+                                : 'cursor-zoom-in overflow-hidden'
                         }`}
                         onClick={(e) => {
                             e.stopPropagation();
@@ -953,7 +995,7 @@ return;
                             className={`flex items-center justify-center transition-all duration-300 ${
                                 isPreviewZoomed
                                     ? 'min-h-full min-w-full p-6'
-                                    : 'h-full w-full max-h-full max-w-full'
+                                    : 'h-full max-h-full w-full max-w-full'
                             }`}
                         >
                             <img
@@ -961,8 +1003,8 @@ return;
                                 alt={design.product_name || 'Generated design'}
                                 className={`rounded-2xl object-contain shadow-2xl drop-shadow-2xl transition-all duration-300 ${
                                     isPreviewZoomed
-                                        ? 'max-h-none max-w-none w-auto h-auto'
-                                        : 'max-h-[calc(100vh-140px)] max-w-[calc(100vw-32px)] sm:max-w-[calc(100vw-64px)] w-auto h-auto scale-100'
+                                        ? 'h-auto max-h-none w-auto max-w-none'
+                                        : 'h-auto max-h-[calc(100vh-140px)] w-auto max-w-[calc(100vw-32px)] scale-100 sm:max-w-[calc(100vw-64px)]'
                                 }`}
                             />
                         </div>
@@ -973,7 +1015,9 @@ return;
                         className="relative z-50 flex w-full items-center justify-center bg-gradient-to-t from-black/95 via-black/70 to-transparent px-4 py-3 text-xs text-white/70"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <span>Click anywhere on image to toggle 100% zoom & fit</span>
+                        <span>
+                            Click anywhere on image to toggle 100% zoom & fit
+                        </span>
                     </div>
                 </div>
             )}
@@ -982,30 +1026,35 @@ return;
                 LIVE REGENERATION STUDIO RENDERING OVERLAY (STUDIO EXPERIENCE)
             ============================================================= */}
             {isRegenerating && (
-                <div className={`fixed top-11 right-0 bottom-0 left-0 z-20 flex items-center justify-center overflow-hidden bg-background/80 p-4 backdrop-blur-2xl sm:top-12 sm:p-6 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 ${sidebarState === 'collapsed' ? 'md:left-[var(--sidebar-width-icon)]' : 'md:left-[var(--sidebar-width)]'}`}>
+                <div
+                    className={`fixed top-11 right-0 bottom-0 left-0 z-20 flex items-center justify-center overflow-hidden bg-background/80 p-4 backdrop-blur-2xl motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in sm:top-12 sm:p-6 ${sidebarState === 'collapsed' ? 'md:left-[var(--sidebar-width-icon)]' : 'md:left-[var(--sidebar-width)]'}`}
+                >
                     <div className="relative flex max-h-full w-full max-w-lg flex-col items-center justify-between gap-5 overflow-hidden rounded-3xl border border-border/80 bg-card/95 p-6 shadow-2xl backdrop-blur-2xl sm:p-8">
                         {/* Ambient Background Studio Aura */}
                         <div className="pointer-events-none absolute -top-16 left-1/2 h-36 w-36 -translate-x-1/2 rounded-full bg-primary/15 blur-3xl motion-reduce:hidden" />
                         <div className="pointer-events-none absolute -bottom-16 left-1/2 h-36 w-36 -translate-x-1/2 rounded-full bg-emerald-500/15 blur-3xl motion-reduce:hidden" />
 
                         {/* 1. LIVE SYNTHESIS BADGE WITH GREEN INDICATOR DOT & TITLE */}
-                        <div className="relative flex flex-col items-center text-center space-y-2">
-                            <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 shadow-2xs">
+                        <div className="relative flex flex-col items-center space-y-2 text-center">
+                            <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600 shadow-2xs dark:text-emerald-400">
                                 <span className="relative flex h-2 w-2">
-                                    <span className="absolute inline-flex h-full w-full motion-safe:animate-ping rounded-full bg-emerald-400 opacity-75 motion-reduce:hidden" />
+                                    <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 motion-safe:animate-ping motion-reduce:hidden" />
                                     <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
                                 </span>
                                 <span>Live Regeneration</span>
                             </div>
 
                             <div className="flex flex-col items-center space-y-1">
-                                <h2 className="text-base sm:text-lg md:text-xl font-bold tracking-tight text-foreground">
+                                <h2 className="text-base font-bold tracking-tight text-foreground sm:text-lg md:text-xl">
                                     Regenerating visual creative
                                 </h2>
 
                                 {design.business_name && (
-                                    <p className="text-xs sm:text-sm text-muted-foreground font-medium">
-                                        for <span className="font-semibold text-foreground/90">{design.business_name}</span>
+                                    <p className="text-xs font-medium text-muted-foreground sm:text-sm">
+                                        for{' '}
+                                        <span className="font-semibold text-foreground/90">
+                                            {design.business_name}
+                                        </span>
                                     </p>
                                 )}
                             </div>
@@ -1017,14 +1066,18 @@ return;
                             <div className="pointer-events-none absolute h-28 w-28 rounded-full bg-primary/20 blur-2xl motion-safe:animate-pulse motion-reduce:hidden" />
 
                             {/* Glassmorphic Industry Emblem Pedestal */}
-                            <div className="relative flex h-28 w-28 sm:h-32 sm:w-32 flex-col items-center justify-center rounded-3xl border border-primary/25 bg-gradient-to-b from-primary/15 via-primary/5 to-muted/40 shadow-xl shadow-primary/10 ring-1 ring-primary/20 backdrop-blur-xl transition-all">
-                                <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-xs ring-1 ring-primary/25">
-                                    {createElement(resolveIndustryIcon(activeIndustry), {
-                                        className: 'h-6 w-6 sm:h-7 sm:w-7 text-primary motion-safe:animate-pulse',
-                                    })}
+                            <div className="relative flex h-28 w-28 flex-col items-center justify-center rounded-3xl border border-primary/25 bg-gradient-to-b from-primary/15 via-primary/5 to-muted/40 shadow-xl ring-1 shadow-primary/10 ring-primary/20 backdrop-blur-xl transition-all sm:h-32 sm:w-32">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-xs ring-1 ring-primary/25 sm:h-14 sm:w-14">
+                                    {createElement(
+                                        resolveIndustryIcon(activeIndustry),
+                                        {
+                                            className:
+                                                'h-6 w-6 sm:h-7 sm:w-7 text-primary motion-safe:animate-pulse',
+                                        },
+                                    )}
                                 </div>
                                 {activeIndustry && (
-                                    <span className="mt-1.5 max-w-[90px] truncate text-[10px] font-bold uppercase tracking-wider text-primary/80">
+                                    <span className="mt-1.5 max-w-[90px] truncate text-[10px] font-bold tracking-wider text-primary/80 uppercase">
                                         {activeIndustry}
                                     </span>
                                 )}
@@ -1036,13 +1089,13 @@ return;
                             {/* Dynamic Creative Phase Message */}
                             <div className="flex items-center justify-center gap-1.5 text-center">
                                 <Sparkles className="h-3.5 w-3.5 text-primary motion-safe:animate-pulse motion-reduce:hidden" />
-                                <p className="text-xs sm:text-sm font-semibold text-foreground transition-opacity duration-500">
+                                <p className="text-xs font-semibold text-foreground transition-opacity duration-500 sm:text-sm">
                                     {currentStatusMessage}
                                 </p>
                             </div>
 
                             {/* Illuminated Modern Progress Bar with Dynamic Indicator */}
-                            <div className="mx-auto w-full max-w-xs sm:max-w-sm space-y-1">
+                            <div className="mx-auto w-full max-w-xs space-y-1 sm:max-w-sm">
                                 <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
                                     <span>Synthesizing variation</span>
                                     <span className="font-mono font-semibold text-primary">
@@ -1062,24 +1115,37 @@ return;
                             {/* Clean, Non-Flooded Single-Row Metadata Context */}
                             <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 pt-0.5 text-xs text-muted-foreground">
                                 {design.product_name && (
-                                    <span className="truncate max-w-[140px] font-medium text-foreground/90">
+                                    <span className="max-w-[140px] truncate font-medium text-foreground/90">
                                         {design.product_name}
                                     </span>
                                 )}
-                                {design.product_name && (design.visual_theme || design.brand_tone) && (
-                                    <span className="text-muted-foreground/40">•</span>
-                                )}
+                                {design.product_name &&
+                                    (design.visual_theme ||
+                                        design.brand_tone) && (
+                                        <span className="text-muted-foreground/40">
+                                            •
+                                        </span>
+                                    )}
                                 {(design.visual_theme || design.brand_tone) && (
-                                    <span className="truncate max-w-[140px] font-medium text-muted-foreground">
-                                        {design.visual_theme || design.brand_tone}
+                                    <span className="max-w-[140px] truncate font-medium text-muted-foreground">
+                                        {design.visual_theme ||
+                                            design.brand_tone}
                                     </span>
                                 )}
-                                {(design.product_name || design.visual_theme || design.brand_tone) && (design.campaign_name || design.event_name) && (
-                                    <span className="text-muted-foreground/40">•</span>
-                                )}
-                                {(design.campaign_name || design.event_name) && (
-                                    <span className="truncate max-w-[150px] font-semibold text-primary">
-                                        {design.campaign_name || design.event_name}
+                                {(design.product_name ||
+                                    design.visual_theme ||
+                                    design.brand_tone) &&
+                                    (design.campaign_name ||
+                                        design.event_name) && (
+                                        <span className="text-muted-foreground/40">
+                                            •
+                                        </span>
+                                    )}
+                                {(design.campaign_name ||
+                                    design.event_name) && (
+                                    <span className="max-w-[150px] truncate font-semibold text-primary">
+                                        {design.campaign_name ||
+                                            design.event_name}
                                     </span>
                                 )}
                             </div>

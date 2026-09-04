@@ -1,18 +1,16 @@
-import { Form, Head, router, usePage } from '@inertiajs/react';
+import { Form, Head, router } from '@inertiajs/react';
 import {
     Globe,
     KeyRound,
     Laptop,
     Loader2,
     LogOut,
-    Shield,
     ShieldCheck,
     Smartphone,
 } from 'lucide-react';
 import React, { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
-import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import type { Props as ManageTwoFactorProps } from '@/components/manage-two-factor';
 import ManageTwoFactor from '@/components/manage-two-factor';
@@ -30,7 +28,6 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { edit } from '@/routes/security';
 
@@ -85,7 +82,9 @@ export default function SecuritySettings(props: Props) {
                 if (errors.password) {
                     setLogoutPasswordError(errors.password);
                 } else {
-                    toast.error('Could not log out other sessions. Please check your password.');
+                    toast.error(
+                        'Could not log out other sessions. Please check your password.',
+                    );
                 }
             },
         });
@@ -108,7 +107,8 @@ export default function SecuritySettings(props: Props) {
                                     Update Password
                                 </CardTitle>
                                 <p className="text-xs text-muted-foreground">
-                                    Ensure your account uses a strong, random password to maintain security.
+                                    Ensure your account uses a strong, random
+                                    password to maintain security.
                                 </p>
                             </div>
                         </div>
@@ -198,7 +198,9 @@ export default function SecuritySettings(props: Props) {
                                             passwordrules={props.passwordRules}
                                         />
                                         <InputError
-                                            message={errors.password_confirmation}
+                                            message={
+                                                errors.password_confirmation
+                                            }
                                             className="text-xs font-semibold text-destructive"
                                         />
                                     </div>
@@ -210,7 +212,9 @@ export default function SecuritySettings(props: Props) {
                                             data-test="update-password-button"
                                             className="h-10 min-w-32 rounded-xl px-5 text-xs font-bold shadow-xs"
                                         >
-                                            {processing ? 'Saving...' : 'Update Password'}
+                                            {processing
+                                                ? 'Saving...'
+                                                : 'Update Password'}
                                         </Button>
                                     </div>
                                 </>
@@ -231,7 +235,8 @@ export default function SecuritySettings(props: Props) {
                                     Two-Factor Authentication
                                 </CardTitle>
                                 <p className="text-xs text-muted-foreground">
-                                    Add an extra layer of security to your account using TOTP authentication.
+                                    Add an extra layer of security to your
+                                    account using TOTP authentication.
                                 </p>
                             </div>
                         </div>
@@ -258,16 +263,18 @@ export default function SecuritySettings(props: Props) {
                                     Browser Sessions
                                 </CardTitle>
                                 <p className="text-xs text-muted-foreground">
-                                    Manage and log out your active sessions on other browsers and devices.
+                                    Manage and log out your active sessions on
+                                    other browsers and devices.
                                 </p>
                             </div>
                         </div>
                     </CardHeader>
 
-                    <CardContent className="p-6 space-y-5">
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                            If necessary, you may log out of all of your other browser sessions across all of your devices.
-                            Some of your recent sessions are listed below.
+                    <CardContent className="space-y-5 p-6">
+                        <p className="text-xs leading-relaxed text-muted-foreground">
+                            If necessary, you may log out of all of your other
+                            browser sessions across all of your devices. Some of
+                            your recent sessions are listed below.
                         </p>
 
                         <div className="space-y-3">
@@ -278,7 +285,7 @@ export default function SecuritySettings(props: Props) {
                                         className="flex items-center justify-between rounded-2xl border border-border/60 bg-muted/30 p-4"
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-background border border-border/60 text-muted-foreground">
+                                            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-background text-muted-foreground">
                                                 {session.is_desktop ? (
                                                     <Laptop className="h-4 w-4" />
                                                 ) : (
@@ -287,10 +294,12 @@ export default function SecuritySettings(props: Props) {
                                             </div>
                                             <div className="space-y-0.5">
                                                 <p className="text-xs font-bold text-foreground">
-                                                    {session.platform} — {session.browser}
+                                                    {session.platform} —{' '}
+                                                    {session.browser}
                                                 </p>
                                                 <p className="text-[11px] text-muted-foreground">
-                                                    {session.ip_address} • Last active {session.last_active}
+                                                    {session.ip_address} • Last
+                                                    active {session.last_active}
                                                 </p>
                                             </div>
                                         </div>
@@ -309,8 +318,12 @@ export default function SecuritySettings(props: Props) {
                                 <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-muted/30 p-4">
                                     <Laptop className="h-5 w-5 text-muted-foreground" />
                                     <div className="space-y-0.5">
-                                        <p className="text-xs font-bold text-foreground">Current Browser Session</p>
-                                        <p className="text-[11px] text-muted-foreground">Active device</p>
+                                        <p className="text-xs font-bold text-foreground">
+                                            Current Browser Session
+                                        </p>
+                                        <p className="text-[11px] text-muted-foreground">
+                                            Active device
+                                        </p>
                                     </div>
                                     <Badge
                                         variant="outline"
@@ -323,7 +336,10 @@ export default function SecuritySettings(props: Props) {
                         </div>
 
                         <div className="pt-2">
-                            <Dialog open={isLogoutModalOpen} onOpenChange={setIsLogoutModalOpen}>
+                            <Dialog
+                                open={isLogoutModalOpen}
+                                onOpenChange={setIsLogoutModalOpen}
+                            >
                                 <DialogTrigger asChild>
                                     <Button
                                         variant="outline"
@@ -338,26 +354,40 @@ export default function SecuritySettings(props: Props) {
                                         <DialogTitle className="text-base font-bold text-foreground">
                                             Log Out Other Browser Sessions
                                         </DialogTitle>
-                                        <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
-                                            Please enter your password to confirm you would like to log out of your other browser
-                                            sessions across all of your devices.
+                                        <DialogDescription className="text-xs leading-relaxed text-muted-foreground">
+                                            Please enter your password to
+                                            confirm you would like to log out of
+                                            your other browser sessions across
+                                            all of your devices.
                                         </DialogDescription>
                                     </DialogHeader>
 
-                                    <form onSubmit={handleLogoutOtherSessions} className="space-y-4 pt-2">
+                                    <form
+                                        onSubmit={handleLogoutOtherSessions}
+                                        className="space-y-4 pt-2"
+                                    >
                                         <div className="space-y-2">
-                                            <Label htmlFor="logout-password" className="text-xs font-bold text-foreground">
+                                            <Label
+                                                htmlFor="logout-password"
+                                                className="text-xs font-bold text-foreground"
+                                            >
                                                 Password
                                             </Label>
                                             <PasswordInput
                                                 id="logout-password"
                                                 value={logoutPassword}
-                                                onChange={(e) => setLogoutPassword(e.target.value)}
+                                                onChange={(e) =>
+                                                    setLogoutPassword(
+                                                        e.target.value,
+                                                    )
+                                                }
                                                 placeholder="Enter password to confirm"
                                                 className="h-11 rounded-xl text-sm"
                                             />
                                             {logoutPasswordError && (
-                                                <p className="text-xs font-semibold text-destructive">{logoutPasswordError}</p>
+                                                <p className="text-xs font-semibold text-destructive">
+                                                    {logoutPasswordError}
+                                                </p>
                                             )}
                                         </div>
 

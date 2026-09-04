@@ -4,26 +4,22 @@ import {
     AlertTriangle,
     ArrowUpRight,
     Bell,
-    Calendar,
     Check,
     CheckCheck,
     CheckCircle2,
     Coins,
     Cpu,
-    Gauge,
     Hash,
     Info,
-    Megaphone,
     Monitor,
     Moon,
-    ShoppingBag,
     Sparkles,
     Sun,
 } from 'lucide-react';
 import * as React from 'react';
 
-import { resolveNotificationConfig } from '@/components/notification-toast';
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import { resolveNotificationConfig } from '@/components/notification-toast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -37,7 +33,10 @@ import { useAppearance } from '@/hooks/use-appearance';
 import type { Appearance } from '@/hooks/use-appearance';
 import { useNavigationOriginBreadcrumbs } from '@/hooks/use-navigation-origin';
 import { cn } from '@/lib/utils';
-import type { BreadcrumbItem as BreadcrumbItemType, OpenAIUsageTelemetry } from '@/types';
+import type {
+    BreadcrumbItem as BreadcrumbItemType,
+    OpenAIUsageTelemetry,
+} from '@/types';
 
 type NotificationItem = {
     id: number;
@@ -89,6 +88,7 @@ function formatTimeAgo(dateString?: string): string {
 function getNotificationIcon(type: string) {
     const config = resolveNotificationConfig(type);
     const Icon = config.icon;
+
     return <Icon className={cn('h-4 w-4', config.iconColor)} />;
 }
 
@@ -104,25 +104,22 @@ export function AppSidebarHeader({
             recent_notifications?: NotificationItem[];
             ai_usage?: OpenAIUsageTelemetry | null;
         }>().props;
-    const { url } = usePage();
     const unreadCount = Number(unread_notifications_count || 0);
     const notifications = recent_notifications || [];
 
     const budgetLimit = Number(
         ai_usage?.budget_limit ??
-        ai_usage?.application_configured_limit ??
-        20.0
+            ai_usage?.application_configured_limit ??
+            20.0,
     );
     const totalSpent = Number(ai_usage?.total_spent ?? 0.0);
     const remainingBudget = Number(
         ai_usage?.remaining_budget ??
-        ai_usage?.remaining_configured_limit ??
-        Math.max(0, budgetLimit - totalSpent)
+            ai_usage?.remaining_configured_limit ??
+            Math.max(0, budgetLimit - totalSpent),
     );
     const totalGenerations = Number(
-        ai_usage?.total_images ??
-        ai_usage?.total_generations ??
-        0
+        ai_usage?.total_images ?? ai_usage?.total_generations ?? 0,
     );
     const totalRequests = Number(ai_usage?.total_requests ?? 0);
     const tokensUsedFormatted =
@@ -130,17 +127,21 @@ export function AppSidebarHeader({
         ai_usage?.total_tokens_formatted ||
         (ai_usage?.input_tokens !== undefined && ai_usage?.input_tokens !== null
             ? Number(ai_usage.input_tokens).toLocaleString()
-            : (ai_usage?.total_tokens !== undefined && ai_usage?.total_tokens !== null
-                ? Number(ai_usage.total_tokens).toLocaleString()
-                : '0'));
+            : ai_usage?.total_tokens !== undefined &&
+                ai_usage?.total_tokens !== null
+              ? Number(ai_usage.total_tokens).toLocaleString()
+              : '0');
     const percentageUsed = Math.min(
         100,
         Math.max(
             0,
-            ai_usage?.percentage_used !== undefined && ai_usage?.percentage_used !== null
+            ai_usage?.percentage_used !== undefined &&
+                ai_usage?.percentage_used !== null
                 ? Number(ai_usage.percentage_used)
-                : (budgetLimit > 0 ? Math.round((totalSpent / budgetLimit) * 100) : 0)
-        )
+                : budgetLimit > 0
+                  ? Math.round((totalSpent / budgetLimit) * 100)
+                  : 0,
+        ),
     );
     const isLimitReached =
         Boolean(ai_usage?.is_limit_reached) ||
@@ -226,7 +227,9 @@ export function AppSidebarHeader({
                             title={`OpenAI Synthesis Balance ($${budgetLimit.toFixed(2)} Limit)`}
                             className="h-8 gap-1.5 rounded-full px-2.5 text-xs font-semibold text-muted-foreground shadow-2xs transition-all duration-200 hover:scale-105 hover:bg-primary/10 hover:text-primary hover:ring-1 hover:ring-primary/25 active:scale-95 data-[state=open]:scale-105 data-[state=open]:bg-primary/15 data-[state=open]:text-primary data-[state=open]:ring-2 data-[state=open]:ring-primary/40"
                         >
-                            <Coins className={`h-4 w-4 ${isLimitReached ? 'text-rose-500' : isApproachingLimit ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`} />
+                            <Coins
+                                className={`h-4 w-4 ${isLimitReached ? 'text-rose-500' : isApproachingLimit ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}
+                            />
                             <span className="hidden font-mono text-[11px] font-bold sm:inline-block">
                                 ${totalSpent.toFixed(2)}
                                 <span className="font-normal text-muted-foreground">
@@ -241,18 +244,20 @@ export function AppSidebarHeader({
                         sideOffset={8}
                         collisionPadding={16}
                         avoidCollisions={true}
-                        className="w-[calc(100vw-2rem)] max-w-sm sm:max-w-md max-h-[86vh] overflow-y-auto rounded-2xl border border-border/80 bg-popover/98 p-0 shadow-2xl shadow-black/20 backdrop-blur-xl duration-200 fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 dark:shadow-black/50"
+                        className="max-h-[86vh] w-[calc(100vw-2rem)] max-w-sm overflow-y-auto rounded-2xl border border-border/80 bg-popover/98 p-0 shadow-2xl shadow-black/20 backdrop-blur-xl duration-200 fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 sm:max-w-md dark:shadow-black/50"
                     >
                         {/* 1. HEADER */}
                         <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border/80 bg-popover/98 px-4 py-3 backdrop-blur-md">
                             <div className="flex items-center gap-2.5">
-                                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ring-1 ${
-                                    isLimitReached
-                                        ? 'bg-rose-500/10 text-rose-600 ring-rose-500/20'
-                                        : isApproachingLimit
-                                        ? 'bg-amber-500/10 text-amber-600 ring-amber-500/20'
-                                        : 'bg-primary/10 text-primary ring-primary/20'
-                                }`}>
+                                <div
+                                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ring-1 ${
+                                        isLimitReached
+                                            ? 'bg-rose-500/10 text-rose-600 ring-rose-500/20'
+                                            : isApproachingLimit
+                                              ? 'bg-amber-500/10 text-amber-600 ring-amber-500/20'
+                                              : 'bg-primary/10 text-primary ring-primary/20'
+                                    }`}
+                                >
                                     <Cpu className="h-4 w-4" />
                                 </div>
                                 <div>
@@ -260,7 +265,8 @@ export function AppSidebarHeader({
                                         OpenAI Synthesis Balance
                                     </h3>
                                     <p className="text-[10px] text-muted-foreground">
-                                        Current AI generation usage and available budget
+                                        Current AI generation usage and
+                                        available budget
                                     </p>
                                 </div>
                             </div>
@@ -288,13 +294,15 @@ export function AppSidebarHeader({
                                     <span className="text-[10px] font-medium text-muted-foreground">
                                         Remaining
                                     </span>
-                                    <p className={`mt-0.5 font-mono text-xs font-bold ${
-                                        isLimitReached
-                                            ? 'text-rose-600 dark:text-rose-400'
-                                            : isApproachingLimit
-                                            ? 'text-amber-600 dark:text-amber-400'
-                                            : 'text-emerald-600 dark:text-emerald-400'
-                                    }`}>
+                                    <p
+                                        className={`mt-0.5 font-mono text-xs font-bold ${
+                                            isLimitReached
+                                                ? 'text-rose-600 dark:text-rose-400'
+                                                : isApproachingLimit
+                                                  ? 'text-amber-600 dark:text-amber-400'
+                                                  : 'text-emerald-600 dark:text-emerald-400'
+                                        }`}
+                                    >
                                         ${remainingBudget.toFixed(2)}
                                     </p>
                                 </div>
@@ -335,8 +343,8 @@ export function AppSidebarHeader({
                                             isLimitReached
                                                 ? 'bg-rose-500'
                                                 : isApproachingLimit
-                                                ? 'bg-amber-500'
-                                                : 'bg-gradient-to-r from-emerald-500 via-primary to-blue-500'
+                                                  ? 'bg-amber-500'
+                                                  : 'bg-gradient-to-r from-emerald-500 via-primary to-blue-500'
                                         }`}
                                         style={{
                                             width: `${Math.min(100, Math.max(0, percentageUsed))}%`,
@@ -346,13 +354,15 @@ export function AppSidebarHeader({
 
                                 <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                                     <span>${totalSpent.toFixed(2)} billed</span>
-                                    <span>${remainingBudget.toFixed(2)} remaining</span>
+                                    <span>
+                                        ${remainingBudget.toFixed(2)} remaining
+                                    </span>
                                 </div>
                             </div>
 
                             {/* 4. AI ACTIVITY (3 Compact Metrics) */}
                             <div className="space-y-1.5">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
                                     AI Activity
                                 </span>
                                 <div className="grid grid-cols-3 gap-2">
@@ -389,15 +399,17 @@ export function AppSidebarHeader({
                             </div>
 
                             {/* 5. QUOTA STATUS */}
-                            <div className={`flex items-start gap-2.5 rounded-xl border p-3 text-xs leading-relaxed ${
-                                isUnavailable
-                                    ? 'border-border/70 bg-muted/30 text-muted-foreground'
-                                    : isLimitReached
-                                    ? 'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300'
-                                    : isApproachingLimit
-                                    ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300'
-                                    : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                            }`}>
+                            <div
+                                className={`flex items-start gap-2.5 rounded-xl border p-3 text-xs leading-relaxed ${
+                                    isUnavailable
+                                        ? 'border-border/70 bg-muted/30 text-muted-foreground'
+                                        : isLimitReached
+                                          ? 'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300'
+                                          : isApproachingLimit
+                                            ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                                            : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                                }`}
+                            >
                                 {isUnavailable ? (
                                     <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                                 ) : isLimitReached ? (
@@ -412,19 +424,19 @@ export function AppSidebarHeader({
                                         {isUnavailable
                                             ? 'Telemetry Unavailable'
                                             : isLimitReached
-                                            ? 'Quota Reached'
-                                            : isApproachingLimit
-                                            ? 'Approaching Limit'
-                                            : 'Available'}
+                                              ? 'Quota Reached'
+                                              : isApproachingLimit
+                                                ? 'Approaching Limit'
+                                                : 'Available'}
                                     </p>
                                     <p className="text-[11px] opacity-90">
                                         {isUnavailable
                                             ? 'Usage data temporarily unavailable.'
                                             : isLimitReached
-                                            ? 'New AI generations are temporarily unavailable.'
-                                            : isApproachingLimit
-                                            ? 'Your remaining AI budget is low (80%+ consumed).'
-                                            : 'AI generation is available.'}
+                                              ? 'New AI generations are temporarily unavailable.'
+                                              : isApproachingLimit
+                                                ? 'Your remaining AI budget is low (80%+ consumed).'
+                                                : 'AI generation is available.'}
                                     </p>
                                 </div>
                             </div>
@@ -440,7 +452,8 @@ export function AppSidebarHeader({
                                             Current Model
                                         </span>
                                         <p className="font-mono text-xs font-bold text-foreground">
-                                            {activeModel.display_name || activeModel.id}
+                                            {activeModel.display_name ||
+                                                activeModel.id}
                                         </p>
                                     </div>
                                 </div>
@@ -449,7 +462,8 @@ export function AppSidebarHeader({
                                         variant="outline"
                                         className="border-primary/30 bg-primary/10 text-[9px] font-semibold text-primary"
                                     >
-                                        {activeModel.tag || 'Flagship Photorealism'}
+                                        {activeModel.tag ||
+                                            'Flagship Photorealism'}
                                     </Badge>
                                 </div>
                             </div>
@@ -464,7 +478,7 @@ export function AppSidebarHeader({
                                     asChild
                                     variant="ghost"
                                     size="sm"
-                                    className="h-6 gap-1 px-2 text-[10px] font-semibold text-primary hover:text-primary hover:bg-primary/10"
+                                    className="h-6 gap-1 px-2 text-[10px] font-semibold text-primary hover:bg-primary/10 hover:text-primary"
                                 >
                                     <Link href="/subscriptions">
                                         <span>View detailed usage</span>

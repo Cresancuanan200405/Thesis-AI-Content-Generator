@@ -21,11 +21,13 @@ export function useFlashToast(): void {
             }
 
             if (flash.toast?.type && flash.toast?.message) {
-                const title = flash.toast.title || (
-                    flash.toast.type === 'success' ? 'Success' :
-                    flash.toast.type === 'error' ? 'Error' :
-                    'Notification'
-                );
+                const title =
+                    flash.toast.title ||
+                    (flash.toast.type === 'success'
+                        ? 'Success'
+                        : flash.toast.type === 'error'
+                          ? 'Error'
+                          : 'Notification');
                 const key = `${flash.toast.type}:${title}:${flash.toast.message}`;
 
                 if (lastToastRef.current !== key) {
@@ -85,6 +87,7 @@ export function useFlashToast(): void {
 
             if (dataPage) {
                 const parsed = JSON.parse(dataPage);
+
                 if (parsed?.props?.flash) {
                     handleFlash(parsed.props.flash);
                 }
@@ -92,6 +95,7 @@ export function useFlashToast(): void {
                 const routerWithPage = router as unknown as {
                     page?: { props?: { flash?: FlashData } };
                 };
+
                 if (routerWithPage.page?.props?.flash) {
                     handleFlash(routerWithPage.page.props.flash);
                 }

@@ -22,9 +22,9 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { AppPagination } from '@/components/ui/app-pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AppPagination } from '@/components/ui/app-pagination';
 import {
     Dialog,
     DialogContent,
@@ -57,10 +57,13 @@ export default function ProductsIndexPage({
 
     const buildProductPageUrl = (pageNumber: number) => {
         const params = new URLSearchParams();
+
         if (filters?.search) {
             params.set('search', filters.search);
         }
+
         params.set('page', String(pageNumber));
+
         return `/products?${params.toString()}`;
     };
 
@@ -73,7 +76,9 @@ export default function ProductsIndexPage({
     // View preference saved in localStorage
     const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
         if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('marketpilot_products_view_mode');
+            const saved = localStorage.getItem(
+                'marketpilot_products_view_mode',
+            );
 
             if (saved === 'grid' || saved === 'list') {
                 return saved;
@@ -99,7 +104,8 @@ export default function ProductsIndexPage({
         : -1;
     const hasPrevProduct = currentPreviewIndex > 0;
     const hasNextProduct =
-        currentPreviewIndex !== -1 && currentPreviewIndex < productList.length - 1;
+        currentPreviewIndex !== -1 &&
+        currentPreviewIndex < productList.length - 1;
 
     const handlePrevProduct = (e?: React.MouseEvent) => {
         if (e) {
@@ -343,7 +349,7 @@ export default function ProductsIndexPage({
                                             type="button"
                                             variant="outline"
                                             size="sm"
-                                            className="h-8 w-8 rounded-xl p-0 shadow-none text-muted-foreground hover:text-foreground"
+                                            className="h-8 w-8 rounded-xl p-0 text-muted-foreground shadow-none hover:text-foreground"
                                             title={`Current view: ${
                                                 viewMode === 'grid'
                                                     ? 'Grid'

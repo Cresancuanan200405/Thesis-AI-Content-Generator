@@ -15,7 +15,7 @@ export default function AppLogoIcon({
             src="/MarketPilot.png"
             alt={alt}
             className={cn(
-                'aspect-square select-none object-contain',
+                'aspect-square object-contain select-none',
                 className,
             )}
             loading="eager"

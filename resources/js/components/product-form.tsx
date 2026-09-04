@@ -114,7 +114,7 @@ export default function ProductForm({
     product,
     mode = 'create',
     submitLabel = 'Save Product',
-    cancelUrl = '/products',
+    cancelUrl: _cancelUrl = '/products',
 }: ProductFormProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(

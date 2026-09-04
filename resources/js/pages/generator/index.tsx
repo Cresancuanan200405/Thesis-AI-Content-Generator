@@ -957,11 +957,12 @@ export default function GeneratorPage() {
         campaigns = [],
     } = pageProps;
 
-    const activeIndustry =
-        business?.industry || 'Food & Beverage';
+    const activeIndustry = business?.industry || 'Food & Beverage';
     const ai_usage = pageProps.ai_usage;
     const budgetLimit = Number(
-        ai_usage?.budget_limit ?? ai_usage?.application_configured_limit ?? 20.0,
+        ai_usage?.budget_limit ??
+            ai_usage?.application_configured_limit ??
+            20.0,
     );
     const totalSpent = Number(ai_usage?.total_spent ?? 0.0);
     const isQuotaExceeded =
@@ -1124,12 +1125,14 @@ export default function GeneratorPage() {
             return;
         }
 
-        const originalTitle = typeof document !== 'undefined' ? document.title : '';
+        const originalTitle =
+            typeof document !== 'undefined' ? document.title : '';
 
         const handleVisibilityChange = () => {
             if (document.hidden) {
                 if (typeof document !== 'undefined') {
-                    document.title = '⚠️ Generating... Keep Tab Open! — AI Marketing Studio';
+                    document.title =
+                        '⚠️ Generating... Keep Tab Open! — AI Marketing Studio';
                 }
 
                 toast.warning('Warning: You switched away from this tab!', {
@@ -2527,30 +2530,33 @@ export default function GeneratorPage() {
                         /* =====================================================
                            PROFESSIONAL DYNAMIC AI CREATIVE STUDIO — RENDERING
                         ====================================================== */
-                        <div className="mx-auto flex h-full w-full max-w-lg flex-col items-center justify-center p-2 sm:p-4 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500">
-                            <div className="relative flex w-full flex-col items-center justify-between gap-4 sm:gap-5 overflow-hidden rounded-3xl border border-border/80 bg-card/95 p-6 sm:p-8 shadow-2xl backdrop-blur-2xl">
+                        <div className="mx-auto flex h-full w-full max-w-lg flex-col items-center justify-center p-2 motion-safe:animate-in motion-safe:duration-500 motion-safe:fade-in sm:p-4">
+                            <div className="relative flex w-full flex-col items-center justify-between gap-4 overflow-hidden rounded-3xl border border-border/80 bg-card/95 p-6 shadow-2xl backdrop-blur-2xl sm:gap-5 sm:p-8">
                                 {/* Ambient Background Studio Aura */}
                                 <div className="pointer-events-none absolute -top-16 left-1/2 h-36 w-36 -translate-x-1/2 rounded-full bg-primary/10 blur-3xl motion-reduce:hidden" />
                                 <div className="pointer-events-none absolute -bottom-16 left-1/2 h-36 w-36 -translate-x-1/2 rounded-full bg-emerald-500/10 blur-3xl motion-reduce:hidden" />
 
                                 {/* 1. LIVE SYNTHESIS BADGE WITH GREEN INDICATOR DOT & TITLE */}
-                                <div className="relative flex flex-col items-center text-center space-y-2">
-                                    <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 shadow-2xs">
+                                <div className="relative flex flex-col items-center space-y-2 text-center">
+                                    <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600 shadow-2xs dark:text-emerald-400">
                                         <span className="relative flex h-2 w-2">
-                                            <span className="absolute inline-flex h-full w-full motion-safe:animate-ping rounded-full bg-emerald-400 opacity-75 motion-reduce:hidden" />
+                                            <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 motion-safe:animate-ping motion-reduce:hidden" />
                                             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
                                         </span>
                                         <span>Live Synthesis</span>
                                     </div>
 
                                     <div className="flex flex-col items-center space-y-1">
-                                        <h2 className="text-base sm:text-lg md:text-xl font-bold tracking-tight text-foreground">
+                                        <h2 className="text-base font-bold tracking-tight text-foreground sm:text-lg md:text-xl">
                                             Designing your creative
                                         </h2>
 
                                         {business?.name && (
-                                            <p className="text-xs sm:text-sm text-muted-foreground font-medium">
-                                                for <span className="font-semibold text-foreground/90">{business.name}</span>
+                                            <p className="text-xs font-medium text-muted-foreground sm:text-sm">
+                                                for{' '}
+                                                <span className="font-semibold text-foreground/90">
+                                                    {business.name}
+                                                </span>
                                             </p>
                                         )}
                                     </div>
@@ -2562,14 +2568,20 @@ export default function GeneratorPage() {
                                     <div className="pointer-events-none absolute h-28 w-28 rounded-full bg-primary/20 blur-2xl motion-safe:animate-pulse motion-reduce:hidden" />
 
                                     {/* Glassmorphic Industry Emblem Pedestal */}
-                                    <div className="relative flex h-28 w-28 sm:h-32 sm:w-32 flex-col items-center justify-center rounded-3xl border border-primary/25 bg-gradient-to-b from-primary/15 via-primary/5 to-muted/40 shadow-xl shadow-primary/10 ring-1 ring-primary/20 backdrop-blur-xl transition-all">
-                                        <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-xs ring-1 ring-primary/25">
-                                            {createElement(getIndustryIconComponent(activeIndustry), {
-                                                className: 'h-6 w-6 sm:h-7 sm:w-7 text-primary motion-safe:animate-pulse',
-                                            })}
+                                    <div className="relative flex h-28 w-28 flex-col items-center justify-center rounded-3xl border border-primary/25 bg-gradient-to-b from-primary/15 via-primary/5 to-muted/40 shadow-xl ring-1 shadow-primary/10 ring-primary/20 backdrop-blur-xl transition-all sm:h-32 sm:w-32">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-xs ring-1 ring-primary/25 sm:h-14 sm:w-14">
+                                            {createElement(
+                                                getIndustryIconComponent(
+                                                    activeIndustry,
+                                                ),
+                                                {
+                                                    className:
+                                                        'h-6 w-6 sm:h-7 sm:w-7 text-primary motion-safe:animate-pulse',
+                                                },
+                                            )}
                                         </div>
                                         {activeIndustry && (
-                                            <span className="mt-1.5 max-w-[90px] truncate text-[10px] font-bold uppercase tracking-wider text-primary/80">
+                                            <span className="mt-1.5 max-w-[90px] truncate text-[10px] font-bold tracking-wider text-primary/80 uppercase">
                                                 {activeIndustry}
                                             </span>
                                         )}
@@ -2581,13 +2593,13 @@ export default function GeneratorPage() {
                                     {/* Dynamic Creative Phase Message */}
                                     <div className="flex items-center justify-center gap-1.5 text-center">
                                         <Sparkles className="h-3.5 w-3.5 text-primary motion-safe:animate-pulse motion-reduce:hidden" />
-                                        <p className="text-xs sm:text-sm font-semibold text-foreground transition-opacity duration-500">
+                                        <p className="text-xs font-semibold text-foreground transition-opacity duration-500 sm:text-sm">
                                             {currentStatusMessage}
                                         </p>
                                     </div>
 
                                     {/* Illuminated Modern Progress Bar with Dynamic Indicator */}
-                                    <div className="mx-auto w-full max-w-xs sm:max-w-sm space-y-1">
+                                    <div className="mx-auto w-full max-w-xs space-y-1 sm:max-w-sm">
                                         <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground">
                                             <span>Synthesizing artwork</span>
                                             <span className="font-mono font-semibold text-primary">
@@ -2607,24 +2619,34 @@ export default function GeneratorPage() {
                                     {/* Clean, Non-Flooded Single-Row Metadata Context */}
                                     <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 pt-0.5 text-xs text-muted-foreground">
                                         {form.product_name && (
-                                            <span className="truncate max-w-[140px] font-medium text-foreground/90">
+                                            <span className="max-w-[140px] truncate font-medium text-foreground/90">
                                                 {form.product_name}
                                             </span>
                                         )}
-                                        {form.product_name && form.render_style && (
-                                            <span className="text-muted-foreground/40">•</span>
-                                        )}
+                                        {form.product_name &&
+                                            form.render_style && (
+                                                <span className="text-muted-foreground/40">
+                                                    •
+                                                </span>
+                                            )}
                                         {form.render_style && (
-                                            <span className="truncate max-w-[140px] font-medium text-muted-foreground">
+                                            <span className="max-w-[140px] truncate font-medium text-muted-foreground">
                                                 {form.render_style}
                                             </span>
                                         )}
-                                        {(form.product_name || form.render_style) && (activeCampaign?.name || selectedEvent?.name) && (
-                                            <span className="text-muted-foreground/40">•</span>
-                                        )}
-                                        {(activeCampaign?.name || selectedEvent?.name) && (
-                                            <span className="truncate max-w-[150px] font-semibold text-primary">
-                                                {activeCampaign?.name || selectedEvent?.name}
+                                        {(form.product_name ||
+                                            form.render_style) &&
+                                            (activeCampaign?.name ||
+                                                selectedEvent?.name) && (
+                                                <span className="text-muted-foreground/40">
+                                                    •
+                                                </span>
+                                            )}
+                                        {(activeCampaign?.name ||
+                                            selectedEvent?.name) && (
+                                            <span className="max-w-[150px] truncate font-semibold text-primary">
+                                                {activeCampaign?.name ||
+                                                    selectedEvent?.name}
                                             </span>
                                         )}
                                     </div>
@@ -2635,20 +2657,20 @@ export default function GeneratorPage() {
                         /* =====================================================
                            EDITORIAL ERROR STATE
                         ====================================================== */
-                        <div className="mx-auto flex h-full w-full max-w-md flex-col items-center justify-center p-6 text-center motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive/10 text-destructive mb-4 shadow-2xs">
+                        <div className="mx-auto flex h-full w-full max-w-md flex-col items-center justify-center p-6 text-center motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in">
+                            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive/10 text-destructive shadow-2xs">
                                 <AlertCircle className="h-6 w-6" />
                             </div>
-                            <h3 className="text-base sm:text-lg font-bold text-foreground">
+                            <h3 className="text-base font-bold text-foreground sm:text-lg">
                                 Unable to finish this creative
                             </h3>
-                            <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-sm">
+                            <p className="mt-1.5 max-w-sm text-xs leading-relaxed text-muted-foreground sm:text-sm">
                                 Please check your settings and try again.
                             </p>
                             <Button
                                 type="button"
                                 onClick={() => setGenerationState('idle')}
-                                className="mt-5 rounded-xl px-5 text-xs font-bold shadow-xs cursor-pointer"
+                                className="mt-5 cursor-pointer rounded-xl px-5 text-xs font-bold shadow-xs"
                             >
                                 Try Again
                             </Button>
@@ -3022,7 +3044,7 @@ export default function GeneratorPage() {
                                                             </p>
                                                             <p className="mt-0.5 font-semibold text-foreground">
                                                                 {referenceImagePreview ||
-                                                                    form.product_id
+                                                                form.product_id
                                                                     ? 'Image-to-Image Edit'
                                                                     : 'Text-to-Image'}
                                                             </p>
@@ -3200,21 +3222,22 @@ export default function GeneratorPage() {
                                     <div className="flex-1 space-y-1">
                                         <div className="flex items-center justify-between gap-2">
                                             <p className="text-sm font-bold text-destructive">
-                                                AI Budget Quota Limit Reached
-                                                (${budgetLimit.toFixed(2)} Limit)
+                                                AI Budget Quota Limit Reached ($
+                                                {budgetLimit.toFixed(2)} Limit)
                                             </p>
                                             <Badge
                                                 variant="outline"
                                                 className="border-destructive/40 bg-destructive/20 font-mono text-[10px] font-bold text-destructive"
                                             >
-                                                ${totalSpent.toFixed(2)} / ${budgetLimit.toFixed(2)}
+                                                ${totalSpent.toFixed(2)} / $
+                                                {budgetLimit.toFixed(2)}
                                             </Badge>
                                         </div>
                                         <p className="text-[11px] leading-relaxed text-destructive/90">
                                             You have hit your{' '}
                                             <strong>
-                                                ${budgetLimit.toFixed(2)} total generation quota
-                                                limit
+                                                ${budgetLimit.toFixed(2)} total
+                                                generation quota limit
                                             </strong>
                                             . Image generation has been halted
                                             to prevent unexpected overages.
@@ -3254,17 +3277,20 @@ export default function GeneratorPage() {
                                                             htmlFor="product_name"
                                                             className="text-xs font-semibold"
                                                         >
-                                                            Product / Service Name
+                                                            Product / Service
+                                                            Name
                                                         </Label>
                                                         <HelpTooltip text="Enter the name of the product, service, or offering to be showcased in your marketing visual." />
                                                     </div>
                                                     {form.product_name.trim() ? (
                                                         <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                                                            <Check className="h-3 w-3" /> Ready
+                                                            <Check className="h-3 w-3" />{' '}
+                                                            Ready
                                                         </span>
                                                     ) : (
                                                         <span className="flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                                                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" /> Required
+                                                            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />{' '}
+                                                            Required
                                                         </span>
                                                     )}
                                                 </div>
@@ -3289,17 +3315,20 @@ export default function GeneratorPage() {
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-1.5">
                                                         <Label className="text-xs font-semibold">
-                                                            Holiday or Marketing Event
+                                                            Holiday or Marketing
+                                                            Event
                                                         </Label>
                                                         <HelpTooltip text="Choose an official Philippine holiday or commercial sale date to tailor seasonal themes and promotions." />
                                                     </div>
                                                     {selectedEvent ? (
                                                         <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                                                            <Check className="h-3 w-3" /> Selected
+                                                            <Check className="h-3 w-3" />{' '}
+                                                            Selected
                                                         </span>
                                                     ) : (
                                                         <span className="flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                                                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" /> Required
+                                                            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />{' '}
+                                                            Required
                                                         </span>
                                                     )}
                                                 </div>
@@ -3375,13 +3404,15 @@ export default function GeneratorPage() {
                                                                 true,
                                                             )
                                                         }
-                                                        className="group relative flex h-11 w-full items-center justify-between overflow-hidden rounded-xl border border-primary/40 bg-gradient-to-r from-primary/10 via-primary/5 to-card px-4 text-xs font-medium text-foreground shadow-md shadow-primary/10 ring-1 ring-primary/30 transition-all duration-300 hover:border-primary/70 hover:bg-primary/15 hover:shadow-lg hover:shadow-primary/20 active:scale-[0.99]"
+                                                        className="group relative flex h-11 w-full items-center justify-between overflow-hidden rounded-xl border border-primary/40 bg-gradient-to-r from-primary/10 via-primary/5 to-card px-4 text-xs font-medium text-foreground shadow-md ring-1 shadow-primary/10 ring-primary/30 transition-all duration-300 hover:border-primary/70 hover:bg-primary/15 hover:shadow-lg hover:shadow-primary/20 active:scale-[0.99]"
                                                     >
                                                         {/* Subtle ambient radiant sweep */}
                                                         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-primary/15 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                                                         <span className="relative flex items-center gap-2 font-medium">
-                                                            <Calendar className="h-4 w-4 text-primary animate-pulse" />
-                                                            Choose a retail event, season, or holiday...
+                                                            <Calendar className="h-4 w-4 animate-pulse text-primary" />
+                                                            Choose a retail
+                                                            event, season, or
+                                                            holiday...
                                                         </span>
                                                         <span className="relative inline-flex items-center gap-1 rounded-lg bg-primary/20 px-2.5 py-1 text-xs font-bold text-primary shadow-xs ring-1 ring-primary/30 transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-md group-hover:shadow-primary/30">
                                                             Browse Events →
@@ -3398,16 +3429,19 @@ export default function GeneratorPage() {
                                                             htmlFor="image_prompt"
                                                             className="text-xs font-semibold"
                                                         >
-                                                            Visual Prompt & Scene Concept
+                                                            Visual Prompt &
+                                                            Scene Concept
                                                         </Label>
                                                         <HelpTooltip text="Detailed creative prompt describing product staging, backdrop, festive accents, lighting, and textures." />
                                                         {form.image_prompt.trim() ? (
                                                             <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                                                                <Check className="h-3 w-3" /> Ready
+                                                                <Check className="h-3 w-3" />{' '}
+                                                                Ready
                                                             </span>
                                                         ) : (
                                                             <span className="flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                                                                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" /> Required
+                                                                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />{' '}
+                                                                Required
                                                             </span>
                                                         )}
                                                     </div>
@@ -3418,7 +3452,7 @@ export default function GeneratorPage() {
                                                         onClick={() =>
                                                             generateNewPrompt()
                                                         }
-                                                        className="relative h-7 gap-1.5 rounded-lg border-primary/40 bg-primary/10 px-2.5 text-[11px] font-bold text-primary shadow-xs shadow-primary/20 ring-1 ring-primary/20 transition-all duration-300 hover:border-primary hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:shadow-primary/30 active:scale-95"
+                                                        className="relative h-7 gap-1.5 rounded-lg border-primary/40 bg-primary/10 px-2.5 text-[11px] font-bold text-primary shadow-xs ring-1 shadow-primary/20 ring-primary/20 transition-all duration-300 hover:border-primary hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:shadow-primary/30 active:scale-95"
                                                     >
                                                         <Sparkles className="h-3 w-3 animate-pulse" />
                                                         {form.image_prompt.trim()
@@ -3459,7 +3493,12 @@ export default function GeneratorPage() {
                                                         </div>
                                                         {form.price ? (
                                                             <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                                                                <Check className="h-3 w-3" /> Set (₱{Number(form.price).toLocaleString()})
+                                                                <Check className="h-3 w-3" />{' '}
+                                                                Set (₱
+                                                                {Number(
+                                                                    form.price,
+                                                                ).toLocaleString()}
+                                                                )
                                                             </span>
                                                         ) : (
                                                             <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
@@ -3493,13 +3532,15 @@ export default function GeneratorPage() {
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-1.5">
                                                             <Label className="text-xs font-semibold">
-                                                                Reference Product Photo
+                                                                Reference
+                                                                Product Photo
                                                             </Label>
                                                             <HelpTooltip text="Upload an existing photo from your device or select an item from your catalog for visual reference." />
                                                         </div>
                                                         {referenceImagePreview ? (
                                                             <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                                                                <Check className="h-3 w-3" /> Attached
+                                                                <Check className="h-3 w-3" />{' '}
+                                                                Attached
                                                             </span>
                                                         ) : (
                                                             <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
@@ -3588,7 +3629,8 @@ export default function GeneratorPage() {
                                                                 htmlFor="include_business_name_toggle"
                                                                 className="cursor-pointer text-xs font-bold text-foreground"
                                                             >
-                                                                Include Business / Shop Name
+                                                                Include Business
+                                                                / Shop Name
                                                             </Label>
                                                             <HelpTooltip text="When enabled, the AI incorporates your registered business or shop name and brand identity into the generated marketing creative scene." />
                                                         </div>
@@ -3602,8 +3644,9 @@ export default function GeneratorPage() {
                                                 <div className="flex items-center gap-2.5">
                                                     <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                                                         {form.include_business_name ? (
-                                                            <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                                                                <Check className="h-3 w-3" /> Active
+                                                            <span className="flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
+                                                                <Check className="h-3 w-3" />{' '}
+                                                                Active
                                                             </span>
                                                         ) : (
                                                             'Disabled'
@@ -3618,7 +3661,9 @@ export default function GeneratorPage() {
                                                             checked,
                                                         ) => {
                                                             const val =
-                                                                Boolean(checked);
+                                                                Boolean(
+                                                                    checked,
+                                                                );
                                                             setForm({
                                                                 ...form,
                                                                 include_business_name:
@@ -3649,7 +3694,8 @@ export default function GeneratorPage() {
                                                     </div>
                                                     <div>
                                                         <p className="text-xs font-bold text-foreground">
-                                                            Smart Style Suggestions
+                                                            Smart Style
+                                                            Suggestions
                                                         </p>
                                                         <p className="text-[11px] text-muted-foreground">
                                                             {selectedEvent
@@ -3666,7 +3712,7 @@ export default function GeneratorPage() {
                                                     onClick={
                                                         applyDynamicSuggestions
                                                     }
-                                                    className="relative h-8 gap-1.5 self-start rounded-lg border-primary/40 bg-primary/10 px-3 text-xs font-bold text-primary shadow-md shadow-primary/20 ring-1 ring-primary/30 transition-all duration-300 hover:border-primary hover:bg-primary hover:text-primary-foreground hover:shadow-lg hover:shadow-primary/30 active:scale-95 sm:self-auto"
+                                                    className="relative h-8 gap-1.5 self-start rounded-lg border-primary/40 bg-primary/10 px-3 text-xs font-bold text-primary shadow-md ring-1 shadow-primary/20 ring-primary/30 transition-all duration-300 hover:border-primary hover:bg-primary hover:text-primary-foreground hover:shadow-lg hover:shadow-primary/30 active:scale-95 sm:self-auto"
                                                 >
                                                     <Sparkles className="h-3.5 w-3.5 animate-pulse" />
                                                     {form.content_style.length >
@@ -3687,7 +3733,8 @@ export default function GeneratorPage() {
                                                         <HelpTooltip text="Defines visual rendering mode, studio camera treatment, volumetric lighting, and scene fidelity." />
                                                     </div>
                                                     <span className="flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-bold text-primary">
-                                                        <Check className="h-3 w-3" /> 1 / 1 Selected
+                                                        <Check className="h-3 w-3" />{' '}
+                                                        1 / 1 Selected
                                                     </span>
                                                 </div>
 
@@ -3810,7 +3857,12 @@ export default function GeneratorPage() {
                                                         <HelpTooltip text="Art direction and photography aesthetics (e.g. Lifestyle, Minimal, Storytelling, Editorial)." />
                                                     </div>
                                                     <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
-                                                        Optional • {form.content_style.length} / 3 Selected
+                                                        Optional •{' '}
+                                                        {
+                                                            form.content_style
+                                                                .length
+                                                        }{' '}
+                                                        / 3 Selected
                                                     </span>
                                                 </div>
 
@@ -3927,7 +3979,9 @@ export default function GeneratorPage() {
                                                         <HelpTooltip text="Brand emotional vibe and atmosphere (e.g. Luxury, Warm, Bold, Modern) to guide lighting and tone." />
                                                     </div>
                                                     <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
-                                                        Optional • {form.brand_tone.length} / 3 Selected
+                                                        Optional •{' '}
+                                                        {form.brand_tone.length}{' '}
+                                                        / 3 Selected
                                                     </span>
                                                 </div>
 
@@ -4051,12 +4105,18 @@ export default function GeneratorPage() {
                                                         <div>
                                                             <div className="flex items-center gap-1.5">
                                                                 <Label className="text-xs font-bold text-foreground">
-                                                                    Campaign Tagline & Headline
+                                                                    Campaign
+                                                                    Tagline &
+                                                                    Headline
                                                                 </Label>
                                                                 <HelpTooltip text="Optional commercial slogan, value hook, or headline rendered into the advertisement." />
                                                             </div>
                                                             <p className="text-[11px] text-muted-foreground">
-                                                                Commercial tagline integrated into visual composition
+                                                                Commercial
+                                                                tagline
+                                                                integrated into
+                                                                visual
+                                                                composition
                                                             </p>
                                                         </div>
                                                     </div>
@@ -4064,7 +4124,8 @@ export default function GeneratorPage() {
                                                     <div className="flex items-center gap-2">
                                                         {form.tagline.trim() ? (
                                                             <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                                                                <Check className="h-3 w-3" /> Included
+                                                                <Check className="h-3 w-3" />{' '}
+                                                                Included
                                                             </span>
                                                         ) : (
                                                             <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
@@ -4075,8 +4136,10 @@ export default function GeneratorPage() {
                                                             type="button"
                                                             variant="outline"
                                                             size="sm"
-                                                            onClick={generateTagline}
-                                                            className="relative h-7.5 gap-1.5 rounded-lg border-primary/40 bg-primary/10 px-3 text-xs font-bold text-primary shadow-md shadow-primary/20 ring-1 ring-primary/30 transition-all duration-300 hover:border-primary hover:bg-primary hover:text-primary-foreground hover:shadow-lg hover:shadow-primary/30 active:scale-95"
+                                                            onClick={
+                                                                generateTagline
+                                                            }
+                                                            className="relative h-7.5 gap-1.5 rounded-lg border-primary/40 bg-primary/10 px-3 text-xs font-bold text-primary shadow-md ring-1 shadow-primary/20 ring-primary/30 transition-all duration-300 hover:border-primary hover:bg-primary hover:text-primary-foreground hover:shadow-lg hover:shadow-primary/30 active:scale-95"
                                                         >
                                                             <Sparkles className="h-3.5 w-3.5 animate-pulse" />
                                                             Suggest Tagline
@@ -4090,8 +4153,11 @@ export default function GeneratorPage() {
                                                         onChange={(e) =>
                                                             setForm({
                                                                 ...form,
-                                                                tagline: e.target.value,
-                                                                tagline_mode: 'manual',
+                                                                tagline:
+                                                                    e.target
+                                                                        .value,
+                                                                tagline_mode:
+                                                                    'manual',
                                                             })
                                                         }
                                                         placeholder="e.g. Elevate Your Everyday with Fresh Artisan Roasts"
@@ -4104,10 +4170,11 @@ export default function GeneratorPage() {
                                                                 setForm({
                                                                     ...form,
                                                                     tagline: '',
-                                                                    tagline_mode: 'none',
+                                                                    tagline_mode:
+                                                                        'none',
                                                                 })
                                                             }
-                                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                                            className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                                                         >
                                                             <X className="h-3.5 w-3.5" />
                                                         </button>
@@ -4116,10 +4183,11 @@ export default function GeneratorPage() {
 
                                                 {form.tagline && (
                                                     <div className="rounded-xl border border-primary/20 bg-primary/5 p-2.5 text-xs">
-                                                        <span className="mr-1.5 text-[10px] font-bold uppercase tracking-wider text-primary">
-                                                            Live Tagline Preview:
+                                                        <span className="mr-1.5 text-[10px] font-bold tracking-wider text-primary uppercase">
+                                                            Live Tagline
+                                                            Preview:
                                                         </span>
-                                                        <span className="font-medium italic text-foreground">
+                                                        <span className="font-medium text-foreground italic">
                                                             "{form.tagline}"
                                                         </span>
                                                     </div>
@@ -4145,7 +4213,10 @@ export default function GeneratorPage() {
                                                         <div>
                                                             <div className="flex items-center gap-1.5">
                                                                 <span className="text-xs font-bold text-foreground">
-                                                                    Canvas Format & AI Engine Settings
+                                                                    Canvas
+                                                                    Format & AI
+                                                                    Engine
+                                                                    Settings
                                                                 </span>
                                                                 <HelpTooltip text="Configure canvas proportions (1:1, 9:16, 16:9, 4:5, 4:3), OpenAI generation model, and detail quality tier." />
                                                             </div>
@@ -4168,13 +4239,17 @@ export default function GeneratorPage() {
                                                                 variant="outline"
                                                                 className="border-primary/30 bg-primary/10 font-mono text-[10px] font-bold text-primary"
                                                             >
-                                                                {form.aspect_ratio}
+                                                                {
+                                                                    form.aspect_ratio
+                                                                }
                                                             </Badge>
                                                             <Badge
                                                                 variant="outline"
                                                                 className="border-border bg-background font-mono text-[10px] text-muted-foreground"
                                                             >
-                                                                {form.image_model}
+                                                                {
+                                                                    form.image_model
+                                                                }
                                                             </Badge>
                                                             {(() => {
                                                                 const currentCost =
@@ -4185,7 +4260,9 @@ export default function GeneratorPage() {
 
                                                                 return (
                                                                     <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                                                                        {currentCost.usd}
+                                                                        {
+                                                                            currentCost.usd
+                                                                        }
                                                                     </span>
                                                                 );
                                                             })()}
@@ -4208,15 +4285,21 @@ export default function GeneratorPage() {
                                                         {/* 1. Canvas Proportions Dropdown */}
                                                         <div className="space-y-1.5">
                                                             <div className="flex items-center justify-between">
-                                                                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                                                    Canvas Format & Dimensions
+                                                                <Label className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                                                                    Canvas
+                                                                    Format &
+                                                                    Dimensions
                                                                 </Label>
                                                                 <span className="font-mono text-[10px] text-muted-foreground">
-                                                                    20% Safe Area Protected
+                                                                    20% Safe
+                                                                    Area
+                                                                    Protected
                                                                 </span>
                                                             </div>
                                                             <DropdownMenu>
-                                                                <DropdownMenuTrigger asChild>
+                                                                <DropdownMenuTrigger
+                                                                    asChild
+                                                                >
                                                                     <Button
                                                                         type="button"
                                                                         variant="outline"
@@ -4225,7 +4308,9 @@ export default function GeneratorPage() {
                                                                         {(() => {
                                                                             const activeAspect =
                                                                                 aspectRatioOptions.find(
-                                                                                    (a) =>
+                                                                                    (
+                                                                                        a,
+                                                                                    ) =>
                                                                                         a.value ===
                                                                                         form.aspect_ratio,
                                                                                 ) ||
@@ -4244,10 +4329,10 @@ export default function GeneratorPage() {
                                                                                                             '16:9'
                                                                                                           ? 'h-2.5 w-5'
                                                                                                           : activeAspect.value ===
-                                                                                                                '4:5'
+                                                                                                              '4:5'
                                                                                                             ? 'h-4.5 w-3.5'
                                                                                                             : activeAspect.value ===
-                                                                                                                  '4:3'
+                                                                                                                '4:3'
                                                                                                               ? 'h-3.5 w-4.5'
                                                                                                               : 'h-4 w-4'
                                                                                                 }`}
@@ -4256,14 +4341,23 @@ export default function GeneratorPage() {
                                                                                         <div className="min-w-0">
                                                                                             <div className="flex items-center gap-2">
                                                                                                 <span className="font-mono text-xs font-bold text-foreground">
-                                                                                                    {activeAspect.label}
+                                                                                                    {
+                                                                                                        activeAspect.label
+                                                                                                    }
                                                                                                 </span>
                                                                                                 <span className="font-mono text-[10px] text-muted-foreground">
-                                                                                                    ({activeAspect.badge})
+                                                                                                    (
+                                                                                                    {
+                                                                                                        activeAspect.badge
+                                                                                                    }
+
+                                                                                                    )
                                                                                                 </span>
                                                                                             </div>
                                                                                             <p className="line-clamp-1 text-[11px] text-muted-foreground">
-                                                                                                {activeAspect.description}
+                                                                                                {
+                                                                                                    activeAspect.description
+                                                                                                }
                                                                                             </p>
                                                                                         </div>
                                                                                     </div>
@@ -4276,29 +4370,42 @@ export default function GeneratorPage() {
                                                                 <DropdownMenuContent
                                                                     align="start"
                                                                     side="bottom"
-                                                                    sideOffset={6}
-                                                                    collisionPadding={24}
-                                                                    avoidCollisions={true}
+                                                                    sideOffset={
+                                                                        6
+                                                                    }
+                                                                    collisionPadding={
+                                                                        24
+                                                                    }
+                                                                    avoidCollisions={
+                                                                        true
+                                                                    }
                                                                     className="max-h-[min(340px,50vh)] w-[var(--radix-dropdown-menu-trigger-width)] min-w-[280px] space-y-1 overflow-y-auto rounded-2xl border-border bg-popover/98 p-2 shadow-2xl backdrop-blur-xl"
                                                                 >
-                                                                    <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                                                        Available Proportions
+                                                                    <div className="px-2 py-1 text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                                                                        Available
+                                                                        Proportions
                                                                     </div>
                                                                     {aspectRatioOptions.map(
-                                                                        (opt) => {
+                                                                        (
+                                                                            opt,
+                                                                        ) => {
                                                                             const isSelected =
                                                                                 form.aspect_ratio ===
                                                                                 opt.value;
 
                                                                             return (
                                                                                 <DropdownMenuItem
-                                                                                    key={opt.value}
+                                                                                    key={
+                                                                                        opt.value
+                                                                                    }
                                                                                     onClick={() =>
-                                                                                        setForm({
-                                                                                            ...form,
-                                                                                            aspect_ratio:
-                                                                                                opt.value,
-                                                                                        })
+                                                                                        setForm(
+                                                                                            {
+                                                                                                ...form,
+                                                                                                aspect_ratio:
+                                                                                                    opt.value,
+                                                                                            },
+                                                                                        )
                                                                                     }
                                                                                     className={`cursor-pointer rounded-xl p-2.5 transition-colors ${
                                                                                         isSelected
@@ -4322,26 +4429,32 @@ export default function GeneratorPage() {
                                                                                                                 '16:9'
                                                                                                               ? 'h-2.5 w-5'
                                                                                                               : opt.value ===
-                                                                                                                    '4:5'
+                                                                                                                  '4:5'
                                                                                                                 ? 'h-4.5 w-3.5'
                                                                                                                 : opt.value ===
-                                                                                                                      '4:3'
-                                                                                                                    ? 'h-3.5 w-4.5'
-                                                                                                                    : 'h-4 w-4'
+                                                                                                                    '4:3'
+                                                                                                                  ? 'h-3.5 w-4.5'
+                                                                                                                  : 'h-4 w-4'
                                                                                                     }`}
                                                                                                 />
                                                                                             </div>
                                                                                             <div>
                                                                                                 <div className="flex items-center gap-2">
                                                                                                     <span className="font-mono text-xs font-bold text-foreground">
-                                                                                                        {opt.label}
+                                                                                                        {
+                                                                                                            opt.label
+                                                                                                        }
                                                                                                     </span>
                                                                                                     <span className="font-mono text-[10px] text-muted-foreground">
-                                                                                                        {opt.badge}
+                                                                                                        {
+                                                                                                            opt.badge
+                                                                                                        }
                                                                                                     </span>
-                                                                                            </div>
+                                                                                                </div>
                                                                                                 <p className="line-clamp-1 text-[11px] text-muted-foreground">
-                                                                                                    {opt.description}
+                                                                                                    {
+                                                                                                        opt.description
+                                                                                                    }
                                                                                                 </p>
                                                                                             </div>
                                                                                         </div>
@@ -4361,11 +4474,13 @@ export default function GeneratorPage() {
                                                         <div className="grid gap-3 sm:grid-cols-2">
                                                             {/* AI Model Dropdown Box */}
                                                             <div className="space-y-1.5">
-                                                                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                                                <Label className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
                                                                     Model Engine
                                                                 </Label>
                                                                 <DropdownMenu>
-                                                                    <DropdownMenuTrigger asChild>
+                                                                    <DropdownMenuTrigger
+                                                                        asChild
+                                                                    >
                                                                         <Button
                                                                             type="button"
                                                                             variant="outline"
@@ -4374,7 +4489,9 @@ export default function GeneratorPage() {
                                                                             {(() => {
                                                                                 const activeModel =
                                                                                     imageModelOptions.find(
-                                                                                        (m) =>
+                                                                                        (
+                                                                                            m,
+                                                                                        ) =>
                                                                                             m.value ===
                                                                                             form.image_model,
                                                                                     ) ||
@@ -4385,16 +4502,25 @@ export default function GeneratorPage() {
                                                                                         <div className="min-w-0">
                                                                                             <div className="flex items-center gap-1.5">
                                                                                                 <span className="font-mono text-xs font-bold text-foreground">
-                                                                                                    {activeModel.label}
+                                                                                                    {
+                                                                                                        activeModel.label
+                                                                                                    }
                                                                                                 </span>
                                                                                                 {activeModel.isRecommended && (
                                                                                                     <span className="rounded bg-primary/10 px-1 py-0 text-[8px] font-bold text-primary">
-                                                                                                        ★ Rec
+                                                                                                        ★
+                                                                                                        Rec
                                                                                                     </span>
                                                                                                 )}
                                                                                             </div>
                                                                                             <p className="line-clamp-1 text-[10px] text-muted-foreground">
-                                                                                                {activeModel.tag} • {activeModel.speed}
+                                                                                                {
+                                                                                                    activeModel.tag
+                                                                                                }{' '}
+                                                                                                •{' '}
+                                                                                                {
+                                                                                                    activeModel.speed
+                                                                                                }
                                                                                             </p>
                                                                                         </div>
                                                                                         <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -4406,29 +4532,42 @@ export default function GeneratorPage() {
                                                                     <DropdownMenuContent
                                                                         align="start"
                                                                         side="bottom"
-                                                                        sideOffset={6}
-                                                                        collisionPadding={24}
-                                                                        avoidCollisions={true}
+                                                                        sideOffset={
+                                                                            6
+                                                                        }
+                                                                        collisionPadding={
+                                                                            24
+                                                                        }
+                                                                        avoidCollisions={
+                                                                            true
+                                                                        }
                                                                         className="max-h-[min(340px,50vh)] w-[var(--radix-dropdown-menu-trigger-width)] min-w-[280px] space-y-1 overflow-y-auto rounded-2xl border-border bg-popover/98 p-2 shadow-2xl backdrop-blur-xl"
                                                                     >
-                                                                        <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                                                            Generation Engines
+                                                                        <div className="px-2 py-1 text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                                                                            Generation
+                                                                            Engines
                                                                         </div>
                                                                         {imageModelOptions.map(
-                                                                            (model) => {
+                                                                            (
+                                                                                model,
+                                                                            ) => {
                                                                                 const isSelected =
                                                                                     form.image_model ===
                                                                                     model.value;
 
                                                                                 return (
                                                                                     <DropdownMenuItem
-                                                                                        key={model.value}
+                                                                                        key={
+                                                                                            model.value
+                                                                                        }
                                                                                         onClick={() =>
-                                                                                            setForm({
-                                                                                                ...form,
-                                                                                                image_model:
-                                                                                                    model.value,
-                                                                                            })
+                                                                                            setForm(
+                                                                                                {
+                                                                                                    ...form,
+                                                                                                    image_model:
+                                                                                                        model.value,
+                                                                                                },
+                                                                                            )
                                                                                         }
                                                                                         className={`cursor-pointer rounded-xl p-2.5 transition-colors ${
                                                                                             isSelected
@@ -4440,11 +4579,14 @@ export default function GeneratorPage() {
                                                                                             <div className="flex items-center justify-between">
                                                                                                 <div className="flex items-center gap-1.5">
                                                                                                     <span className="font-mono text-xs font-bold text-foreground">
-                                                                                                        {model.label}
+                                                                                                        {
+                                                                                                            model.label
+                                                                                                        }
                                                                                                     </span>
                                                                                                     {model.isRecommended && (
                                                                                                         <span className="rounded bg-primary/10 px-1 py-0 text-[8px] font-bold text-primary">
-                                                                                                            ★ Recommended
+                                                                                                            ★
+                                                                                                            Recommended
                                                                                                         </span>
                                                                                                     )}
                                                                                                 </div>
@@ -4453,12 +4595,24 @@ export default function GeneratorPage() {
                                                                                                 )}
                                                                                             </div>
                                                                                             <p className="line-clamp-1 text-[10px] text-muted-foreground">
-                                                                                                {model.description}
+                                                                                                {
+                                                                                                    model.description
+                                                                                                }
                                                                                             </p>
-                                                                                            <div className="flex items-center gap-2 pt-0.5 text-[9px] font-mono text-muted-foreground">
-                                                                                                <span>{model.price}</span>
-                                                                                                <span>•</span>
-                                                                                                <span>{model.speed}</span>
+                                                                                            <div className="flex items-center gap-2 pt-0.5 font-mono text-[9px] text-muted-foreground">
+                                                                                                <span>
+                                                                                                    {
+                                                                                                        model.price
+                                                                                                    }
+                                                                                                </span>
+                                                                                                <span>
+                                                                                                    •
+                                                                                                </span>
+                                                                                                <span>
+                                                                                                    {
+                                                                                                        model.speed
+                                                                                                    }
+                                                                                                </span>
                                                                                             </div>
                                                                                         </div>
                                                                                     </DropdownMenuItem>
@@ -4471,11 +4625,14 @@ export default function GeneratorPage() {
 
                                                             {/* Quality Tier Dropdown Box */}
                                                             <div className="space-y-1.5">
-                                                                <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                                                    Quality Fidelity
+                                                                <Label className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                                                                    Quality
+                                                                    Fidelity
                                                                 </Label>
                                                                 <DropdownMenu>
-                                                                    <DropdownMenuTrigger asChild>
+                                                                    <DropdownMenuTrigger
+                                                                        asChild
+                                                                    >
                                                                         <Button
                                                                             type="button"
                                                                             variant="outline"
@@ -4484,7 +4641,9 @@ export default function GeneratorPage() {
                                                                             {(() => {
                                                                                 const activeQuality =
                                                                                     imageQualityOptions.find(
-                                                                                        (q) =>
+                                                                                        (
+                                                                                            q,
+                                                                                        ) =>
                                                                                             q.value ===
                                                                                             form.image_quality,
                                                                                     ) ||
@@ -4500,7 +4659,9 @@ export default function GeneratorPage() {
                                                                                         <div className="min-w-0">
                                                                                             <div className="flex items-center gap-1.5">
                                                                                                 <span className="text-xs font-bold text-foreground">
-                                                                                                    {activeQuality.label}
+                                                                                                    {
+                                                                                                        activeQuality.label
+                                                                                                    }
                                                                                                 </span>
                                                                                                 {activeQuality.isStandard && (
                                                                                                     <span className="rounded bg-emerald-500/10 px-1 py-0 text-[8px] font-bold text-emerald-600 dark:text-emerald-400">
@@ -4509,7 +4670,15 @@ export default function GeneratorPage() {
                                                                                                 )}
                                                                                             </div>
                                                                                             <p className="line-clamp-1 font-mono text-[10px] text-muted-foreground">
-                                                                                                {cost.usd} ({cost.php})
+                                                                                                {
+                                                                                                    cost.usd
+                                                                                                }{' '}
+                                                                                                (
+                                                                                                {
+                                                                                                    cost.php
+                                                                                                }
+
+                                                                                                )
                                                                                             </p>
                                                                                         </div>
                                                                                         <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -4521,16 +4690,25 @@ export default function GeneratorPage() {
                                                                     <DropdownMenuContent
                                                                         align="start"
                                                                         side="bottom"
-                                                                        sideOffset={6}
-                                                                        collisionPadding={24}
-                                                                        avoidCollisions={true}
+                                                                        sideOffset={
+                                                                            6
+                                                                        }
+                                                                        collisionPadding={
+                                                                            24
+                                                                        }
+                                                                        avoidCollisions={
+                                                                            true
+                                                                        }
                                                                         className="max-h-[min(340px,50vh)] w-[var(--radix-dropdown-menu-trigger-width)] min-w-[280px] space-y-1 overflow-y-auto rounded-2xl border-border bg-popover/98 p-2 shadow-2xl backdrop-blur-xl"
                                                                     >
-                                                                        <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                                                            Rendering Fidelity
+                                                                        <div className="px-2 py-1 text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                                                                            Rendering
+                                                                            Fidelity
                                                                         </div>
                                                                         {imageQualityOptions.map(
-                                                                            (q) => {
+                                                                            (
+                                                                                q,
+                                                                            ) => {
                                                                                 const isSelected =
                                                                                     form.image_quality ===
                                                                                     q.value;
@@ -4542,7 +4720,9 @@ export default function GeneratorPage() {
 
                                                                                 return (
                                                                                     <DropdownMenuItem
-                                                                                        key={q.value}
+                                                                                        key={
+                                                                                            q.value
+                                                                                        }
                                                                                         onClick={() =>
                                                                                             handleQualitySelect(
                                                                                                 q.value,
@@ -4558,7 +4738,9 @@ export default function GeneratorPage() {
                                                                                             <div className="flex items-center justify-between">
                                                                                                 <div className="flex items-center gap-1.5">
                                                                                                     <span className="text-xs font-bold text-foreground">
-                                                                                                        {q.label}
+                                                                                                        {
+                                                                                                            q.label
+                                                                                                        }
                                                                                                     </span>
                                                                                                     {q.isStandard && (
                                                                                                         <span className="rounded bg-emerald-500/10 px-1 py-0 text-[8px] font-bold text-emerald-600 dark:text-emerald-400">
@@ -4571,11 +4753,24 @@ export default function GeneratorPage() {
                                                                                                 )}
                                                                                             </div>
                                                                                             <p className="line-clamp-1 text-[10px] text-muted-foreground">
-                                                                                                {q.description}
+                                                                                                {
+                                                                                                    q.description
+                                                                                                }
                                                                                             </p>
-                                                                                            <div className="flex items-center gap-2 pt-0.5 text-[9px] font-mono text-emerald-600 dark:text-emerald-400">
-                                                                                                <span>{cost.usd}</span>
-                                                                                                <span>({cost.php})</span>
+                                                                                            <div className="flex items-center gap-2 pt-0.5 font-mono text-[9px] text-emerald-600 dark:text-emerald-400">
+                                                                                                <span>
+                                                                                                    {
+                                                                                                        cost.usd
+                                                                                                    }
+                                                                                                </span>
+                                                                                                <span>
+                                                                                                    (
+                                                                                                    {
+                                                                                                        cost.php
+                                                                                                    }
+
+                                                                                                    )
+                                                                                                </span>
                                                                                             </div>
                                                                                         </div>
                                                                                     </DropdownMenuItem>

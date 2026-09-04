@@ -6,10 +6,8 @@ import {
     Building2,
     Calendar,
     Check,
-    CheckCircle2,
     FileText,
     Info,
-    Layers,
     Loader2,
     Mail,
     RotateCcw,
@@ -19,12 +17,10 @@ import {
     Sparkles,
     Store,
     Tag,
-    User as UserIcon,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import { HelpTooltip } from '@/components/help-tooltip';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -207,12 +203,24 @@ export default function ProfileShowPage({
     profile = {},
     business = {},
 }: ProfileProps) {
-    const initialValues = useMemo(() => ({
-        name: business.name && business.name !== 'Not specified' ? business.name : '',
-        industry: business.industry && business.industry !== 'General' ? business.industry : 'Food & Beverage',
-        category: business.category && business.category !== 'General' ? business.category : 'Restaurant',
-        description: business.description || '',
-    }), [business]);
+    const initialValues = useMemo(
+        () => ({
+            name:
+                business.name && business.name !== 'Not specified'
+                    ? business.name
+                    : '',
+            industry:
+                business.industry && business.industry !== 'General'
+                    ? business.industry
+                    : 'Food & Beverage',
+            category:
+                business.category && business.category !== 'General'
+                    ? business.category
+                    : 'Restaurant',
+            description: business.description || '',
+        }),
+        [business],
+    );
 
     const [formData, setFormData] = useState(initialValues);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -229,8 +237,8 @@ export default function ProfileShowPage({
 
     const availableCategories = useMemo(() => {
         if (!formData.industry) {
-return [];
-}
+            return [];
+        }
 
         return industryCategories[formData.industry] ?? [];
     }, [formData.industry]);
@@ -296,7 +304,9 @@ return [];
                 onError: (errors: Record<string, string>) => {
                     setIsSubmitting(false);
                     setFormErrors(errors);
-                    toast.error('Please resolve the highlighted issues and try again.');
+                    toast.error(
+                        'Please resolve the highlighted issues and try again.',
+                    );
                 },
             },
         );
@@ -352,7 +362,9 @@ return [];
                                     )}
                                 </div>
                                 <p className="text-xs text-muted-foreground sm:text-sm">
-                                    Configure your business identity and offerings to guide authentic commercial visual generation.
+                                    Configure your business identity and
+                                    offerings to guide authentic commercial
+                                    visual generation.
                                 </p>
                             </div>
                         </div>
@@ -396,7 +408,9 @@ return [];
                                                 Business Identity
                                             </h2>
                                             <p className="text-xs text-muted-foreground">
-                                                The official registered name and commercial vertical of your business.
+                                                The official registered name and
+                                                commercial vertical of your
+                                                business.
                                             </p>
                                         </div>
                                     </div>
@@ -411,7 +425,9 @@ return [];
                                                 >
                                                     <Store className="h-3.5 w-3.5 text-primary" />
                                                     Business Name
-                                                    <span className="text-rose-500">*</span>
+                                                    <span className="text-rose-500">
+                                                        *
+                                                    </span>
                                                 </Label>
                                                 <span className="text-[11px] font-medium text-muted-foreground">
                                                     Required
@@ -420,7 +436,12 @@ return [];
                                             <Input
                                                 id="business-name"
                                                 value={formData.name}
-                                                onChange={(e) => handleFieldChange('name', e.target.value)}
+                                                onChange={(e) =>
+                                                    handleFieldChange(
+                                                        'name',
+                                                        e.target.value,
+                                                    )
+                                                }
                                                 placeholder="e.g. Apit Burger, Cafe Dolce, Artisan Studio"
                                                 className={`h-11 rounded-xl text-sm font-medium transition-colors ${
                                                     formErrors.name
@@ -429,7 +450,9 @@ return [];
                                                 }`}
                                             />
                                             {formErrors.name && (
-                                                <p className="text-xs font-semibold text-destructive">{formErrors.name}</p>
+                                                <p className="text-xs font-semibold text-destructive">
+                                                    {formErrors.name}
+                                                </p>
                                             )}
                                         </div>
 
@@ -443,21 +466,31 @@ return [];
                                                 </Label>
                                                 <Select
                                                     value={formData.industry}
-                                                    onValueChange={handleIndustryChange}
+                                                    onValueChange={
+                                                        handleIndustryChange
+                                                    }
                                                 >
                                                     <SelectTrigger className="h-11 rounded-xl border-border/80 text-sm font-medium">
                                                         <SelectValue placeholder="Select Industry" />
                                                     </SelectTrigger>
                                                     <SelectContent className="max-h-64 rounded-xl">
-                                                        {industryOptions.map((ind) => (
-                                                            <SelectItem key={ind} value={ind} className="cursor-pointer">
-                                                                {ind}
-                                                            </SelectItem>
-                                                        ))}
+                                                        {industryOptions.map(
+                                                            (ind) => (
+                                                                <SelectItem
+                                                                    key={ind}
+                                                                    value={ind}
+                                                                    className="cursor-pointer"
+                                                                >
+                                                                    {ind}
+                                                                </SelectItem>
+                                                            ),
+                                                        )}
                                                     </SelectContent>
                                                 </Select>
                                                 <p className="text-[11px] text-muted-foreground">
-                                                    Determines visual art direction and environmental materials.
+                                                    Determines visual art
+                                                    direction and environmental
+                                                    materials.
                                                 </p>
                                             </div>
 
@@ -469,21 +502,34 @@ return [];
                                                 </Label>
                                                 <Select
                                                     value={formData.category}
-                                                    onValueChange={(val) => handleFieldChange('category', val)}
+                                                    onValueChange={(val) =>
+                                                        handleFieldChange(
+                                                            'category',
+                                                            val,
+                                                        )
+                                                    }
                                                 >
                                                     <SelectTrigger className="h-11 rounded-xl border-border/80 text-sm font-medium">
                                                         <SelectValue placeholder="Select Category" />
                                                     </SelectTrigger>
                                                     <SelectContent className="max-h-64 rounded-xl">
-                                                        {availableCategories.map((cat) => (
-                                                            <SelectItem key={cat} value={cat} className="cursor-pointer">
-                                                                {cat}
-                                                            </SelectItem>
-                                                        ))}
+                                                        {availableCategories.map(
+                                                            (cat) => (
+                                                                <SelectItem
+                                                                    key={cat}
+                                                                    value={cat}
+                                                                    className="cursor-pointer"
+                                                                >
+                                                                    {cat}
+                                                                </SelectItem>
+                                                            ),
+                                                        )}
                                                     </SelectContent>
                                                 </Select>
                                                 <p className="text-[11px] text-muted-foreground">
-                                                    Calibrates specific supporting props and commercial lighting.
+                                                    Calibrates specific
+                                                    supporting props and
+                                                    commercial lighting.
                                                 </p>
                                             </div>
                                         </div>
@@ -502,19 +548,23 @@ return [];
                                                     Business Description
                                                 </h2>
                                                 <p className="text-xs text-muted-foreground">
-                                                    Detailed context informing the AI about your products, culinary style, or craft.
+                                                    Detailed context informing
+                                                    the AI about your products,
+                                                    culinary style, or craft.
                                                 </p>
                                             </div>
                                         </div>
 
                                         <span
                                             className={`font-mono text-xs ${
-                                                formData.description.length > MAX_DESCRIPTION_LENGTH - 100
+                                                formData.description.length >
+                                                MAX_DESCRIPTION_LENGTH - 100
                                                     ? 'font-bold text-rose-500'
                                                     : 'text-muted-foreground'
                                             }`}
                                         >
-                                            {formData.description.length} / {MAX_DESCRIPTION_LENGTH}
+                                            {formData.description.length} /{' '}
+                                            {MAX_DESCRIPTION_LENGTH}
                                         </span>
                                     </div>
 
@@ -524,7 +574,12 @@ return [];
                                             rows={5}
                                             maxLength={MAX_DESCRIPTION_LENGTH}
                                             value={formData.description}
-                                            onChange={(e) => handleFieldChange('description', e.target.value)}
+                                            onChange={(e) =>
+                                                handleFieldChange(
+                                                    'description',
+                                                    e.target.value,
+                                                )
+                                            }
                                             placeholder="e.g. A casual dining burger joint serving flame-grilled artisanal beef burgers, seasoned curly fries, craft milkshakes, and comfort food made with fresh local ingredients."
                                             className={`resize-y rounded-2xl text-sm leading-relaxed ${
                                                 formErrors.description
@@ -534,7 +589,9 @@ return [];
                                         />
 
                                         {formErrors.description && (
-                                            <p className="text-xs font-semibold text-destructive">{formErrors.description}</p>
+                                            <p className="text-xs font-semibold text-destructive">
+                                                {formErrors.description}
+                                            </p>
                                         )}
 
                                         {/* Helper guidance card */}
@@ -542,9 +599,17 @@ return [];
                                             <div className="flex items-start gap-2.5">
                                                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                                                 <p className="leading-relaxed">
-                                                    Describe what your business offers. This information helps the AI create
-                                                    more relevant environments, styling, props, and commercial visuals when generating
-                                                    images. It is used strictly as background context and will not be printed as text in the image.
+                                                    Describe what your business
+                                                    offers. This information
+                                                    helps the AI create more
+                                                    relevant environments,
+                                                    styling, props, and
+                                                    commercial visuals when
+                                                    generating images. It is
+                                                    used strictly as background
+                                                    context and will not be
+                                                    printed as text in the
+                                                    image.
                                                 </p>
                                             </div>
                                         </div>
@@ -571,7 +636,9 @@ return [];
 
                                     <Button
                                         type="submit"
-                                        disabled={isSubmitting || !hasUnsavedChanges}
+                                        disabled={
+                                            isSubmitting || !hasUnsavedChanges
+                                        }
                                         className="min-w-36 gap-2 rounded-xl px-6 text-xs font-bold shadow-xs"
                                     >
                                         {isSubmitting ? (
@@ -602,7 +669,8 @@ return [];
                                                 Live Context Summary
                                             </h3>
                                             <p className="text-[11px] text-muted-foreground">
-                                                Active values supplied to AI Studio
+                                                Active values supplied to AI
+                                                Studio
                                             </p>
                                         </div>
                                     </div>
@@ -614,7 +682,9 @@ return [];
                                             </p>
                                             <p className="text-sm font-bold text-foreground">
                                                 {formData.name.trim() || (
-                                                    <span className="text-muted-foreground italic">Not specified</span>
+                                                    <span className="text-muted-foreground italic">
+                                                        Not specified
+                                                    </span>
                                                 )}
                                             </p>
                                         </div>
@@ -647,7 +717,10 @@ return [];
                                             </p>
                                             <p className="line-clamp-3 text-xs text-muted-foreground">
                                                 {formData.description.trim() || (
-                                                    <span className="italic">No description added yet.</span>
+                                                    <span className="italic">
+                                                        No description added
+                                                        yet.
+                                                    </span>
                                                 )}
                                             </p>
                                         </div>
@@ -665,7 +738,8 @@ return [];
                                                 Account Overview
                                             </h3>
                                             <p className="text-[11px] text-muted-foreground">
-                                                Authentication & workspace credentials
+                                                Authentication & workspace
+                                                credentials
                                             </p>
                                         </div>
                                     </div>
@@ -677,18 +751,21 @@ return [];
                                             </div>
                                             <div className="space-y-0.5 overflow-hidden">
                                                 <p className="truncate text-sm font-bold text-foreground">
-                                                    {profile.name || 'Account Admin'}
+                                                    {profile.name ||
+                                                        'Account Admin'}
                                                 </p>
                                                 <div className="flex items-center gap-1.5">
                                                     <Badge
                                                         variant="secondary"
                                                         className="text-[10px] font-semibold"
                                                     >
-                                                        {profile.role || 'Workspace Admin'}
+                                                        {profile.role ||
+                                                            'Workspace Admin'}
                                                     </Badge>
                                                     {profile.email_verified && (
                                                         <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                                                            <Check className="h-2.5 w-2.5" /> Verified
+                                                            <Check className="h-2.5 w-2.5" />{' '}
+                                                            Verified
                                                         </span>
                                                     )}
                                                 </div>
@@ -698,7 +775,8 @@ return [];
                                         <div className="space-y-2 border-t border-border/60 pt-3 text-xs text-muted-foreground">
                                             <div className="flex items-center justify-between">
                                                 <span className="flex items-center gap-1.5">
-                                                    <Mail className="h-3.5 w-3.5" /> Email
+                                                    <Mail className="h-3.5 w-3.5" />{' '}
+                                                    Email
                                                 </span>
                                                 <span className="max-w-44 truncate font-medium text-foreground">
                                                     {profile.email}
@@ -708,7 +786,8 @@ return [];
                                             {profile.member_since && (
                                                 <div className="flex items-center justify-between">
                                                     <span className="flex items-center gap-1.5">
-                                                        <Calendar className="h-3.5 w-3.5" /> Member Since
+                                                        <Calendar className="h-3.5 w-3.5" />{' '}
+                                                        Member Since
                                                     </span>
                                                     <span className="font-medium text-foreground">
                                                         {profile.member_since}
@@ -725,7 +804,9 @@ return [];
                                                 className="w-full gap-1.5 rounded-xl border-border bg-background text-xs font-semibold text-muted-foreground shadow-xs hover:bg-muted hover:text-foreground"
                                             >
                                                 <Link href="/settings/profile">
-                                                    <span>Manage Security & Login</span>
+                                                    <span>
+                                                        Manage Security & Login
+                                                    </span>
                                                     <ArrowUpRight className="h-3 w-3" />
                                                 </Link>
                                             </Button>

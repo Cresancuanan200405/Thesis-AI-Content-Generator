@@ -16,7 +16,7 @@ export default function AuthSplitLayout({
                 <div className="absolute inset-0 bg-zinc-900" />
                 <Link
                     href={home()}
-                    className="relative z-20 flex items-center gap-3 text-lg font-bold text-white group"
+                    className="group relative z-20 flex items-center gap-3 text-lg font-bold text-white"
                 >
                     <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-900/90 p-1 shadow-lg ring-1 ring-white/20 transition-transform duration-200 group-hover:scale-105">
                         <AppLogoIcon className="size-full rounded-xl object-contain" />

@@ -98,9 +98,13 @@ export default function DesignsPage({
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-    const [designToRegenerate, setDesignToRegenerate] = useState<any | null>(null);
+    const [designToRegenerate, setDesignToRegenerate] = useState<any | null>(
+        null,
+    );
     const [isRegenerating, setIsRegenerating] = useState(false);
-    const [regeneratingDesign, setRegeneratingDesign] = useState<any | null>(null);
+    const [regeneratingDesign, setRegeneratingDesign] = useState<any | null>(
+        null,
+    );
     const [generationProgress, setGenerationProgress] = useState(15);
     const [rotatingPhraseIndex, setRotatingPhraseIndex] = useState(0);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
@@ -108,8 +112,8 @@ export default function DesignsPage({
             const saved = localStorage.getItem('marketpilot_designs_view_mode');
 
             if (saved === 'grid' || saved === 'list') {
-return saved;
-}
+                return saved;
+            }
         }
 
         return 'grid';
@@ -125,61 +129,67 @@ return saved;
 
     const getEditStudioUrl = (design: any) => {
         if (!design) {
-return '/generator';
-}
+            return '/generator';
+        }
 
         const meta = design.generation_metadata || {};
         const contentStyle = Array.isArray(design.content_style)
             ? design.content_style.join(',')
-            : design.content_style || design.visual_theme || meta.visual_theme || '';
+            : design.content_style ||
+              design.visual_theme ||
+              meta.visual_theme ||
+              '';
         const brandTone = Array.isArray(design.brand_tone)
             ? design.brand_tone.join(',')
             : design.brand_tone || meta.brand_tone || '';
-        const renderStyle = design.render_style || meta.render_style || 'Studio Product Still';
-        const imageModel = meta.model || meta.image_model || design.model || 'gpt-image-2';
+        const renderStyle =
+            design.render_style || meta.render_style || 'Studio Product Still';
+        const imageModel =
+            meta.model || meta.image_model || design.model || 'gpt-image-2';
         const quality = meta.quality || meta.image_quality || 'medium';
         const aspectRatio = design.aspect_ratio || meta.aspect_ratio || '1:1';
-        const includeBusiness = meta.include_business_name !== false ? '1' : '0';
+        const includeBusiness =
+            meta.include_business_name !== false ? '1' : '0';
 
         const params = new URLSearchParams();
 
         if (design.product_name) {
-params.set('product_name', design.product_name);
-}
+            params.set('product_name', design.product_name);
+        }
 
         if (design.product_id) {
-params.set('product_id', String(design.product_id));
-}
+            params.set('product_id', String(design.product_id));
+        }
 
         if (design.price) {
-params.set('price', String(design.price));
-}
+            params.set('price', String(design.price));
+        }
 
         if (design.campaign_id) {
-params.set('campaign_id', String(design.campaign_id));
-}
+            params.set('campaign_id', String(design.campaign_id));
+        }
 
         if (design.event_id) {
-params.set('event_id', String(design.event_id));
-}
+            params.set('event_id', String(design.event_id));
+        }
 
         if (design.tagline) {
-params.set('tagline', design.tagline);
-}
+            params.set('tagline', design.tagline);
+        }
 
         if (design.prompt) {
-params.set('prompt', design.prompt);
-}
+            params.set('prompt', design.prompt);
+        }
 
         params.set('aspect_ratio', aspectRatio);
 
         if (contentStyle) {
-params.set('content_style', contentStyle);
-}
+            params.set('content_style', contentStyle);
+        }
 
         if (brandTone) {
-params.set('brand_tone', brandTone);
-}
+            params.set('brand_tone', brandTone);
+        }
 
         params.set('render_style', renderStyle);
         params.set('image_model', imageModel);
@@ -202,7 +212,9 @@ params.set('brand_tone', brandTone);
                     setRegeneratingDesign(null);
                 },
                 onError: () => {
-                    toast.error('Unable to regenerate design. Please try again.');
+                    toast.error(
+                        'Unable to regenerate design. Please try again.',
+                    );
                 },
             },
         );
@@ -796,7 +808,9 @@ params.set('brand_tone', brandTone);
                         PAGE HEADER & CREATE ACTION
                     ====================================================== */}
 
-                    <div className={`flex flex-col gap-3 border-b border-border/60 pb-3 sm:flex-row sm:items-center sm:justify-between ${isRegenerating ? 'hidden' : ''}`}>
+                    <div
+                        className={`flex flex-col gap-3 border-b border-border/60 pb-3 sm:flex-row sm:items-center sm:justify-between ${isRegenerating ? 'hidden' : ''}`}
+                    >
                         <div className="flex items-center gap-2.5">
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                                 <ImageIcon className="h-4 w-4" />
@@ -832,7 +846,9 @@ params.set('brand_tone', brandTone);
                         STICKY FILTER TOOLBAR (SYSTEM DESIGN COMPATIBLE)
                     ====================================================== */}
 
-                    <div className={`sticky top-11 z-30 mb-6 rounded-2xl border border-white/25 bg-card/95 p-3 shadow-md backdrop-blur-xl transition-all sm:top-12 dark:border-white/10 dark:bg-card/95 ${isRegenerating ? 'hidden' : ''}`}>
+                    <div
+                        className={`sticky top-11 z-30 mb-6 rounded-2xl border border-white/25 bg-card/95 p-3 shadow-md backdrop-blur-xl transition-all sm:top-12 dark:border-white/10 dark:bg-card/95 ${isRegenerating ? 'hidden' : ''}`}
+                    >
                         <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
                             {/* Search */}
                             <div className="relative min-w-0 flex-1">
@@ -1206,7 +1222,7 @@ params.set('brand_tone', brandTone);
                                             type="button"
                                             variant="outline"
                                             size="sm"
-                                            className="ml-auto h-8 w-8 rounded-xl p-0 shadow-none text-muted-foreground hover:text-foreground"
+                                            className="ml-auto h-8 w-8 rounded-xl p-0 text-muted-foreground shadow-none hover:text-foreground"
                                             title={`Current view: ${
                                                 viewMode === 'grid'
                                                     ? 'Grid'
@@ -1552,12 +1568,15 @@ params.set('brand_tone', brandTone);
                                                                         ) => {
                                                                             e.preventDefault();
                                                                             e.stopPropagation();
-                                                                            setDesignToRegenerate(design);
+                                                                            setDesignToRegenerate(
+                                                                                design,
+                                                                            );
                                                                         }}
                                                                         className="cursor-pointer gap-2 text-xs font-medium text-primary hover:text-primary"
                                                                     >
                                                                         <RefreshCw className="h-3.5 w-3.5" />
-                                                                        Regenerate Design
+                                                                        Regenerate
+                                                                        Design
                                                                     </DropdownMenuItem>
 
                                                                     <DropdownMenuItem
@@ -1566,12 +1585,18 @@ params.set('brand_tone', brandTone);
                                                                         ) => {
                                                                             e.preventDefault();
                                                                             e.stopPropagation();
-                                                                            router.visit(getEditStudioUrl(design));
+                                                                            router.visit(
+                                                                                getEditStudioUrl(
+                                                                                    design,
+                                                                                ),
+                                                                            );
                                                                         }}
                                                                         className="cursor-pointer gap-2 text-xs font-medium"
                                                                     >
                                                                         <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
-                                                                        Edit in AI Studio
+                                                                        Edit in
+                                                                        AI
+                                                                        Studio
                                                                     </DropdownMenuItem>
 
                                                                     {!design.campaign_id &&
@@ -1851,12 +1876,15 @@ params.set('brand_tone', brandTone);
                                                                 ) => {
                                                                     e.preventDefault();
                                                                     e.stopPropagation();
-                                                                    setDesignToRegenerate(design);
+                                                                    setDesignToRegenerate(
+                                                                        design,
+                                                                    );
                                                                 }}
                                                                 className="cursor-pointer gap-2 text-xs font-medium text-primary hover:text-primary"
                                                             >
                                                                 <RefreshCw className="h-3.5 w-3.5" />{' '}
-                                                                Regenerate Design
+                                                                Regenerate
+                                                                Design
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 onClick={(
@@ -1864,12 +1892,17 @@ params.set('brand_tone', brandTone);
                                                                 ) => {
                                                                     e.preventDefault();
                                                                     e.stopPropagation();
-                                                                    router.visit(getEditStudioUrl(design));
+                                                                    router.visit(
+                                                                        getEditStudioUrl(
+                                                                            design,
+                                                                        ),
+                                                                    );
                                                                 }}
                                                                 className="cursor-pointer gap-2 text-xs font-medium"
                                                             >
                                                                 <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />{' '}
-                                                                Edit in AI Studio
+                                                                Edit in AI
+                                                                Studio
                                                             </DropdownMenuItem>
                                                             {!design.campaign_id &&
                                                                 design.event_id && (
@@ -2308,7 +2341,9 @@ params.set('brand_tone', brandTone);
                                         disabled={isRegenerating}
                                         className="h-9 cursor-pointer gap-2 border-primary/30 text-xs font-bold text-primary hover:bg-primary/10"
                                     >
-                                        <RefreshCw className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`} />
+                                        <RefreshCw
+                                            className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`}
+                                        />
                                         Regenerate
                                     </Button>
 
@@ -2317,7 +2352,11 @@ params.set('brand_tone', brandTone);
                                         size="sm"
                                         className="h-9 cursor-pointer gap-2 bg-primary px-4 text-xs font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:scale-105 hover:bg-primary/90"
                                     >
-                                        <Link href={getEditStudioUrl(previewDesign)}>
+                                        <Link
+                                            href={getEditStudioUrl(
+                                                previewDesign,
+                                            )}
+                                        >
                                             <Sparkles className="h-4 w-4" />
                                             Edit in AI Studio
                                         </Link>
@@ -2396,7 +2435,8 @@ params.set('brand_tone', brandTone);
                                                 if (!list.length) {
                                                     return (
                                                         <span className="text-xs text-muted-foreground">
-                                                            Product-focused (Auto)
+                                                            Product-focused
+                                                            (Auto)
                                                         </span>
                                                     );
                                                 }
@@ -2513,7 +2553,7 @@ params.set('brand_tone', brandTone);
                                                 'gpt-image-1'}
                                         </p>
                                         <span
-                                            className={`rounded border px-1.5 py-0.2 text-[9px] font-bold uppercase ${
+                                            className={`py-0.2 rounded border px-1.5 text-[9px] font-bold uppercase ${
                                                 (previewDesign
                                                     .generation_metadata
                                                     ?.quality || 'medium') ===
@@ -2522,7 +2562,7 @@ params.set('brand_tone', brandTone);
                                                     : (previewDesign
                                                             .generation_metadata
                                                             ?.quality ||
-                                                          'medium') === 'low'
+                                                            'medium') === 'low'
                                                       ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
                                                       : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                                             }`}
@@ -2861,8 +2901,8 @@ params.set('brand_tone', brandTone);
                 open={Boolean(designToRegenerate)}
                 onOpenChange={(open) => {
                     if (!open) {
-setDesignToRegenerate(null);
-}
+                        setDesignToRegenerate(null);
+                    }
                 }}
             >
                 <DialogContent className="rounded-3xl sm:max-w-md">
@@ -2871,7 +2911,10 @@ setDesignToRegenerate(null);
                             Regenerate Design?
                         </DialogTitle>
                         <DialogDescription className="text-xs leading-relaxed">
-                            This will create a new creative variation of "{designToRegenerate?.product_name || 'this design'}" restoring your exact product, scene prompt, brand styling, pricing, and campaign settings.
+                            This will create a new creative variation of "
+                            {designToRegenerate?.product_name || 'this design'}"
+                            restoring your exact product, scene prompt, brand
+                            styling, pricing, and campaign settings.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -2894,8 +2937,12 @@ setDesignToRegenerate(null);
                             disabled={isRegenerating}
                             className="gap-2"
                         >
-                            <RefreshCw className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`} />
-                            {isRegenerating ? 'Regenerating...' : 'Yes, Regenerate'}
+                            <RefreshCw
+                                className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`}
+                            />
+                            {isRegenerating
+                                ? 'Regenerating...'
+                                : 'Yes, Regenerate'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -2903,7 +2950,7 @@ setDesignToRegenerate(null);
 
             {isRegenerating && regeneratingDesign && (
                 <div
-                    className={`fixed top-11 right-0 bottom-0 left-0 z-20 flex items-center justify-center overflow-hidden bg-background/80 p-4 backdrop-blur-2xl sm:top-12 sm:p-6 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 ${sidebarState === 'collapsed' ? 'md:left-[var(--sidebar-width-icon)]' : 'md:left-[var(--sidebar-width)]'}`}
+                    className={`fixed top-11 right-0 bottom-0 left-0 z-20 flex items-center justify-center overflow-hidden bg-background/80 p-4 backdrop-blur-2xl motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in sm:top-12 sm:p-6 ${sidebarState === 'collapsed' ? 'md:left-[var(--sidebar-width-icon)]' : 'md:left-[var(--sidebar-width)]'}`}
                     role="status"
                     aria-live="polite"
                     aria-label="Regenerating visual creative"
@@ -2927,14 +2974,15 @@ setDesignToRegenerate(null);
                             <p className="max-w-sm truncate text-xs font-medium text-muted-foreground sm:text-sm">
                                 for{' '}
                                 <span className="font-semibold text-foreground/90">
-                                    {regeneratingDesign.product_name || 'your design'}
+                                    {regeneratingDesign.product_name ||
+                                        'your design'}
                                 </span>
                             </p>
                         </div>
 
                         <div className="relative flex w-full items-center justify-center py-2 sm:py-3">
                             <div className="pointer-events-none absolute h-28 w-28 rounded-full bg-primary/20 blur-2xl motion-safe:animate-pulse motion-reduce:hidden" />
-                            <div className="relative flex h-28 w-28 items-center justify-center rounded-3xl border border-primary/25 bg-gradient-to-b from-primary/15 via-primary/5 to-muted/40 shadow-xl shadow-primary/10 ring-1 ring-primary/20 backdrop-blur-xl sm:h-32 sm:w-32">
+                            <div className="relative flex h-28 w-28 items-center justify-center rounded-3xl border border-primary/25 bg-gradient-to-b from-primary/15 via-primary/5 to-muted/40 shadow-xl ring-1 shadow-primary/10 ring-primary/20 backdrop-blur-xl sm:h-32 sm:w-32">
                                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-xs ring-1 ring-primary/25">
                                     <Sparkles className="h-7 w-7 text-primary motion-safe:animate-pulse" />
                                 </div>
@@ -2945,7 +2993,11 @@ setDesignToRegenerate(null);
                             <div className="flex items-center justify-center gap-1.5 text-center">
                                 <Sparkles className="h-3.5 w-3.5 text-primary motion-safe:animate-pulse motion-reduce:hidden" />
                                 <p className="text-xs font-semibold text-foreground transition-opacity duration-500 sm:text-sm">
-                                    {regenerationStatusPhrases[rotatingPhraseIndex]}
+                                    {
+                                        regenerationStatusPhrases[
+                                            rotatingPhraseIndex
+                                        ]
+                                    }
                                 </p>
                             </div>
 
@@ -2959,7 +3011,9 @@ setDesignToRegenerate(null);
                                 <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted/80 p-0.5 ring-1 ring-border/50">
                                     <div
                                         className="h-full rounded-full bg-gradient-to-r from-primary via-indigo-500 to-emerald-500 shadow-xs shadow-primary/30 transition-all duration-500 ease-out"
-                                        style={{ width: `${generationProgress}%` }}
+                                        style={{
+                                            width: `${generationProgress}%`,
+                                        }}
                                     />
                                 </div>
                             </div>
@@ -2973,7 +3027,9 @@ setDesignToRegenerate(null);
                                 {regeneratingDesign.event_name && (
                                     <>
                                         {regeneratingDesign.campaign_name && (
-                                            <span className="text-muted-foreground/40">•</span>
+                                            <span className="text-muted-foreground/40">
+                                                •
+                                            </span>
                                         )}
                                         <span className="font-medium text-muted-foreground">
                                             {regeneratingDesign.event_name}

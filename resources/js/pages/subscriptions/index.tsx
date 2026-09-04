@@ -4,14 +4,12 @@ import {
     ArrowUpRight,
     Calendar,
     Check,
-    CheckCircle2,
     Coins,
     Cpu,
     ExternalLink,
     FolderKanban,
     Gauge,
     Hash,
-    HelpCircle,
     Info,
     Layers,
     Mail,
@@ -65,7 +63,8 @@ export default function SubscriptionsIndexPage({
     quota = {},
     profile = {},
 }: SubscriptionsProps) {
-    const { ai_usage } = usePage<{ ai_usage?: OpenAIUsageTelemetry | null }>().props;
+    const { ai_usage } = usePage<{ ai_usage?: OpenAIUsageTelemetry | null }>()
+        .props;
 
     const planName = plan.name || 'Studio Pro Workspace';
     const planStatus = plan.status || 'Active';
@@ -77,49 +76,57 @@ export default function SubscriptionsIndexPage({
         {
             icon: Sparkles,
             title: 'AI Image Generation Engine',
-            description: "Generate high-fidelity marketing visuals using OpenAI-powered image synthesis tailored for commercial creatives.",
+            description:
+                'Generate high-fidelity marketing visuals using OpenAI-powered image synthesis tailored for commercial creatives.',
             tag: 'Core Engine',
         },
         {
             icon: Package,
             title: 'Product Preservation & Staging',
-            description: 'Catalog products, upload reference shots, and seamlessly composite catalog items into photorealistic commercial scenes.',
+            description:
+                'Catalog products, upload reference shots, and seamlessly composite catalog items into photorealistic commercial scenes.',
             tag: 'Catalog Staging',
         },
         {
             icon: Calendar,
             title: 'Philippine Holiday & Event Context',
-            description: 'Real-time spatial calendar with curated Philippine national holidays, cultural festivals, and seasonal marketing prompts.',
+            description:
+                'Real-time spatial calendar with curated Philippine national holidays, cultural festivals, and seasonal marketing prompts.',
             tag: 'Context Aware',
         },
         {
             icon: Layers,
             title: '13 Industry Visual Profiles',
-            description: 'Domain-tailored prompt engineering across retail, food & beverage, beauty, tech, healthcare, hospitality, and more.',
+            description:
+                'Domain-tailored prompt engineering across retail, food & beverage, beauty, tech, healthcare, hospitality, and more.',
             tag: 'Art Direction',
         },
         {
             icon: Type,
             title: 'Smart Tagline Normalization',
-            description: 'Automated headline styling, typographical layout rules, and visual overlay compositing for ready-to-publish creatives.',
+            description:
+                'Automated headline styling, typographical layout rules, and visual overlay compositing for ready-to-publish creatives.',
             tag: 'Compositor',
         },
         {
             icon: Maximize2,
             title: 'Multi-Aspect Ratio Synthesis',
-            description: 'Direct generation across 5 standard digital marketing formats: Square (1:1), Story (9:16), Landscape (16:9), Portrait (4:5), and Standard (4:3).',
+            description:
+                'Direct generation across 5 standard digital marketing formats: Square (1:1), Story (9:16), Landscape (16:9), Portrait (4:5), and Standard (4:3).',
             tag: 'Multi-Format',
         },
         {
             icon: FolderKanban,
             title: 'Campaign & Design Management',
-            description: 'Organize assets into multi-channel marketing campaigns, save unlimited designs, and trigger infinite variation regenerations.',
+            description:
+                'Organize assets into multi-channel marketing campaigns, save unlimited designs, and trigger infinite variation regenerations.',
             tag: 'Workflow',
         },
         {
             icon: Activity,
             title: 'Live OpenAI Telemetry & Budgeting',
-            description: 'Monitor organization-level OpenAI API spend, token counts, request rates, and remaining budget headroom in real-time.',
+            description:
+                'Monitor organization-level OpenAI API spend, token counts, request rates, and remaining budget headroom in real-time.',
             tag: 'Telemetry',
         },
     ];
@@ -128,31 +135,36 @@ export default function SubscriptionsIndexPage({
         {
             name: 'AI Image Generation Studio',
             status: 'Available',
-            description: 'Full access to prompt composer, spatial layout, and synthesis engine',
+            description:
+                'Full access to prompt composer, spatial layout, and synthesis engine',
             included: true,
         },
         {
             name: 'Product Catalog Asset Staging',
             status: 'Available',
-            description: 'Product preservation and realistic background staging',
+            description:
+                'Product preservation and realistic background staging',
             included: true,
         },
         {
             name: 'Marketing Campaign Manager',
             status: 'Available',
-            description: 'Create multi-creative campaigns with design versioning',
+            description:
+                'Create multi-creative campaigns with design versioning',
             included: true,
         },
         {
             name: 'Philippine Event & Holiday Library',
             status: 'Available',
-            description: 'Full calendar of national holidays and cultural events',
+            description:
+                'Full calendar of national holidays and cultural events',
             included: true,
         },
         {
             name: 'Multi-Format Export (5 Ratios)',
             status: 'Available',
-            description: '1:1, 9:16, 16:9, 4:5, and 4:3 high-resolution formats',
+            description:
+                '1:1, 9:16, 16:9, 4:5, and 4:3 high-resolution formats',
             included: true,
         },
         {
@@ -174,22 +186,30 @@ export default function SubscriptionsIndexPage({
         `$${(quota.application_configured_limit ?? ai_usage?.budget_limit ?? 10.0).toFixed(2)}`;
     const remainingLimit =
         ai_usage?.remaining_app_limit_formatted ||
-        (ai_usage?.remaining_budget !== undefined && ai_usage?.remaining_budget !== null
+        (ai_usage?.remaining_budget !== undefined &&
+        ai_usage?.remaining_budget !== null
             ? `$${Number(ai_usage.remaining_budget).toFixed(2)}`
             : configuredLimit);
     const inputTokens =
         ai_usage?.input_tokens_formatted ||
-        (ai_usage?.input_tokens ? Number(ai_usage.input_tokens).toLocaleString() : '0');
+        (ai_usage?.input_tokens
+            ? Number(ai_usage.input_tokens).toLocaleString()
+            : '0');
     const totalRequests =
         ai_usage?.total_requests_formatted ||
-        (ai_usage?.total_requests ? Number(ai_usage.total_requests).toLocaleString() : '0');
+        (ai_usage?.total_requests
+            ? Number(ai_usage.total_requests).toLocaleString()
+            : '0');
     const creditBalance = ai_usage?.api_credit_balance_formatted || '—';
     const creditStatus = ai_usage?.credit_balance_status || 'unavailable';
     const creditMessage =
         ai_usage?.credit_balance_message || 'Unavailable through API';
     const budgetPercent = Math.min(
         100,
-        Math.max(0, ai_usage?.budget_percentage ?? ai_usage?.percentage_used ?? 0),
+        Math.max(
+            0,
+            ai_usage?.budget_percentage ?? ai_usage?.percentage_used ?? 0,
+        ),
     );
 
     const scrollToTelemetryOrOpen = () => {
@@ -227,8 +247,9 @@ export default function SubscriptionsIndexPage({
                                 Workspace Plan
                             </Badge>
                         </div>
-                        <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl">
-                            Manage your application plan and view the features and access available to your account.
+                        <p className="max-w-2xl text-xs text-muted-foreground sm:text-sm">
+                            Manage your application plan and view the features
+                            and access available to your account.
                         </p>
                     </div>
 
@@ -237,7 +258,7 @@ export default function SubscriptionsIndexPage({
                     ========================================================== */}
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                            <span className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
                                 Current Plan
                             </span>
                             <span className="text-[11px] text-muted-foreground">
@@ -245,52 +266,56 @@ export default function SubscriptionsIndexPage({
                             </span>
                         </div>
 
-                        <Card className="relative overflow-hidden rounded-3xl border border-border/80 bg-gradient-to-br from-card via-card to-primary/[0.03] p-6 sm:p-8 shadow-xs transition-all">
+                        <Card className="relative overflow-hidden rounded-3xl border border-border/80 bg-gradient-to-br from-card via-card to-primary/[0.03] p-6 shadow-xs transition-all sm:p-8">
                             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-                                <div className="space-y-3 max-w-2xl">
+                                <div className="max-w-2xl space-y-3">
                                     <div className="flex flex-wrap items-center gap-2.5">
-                                        <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+                                        <h2 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
                                             {planName}
                                         </h2>
                                         <Badge
                                             variant="outline"
                                             className="flex items-center gap-1.5 rounded-full border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400"
                                         >
-                                            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
                                             {planStatus}
                                         </Badge>
                                     </div>
 
-                                    <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                    <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
                                         {planDescription}
                                     </p>
 
                                     {profile.email && (
-                                        <div className="flex flex-wrap items-center gap-y-1 gap-x-3 pt-2 text-[11px] text-muted-foreground">
+                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-2 text-[11px] text-muted-foreground">
                                             <div className="flex items-center gap-1.5 font-medium text-foreground">
                                                 <Shield className="h-3.5 w-3.5 text-primary" />
                                                 <span>Workspace Owner:</span>
-                                                <span className="font-mono text-muted-foreground">{profile.email}</span>
+                                                <span className="font-mono text-muted-foreground">
+                                                    {profile.email}
+                                                </span>
                                             </div>
                                             {profile.member_since && (
                                                 <div className="flex items-center gap-1">
                                                     <span>• Member since</span>
-                                                    <span className="font-medium text-foreground">{profile.member_since}</span>
+                                                    <span className="font-medium text-foreground">
+                                                        {profile.member_since}
+                                                    </span>
                                                 </div>
                                             )}
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between gap-4 border-t border-border/60 pt-4 lg:border-t-0 lg:pt-0">
+                                <div className="flex flex-row items-center justify-between gap-4 border-t border-border/60 pt-4 lg:flex-col lg:items-end lg:border-t-0 lg:pt-0">
                                     <div className="rounded-2xl border border-border/70 bg-muted/30 px-4 py-3 text-left lg:text-right">
-                                        <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                        <div className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
                                             Workspace Tier
                                         </div>
                                         <div className="text-sm font-bold text-foreground">
                                             Full Capabilities
                                         </div>
-                                        <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                                        <div className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
                                             All 8 Modules Active
                                         </div>
                                     </div>
@@ -306,7 +331,7 @@ export default function SubscriptionsIndexPage({
                         {/* Plan Features (7 cols) */}
                         <div className="space-y-4 lg:col-span-7">
                             <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                                <span className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
                                     Plan Features
                                 </span>
                                 <span className="text-[11px] text-muted-foreground">
@@ -314,9 +339,10 @@ export default function SubscriptionsIndexPage({
                                 </span>
                             </div>
 
-                            <Card className="rounded-3xl border-border/80 bg-card p-6 shadow-xs space-y-4">
+                            <Card className="space-y-4 rounded-3xl border-border/80 bg-card p-6 shadow-xs">
                                 <p className="text-xs text-muted-foreground">
-                                    The following verified features are fully active and included in your workspace plan:
+                                    The following verified features are fully
+                                    active and included in your workspace plan:
                                 </p>
 
                                 <div className="grid gap-3 sm:grid-cols-2">
@@ -330,7 +356,7 @@ export default function SubscriptionsIndexPage({
                                             >
                                                 <div className="space-y-2">
                                                     <div className="flex items-center justify-between">
-                                                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+                                                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
                                                             <Icon className="h-4 w-4" />
                                                         </div>
                                                         {feature.tag && (
@@ -344,14 +370,16 @@ export default function SubscriptionsIndexPage({
                                                         {feature.title}
                                                     </h4>
 
-                                                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                                    <p className="text-[11px] leading-relaxed text-muted-foreground">
                                                         {feature.description}
                                                     </p>
                                                 </div>
 
-                                                <div className="mt-3 flex items-center gap-1.5 pt-2 border-t border-border/30 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                                                <div className="mt-3 flex items-center gap-1.5 border-t border-border/30 pt-2 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
                                                     <Check className="h-3 w-3 stroke-[3]" />
-                                                    <span>Included in plan</span>
+                                                    <span>
+                                                        Included in plan
+                                                    </span>
                                                 </div>
                                             </div>
                                         );
@@ -363,7 +391,7 @@ export default function SubscriptionsIndexPage({
                         {/* Access & Capabilities (5 cols) */}
                         <div className="space-y-4 lg:col-span-5">
                             <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                                <span className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
                                     Access & Capabilities
                                 </span>
                                 <span className="text-[11px] text-muted-foreground">
@@ -371,9 +399,10 @@ export default function SubscriptionsIndexPage({
                                 </span>
                             </div>
 
-                            <Card className="rounded-3xl border-border/80 bg-card p-6 shadow-xs space-y-4">
+                            <Card className="space-y-4 rounded-3xl border-border/80 bg-card p-6 shadow-xs">
                                 <p className="text-xs text-muted-foreground">
-                                    System permission and capability status across your workspace modules:
+                                    System permission and capability status
+                                    across your workspace modules:
                                 </p>
 
                                 <div className="space-y-2.5">
@@ -393,7 +422,7 @@ export default function SubscriptionsIndexPage({
 
                                             <Badge
                                                 variant="outline"
-                                                className="shrink-0 flex items-center gap-1 rounded-full border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"
+                                                className="flex shrink-0 items-center gap-1 rounded-full border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"
                                             >
                                                 <Check className="h-3 w-3 stroke-[3]" />
                                                 {cap.status}
@@ -402,13 +431,15 @@ export default function SubscriptionsIndexPage({
                                     ))}
                                 </div>
 
-                                <div className="rounded-2xl border border-border/60 bg-muted/25 p-4 text-[11px] text-muted-foreground space-y-1.5">
+                                <div className="space-y-1.5 rounded-2xl border border-border/60 bg-muted/25 p-4 text-[11px] text-muted-foreground">
                                     <div className="flex items-center gap-1.5 font-bold text-foreground">
                                         <ShieldCheck className="h-4 w-4 text-primary" />
                                         <span>Full Account Provisioning</span>
                                     </div>
                                     <p className="leading-relaxed">
-                                        All features and marketing studio tools are provisioned without restrictions for your account.
+                                        All features and marketing studio tools
+                                        are provisioned without restrictions for
+                                        your account.
                                     </p>
                                 </div>
                             </Card>
@@ -421,7 +452,7 @@ export default function SubscriptionsIndexPage({
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                                <span className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
                                     Usage & Limits
                                 </span>
                                 <Badge
@@ -436,14 +467,16 @@ export default function SubscriptionsIndexPage({
                             </span>
                         </div>
 
-                        <Card className="rounded-3xl border-border/80 bg-card p-6 sm:p-8 shadow-xs space-y-6">
-                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/60 pb-5">
+                        <Card className="space-y-6 rounded-3xl border-border/80 bg-card p-6 shadow-xs sm:p-8">
+                            <div className="flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <h3 className="text-base font-bold text-foreground">
                                         OpenAI Infrastructure Usage Overview
                                     </h3>
                                     <p className="text-xs text-muted-foreground">
-                                        Organization-level API consumption measured against the Application Configured Limit.
+                                        Organization-level API consumption
+                                        measured against the Application
+                                        Configured Limit.
                                     </p>
                                 </div>
 
@@ -452,7 +485,7 @@ export default function SubscriptionsIndexPage({
                                     variant="outline"
                                     size="sm"
                                     onClick={scrollToTelemetryOrOpen}
-                                    className="h-9 gap-1.5 rounded-xl border-border text-xs font-semibold shadow-xs hover:border-primary/40 hover:text-primary transition-all"
+                                    className="h-9 gap-1.5 rounded-xl border-border text-xs font-semibold shadow-xs transition-all hover:border-primary/40 hover:text-primary"
                                 >
                                     <Activity className="h-3.5 w-3.5 text-primary" />
                                     <span>View OpenAI Usage & Billing</span>
@@ -463,9 +496,9 @@ export default function SubscriptionsIndexPage({
                             {/* Key Telemetry Metric Grid */}
                             <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-5">
                                 {/* OpenAI API Spend */}
-                                <div className="rounded-2xl border border-border/70 bg-muted/20 p-4 space-y-1.5 transition-all hover:bg-muted/30">
+                                <div className="space-y-1.5 rounded-2xl border border-border/70 bg-muted/20 p-4 transition-all hover:bg-muted/30">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                        <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
                                             OpenAI API Spend
                                         </span>
                                         <Coins className="h-3.5 w-3.5 text-primary/80" />
@@ -479,9 +512,9 @@ export default function SubscriptionsIndexPage({
                                 </div>
 
                                 {/* Application Configured Limit */}
-                                <div className="rounded-2xl border border-border/70 bg-muted/20 p-4 space-y-1.5 transition-all hover:bg-muted/30">
+                                <div className="space-y-1.5 rounded-2xl border border-border/70 bg-muted/20 p-4 transition-all hover:bg-muted/30">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                        <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
                                             App Configured Limit
                                         </span>
                                         <Gauge className="h-3.5 w-3.5 text-muted-foreground" />
@@ -495,9 +528,9 @@ export default function SubscriptionsIndexPage({
                                 </div>
 
                                 {/* Remaining App Limit */}
-                                <div className="rounded-2xl border border-border/70 bg-muted/20 p-4 space-y-1.5 transition-all hover:bg-muted/30">
+                                <div className="space-y-1.5 rounded-2xl border border-border/70 bg-muted/20 p-4 transition-all hover:bg-muted/30">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                        <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
                                             Remaining App Limit
                                         </span>
                                         <Zap className="h-3.5 w-3.5 text-emerald-500" />
@@ -511,9 +544,9 @@ export default function SubscriptionsIndexPage({
                                 </div>
 
                                 {/* Input Tokens */}
-                                <div className="rounded-2xl border border-border/70 bg-muted/20 p-4 space-y-1.5 transition-all hover:bg-muted/30">
+                                <div className="space-y-1.5 rounded-2xl border border-border/70 bg-muted/20 p-4 transition-all hover:bg-muted/30">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                        <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
                                             Input Tokens
                                         </span>
                                         <Cpu className="h-3.5 w-3.5 text-muted-foreground" />
@@ -527,9 +560,9 @@ export default function SubscriptionsIndexPage({
                                 </div>
 
                                 {/* Total Requests */}
-                                <div className="rounded-2xl border border-border/70 bg-muted/20 p-4 space-y-1.5 transition-all hover:bg-muted/30">
+                                <div className="space-y-1.5 rounded-2xl border border-border/70 bg-muted/20 p-4 transition-all hover:bg-muted/30">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                        <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
                                             Total Requests
                                         </span>
                                         <Hash className="h-3.5 w-3.5 text-muted-foreground" />
@@ -550,7 +583,8 @@ export default function SubscriptionsIndexPage({
                                         Application Limit Consumption:
                                     </span>
                                     <span className="font-bold text-foreground">
-                                        {budgetPercent.toFixed(1)}% ({totalSpent} of {configuredLimit})
+                                        {budgetPercent.toFixed(1)}% (
+                                        {totalSpent} of {configuredLimit})
                                     </span>
                                 </div>
                                 <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted/60">
@@ -568,7 +602,7 @@ export default function SubscriptionsIndexPage({
                     ========================================================== */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                            <span className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
                                 OpenAI API Credit Balance
                             </span>
                             <span className="text-[11px] text-muted-foreground">
@@ -576,9 +610,9 @@ export default function SubscriptionsIndexPage({
                             </span>
                         </div>
 
-                        <Card className="rounded-3xl border-border/80 bg-card p-6 sm:p-7 shadow-xs">
+                        <Card className="rounded-3xl border-border/80 bg-card p-6 shadow-xs sm:p-7">
                             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="space-y-1.5 max-w-xl">
+                                <div className="max-w-xl space-y-1.5">
                                     <div className="flex items-center gap-2">
                                         <h3 className="text-sm font-bold text-foreground">
                                             OpenAI Organization Prepaid Balance
@@ -591,17 +625,22 @@ export default function SubscriptionsIndexPage({
                                                     : 'border-muted-foreground/30 bg-muted/50 text-[10px] font-medium text-muted-foreground'
                                             }
                                         >
-                                            {creditStatus === 'live' ? 'Live Balance' : 'Unavailable through API'}
+                                            {creditStatus === 'live'
+                                                ? 'Live Balance'
+                                                : 'Unavailable through API'}
                                         </Badge>
                                     </div>
-                                    <p className="text-xs text-muted-foreground leading-relaxed">
-                                        Independent prepaid grant balance reported by OpenAI. This balance is separate from the application soft limit.
+                                    <p className="text-xs leading-relaxed text-muted-foreground">
+                                        Independent prepaid grant balance
+                                        reported by OpenAI. This balance is
+                                        separate from the application soft
+                                        limit.
                                     </p>
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-4">
                                     <div className="text-right">
-                                        <div className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+                                        <div className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">
                                             {creditBalance}
                                         </div>
                                         <div className="text-[11px] text-muted-foreground">
@@ -613,14 +652,16 @@ export default function SubscriptionsIndexPage({
                                         asChild
                                         variant="outline"
                                         size="sm"
-                                        className="h-9 gap-1.5 rounded-xl border-border bg-background text-xs font-semibold shadow-xs hover:border-primary/40 hover:text-primary transition-all shrink-0"
+                                        className="h-9 shrink-0 gap-1.5 rounded-xl border-border bg-background text-xs font-semibold shadow-xs transition-all hover:border-primary/40 hover:text-primary"
                                     >
                                         <a
                                             href="https://platform.openai.com/settings/organization/billing/overview"
                                             target="_blank"
                                             rel="noopener noreferrer"
                                         >
-                                            <span>View OpenAI Billing Dashboard</span>
+                                            <span>
+                                                View OpenAI Billing Dashboard
+                                            </span>
                                             <ExternalLink className="h-3 w-3 text-muted-foreground" />
                                         </a>
                                     </Button>
@@ -638,18 +679,32 @@ export default function SubscriptionsIndexPage({
                                 <Info className="h-4.5 w-4.5" />
                             </div>
                             <div className="space-y-2">
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                                <h3 className="text-xs font-bold tracking-wider text-foreground uppercase">
                                     Important Architecture Information
                                 </h3>
-                                <div className="space-y-1.5 text-xs text-muted-foreground leading-relaxed">
+                                <div className="space-y-1.5 text-xs leading-relaxed text-muted-foreground">
                                     <p>
-                                        Your application subscription determines your access to system features and capabilities.
+                                        Your application subscription determines
+                                        your access to system features and
+                                        capabilities.
                                     </p>
                                     <p>
-                                        OpenAI API usage is organization-level infrastructure usage and is tracked separately from your application subscription.
+                                        OpenAI API usage is organization-level
+                                        infrastructure usage and is tracked
+                                        separately from your application
+                                        subscription.
                                     </p>
                                     <p>
-                                        The <strong className="text-foreground">Application Configured Limit</strong> is an application-level threshold and is not the same as your <strong className="text-foreground">OpenAI API credit balance</strong>.
+                                        The{' '}
+                                        <strong className="text-foreground">
+                                            Application Configured Limit
+                                        </strong>{' '}
+                                        is an application-level threshold and is
+                                        not the same as your{' '}
+                                        <strong className="text-foreground">
+                                            OpenAI API credit balance
+                                        </strong>
+                                        .
                                     </p>
                                 </div>
                             </div>
@@ -661,12 +716,15 @@ export default function SubscriptionsIndexPage({
                     ========================================================== */}
                     <Card className="rounded-3xl border border-border/70 bg-card p-6 shadow-xs">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="space-y-1 max-w-xl">
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                            <div className="max-w-xl space-y-1">
+                                <h3 className="text-xs font-bold tracking-wider text-foreground uppercase">
                                     Need Higher Volume or Custom Quota?
                                 </h3>
-                                <p className="text-xs text-muted-foreground leading-relaxed">
-                                    For higher generation volume, custom dedicated rate limits, or additional marketing workflows, reach out to your workspace administrator.
+                                <p className="text-xs leading-relaxed text-muted-foreground">
+                                    For higher generation volume, custom
+                                    dedicated rate limits, or additional
+                                    marketing workflows, reach out to your
+                                    workspace administrator.
                                 </p>
                             </div>
 
@@ -674,7 +732,7 @@ export default function SubscriptionsIndexPage({
                                 asChild
                                 variant="outline"
                                 size="sm"
-                                className="h-9 gap-1.5 rounded-xl border-border bg-background text-xs font-semibold shadow-xs hover:border-primary/40 hover:text-primary transition-all shrink-0"
+                                className="h-9 shrink-0 gap-1.5 rounded-xl border-border bg-background text-xs font-semibold shadow-xs transition-all hover:border-primary/40 hover:text-primary"
                             >
                                 <a href="mailto:support@marketpilot.ai?subject=Application%20Quota%20Inquiry">
                                     <Mail className="h-3.5 w-3.5 text-primary" />

@@ -1,14 +1,5 @@
 import { Form, Head, Link, usePage } from '@inertiajs/react';
-import {
-    CheckCircle2,
-    Laptop,
-    Mail,
-    Monitor,
-    Moon,
-    ShieldAlert,
-    Sun,
-    User as UserIcon,
-} from 'lucide-react';
+import { CheckCircle2, Monitor, Moon, Sun } from 'lucide-react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/delete-user';
 import InputError from '@/components/input-error';
@@ -57,7 +48,8 @@ export default function ProfileAndPreferencesSettings({
                                     Personal Information
                                 </CardTitle>
                                 <p className="text-xs text-muted-foreground">
-                                    Update your personal name and primary account contact email.
+                                    Update your personal name and primary
+                                    account contact email.
                                 </p>
                             </div>
                             <Badge
@@ -136,26 +128,32 @@ export default function ProfileAndPreferencesSettings({
                                         />
                                     </div>
 
-                                    {mustVerifyEmail && user.email_verified_at === null && (
-                                        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs">
-                                            <p className="text-amber-800 dark:text-amber-300">
-                                                Your email address is currently unverified.{' '}
-                                                <Link
-                                                    href={send()}
-                                                    as="button"
-                                                    className="font-bold underline underline-offset-2 hover:text-foreground"
-                                                >
-                                                    Click here to re-send verification link.
-                                                </Link>
-                                            </p>
-
-                                            {status === 'verification-link-sent' && (
-                                                <p className="mt-2 font-medium text-emerald-600 dark:text-emerald-400">
-                                                    A new verification link has been sent to your email address.
+                                    {mustVerifyEmail &&
+                                        user.email_verified_at === null && (
+                                            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs">
+                                                <p className="text-amber-800 dark:text-amber-300">
+                                                    Your email address is
+                                                    currently unverified.{' '}
+                                                    <Link
+                                                        href={send()}
+                                                        as="button"
+                                                        className="font-bold underline underline-offset-2 hover:text-foreground"
+                                                    >
+                                                        Click here to re-send
+                                                        verification link.
+                                                    </Link>
                                                 </p>
-                                            )}
-                                        </div>
-                                    )}
+
+                                                {status ===
+                                                    'verification-link-sent' && (
+                                                    <p className="mt-2 font-medium text-emerald-600 dark:text-emerald-400">
+                                                        A new verification link
+                                                        has been sent to your
+                                                        email address.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
 
                                     <div className="flex justify-end pt-2">
                                         <Button
@@ -164,7 +162,9 @@ export default function ProfileAndPreferencesSettings({
                                             data-test="update-profile-button"
                                             className="h-10 min-w-32 rounded-xl px-5 text-xs font-bold shadow-xs"
                                         >
-                                            {processing ? 'Saving...' : 'Save Profile'}
+                                            {processing
+                                                ? 'Saving...'
+                                                : 'Save Profile'}
                                         </Button>
                                     </div>
                                 </>
@@ -180,7 +180,8 @@ export default function ProfileAndPreferencesSettings({
                             Application Appearance
                         </CardTitle>
                         <p className="text-xs text-muted-foreground">
-                            Choose how the studio interface appears across your browser sessions.
+                            Choose how the studio interface appears across your
+                            browser sessions.
                         </p>
                     </CardHeader>
 
@@ -193,13 +194,17 @@ export default function ProfileAndPreferencesSettings({
                                     'flex flex-col items-center justify-between gap-3 rounded-2xl border p-4 text-center transition-all',
                                     appearance === 'light'
                                         ? 'border-primary bg-primary/5 text-primary shadow-xs ring-2 ring-primary/20'
-                                        : 'border-border/80 bg-card hover:bg-muted text-muted-foreground'
+                                        : 'border-border/80 bg-card text-muted-foreground hover:bg-muted',
                                 )}
                             >
                                 <Sun className="h-6 w-6" />
                                 <div className="space-y-0.5">
-                                    <p className="text-xs font-bold text-foreground">Light Mode</p>
-                                    <p className="text-[11px] text-muted-foreground">Bright, clean theme</p>
+                                    <p className="text-xs font-bold text-foreground">
+                                        Light Mode
+                                    </p>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        Bright, clean theme
+                                    </p>
                                 </div>
                             </button>
 
@@ -210,13 +215,17 @@ export default function ProfileAndPreferencesSettings({
                                     'flex flex-col items-center justify-between gap-3 rounded-2xl border p-4 text-center transition-all',
                                     appearance === 'dark'
                                         ? 'border-primary bg-primary/5 text-primary shadow-xs ring-2 ring-primary/20'
-                                        : 'border-border/80 bg-card hover:bg-muted text-muted-foreground'
+                                        : 'border-border/80 bg-card text-muted-foreground hover:bg-muted',
                                 )}
                             >
                                 <Moon className="h-6 w-6" />
                                 <div className="space-y-0.5">
-                                    <p className="text-xs font-bold text-foreground">Dark Mode</p>
-                                    <p className="text-[11px] text-muted-foreground">Sleek, low-glare theme</p>
+                                    <p className="text-xs font-bold text-foreground">
+                                        Dark Mode
+                                    </p>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        Sleek, low-glare theme
+                                    </p>
                                 </div>
                             </button>
 
@@ -227,13 +236,17 @@ export default function ProfileAndPreferencesSettings({
                                     'flex flex-col items-center justify-between gap-3 rounded-2xl border p-4 text-center transition-all',
                                     appearance === 'system'
                                         ? 'border-primary bg-primary/5 text-primary shadow-xs ring-2 ring-primary/20'
-                                        : 'border-border/80 bg-card hover:bg-muted text-muted-foreground'
+                                        : 'border-border/80 bg-card text-muted-foreground hover:bg-muted',
                                 )}
                             >
                                 <Monitor className="h-6 w-6" />
                                 <div className="space-y-0.5">
-                                    <p className="text-xs font-bold text-foreground">System Match</p>
-                                    <p className="text-[11px] text-muted-foreground">Syncs with OS theme</p>
+                                    <p className="text-xs font-bold text-foreground">
+                                        System Match
+                                    </p>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        Syncs with OS theme
+                                    </p>
                                 </div>
                             </button>
                         </div>

@@ -13,12 +13,18 @@ const SECONDARY_ROUTE_PREFIXES = [
 ];
 
 function isSecondaryRoute(pathname: string): boolean {
-    return SECONDARY_ROUTE_PREFIXES.some((prefix) =>
-        pathname === prefix || pathname.startsWith(`${prefix}/`) || pathname.startsWith(`${prefix}?`)
+    return SECONDARY_ROUTE_PREFIXES.some(
+        (prefix) =>
+            pathname === prefix ||
+            pathname.startsWith(`${prefix}/`) ||
+            pathname.startsWith(`${prefix}?`),
     );
 }
 
-function resolvePrimaryBreadcrumbs(pathname: string, explicitBreadcrumbs?: BreadcrumbItem[]): BreadcrumbItem[] {
+function resolvePrimaryBreadcrumbs(
+    pathname: string,
+    explicitBreadcrumbs?: BreadcrumbItem[],
+): BreadcrumbItem[] {
     if (explicitBreadcrumbs && explicitBreadcrumbs.length > 0) {
         // If explicit breadcrumbs were provided and didn't just hardcode 'Dashboard' on a non-dashboard page
         const isGenericDashboard =
@@ -39,12 +45,14 @@ function resolvePrimaryBreadcrumbs(pathname: string, explicitBreadcrumbs?: Bread
     if (pathname === '/campaigns') {
         return [{ title: 'Campaigns', href: '/campaigns' }];
     }
+
     if (pathname.startsWith('/campaigns/create')) {
         return [
             { title: 'Campaigns', href: '/campaigns' },
             { title: 'New Campaign', href: '/campaigns/create' },
         ];
     }
+
     if (pathname.startsWith('/campaigns/')) {
         return [
             { title: 'Campaigns', href: '/campaigns' },
@@ -55,6 +63,7 @@ function resolvePrimaryBreadcrumbs(pathname: string, explicitBreadcrumbs?: Bread
     if (pathname === '/designs') {
         return [{ title: 'Designs', href: '/designs' }];
     }
+
     if (pathname.startsWith('/designs/')) {
         return [
             { title: 'Designs', href: '/designs' },
@@ -69,12 +78,14 @@ function resolvePrimaryBreadcrumbs(pathname: string, explicitBreadcrumbs?: Bread
     if (pathname === '/products') {
         return [{ title: 'Products', href: '/products' }];
     }
+
     if (pathname.startsWith('/products/create')) {
         return [
             { title: 'Products', href: '/products' },
             { title: 'New Product', href: '/products/create' },
         ];
     }
+
     if (pathname.startsWith('/products/')) {
         return [
             { title: 'Products', href: '/products' },
@@ -85,6 +96,7 @@ function resolvePrimaryBreadcrumbs(pathname: string, explicitBreadcrumbs?: Bread
     if (pathname === '/calendar') {
         return [{ title: 'Calendar', href: '/calendar' }];
     }
+
     if (pathname.startsWith('/events/')) {
         return [
             { title: 'Calendar', href: '/calendar' },
@@ -94,6 +106,7 @@ function resolvePrimaryBreadcrumbs(pathname: string, explicitBreadcrumbs?: Bread
 
     // Default fallback parsing
     const segments = pathname.replace(/^\//, '').split('/');
+
     return segments.map((seg, i) => ({
         title: seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, ' '),
         href: '/' + segments.slice(0, i + 1).join('/'),
@@ -104,12 +117,14 @@ function resolveSecondaryTail(pathname: string): BreadcrumbItem[] {
     if (pathname === '/profile' || pathname === '/profile/my-profile') {
         return [{ title: 'My Profile', href: '/profile' }];
     }
+
     if (pathname === '/profile/show') {
         return [
             { title: 'My Profile', href: '/profile' },
             { title: 'Profile Information', href: '/profile/show' },
         ];
     }
+
     if (pathname === '/profile/business') {
         return [
             { title: 'My Profile', href: '/profile' },
@@ -120,12 +135,14 @@ function resolveSecondaryTail(pathname: string): BreadcrumbItem[] {
     if (pathname === '/settings' || pathname === '/settings/profile') {
         return [{ title: 'Account Settings', href: '/settings/profile' }];
     }
+
     if (pathname === '/settings/security') {
         return [
             { title: 'Account Settings', href: '/settings/profile' },
             { title: 'Security', href: '/settings/security' },
         ];
     }
+
     if (pathname === '/settings/appearance') {
         return [
             { title: 'Account Settings', href: '/settings/profile' },
@@ -142,6 +159,7 @@ function resolveSecondaryTail(pathname: string): BreadcrumbItem[] {
     }
 
     const segments = pathname.replace(/^\//, '').split('/');
+
     return segments.map((seg, i) => ({
         title: seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, ' '),
         href: '/' + segments.slice(0, i + 1).join('/'),
@@ -152,7 +170,9 @@ function resolveSecondaryTail(pathname: string): BreadcrumbItem[] {
  * Hook to resolve contextual breadcrumbs that remember where the user left off
  * when visiting utility/secondary destinations (My Profile, Account Settings, Subscriptions, Notifications).
  */
-export function useNavigationOriginBreadcrumbs(explicitBreadcrumbs?: BreadcrumbItem[]): BreadcrumbItem[] {
+export function useNavigationOriginBreadcrumbs(
+    explicitBreadcrumbs?: BreadcrumbItem[],
+): BreadcrumbItem[] {
     const { url } = usePage();
     const pathname = (url || window.location.pathname || '').split('?')[0];
 
@@ -161,9 +181,16 @@ export function useNavigationOriginBreadcrumbs(explicitBreadcrumbs?: BreadcrumbI
     // Track and persist primary workspace location
     React.useEffect(() => {
         if (!isSecondary && typeof window !== 'undefined') {
-            const primaryChain = resolvePrimaryBreadcrumbs(pathname, explicitBreadcrumbs);
+            const primaryChain = resolvePrimaryBreadcrumbs(
+                pathname,
+                explicitBreadcrumbs,
+            );
+
             try {
-                sessionStorage.setItem(STORAGE_KEY, JSON.stringify(primaryChain));
+                sessionStorage.setItem(
+                    STORAGE_KEY,
+                    JSON.stringify(primaryChain),
+                );
             } catch {
                 // Ignore storage quota/security errors
             }
@@ -177,13 +204,17 @@ export function useNavigationOriginBreadcrumbs(explicitBreadcrumbs?: BreadcrumbI
         }
 
         // On a secondary page: retrieve the origin "where you left off" breadcrumb chain
-        let originChain: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/dashboard' }];
+        let originChain: BreadcrumbItem[] = [
+            { title: 'Dashboard', href: '/dashboard' },
+        ];
 
         if (typeof window !== 'undefined') {
             try {
                 const stored = sessionStorage.getItem(STORAGE_KEY);
+
                 if (stored) {
                     const parsed = JSON.parse(stored) as BreadcrumbItem[];
+
                     if (Array.isArray(parsed) && parsed.length > 0) {
                         originChain = parsed;
                     }
@@ -197,6 +228,7 @@ export function useNavigationOriginBreadcrumbs(explicitBreadcrumbs?: BreadcrumbI
 
         // Deduplicate in case origin ends with the same href as tail start
         const combined = [...originChain];
+
         for (const item of tailChain) {
             if (!combined.some((c) => c.href === item.href)) {
                 combined.push(item);

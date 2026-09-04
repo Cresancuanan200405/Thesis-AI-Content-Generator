@@ -1,18 +1,14 @@
 import { Link } from '@inertiajs/react';
 import {
     CalendarDays,
-    CheckCircle2,
-    Layers,
     Megaphone,
     Moon,
     Package,
     Sparkles,
     Sun,
-    Zap,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
@@ -113,7 +109,7 @@ export default function AuthSimpleLayout({
                         >
                             <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-card p-1 shadow-md ring-1 ring-border/80 transition-transform duration-200 group-hover:scale-105 dark:bg-zinc-900/90 dark:ring-white/15">
                                 <AppLogoIcon className="size-full rounded-lg object-contain" />
-                                <div className="absolute inset-0 -z-10 rounded-xl bg-primary/25 blur-sm opacity-70 transition-all group-hover:opacity-100 group-hover:blur-md" />
+                                <div className="absolute inset-0 -z-10 rounded-xl bg-primary/25 opacity-70 blur-sm transition-all group-hover:opacity-100 group-hover:blur-md" />
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-extrabold tracking-tight text-white">

@@ -971,7 +971,7 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                                         <CheckCircle2 className="h-6 w-6" />
                                     </div>
 
-                                    <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[9px] font-bold tracking-wider text-emerald-600 dark:text-emerald-400 uppercase">
+                                    <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[9px] font-bold tracking-wider text-emerald-600 uppercase dark:text-emerald-400">
                                         Ready to Launch
                                     </span>
 
@@ -980,26 +980,41 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                                     </h1>
 
                                     <p className="mt-1 text-xs text-muted-foreground">
-                                        MarketPilot AI is configured for your brand.
+                                        MarketPilot AI is configured for your
+                                        brand.
                                     </p>
                                 </div>
 
                                 <div className="space-y-3 rounded-2xl border border-border/80 bg-card/60 p-4 shadow-xs backdrop-blur-sm">
                                     <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
-                                        <span className="text-xs text-muted-foreground">Business Name</span>
-                                        <span className="text-xs font-bold text-foreground">{businessForm.name || 'My Business'}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                            Business Name
+                                        </span>
+                                        <span className="text-xs font-bold text-foreground">
+                                            {businessForm.name || 'My Business'}
+                                        </span>
                                     </div>
                                     <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
-                                        <span className="text-xs text-muted-foreground">Industry</span>
-                                        <span className="text-xs font-semibold text-foreground">{businessForm.industry || 'General'}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                            Industry
+                                        </span>
+                                        <span className="text-xs font-semibold text-foreground">
+                                            {businessForm.industry || 'General'}
+                                        </span>
                                     </div>
                                     <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
-                                        <span className="text-xs text-muted-foreground">Category</span>
-                                        <span className="text-xs font-semibold text-foreground">{businessForm.category || 'General'}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                            Category
+                                        </span>
+                                        <span className="text-xs font-semibold text-foreground">
+                                            {businessForm.category || 'General'}
+                                        </span>
                                     </div>
                                     {descriptionForm.description && (
                                         <div className="pt-1">
-                                            <span className="text-xs text-muted-foreground">Description</span>
+                                            <span className="text-xs text-muted-foreground">
+                                                Description
+                                            </span>
                                             <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-foreground/90">
                                                 {descriptionForm.description}
                                             </p>
@@ -1011,7 +1026,9 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                                     <Sparkles className="h-3.5 w-3.5 text-primary" />
 
                                     <p className="text-[10px] leading-relaxed text-muted-foreground">
-                                        You can start generating promotional visuals, marketing campaigns, and social creatives right away.
+                                        You can start generating promotional
+                                        visuals, marketing campaigns, and social
+                                        creatives right away.
                                     </p>
                                 </div>
                             </div>

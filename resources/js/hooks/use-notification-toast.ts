@@ -1,10 +1,8 @@
 import { router } from '@inertiajs/react';
 import { useEffect, useRef } from 'react';
 
-import {
-    type NotificationItem,
-    showNotificationToast,
-} from '@/components/notification-toast';
+import { showNotificationToast } from '@/components/notification-toast';
+import type { NotificationItem } from '@/components/notification-toast';
 
 /**
  * Surfaces popup/toast notifications for genuinely *new* unread notifications
@@ -29,7 +27,8 @@ export function useNotificationToast(): void {
 
             if (dataPage) {
                 const parsed = JSON.parse(dataPage);
-                const initial = (parsed?.props?.recent_notifications || []) as NotificationItem[];
+                const initial = (parsed?.props?.recent_notifications ||
+                    []) as NotificationItem[];
                 initial.forEach((n) => {
                     if (n.id !== undefined) {
                         displayedIdsRef.current.add(Number(n.id));
@@ -65,7 +64,10 @@ export function useNotificationToast(): void {
 
             // Find new unread notifications we haven't toasted yet
             const newUnread = items.filter(
-                (n) => !n.read_at && n.id !== undefined && !displayedIdsRef.current.has(Number(n.id)),
+                (n) =>
+                    !n.read_at &&
+                    n.id !== undefined &&
+                    !displayedIdsRef.current.has(Number(n.id)),
             );
 
             if (newUnread.length === 0) {
@@ -74,6 +76,7 @@ export function useNotificationToast(): void {
 
             // Toast only the single most recent genuinely new notification
             const topNotification = newUnread[0];
+
             if (topNotification && topNotification.id !== undefined) {
                 displayedIdsRef.current.add(Number(topNotification.id));
                 showNotificationToast(topNotification);

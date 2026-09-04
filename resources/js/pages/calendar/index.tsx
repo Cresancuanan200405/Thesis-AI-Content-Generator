@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import {
     Calendar as CalendarIcon,
     ChevronLeft,
@@ -11,7 +11,6 @@ import {
     PanelRightClose,
     PanelRightOpen,
     Plus,
-    Search,
     Sparkles,
     Trash2,
 } from 'lucide-react';
@@ -19,7 +18,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -624,7 +623,8 @@ export default function MarketingCalendarPage({
                                                     : activeFilter ===
                                                         'special_non_working'
                                                       ? 'Special Non-Working'
-                                                      : activeFilter === 'islamic'
+                                                      : activeFilter ===
+                                                          'islamic'
                                                         ? 'Islamic Holidays'
                                                         : activeFilter ===
                                                             'commercial'
@@ -660,7 +660,9 @@ export default function MarketingCalendarPage({
                                         >
                                             <div className="flex items-center gap-2">
                                                 <span className="h-2 w-2 rounded-full bg-slate-400" />
-                                                <span>Missed Events & Holidays</span>
+                                                <span>
+                                                    Missed Events & Holidays
+                                                </span>
                                             </div>
                                         </SelectItem>
                                         <SelectItem
@@ -1019,7 +1021,8 @@ export default function MarketingCalendarPage({
                                                                             variant="secondary"
                                                                             className="bg-muted/80 font-mono text-[10px] text-muted-foreground"
                                                                         >
-                                                                            Past Event
+                                                                            Past
+                                                                            Event
                                                                         </Badge>
                                                                     ) : null}
                                                                     {evt.is_long_weekend && (
@@ -1045,14 +1048,17 @@ export default function MarketingCalendarPage({
                                                                 variant="outline"
                                                                 className="h-7 border-slate-500/30 bg-slate-500/10 px-2.5 font-mono text-[10px] text-slate-400 shadow-none"
                                                             >
-                                                                No Visual Created
+                                                                No Visual
+                                                                Created
                                                             </Badge>
                                                         ) : (
                                                             <Button
                                                                 type="button"
                                                                 size="sm"
                                                                 variant="outline"
-                                                                onClick={(e) => {
+                                                                onClick={(
+                                                                    e,
+                                                                ) => {
                                                                     e.stopPropagation();
                                                                     router.visit(
                                                                         `/generator?event_id=${evt.id}`,
@@ -1300,7 +1306,7 @@ export default function MarketingCalendarPage({
 
                                                                             {isMissed ? (
                                                                                 <span
-                                                                                    className="shrink-0 rounded-md border border-slate-500/20 bg-slate-500/10 px-1.5 py-0.5 text-[9px] font-mono text-slate-400"
+                                                                                    className="shrink-0 rounded-md border border-slate-500/20 bg-slate-500/10 px-1.5 py-0.5 font-mono text-[9px] text-slate-400"
                                                                                     title="Missed Event (No Visual Created)"
                                                                                 >
                                                                                     Missed

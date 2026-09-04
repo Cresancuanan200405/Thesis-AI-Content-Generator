@@ -1,11 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import {
-    Bell,
-    CreditCard,
-    LogOut,
-    Settings,
-    User,
-} from 'lucide-react';
+import { Bell, CreditCard, LogOut, Settings, User } from 'lucide-react';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,

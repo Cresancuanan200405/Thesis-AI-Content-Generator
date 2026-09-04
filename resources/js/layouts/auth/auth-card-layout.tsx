@@ -2,13 +2,6 @@ import { Link } from '@inertiajs/react';
 import { Sparkles } from 'lucide-react';
 import type { PropsWithChildren } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
 import { home } from '@/routes';
 
 export default function AuthCardLayout({
@@ -36,7 +29,7 @@ export default function AuthCardLayout({
                 >
                     <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-card p-1 shadow-lg ring-1 ring-border/80 transition-transform duration-200 group-hover:scale-105 dark:bg-zinc-900/90 dark:ring-white/15">
                         <AppLogoIcon className="size-full rounded-xl object-contain" />
-                        <div className="absolute inset-0 -z-10 rounded-2xl bg-primary/25 blur-sm opacity-70 transition-all group-hover:opacity-100 group-hover:blur-md" />
+                        <div className="absolute inset-0 -z-10 rounded-2xl bg-primary/25 opacity-70 blur-sm transition-all group-hover:opacity-100 group-hover:blur-md" />
                     </div>
                     <div className="flex items-center gap-2">
                         <span className="text-base font-extrabold tracking-tight text-foreground">

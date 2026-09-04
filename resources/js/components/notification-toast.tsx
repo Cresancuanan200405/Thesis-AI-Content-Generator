@@ -15,13 +15,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export type SemanticNotificationCategory =
-    | 'success'
-    | 'info'
-    | 'event'
-    | 'attention'
-    | 'error'
-    | 'ai'
-    | 'campaign';
+    'success' | 'info' | 'event' | 'attention' | 'error' | 'ai' | 'campaign';
 
 export type NotificationItem = {
     id?: number | string;
@@ -71,7 +65,10 @@ function isDuplicateToast(key: string, cooldownMs: number = 4000): boolean {
 /**
  * Resolves semantic category, icon, and colors for any notification type or title.
  */
-export function resolveNotificationConfig(type: string, title?: string): TypeConfig {
+export function resolveNotificationConfig(
+    type: string,
+    title?: string,
+): TypeConfig {
     const raw = `${type || ''} ${title || ''}`.toLowerCase();
 
     // 1. ERROR
@@ -180,10 +177,7 @@ export function resolveNotificationConfig(type: string, title?: string): TypeCon
     }
 
     // 6. CAMPAIGN
-    if (
-        raw.includes('campaign') ||
-        raw.includes('pipeline')
-    ) {
+    if (raw.includes('campaign') || raw.includes('pipeline')) {
         return {
             category: 'campaign',
             icon: Megaphone,
@@ -215,7 +209,10 @@ export function NotificationToastCard({
     notification: NotificationItem;
     toastId: string | number;
 }) {
-    const config = resolveNotificationConfig(notification.type, notification.title);
+    const config = resolveNotificationConfig(
+        notification.type,
+        notification.title,
+    );
     const Icon = config.icon;
 
     const handleAction = (e: React.MouseEvent) => {
@@ -279,7 +276,7 @@ export function NotificationToastCard({
                 type="button"
                 aria-label="Close notification"
                 onClick={() => toast.dismiss(toastId)}
-                className="shrink-0 rounded-lg p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+                className="shrink-0 rounded-lg p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden"
             >
                 <X className="h-4 w-4" />
             </button>
@@ -292,6 +289,7 @@ export function NotificationToastCard({
  */
 export function showNotificationToast(notification: NotificationItem): void {
     const key = `${notification.type}:${notification.title}:${notification.message}`;
+
     if (isDuplicateToast(key)) {
         return;
     }
@@ -300,10 +298,7 @@ export function showNotificationToast(notification: NotificationItem): void {
 
     toast.custom(
         (t) => (
-            <NotificationToastCard
-                notification={notification}
-                toastId={t}
-            />
+            <NotificationToastCard notification={notification} toastId={t} />
         ),
         {
             duration: 5000,
@@ -330,14 +325,18 @@ export function showSemanticToast({
     duration = 5000,
 }: SemanticToastOptions): void {
     // Determine friendly title if none provided
-    const resolvedTitle = title || (
-        type === 'success' ? 'Success' :
-        type === 'error' ? 'Error' :
-        type === 'warning' ? 'Attention' :
-        'Notification'
-    );
+    const resolvedTitle =
+        title ||
+        (type === 'success'
+            ? 'Success'
+            : type === 'error'
+              ? 'Error'
+              : type === 'warning'
+                ? 'Attention'
+                : 'Notification');
 
     const key = `${type}:${resolvedTitle}:${message}`;
+
     if (isDuplicateToast(key)) {
         return;
     }

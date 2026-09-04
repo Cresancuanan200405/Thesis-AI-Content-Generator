@@ -1,8 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
-    BarChart3,
-    Building2,
     Calendar,
     CalendarDays,
     Check,
@@ -10,29 +8,17 @@ import {
     ChevronDown,
     ChevronLeft,
     ChevronRight,
-    Clock,
-    Compass,
-    Cpu,
-    Download,
-    ExternalLink,
-    Eye,
-    HeartPulse,
     ImageIcon,
     Layers,
     Megaphone,
     Menu,
     Moon,
     Package,
-    ShieldCheck,
-    ShoppingBag,
-    ShoppingCart,
-    SlidersHorizontal,
     Sparkles,
     Sun,
     X,
-    Zap,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -179,10 +165,14 @@ export default function Welcome() {
     const activeCreative = showcaseCreatives[activeShowcaseIndex];
 
     useEffect(() => {
-        if (isAutoPlayPaused) return;
+        if (isAutoPlayPaused) {
+            return;
+        }
 
         const interval = setInterval(() => {
-            setActiveShowcaseIndex((prev) => (prev + 1) % showcaseCreatives.length);
+            setActiveShowcaseIndex(
+                (prev) => (prev + 1) % showcaseCreatives.length,
+            );
         }, 5000);
 
         return () => clearInterval(interval);
@@ -195,9 +185,7 @@ export default function Welcome() {
     };
 
     const handleNextShowcase = () => {
-        setActiveShowcaseIndex((prev) =>
-            (prev + 1) % showcaseCreatives.length,
-        );
+        setActiveShowcaseIndex((prev) => (prev + 1) % showcaseCreatives.length);
     };
 
     // Interactive Calendar Showcase State
@@ -223,6 +211,7 @@ export default function Welcome() {
             setIsScrolled(window.scrollY > 20);
         };
         window.addEventListener('scroll', handleScroll, { passive: true });
+
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
@@ -345,7 +334,7 @@ export default function Welcome() {
                 =========================================================== */}
 
                 <header
-                    className={`fixed top-0 inset-x-0 z-50 w-full transition-all duration-300 ${
+                    className={`fixed inset-x-0 top-0 z-50 w-full transition-all duration-300 ${
                         isScrolled
                             ? 'border-b border-border/80 bg-background/90 shadow-lg shadow-black/5 backdrop-blur-2xl'
                             : 'border-b border-border/40 bg-background/75 backdrop-blur-xl dark:border-white/10'
@@ -359,7 +348,7 @@ export default function Welcome() {
                         >
                             <div className="relative flex h-9.5 w-9.5 items-center justify-center rounded-2xl bg-card p-1 shadow-md ring-1 ring-border/80 transition-all duration-300 group-hover:scale-105 group-hover:ring-primary/40 dark:bg-zinc-900/90 dark:ring-white/15">
                                 <AppLogoIcon className="size-full rounded-xl object-contain" />
-                                <div className="absolute inset-0 -z-10 rounded-2xl bg-primary/25 blur-sm opacity-70 transition-all group-hover:opacity-100 group-hover:blur-md" />
+                                <div className="absolute inset-0 -z-10 rounded-2xl bg-primary/25 opacity-70 blur-sm transition-all group-hover:opacity-100 group-hover:blur-md" />
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-base font-extrabold tracking-tight text-foreground">
@@ -587,15 +576,25 @@ export default function Welcome() {
                                 <div className="space-y-6 lg:col-span-5 xl:col-span-5">
                                     <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-primary shadow-xs backdrop-blur-md">
                                         <Sparkles className="h-3.5 w-3.5 text-primary" />
-                                        <span>AI-DRIVEN MARKETING CREATIVE STUDIO</span>
+                                        <span>
+                                            AI-DRIVEN MARKETING CREATIVE STUDIO
+                                        </span>
                                     </div>
 
                                     <h1 className="text-3xl leading-[1.12] font-extrabold tracking-tight text-foreground sm:text-4xl lg:text-5xl xl:text-[52px]">
-                                        Create Professional<br className="hidden sm:inline" /> Marketing Visuals<br className="hidden sm:inline" /> With AI
+                                        Create Professional
+                                        <br className="hidden sm:inline" />{' '}
+                                        Marketing Visuals
+                                        <br className="hidden sm:inline" /> With
+                                        AI
                                     </h1>
 
                                     <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
-                                        Generate campaign-ready marketing visuals from your business information, products, campaign goals, Philippine events, and visual preferences — with or without a product image.
+                                        Generate campaign-ready marketing
+                                        visuals from your business information,
+                                        products, campaign goals, Philippine
+                                        events, and visual preferences — with or
+                                        without a product image.
                                     </p>
 
                                     {/* Action Buttons */}
@@ -603,10 +602,12 @@ export default function Welcome() {
                                         <Button
                                             asChild
                                             size="lg"
-                                            className="h-12 gap-2 rounded-xl px-7 text-xs font-bold shadow-lg shadow-primary/25 transition-all duration-200 hover:scale-105 hover:shadow-xl hover:shadow-primary/30 active:scale-95 cursor-pointer"
+                                            className="h-12 cursor-pointer gap-2 rounded-xl px-7 text-xs font-bold shadow-lg shadow-primary/25 transition-all duration-200 hover:scale-105 hover:shadow-xl hover:shadow-primary/30 active:scale-95"
                                         >
                                             <Link href={register()}>
-                                                <span>Create Your First Design</span>
+                                                <span>
+                                                    Create Your First Design
+                                                </span>
                                                 <ArrowRight className="h-4 w-4" />
                                             </Link>
                                         </Button>
@@ -615,7 +616,7 @@ export default function Welcome() {
                                             asChild
                                             variant="outline"
                                             size="lg"
-                                            className="h-12 gap-2 rounded-xl px-6 text-xs font-semibold shadow-2xs transition-all duration-200 hover:scale-105 hover:border-primary/40 hover:bg-muted/50 active:scale-95 cursor-pointer"
+                                            className="h-12 cursor-pointer gap-2 rounded-xl px-6 text-xs font-semibold shadow-2xs transition-all duration-200 hover:scale-105 hover:border-primary/40 hover:bg-muted/50 active:scale-95"
                                         >
                                             <a href="#how-it-works">
                                                 <Layers className="h-4 w-4 text-primary" />
@@ -627,20 +628,30 @@ export default function Welcome() {
                                     {/* Subtle Capability Summary */}
                                     <div className="grid grid-cols-1 gap-2.5 border-t border-border/60 pt-5 text-xs font-medium text-muted-foreground sm:grid-cols-2">
                                         <div className="flex items-center gap-2">
-                                            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                                            <span className="text-foreground">Product reference generation</span>
+                                            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                                            <span className="text-foreground">
+                                                Product reference generation
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                                            <span className="text-foreground">Creative generation without product image</span>
+                                            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                                            <span className="text-foreground">
+                                                Creative generation without
+                                                product image
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                                            <span className="text-foreground">Philippine holiday & event campaigns</span>
+                                            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                                            <span className="text-foreground">
+                                                Philippine holiday & event
+                                                campaigns
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                                            <span className="text-foreground">PNG/JPEG export-ready assets</span>
+                                            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                                            <span className="text-foreground">
+                                                PNG/JPEG export-ready assets
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -648,14 +659,18 @@ export default function Welcome() {
                                 {/* Right Column: Dominant Editorial Visual Showcase Gallery */}
                                 <div
                                     className="relative flex items-center justify-center lg:col-span-7 xl:col-span-7"
-                                    onMouseEnter={() => setIsAutoPlayPaused(true)}
-                                    onMouseLeave={() => setIsAutoPlayPaused(false)}
+                                    onMouseEnter={() =>
+                                        setIsAutoPlayPaused(true)
+                                    }
+                                    onMouseLeave={() =>
+                                        setIsAutoPlayPaused(false)
+                                    }
                                     aria-roledescription="carousel"
                                     aria-label="AI Marketing Creative Showcase"
                                 >
                                     {/* Faded Background Sample (Top-Left Offset) */}
                                     <div
-                                        className="pointer-events-none absolute -top-4 -left-4 sm:-left-8 -rotate-6 scale-[0.88] z-0 hidden sm:block w-[280px] sm:w-[340px] aspect-square rounded-3xl overflow-hidden border border-border/40 bg-card/40 opacity-25 dark:opacity-15 blur-[0.5px] shadow-2xl transition-all duration-700"
+                                        className="pointer-events-none absolute -top-4 -left-4 z-0 hidden aspect-square w-[280px] scale-[0.88] -rotate-6 overflow-hidden rounded-3xl border border-border/40 bg-card/40 opacity-25 shadow-2xl blur-[0.5px] transition-all duration-700 sm:-left-8 sm:block sm:w-[340px] dark:opacity-15"
                                         aria-hidden="true"
                                     >
                                         <img
@@ -668,7 +683,7 @@ export default function Welcome() {
 
                                     {/* Faded Background Sample (Bottom-Right Offset) */}
                                     <div
-                                        className="pointer-events-none absolute -bottom-4 -right-4 sm:-right-8 rotate-6 scale-[0.88] z-0 hidden sm:block w-[280px] sm:w-[340px] aspect-square rounded-3xl overflow-hidden border border-border/40 bg-card/40 opacity-25 dark:opacity-15 blur-[0.5px] shadow-2xl transition-all duration-700"
+                                        className="pointer-events-none absolute -right-4 -bottom-4 z-0 hidden aspect-square w-[280px] scale-[0.88] rotate-6 overflow-hidden rounded-3xl border border-border/40 bg-card/40 opacity-25 shadow-2xl blur-[0.5px] transition-all duration-700 sm:-right-8 sm:block sm:w-[340px] dark:opacity-15"
                                         aria-hidden="true"
                                     >
                                         <img
@@ -680,22 +695,29 @@ export default function Welcome() {
                                     </div>
 
                                     {/* Active Hero Showcase Frame (Editorial Floating Card) */}
-                                    <div className="relative z-10 w-full max-w-[400px] sm:max-w-[440px] lg:max-w-[460px] overflow-hidden rounded-3xl border border-white/40 bg-card/95 p-3 shadow-2xl backdrop-blur-xl transition-all duration-500 dark:border-white/15 dark:bg-card/90">
+                                    <div className="relative z-10 w-full max-w-[400px] overflow-hidden rounded-3xl border border-white/40 bg-card/95 p-3 shadow-2xl backdrop-blur-xl transition-all duration-500 sm:max-w-[440px] lg:max-w-[460px] dark:border-white/15 dark:bg-card/90">
                                         {/* Visual Creative Canvas with Crossfade Transition */}
                                         <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-black/90 shadow-inner">
-                                            {showcaseCreatives.map((creative, index) => (
-                                                <img
-                                                    key={creative.id}
-                                                    src={creative.image}
-                                                    alt={`${creative.productName} — ${creative.businessName}`}
-                                                    className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-in-out ${
-                                                        activeShowcaseIndex === index
-                                                            ? 'opacity-100 z-10 scale-100'
-                                                            : 'opacity-0 z-0 pointer-events-none'
-                                                    }`}
-                                                    loading={index === 0 ? 'eager' : 'lazy'}
-                                                />
-                                            ))}
+                                            {showcaseCreatives.map(
+                                                (creative, index) => (
+                                                    <img
+                                                        key={creative.id}
+                                                        src={creative.image}
+                                                        alt={`${creative.productName} — ${creative.businessName}`}
+                                                        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-in-out ${
+                                                            activeShowcaseIndex ===
+                                                            index
+                                                                ? 'z-10 scale-100 opacity-100'
+                                                                : 'pointer-events-none z-0 opacity-0'
+                                                        }`}
+                                                        loading={
+                                                            index === 0
+                                                                ? 'eager'
+                                                                : 'lazy'
+                                                        }
+                                                    />
+                                                ),
+                                            )}
                                         </div>
 
                                         {/* Minimal Subtle Showcase Footer */}
@@ -705,7 +727,7 @@ export default function Welcome() {
                                                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                                                     <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
                                                 </span>
-                                                <span className="font-semibold text-foreground text-[11px]">
+                                                <span className="text-[11px] font-semibold text-foreground">
                                                     AI Creative Showcase
                                                 </span>
                                             </div>
@@ -715,42 +737,63 @@ export default function Welcome() {
                                                 <div className="flex items-center gap-1">
                                                     <button
                                                         type="button"
-                                                        onClick={handlePrevShowcase}
+                                                        onClick={
+                                                            handlePrevShowcase
+                                                        }
                                                         aria-label="Previous showcase visual"
-                                                        className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
+                                                        className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                                                     >
                                                         <ChevronLeft className="h-3.5 w-3.5" />
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        onClick={handleNextShowcase}
+                                                        onClick={
+                                                            handleNextShowcase
+                                                        }
                                                         aria-label="Next showcase visual"
-                                                        className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
+                                                        className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                                                     >
                                                         <ChevronRight className="h-3.5 w-3.5" />
                                                     </button>
                                                 </div>
 
-                                                <div className="flex items-center gap-1" role="tablist" aria-label="Showcase slides">
-                                                    {showcaseCreatives.map((creative, index) => (
-                                                        <button
-                                                            key={creative.id}
-                                                            type="button"
-                                                            onClick={() => setActiveShowcaseIndex(index)}
-                                                            role="tab"
-                                                            aria-selected={activeShowcaseIndex === index}
-                                                            aria-label={`Show ${creative.productName}`}
-                                                            className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                                                                activeShowcaseIndex === index
-                                                                    ? 'w-4 bg-primary'
-                                                                    : 'w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/60'
-                                                            }`}
-                                                        />
-                                                    ))}
+                                                <div
+                                                    className="flex items-center gap-1"
+                                                    role="tablist"
+                                                    aria-label="Showcase slides"
+                                                >
+                                                    {showcaseCreatives.map(
+                                                        (creative, index) => (
+                                                            <button
+                                                                key={
+                                                                    creative.id
+                                                                }
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setActiveShowcaseIndex(
+                                                                        index,
+                                                                    )
+                                                                }
+                                                                role="tab"
+                                                                aria-selected={
+                                                                    activeShowcaseIndex ===
+                                                                    index
+                                                                }
+                                                                aria-label={`Show ${creative.productName}`}
+                                                                className={`h-1.5 cursor-pointer rounded-full transition-all duration-300 ${
+                                                                    activeShowcaseIndex ===
+                                                                    index
+                                                                        ? 'w-4 bg-primary'
+                                                                        : 'w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/60'
+                                                                }`}
+                                                            />
+                                                        ),
+                                                    )}
                                                 </div>
 
                                                 <span className="font-mono text-[10px] text-muted-foreground">
-                                                    0{activeShowcaseIndex + 1} / 0{showcaseCreatives.length}
+                                                    0{activeShowcaseIndex + 1} /
+                                                    0{showcaseCreatives.length}
                                                 </span>
                                             </div>
                                         </div>
@@ -774,7 +817,8 @@ export default function Welcome() {
                                         How All System Capabilities Connect
                                     </h2>
                                     <p className="text-xs text-muted-foreground sm:text-sm">
-                                        From raw catalog inventory to calendar-synchronized campaign launches.
+                                        From raw catalog inventory to
+                                        calendar-synchronized campaign launches.
                                     </p>
                                 </div>
 
@@ -897,7 +941,10 @@ export default function Welcome() {
                                         Commercial Visual Studio
                                     </h3>
                                     <p className="text-xs leading-relaxed text-muted-foreground">
-                                        Generate commercial-grade product photography, seasonal promotional banners, and ad mockups tailored to your exact brand tone.
+                                        Generate commercial-grade product
+                                        photography, seasonal promotional
+                                        banners, and ad mockups tailored to your
+                                        exact brand tone.
                                     </p>
                                 </div>
 
@@ -910,7 +957,10 @@ export default function Welcome() {
                                         Philippine Holiday Engine
                                     </h3>
                                     <p className="text-xs leading-relaxed text-muted-foreground">
-                                        Track official regular holidays, special non-working days, Islamic movable dates, and long-weekend opportunities with automatic 60-day forecasts.
+                                        Track official regular holidays, special
+                                        non-working days, Islamic movable dates,
+                                        and long-weekend opportunities with
+                                        automatic 60-day forecasts.
                                     </p>
                                 </div>
 
@@ -923,7 +973,10 @@ export default function Welcome() {
                                         Product Catalog Sync
                                     </h3>
                                     <p className="text-xs leading-relaxed text-muted-foreground">
-                                        Organize offerings with pricing, category tags, and reference photos. Select any item to instantly populate campaign creatives.
+                                        Organize offerings with pricing,
+                                        category tags, and reference photos.
+                                        Select any item to instantly populate
+                                        campaign creatives.
                                     </p>
                                 </div>
 
@@ -936,7 +989,10 @@ export default function Welcome() {
                                         Multi-Channel Campaigns
                                     </h3>
                                     <p className="text-xs leading-relaxed text-muted-foreground">
-                                        Group visual assets into scheduled campaigns, track active marketing pipelines, and export in PNG, JPEG, or SVG format anytime.
+                                        Group visual assets into scheduled
+                                        campaigns, track active marketing
+                                        pipelines, and export in PNG, JPEG, or
+                                        SVG format anytime.
                                     </p>
                                 </div>
                             </div>
@@ -965,32 +1021,39 @@ export default function Welcome() {
                                         Never miss a holiday revenue window.
                                     </h2>
                                     <p className="text-sm leading-relaxed text-muted-foreground">
-                                        Filipino consumers shop actively around long weekends, national holidays, and payday intervals. MarketPilot gives you a proactive 60-day visual launch radar.
+                                        Filipino consumers shop actively around
+                                        long weekends, national holidays, and
+                                        payday intervals. MarketPilot gives you
+                                        a proactive 60-day visual launch radar.
                                     </p>
 
                                     <div className="space-y-2 pt-2">
                                         <div className="flex items-center gap-2.5 text-xs font-semibold text-foreground">
                                             <span className="h-2 w-2 rounded-full bg-blue-500" />
                                             <span>
-                                                Regular National Holidays (Full Proclamation Sync)
+                                                Regular National Holidays (Full
+                                                Proclamation Sync)
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2.5 text-xs font-semibold text-foreground">
                                             <span className="h-2 w-2 rounded-full bg-amber-500" />
                                             <span>
-                                                Special Non-Working Days & Shifted Dates
+                                                Special Non-Working Days &
+                                                Shifted Dates
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2.5 text-xs font-semibold text-foreground">
                                             <span className="h-2 w-2 rounded-full bg-emerald-500" />
                                             <span>
-                                                Islamic Movable Holidays & National Proclamations
+                                                Islamic Movable Holidays &
+                                                National Proclamations
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2.5 text-xs font-semibold text-foreground">
                                             <span className="h-2 w-2 rounded-full bg-purple-500" />
                                             <span>
-                                                Mid-Month & End-Month Payday Sale Cycles
+                                                Mid-Month & End-Month Payday
+                                                Sale Cycles
                                             </span>
                                         </div>
                                     </div>
@@ -1015,7 +1078,8 @@ export default function Welcome() {
                                             <div className="flex items-center gap-2">
                                                 <Calendar className="h-5 w-5 text-amber-500" />
                                                 <h3 className="text-sm font-bold text-foreground">
-                                                    Philippine National Holiday Forecast
+                                                    Philippine National Holiday
+                                                    Forecast
                                                 </h3>
                                             </div>
 
@@ -1107,10 +1171,13 @@ export default function Welcome() {
                                     Subscription Plans
                                 </Badge>
                                 <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl">
-                                    Flexible subscription tiers for growing retail brands.
+                                    Flexible subscription tiers for growing
+                                    retail brands.
                                 </h2>
                                 <p className="text-sm text-muted-foreground">
-                                    Choose the right plan to power your seasonal marketing campaigns and visual creative workflows.
+                                    Choose the right plan to power your seasonal
+                                    marketing campaigns and visual creative
+                                    workflows.
                                 </p>
 
                                 {/* Billing cycle selector */}
@@ -1148,29 +1215,39 @@ export default function Welcome() {
                                                 <h3 className="text-base font-bold text-foreground">
                                                     Starter Plan
                                                 </h3>
-                                                <Badge variant="outline" className="text-[10px] font-bold text-muted-foreground">
+                                                <Badge
+                                                    variant="outline"
+                                                    className="text-[10px] font-bold text-muted-foreground"
+                                                >
                                                     Free Access
                                                 </Badge>
                                             </div>
                                             <p className="text-xs text-muted-foreground">
-                                                Ideal for exploring the studio and tracking key holiday dates.
+                                                Ideal for exploring the studio
+                                                and tracking key holiday dates.
                                             </p>
                                         </div>
                                         <div className="rounded-xl border border-border/60 bg-muted/20 p-3 text-center">
-                                            <p className="text-xs font-bold text-foreground">Community Starter</p>
-                                            <p className="text-[11px] text-muted-foreground">Free forever / No credit card</p>
+                                            <p className="text-xs font-bold text-foreground">
+                                                Community Starter
+                                            </p>
+                                            <p className="text-[11px] text-muted-foreground">
+                                                Free forever / No credit card
+                                            </p>
                                         </div>
                                         <ul className="space-y-2.5 pt-2 text-xs text-muted-foreground">
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-4 w-4 shrink-0 text-emerald-500" />
                                                 <span>
-                                                    15 Visual creations per month
+                                                    15 Visual creations per
+                                                    month
                                                 </span>
                                             </li>
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-4 w-4 shrink-0 text-emerald-500" />
                                                 <span>
-                                                    Official Philippine Holiday Calendar
+                                                    Official Philippine Holiday
+                                                    Calendar
                                                 </span>
                                             </li>
                                             <li className="flex items-center gap-2">
@@ -1215,12 +1292,17 @@ export default function Welcome() {
                                                 </Badge>
                                             </div>
                                             <p className="text-xs text-muted-foreground">
-                                                For active online sellers & retail MSMEs.
+                                                For active online sellers &
+                                                retail MSMEs.
                                             </p>
                                         </div>
                                         <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-center">
-                                            <p className="text-xs font-bold text-primary">Professional Subscription</p>
-                                            <p className="text-[11px] text-muted-foreground">Unlimited generation capacity</p>
+                                            <p className="text-xs font-bold text-primary">
+                                                Professional Subscription
+                                            </p>
+                                            <p className="text-[11px] text-muted-foreground">
+                                                Unlimited generation capacity
+                                            </p>
                                         </div>
                                         <ul className="space-y-2.5 pt-2 text-xs text-muted-foreground">
                                             <li className="flex items-center gap-2">
@@ -1232,7 +1314,8 @@ export default function Welcome() {
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-4 w-4 shrink-0 text-emerald-500" />
                                                 <span>
-                                                    Full Philippine Calendar + Custom Events
+                                                    Full Philippine Calendar +
+                                                    Custom Events
                                                 </span>
                                             </li>
                                             <li className="flex items-center gap-2">
@@ -1244,13 +1327,15 @@ export default function Welcome() {
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-4 w-4 shrink-0 text-emerald-500" />
                                                 <span>
-                                                    PNG, JPEG & SVG Vector Exports
+                                                    PNG, JPEG & SVG Vector
+                                                    Exports
                                                 </span>
                                             </li>
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-4 w-4 shrink-0 text-emerald-500" />
                                                 <span>
-                                                    Business Identity & Brand Tone Presets
+                                                    Business Identity & Brand
+                                                    Tone Presets
                                                 </span>
                                             </li>
                                         </ul>
@@ -1274,29 +1359,39 @@ export default function Welcome() {
                                                 <h3 className="text-base font-bold text-foreground">
                                                     Scale & Agency
                                                 </h3>
-                                                <Badge variant="outline" className="text-[10px] font-bold text-muted-foreground">
+                                                <Badge
+                                                    variant="outline"
+                                                    className="text-[10px] font-bold text-muted-foreground"
+                                                >
                                                     Multi-Brand
                                                 </Badge>
                                             </div>
                                             <p className="text-xs text-muted-foreground">
-                                                For multi-brand retailers & marketing agencies.
+                                                For multi-brand retailers &
+                                                marketing agencies.
                                             </p>
                                         </div>
                                         <div className="rounded-xl border border-border/60 bg-muted/20 p-3 text-center">
-                                            <p className="text-xs font-bold text-foreground">Agency Subscription</p>
-                                            <p className="text-[11px] text-muted-foreground">Dedicated workspace & support</p>
+                                            <p className="text-xs font-bold text-foreground">
+                                                Agency Subscription
+                                            </p>
+                                            <p className="text-[11px] text-muted-foreground">
+                                                Dedicated workspace & support
+                                            </p>
                                         </div>
                                         <ul className="space-y-2.5 pt-2 text-xs text-muted-foreground">
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-4 w-4 shrink-0 text-emerald-500" />
                                                 <span className="font-semibold text-foreground">
-                                                    Multi-Brand Workspace Management
+                                                    Multi-Brand Workspace
+                                                    Management
                                                 </span>
                                             </li>
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-4 w-4 shrink-0 text-emerald-500" />
                                                 <span>
-                                                    Bulk Asset Export & Campaign Packaging
+                                                    Bulk Asset Export & Campaign
+                                                    Packaging
                                                 </span>
                                             </li>
                                             <li className="flex items-center gap-2">
@@ -1308,7 +1403,8 @@ export default function Welcome() {
                                             <li className="flex items-center gap-2">
                                                 <Check className="h-4 w-4 shrink-0 text-emerald-500" />
                                                 <span>
-                                                    Dedicated Account Manager & Training
+                                                    Dedicated Account Manager &
+                                                    Training
                                                 </span>
                                             </li>
                                         </ul>

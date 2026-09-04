@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
 interface MyProfileProps {
@@ -45,7 +44,7 @@ interface MyProfileProps {
 export default function MyProfilePage({
     profile = {},
     business = {},
-    stats = {},
+    stats: _stats = {},
 }: MyProfileProps) {
     const initials = profile.name
         ? profile.name
@@ -69,7 +68,8 @@ export default function MyProfilePage({
                                 My Profile
                             </h1>
                             <p className="text-xs text-muted-foreground sm:text-sm">
-                                Overview of your personal account credentials, workspace role, and commercial profile.
+                                Overview of your personal account credentials,
+                                workspace role, and commercial profile.
                             </p>
                         </div>
                     </div>
@@ -121,13 +121,15 @@ export default function MyProfilePage({
 
                                         <span className="flex items-center gap-1.5">
                                             <Shield className="h-3.5 w-3.5 text-muted-foreground" />
-                                            Auth: {profile.provider || 'Password'}
+                                            Auth:{' '}
+                                            {profile.provider || 'Password'}
                                         </span>
 
                                         {profile.member_since && (
                                             <span className="flex items-center gap-1.5">
                                                 <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                                                Member since {profile.member_since}
+                                                Member since{' '}
+                                                {profile.member_since}
                                             </span>
                                         )}
                                     </div>
@@ -151,8 +153,10 @@ export default function MyProfilePage({
                                     <h3 className="text-base font-bold text-foreground">
                                         Account Settings
                                     </h3>
-                                    <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                                        Manage your personal credentials, appearance theme, password, 2FA, and active sessions.
+                                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                                        Manage your personal credentials,
+                                        appearance theme, password, 2FA, and
+                                        active sessions.
                                     </p>
                                 </div>
                             </div>
@@ -176,14 +180,18 @@ export default function MyProfilePage({
                                     <h3 className="text-base font-bold text-foreground">
                                         Business Profile
                                     </h3>
-                                    <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                                        Update your business name, commercial description, and industry art direction context.
+                                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                                        Update your business name, commercial
+                                        description, and industry art direction
+                                        context.
                                     </p>
                                 </div>
                             </div>
 
                             <div className="mt-5 flex items-center justify-between text-xs font-semibold text-blue-600">
-                                <span>{business.name || 'Configure Business'}</span>
+                                <span>
+                                    {business.name || 'Configure Business'}
+                                </span>
                                 <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
                             </div>
                         </Link>
@@ -201,8 +209,10 @@ export default function MyProfilePage({
                                     <h3 className="text-base font-bold text-foreground">
                                         Subscriptions & Tier
                                     </h3>
-                                    <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                                        View your active workspace tier, AI generation quota, and studio feature capabilities.
+                                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                                        View your active workspace tier, AI
+                                        generation quota, and studio feature
+                                        capabilities.
                                     </p>
                                 </div>
                             </div>
@@ -230,9 +240,15 @@ export default function MyProfilePage({
                                     </Badge>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    <span className="font-semibold text-foreground">{business.name || 'Not configured'}</span>
+                                    <span className="font-semibold text-foreground">
+                                        {business.name || 'Not configured'}
+                                    </span>
                                     {business.industry && (
-                                        <span> • {business.industry} ({business.category || 'General'})</span>
+                                        <span>
+                                            {' '}
+                                            • {business.industry} (
+                                            {business.category || 'General'})
+                                        </span>
                                     )}
                                 </p>
                             </div>
@@ -256,4 +272,3 @@ MyProfilePage.layout = {
         },
     ],
 };
-

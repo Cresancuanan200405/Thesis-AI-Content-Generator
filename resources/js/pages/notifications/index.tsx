@@ -77,7 +77,9 @@ export default function NotificationsIndex({
     search_query = '',
 }: NotificationsPageProps) {
     const [search, setSearch] = React.useState(search_query || '');
-    const [activeFilter, setActiveFilter] = React.useState(current_filter || 'all');
+    const [activeFilter, setActiveFilter] = React.useState(
+        current_filter || 'all',
+    );
     const [processingId, setProcessingId] = React.useState<number | null>(null);
     const [isMarkingAll, setIsMarkingAll] = React.useState(false);
     const [isClearingAll, setIsClearingAll] = React.useState(false);
@@ -197,9 +199,11 @@ export default function NotificationsIndex({
         if (tabKey === 'all') {
             return total_count;
         }
+
         if (tabKey === 'unread') {
             return unread_count;
         }
+
         return category_counts[tabKey as keyof typeof category_counts] ?? 0;
     };
 
@@ -227,7 +231,9 @@ export default function NotificationsIndex({
                                     )}
                                 </div>
                                 <p className="text-xs text-muted-foreground sm:text-sm">
-                                    Track AI synthesis results, marketing campaigns, quota warnings, and system alerts.
+                                    Track AI synthesis results, marketing
+                                    campaigns, quota warnings, and system
+                                    alerts.
                                 </p>
                             </div>
                         </div>
@@ -339,7 +345,8 @@ export default function NotificationsIndex({
                 {notifications.length > 0 ? (
                     <div className="space-y-3">
                         {notifications.map((notification) => {
-                            const isProcessing = processingId === notification.id;
+                            const isProcessing =
+                                processingId === notification.id;
                             const config = resolveNotificationConfig(
                                 notification.type,
                                 notification.title,
@@ -408,7 +415,9 @@ export default function NotificationsIndex({
 
                                                     <span
                                                         className="ml-auto inline-flex items-center gap-1 text-[11px] text-muted-foreground"
-                                                        title={notification.created_at}
+                                                        title={
+                                                            notification.created_at
+                                                        }
                                                     >
                                                         <Clock className="h-3 w-3" />
                                                         {notification.time_ago}
@@ -428,13 +437,23 @@ export default function NotificationsIndex({
                                                             variant="outline"
                                                             className="h-7.5 gap-1.5 rounded-lg text-xs font-semibold hover:bg-primary/10 hover:text-primary"
                                                             onClick={() => {
-                                                                if (!notification.is_read) {
-                                                                    handleMarkAsRead(notification);
+                                                                if (
+                                                                    !notification.is_read
+                                                                ) {
+                                                                    handleMarkAsRead(
+                                                                        notification,
+                                                                    );
                                                                 }
                                                             }}
                                                         >
-                                                            <Link href={notification.action_url}>
-                                                                <span>View details</span>
+                                                            <Link
+                                                                href={
+                                                                    notification.action_url
+                                                                }
+                                                            >
+                                                                <span>
+                                                                    View details
+                                                                </span>
                                                                 <ExternalLink className="h-3 w-3" />
                                                             </Link>
                                                         </Button>
@@ -445,8 +464,14 @@ export default function NotificationsIndex({
                                                             type="button"
                                                             variant="ghost"
                                                             size="sm"
-                                                            onClick={() => handleMarkAsRead(notification)}
-                                                            disabled={isProcessing}
+                                                            onClick={() =>
+                                                                handleMarkAsRead(
+                                                                    notification,
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                isProcessing
+                                                            }
                                                             className="h-7.5 gap-1 rounded-lg text-xs text-muted-foreground hover:text-foreground"
                                                         >
                                                             {isProcessing ? (
@@ -461,8 +486,14 @@ export default function NotificationsIndex({
                                                             type="button"
                                                             variant="ghost"
                                                             size="sm"
-                                                            onClick={() => handleMarkAsUnread(notification)}
-                                                            disabled={isProcessing}
+                                                            onClick={() =>
+                                                                handleMarkAsUnread(
+                                                                    notification,
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                isProcessing
+                                                            }
                                                             className="h-7.5 gap-1 rounded-lg text-xs text-muted-foreground hover:text-foreground"
                                                         >
                                                             {isProcessing ? (
@@ -494,7 +525,11 @@ export default function NotificationsIndex({
                                                 >
                                                     {!notification.is_read ? (
                                                         <DropdownMenuItem
-                                                            onClick={() => handleMarkAsRead(notification)}
+                                                            onClick={() =>
+                                                                handleMarkAsRead(
+                                                                    notification,
+                                                                )
+                                                            }
                                                             className="cursor-pointer text-xs"
                                                         >
                                                             <Check className="mr-2 h-3.5 w-3.5" />
@@ -502,7 +537,11 @@ export default function NotificationsIndex({
                                                         </DropdownMenuItem>
                                                     ) : (
                                                         <DropdownMenuItem
-                                                            onClick={() => handleMarkAsUnread(notification)}
+                                                            onClick={() =>
+                                                                handleMarkAsUnread(
+                                                                    notification,
+                                                                )
+                                                            }
                                                             className="cursor-pointer text-xs"
                                                         >
                                                             <Clock className="mr-2 h-3.5 w-3.5" />
@@ -510,7 +549,11 @@ export default function NotificationsIndex({
                                                         </DropdownMenuItem>
                                                     )}
                                                     <DropdownMenuItem
-                                                        onClick={() => handleDelete(notification)}
+                                                        onClick={() =>
+                                                            handleDelete(
+                                                                notification,
+                                                            )
+                                                        }
                                                         className="cursor-pointer text-xs text-destructive hover:bg-destructive/10"
                                                     >
                                                         <Trash2 className="mr-2 h-3.5 w-3.5" />
@@ -538,15 +581,15 @@ export default function NotificationsIndex({
                             {search
                                 ? 'No notifications match your search'
                                 : activeFilter === 'unread'
-                                ? "You're all caught up!"
-                                : 'No notifications in this category'}
+                                  ? "You're all caught up!"
+                                  : 'No notifications in this category'}
                         </h3>
                         <p className="mx-auto mt-1.5 max-w-sm text-xs leading-relaxed text-muted-foreground">
                             {search
                                 ? `No results found for "${search}". Try checking for spelling errors or clearing your query.`
                                 : activeFilter === 'unread'
-                                ? 'You have zero unread notifications. New alerts will appear here as they occur.'
-                                : 'When marketing actions, AI generations, quota warnings, or system events occur, they will appear here.'}
+                                  ? 'You have zero unread notifications. New alerts will appear here as they occur.'
+                                  : 'When marketing actions, AI generations, quota warnings, or system events occur, they will appear here.'}
                         </p>
                         {search && (
                             <Button

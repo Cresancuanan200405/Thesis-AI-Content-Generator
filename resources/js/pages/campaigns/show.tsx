@@ -2,7 +2,6 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     Archive,
     ArchiveRestore,
-    ArrowLeft,
     ArrowRight,
     CalendarDays,
     CalendarRange,
@@ -15,7 +14,6 @@ import {
     Edit3,
     Eye,
     FolderPlus,
-    Heart,
     ImageIcon,
     Layers,
     Loader2,
@@ -41,8 +39,6 @@ import {
     DialogDescription,
     DialogFooter,
     DialogHeader,
-    DialogOverlay,
-    DialogPortal,
     DialogTitle,
 } from '@/components/ui/dialog';
 import {
@@ -61,16 +57,6 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { downloadVisualAsFormat } from '@/lib/download';
-
-const statusStyles: Record<string, string> = {
-    draft: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300',
-    active: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300',
-    scheduled:
-        'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300',
-    completed:
-        'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900/50 dark:bg-purple-950/40 dark:text-purple-300',
-    archived: 'border-border bg-muted text-muted-foreground',
-};
 
 const statusLabels: Record<string, string> = {
     draft: 'Draft',
@@ -154,10 +140,6 @@ export default function CampaignShowPage({
         );
     };
 
-    /* Selected Visual in Layered Photo View */
-    const [selectedVisualIndex, setSelectedVisualIndex] = useState(0);
-    const activeDesign = designs[selectedVisualIndex] || designs[0] || null;
-
     /* Preview Modal State */
     const [previewDesign, setPreviewDesign] = useState<any>(null);
     const [isZoomed, setIsZoomed] = useState(false);
@@ -234,8 +216,6 @@ export default function CampaignShowPage({
             }
         }
     };
-
-
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -728,9 +708,7 @@ export default function CampaignShowPage({
                                                     index: number,
                                                 ) => (
                                                     <div
-                                                        key={
-                                                            design.id || index
-                                                        }
+                                                        key={design.id || index}
                                                         onClick={() =>
                                                             openPreview(design)
                                                         }
@@ -800,25 +778,29 @@ export default function CampaignShowPage({
                             <Card className="rounded-2xl border-border bg-card shadow-xs">
                                 <CardHeader className="border-b border-border/60 bg-muted/10 p-4">
                                     <div className="flex items-center justify-between">
-                                        <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                        <CardTitle className="flex items-center gap-2 text-sm font-bold">
                                             <Package className="h-4 w-4 text-primary" />
                                             Featured Product & Assets
                                         </CardTitle>
                                         {campaign?.product_name && (
-                                            <Badge variant="outline" className="text-[10px] font-semibold">
+                                            <Badge
+                                                variant="outline"
+                                                className="text-[10px] font-semibold"
+                                            >
                                                 Active Offering
                                             </Badge>
                                         )}
                                     </div>
                                 </CardHeader>
-                                <CardContent className="p-4 space-y-3">
+                                <CardContent className="space-y-3 p-4">
                                     <div className="grid gap-3 sm:grid-cols-2">
                                         <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
                                             <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
                                                 Product Name
                                             </span>
                                             <p className="mt-0.5 text-xs font-semibold text-foreground">
-                                                {campaign?.product_name || 'No specific product assigned'}
+                                                {campaign?.product_name ||
+                                                    'No specific product assigned'}
                                             </p>
                                         </div>
                                         <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
@@ -826,16 +808,19 @@ export default function CampaignShowPage({
                                                 Visual Assets Attached
                                             </span>
                                             <p className="mt-0.5 text-xs font-semibold text-foreground">
-                                                {designs.length} {designs.length === 1 ? 'asset generated' : 'assets generated'}
+                                                {designs.length}{' '}
+                                                {designs.length === 1
+                                                    ? 'asset generated'
+                                                    : 'assets generated'}
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/50">
+                                    <div className="flex flex-wrap items-center gap-2 border-t border-border/50 pt-2">
                                         <Button
                                             asChild
                                             size="sm"
                                             variant="outline"
-                                            className="h-7 text-xs gap-1.5 shadow-none"
+                                            className="h-7 gap-1.5 text-xs shadow-none"
                                         >
                                             <Link
                                                 href={`/generator?campaign_id=${campaign.id}${campaign.event_id ? `&event_id=${campaign.event_id}` : ''}${campaign.product_name ? `&product_name=${encodeURIComponent(campaign.product_name)}` : ''}`}
@@ -850,7 +835,7 @@ export default function CampaignShowPage({
                                                 size="sm"
                                                 variant="outline"
                                                 onClick={handleDownloadAll}
-                                                className="h-7 text-xs gap-1.5 shadow-none"
+                                                className="h-7 gap-1.5 text-xs shadow-none"
                                             >
                                                 <Download className="h-3 w-3" />
                                                 Download All Visuals
@@ -1886,62 +1871,6 @@ export default function CampaignShowPage({
                 </DialogContent>
             </Dialog>
         </>
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| LIFECYCLE COMPONENT
-|--------------------------------------------------------------------------
-*/
-
-function CampaignLifecycle({ status }: { status: string }) {
-    const statuses = [
-        { key: 'draft', label: 'Draft' },
-        { key: 'scheduled', label: 'Scheduled' },
-        { key: 'active', label: 'Active' },
-        { key: 'completed', label: 'Completed' },
-    ];
-
-    const currentIndex = statuses.findIndex((item) => item.key === status);
-
-    return (
-        <div className="space-y-3">
-            {statuses.map((item, index) => {
-                const isCurrent = index === currentIndex;
-                const isComplete = currentIndex >= 0 && index < currentIndex;
-
-                return (
-                    <div key={item.key} className="flex items-center gap-3">
-                        <div
-                            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${
-                                isCurrent
-                                    ? 'bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/20'
-                                    : isComplete
-                                      ? 'bg-primary/10 text-primary'
-                                      : 'bg-muted text-muted-foreground'
-                            } `}
-                        >
-                            {isComplete ? (
-                                <Check className="h-3.5 w-3.5" />
-                            ) : (
-                                index + 1
-                            )}
-                        </div>
-
-                        <span
-                            className={`text-sm ${
-                                isCurrent
-                                    ? 'font-semibold text-foreground'
-                                    : 'text-muted-foreground'
-                            } `}
-                        >
-                            {item.label}
-                        </span>
-                    </div>
-                );
-            })}
-        </div>
     );
 }
 

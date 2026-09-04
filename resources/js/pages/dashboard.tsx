@@ -12,7 +12,6 @@ import {
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
-    Coffee,
     Cpu,
     Download,
     Eye,
@@ -29,7 +28,6 @@ import {
     ShoppingBag,
     ShoppingCart,
     Sparkles,
-    Store,
     UtensilsCrossed,
     X,
     Zap,
@@ -154,8 +152,13 @@ type Props = {
 
 const formatEventCategory = (category?: string, type?: string): string => {
     const raw = category || type || '';
-    if (!raw) return 'Philippine Holiday';
+
+    if (!raw) {
+        return 'Philippine Holiday';
+    }
+
     const lower = raw.toLowerCase();
+
     if (
         lower.includes('regular') ||
         lower.includes('special') ||
@@ -163,9 +166,11 @@ const formatEventCategory = (category?: string, type?: string): string => {
     ) {
         return 'Philippine Holiday';
     }
+
     if (lower.includes('observance') || lower.includes('islamic')) {
         return 'Observance';
     }
+
     if (
         lower.includes('commercial') ||
         lower.includes('sale') ||
@@ -174,42 +179,50 @@ const formatEventCategory = (category?: string, type?: string): string => {
     ) {
         return 'Promotional Event';
     }
+
     if (lower.includes('custom')) {
         return 'Custom Event';
     }
+
     return raw.charAt(0).toUpperCase() + raw.slice(1);
 };
 
-const getIndustryIcon = (industry?: string | null) => {
+function IndustryIcon({
+    industry,
+    className,
+}: {
+    industry?: string | null;
+    className?: string;
+}) {
     switch (industry) {
         case 'Food & Beverage':
-            return UtensilsCrossed;
+            return <UtensilsCrossed className={className} />;
         case 'Retail':
-            return ShoppingBag;
+            return <ShoppingBag className={className} />;
         case 'Technology':
-            return Cpu;
+            return <Cpu className={className} />;
         case 'Healthcare':
-            return HeartPulse;
+            return <HeartPulse className={className} />;
         case 'Real Estate':
-            return Building2;
+            return <Building2 className={className} />;
         case 'Education':
-            return GraduationCap;
+            return <GraduationCap className={className} />;
         case 'Beauty & Wellness':
-            return Sparkles;
+            return <Sparkles className={className} />;
         case 'Professional Services':
-            return Briefcase;
+            return <Briefcase className={className} />;
         case 'Travel & Hospitality':
-            return Plane;
+            return <Plane className={className} />;
         case 'Automotive':
-            return Car;
+            return <Car className={className} />;
         case 'Finance':
-            return Landmark;
+            return <Landmark className={className} />;
         case 'E-commerce':
-            return ShoppingCart;
+            return <ShoppingCart className={className} />;
         default:
-            return Building2;
+            return <Building2 className={className} />;
     }
-};
+}
 
 /* ==========================================================================
    MAIN DASHBOARD
@@ -229,7 +242,6 @@ export default function Dashboard({
     business = {},
 }: Props) {
     const user = auth?.user;
-    const IndustryIcon = getIndustryIcon(business?.industry);
 
     /* ----------------------------------------------------------------------
        DATE / GREETING
@@ -262,8 +274,9 @@ export default function Dashboard({
     const [hoveredPointIndex, setHoveredPointIndex] = useState<number | null>(
         null,
     );
-    const [previewDesign, setPreviewDesign] =
-        useState<DashboardDesign | null>(null);
+    const [previewDesign, setPreviewDesign] = useState<DashboardDesign | null>(
+        null,
+    );
     const [isCreateCampaignOpen, setIsCreateCampaignOpen] = useState(false);
     const [isSubmittingCampaign, setIsSubmittingCampaign] = useState(false);
     const [campaignFormErrors, setCampaignFormErrors] = useState<
@@ -336,12 +349,16 @@ export default function Dashboard({
     const hasActivity = totalPeriodDesigns > 0 || totalPeriodCampaigns > 0;
 
     const maxChartValue = useMemo(() => {
-        if (!hasActivity) return 5;
+        if (!hasActivity) {
+            return 5;
+        }
+
         const highest = Math.max(
             ...activeActivityData.map((item) =>
                 Math.max(item.designs || 0, item.campaigns || 0),
             ),
         );
+
         return Math.max(highest + 1, 4);
     }, [activeActivityData, hasActivity]);
 
@@ -349,12 +366,17 @@ export default function Dashboard({
         if (!hasActivity || activeActivityData.length === 0) {
             return '0 visuals recorded';
         }
-        const avg = Math.round(
-            totalPeriodDesigns / activeActivityData.length,
-        );
+
+        const avg = Math.round(totalPeriodDesigns / activeActivityData.length);
         const unit = chartTimeframe === 'monthly' ? 'month' : 'day';
+
         return `${avg} visual${avg === 1 ? '' : 's'} / ${unit}`;
-    }, [hasActivity, totalPeriodDesigns, activeActivityData.length, chartTimeframe]);
+    }, [
+        hasActivity,
+        totalPeriodDesigns,
+        activeActivityData.length,
+        chartTimeframe,
+    ]);
 
     /* ----------------------------------------------------------------------
        CAMPAIGN PIPELINE
@@ -379,9 +401,7 @@ export default function Dashboard({
         statusCounts.archived;
 
     const getStatusPercentage = (count: number) =>
-        totalCampaignsTracked > 0
-            ? (count / totalCampaignsTracked) * 100
-            : 0;
+        totalCampaignsTracked > 0 ? (count / totalCampaignsTracked) * 100 : 0;
 
     /* ----------------------------------------------------------------------
        WORKSPACE PIPELINE STATUS
@@ -603,6 +623,7 @@ export default function Dashboard({
 
     const handlePrevDesign = (event?: React.MouseEvent) => {
         event?.stopPropagation();
+
         if (hasPrevDesign) {
             setPreviewDesign(recent_designs[currentPreviewIndex - 1]);
         }
@@ -610,6 +631,7 @@ export default function Dashboard({
 
     const handleNextDesign = (event?: React.MouseEvent) => {
         event?.stopPropagation();
+
         if (hasNextDesign) {
             setPreviewDesign(recent_designs[currentPreviewIndex + 1]);
         }
@@ -618,6 +640,7 @@ export default function Dashboard({
     const handleDownload = (design: DashboardDesign) => {
         if (!design.image_url) {
             toast.info('No image available to download.');
+
             return;
         }
 
@@ -645,22 +668,33 @@ export default function Dashboard({
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
-            if (!previewDesign) return;
+            if (!previewDesign) {
+                return;
+            }
 
             if (event.key === 'Escape') {
                 setPreviewDesign(null);
             }
+
             if (event.key === 'ArrowLeft' && hasPrevDesign) {
                 setPreviewDesign(recent_designs[currentPreviewIndex - 1]);
             }
+
             if (event.key === 'ArrowRight' && hasNextDesign) {
                 setPreviewDesign(recent_designs[currentPreviewIndex + 1]);
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
+
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [previewDesign, currentPreviewIndex, hasPrevDesign, hasNextDesign, recent_designs]);
+    }, [
+        previewDesign,
+        currentPreviewIndex,
+        hasPrevDesign,
+        hasNextDesign,
+        recent_designs,
+    ]);
 
     /* ----------------------------------------------------------------------
        CREATE CAMPAIGN ACTION
@@ -698,6 +732,7 @@ export default function Dashboard({
         if (Object.keys(errors).length > 0) {
             setCampaignFormErrors(errors);
             toast.error('Please fill in all required campaign fields.');
+
             return;
         }
 
@@ -719,7 +754,9 @@ export default function Dashboard({
             },
             onError: (errors) => {
                 setCampaignFormErrors(errors as Record<string, string>);
-                toast.error('Failed to create campaign. Please check the inputs.');
+                toast.error(
+                    'Failed to create campaign. Please check the inputs.',
+                );
             },
             onFinish: () => {
                 setIsSubmittingCampaign(false);
@@ -736,54 +773,65 @@ export default function Dashboard({
             <Head title="Marketing Studio Dashboard" />
 
             <div className="min-h-screen w-full min-w-0 bg-background pb-24 text-foreground selection:bg-primary selection:text-primary-foreground">
-                <div className="w-full min-w-0 space-y-6 sm:space-y-8 p-4 md:p-6 lg:p-8">
+                <div className="w-full min-w-0 space-y-6 p-4 sm:space-y-8 md:p-6 lg:p-8">
                     {/* ======================================================
                         SECTION 1 — HERO & BRAND HIGHLIGHT
                     ====================================================== */}
-                    <section className="relative overflow-hidden rounded-3xl border border-border/80 bg-gradient-to-br from-card via-card to-primary/[0.03] p-4 sm:p-6 lg:p-8 shadow-xs w-full min-w-0">
-                        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-primary/10 blur-[90px]" />
+                    <section className="relative w-full min-w-0 overflow-hidden rounded-3xl border border-border/80 bg-gradient-to-br from-card via-card to-primary/[0.03] p-4 shadow-xs sm:p-6 lg:p-8">
+                        <div className="pointer-events-none absolute -top-16 -right-16 h-64 w-64 rounded-full bg-primary/10 blur-[90px]" />
                         <div className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-blue-500/10 blur-[90px]" />
 
-                        <div className="relative z-10 space-y-6 w-full min-w-0">
+                        <div className="relative z-10 w-full min-w-0 space-y-6">
                             {/* Executive Business Brand Highlight Header */}
-                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-border/70 bg-background/70 p-3.5 sm:p-4 shadow-2xs backdrop-blur-md dark:bg-background/40 w-full min-w-0">
-                                <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-3.5 flex-wrap sm:flex-nowrap">
-                                    <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-gradient-to-br from-primary/15 via-primary/10 to-transparent text-primary shadow-xs ring-1 ring-primary/20">
+                            <div className="flex w-full min-w-0 flex-col gap-4 rounded-2xl border border-border/70 bg-background/70 p-3.5 shadow-2xs backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:p-4 dark:bg-background/40">
+                                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 sm:flex-nowrap sm:gap-3.5">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-gradient-to-br from-primary/15 via-primary/10 to-transparent text-primary shadow-xs ring-1 ring-primary/20 sm:h-12 sm:w-12">
                                         {business?.logo_url ? (
                                             <img
                                                 src={business.logo_url}
-                                                alt={business.name || 'Brand Logo'}
-                                                className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg object-contain"
+                                                alt={
+                                                    business.name ||
+                                                    'Brand Logo'
+                                                }
+                                                className="h-7 w-7 rounded-lg object-contain sm:h-8 sm:w-8"
                                             />
                                         ) : (
-                                            <IndustryIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+                                            <IndustryIcon
+                                                industry={business?.industry}
+                                                className="h-5 w-5 sm:h-6 sm:w-6"
+                                            />
                                         )}
                                     </div>
 
                                     <div className="min-w-0 flex-1">
-                                        <div className="flex flex-wrap items-center gap-2 min-w-0">
-                                            <span className="text-base sm:text-lg lg:text-xl font-black tracking-tight text-foreground break-words">
-                                                {business?.name || 'Marketing Studio Workspace'}
+                                        <div className="flex min-w-0 flex-wrap items-center gap-2">
+                                            <span className="text-base font-black tracking-tight break-words text-foreground sm:text-lg lg:text-xl">
+                                                {business?.name ||
+                                                    'Marketing Studio Workspace'}
                                             </span>
                                             <Badge
                                                 variant="outline"
-                                                className="border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-bold text-primary shrink-0"
+                                                className="shrink-0 border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-bold text-primary"
                                             >
-                                                {business?.industry || 'Commercial Profile'}
+                                                {business?.industry ||
+                                                    'Commercial Profile'}
                                             </Badge>
                                         </div>
 
-                                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground min-w-0">
+                                        <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-muted-foreground sm:gap-2">
                                             {business?.category && (
-                                                <span className="font-medium text-foreground/80 break-words">
+                                                <span className="font-medium break-words text-foreground/80">
                                                     {business.category}
                                                 </span>
                                             )}
-                                            {business?.category && business?.tagline && (
-                                                <span className="text-border">•</span>
-                                            )}
+                                            {business?.category &&
+                                                business?.tagline && (
+                                                    <span className="text-border">
+                                                        •
+                                                    </span>
+                                                )}
                                             {business?.tagline && (
-                                                <span className="italic text-muted-foreground break-words">
+                                                <span className="break-words text-muted-foreground italic">
                                                     "{business.tagline}"
                                                 </span>
                                             )}
@@ -791,29 +839,34 @@ export default function Dashboard({
                                     </div>
                                 </div>
 
-                                <div className="flex shrink-0 items-center gap-2 text-xs font-medium text-muted-foreground self-start sm:self-auto border-t border-border/40 sm:border-0 pt-2 sm:pt-0 w-full sm:w-auto">
-                                    <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+                                <div className="flex w-full shrink-0 items-center gap-2 self-start border-t border-border/40 pt-2 text-xs font-medium text-muted-foreground sm:w-auto sm:self-auto sm:border-0 sm:pt-0">
+                                    <Calendar className="h-3.5 w-3.5 shrink-0 text-primary" />
                                     <span>{todayFormatted}</span>
                                 </div>
                             </div>
 
                             {/* Hero Greeting & Quick Actions */}
-                            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between w-full min-w-0">
-                                <div className="space-y-1.5 sm:space-y-2 min-w-0 flex-1">
-                                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-foreground break-words">
-                                        {greeting}, {user?.name?.split(' ')[0] || 'Marketer'}!
+                            <div className="flex w-full min-w-0 flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                                <div className="min-w-0 flex-1 space-y-1.5 sm:space-y-2">
+                                    <h1 className="text-xl font-extrabold tracking-tight break-words text-foreground sm:text-2xl lg:text-3xl">
+                                        {greeting},{' '}
+                                        {user?.name?.split(' ')[0] ||
+                                            'Marketer'}
+                                        !
                                     </h1>
 
                                     <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                                        Your AI-driven marketing workspace overview for planning campaigns, generating visuals,
-                                        managing catalog readiness, and scheduling opportunities.
+                                        Your AI-driven marketing workspace
+                                        overview for planning campaigns,
+                                        generating visuals, managing catalog
+                                        readiness, and scheduling opportunities.
                                     </p>
                                 </div>
 
-                                <div className="flex shrink-0 flex-wrap gap-2 sm:gap-2.5 w-full lg:w-auto items-center">
+                                <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:gap-2.5 lg:w-auto">
                                     <Button
                                         asChild
-                                        className="h-10 flex-1 sm:flex-initial min-w-fit gap-2 rounded-xl px-4 text-xs font-bold shadow-xs transition-all hover:scale-[1.02] active:scale-95"
+                                        className="h-10 min-w-fit flex-1 gap-2 rounded-xl px-4 text-xs font-bold shadow-xs transition-all hover:scale-[1.02] active:scale-95 sm:flex-initial"
                                     >
                                         <Link href="/generator">
                                             <Sparkles className="h-4 w-4" />
@@ -824,8 +877,10 @@ export default function Dashboard({
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        onClick={() => setIsCreateCampaignOpen(true)}
-                                        className="h-10 flex-1 sm:flex-initial min-w-fit gap-1.5 rounded-xl px-3.5 text-xs font-semibold cursor-pointer"
+                                        onClick={() =>
+                                            setIsCreateCampaignOpen(true)
+                                        }
+                                        className="h-10 min-w-fit flex-1 cursor-pointer gap-1.5 rounded-xl px-3.5 text-xs font-semibold sm:flex-initial"
                                     >
                                         <Plus className="h-4 w-4" />
                                         Create Campaign
@@ -834,7 +889,7 @@ export default function Dashboard({
                                     <Button
                                         asChild
                                         variant="outline"
-                                        className="h-10 flex-1 sm:flex-initial min-w-fit gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
+                                        className="h-10 min-w-fit flex-1 gap-1.5 rounded-xl px-3.5 text-xs font-semibold sm:flex-initial"
                                     >
                                         <Link href="/products/create">
                                             <Package className="h-4 w-4" />
@@ -845,7 +900,7 @@ export default function Dashboard({
                                     <Button
                                         asChild
                                         variant="outline"
-                                        className="h-10 flex-1 sm:flex-initial min-w-fit gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
+                                        className="h-10 min-w-fit flex-1 gap-1.5 rounded-xl px-3.5 text-xs font-semibold sm:flex-initial"
                                     >
                                         <Link href="/calendar">
                                             <Calendar className="h-4 w-4" />
@@ -860,7 +915,7 @@ export default function Dashboard({
                     {/* ======================================================
                         SECTION 2 — KEY MARKETING METRICS (4 CARDS)
                     ====================================================== */}
-                    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4 w-full min-w-0">
+                    <section className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
                         {summaryMetrics.map((metric) => {
                             const Icon = metric.icon;
 
@@ -869,12 +924,12 @@ export default function Dashboard({
                                     key={metric.label}
                                     href={metric.href}
                                     className={cn(
-                                        'group relative overflow-hidden rounded-2xl border border-border/80 bg-card p-4 sm:p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md w-full min-w-0 flex flex-col justify-between',
+                                        'group relative flex w-full min-w-0 flex-col justify-between overflow-hidden rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-5',
                                         metric.borderColor,
                                     )}
                                 >
-                                    <div className="flex items-center justify-between gap-2 min-w-0">
-                                        <span className="text-xs font-semibold text-muted-foreground truncate">
+                                    <div className="flex min-w-0 items-center justify-between gap-2">
+                                        <span className="truncate text-xs font-semibold text-muted-foreground">
                                             {metric.label}
                                         </span>
 
@@ -890,17 +945,17 @@ export default function Dashboard({
                                     </div>
 
                                     <div className="mt-3 min-w-0">
-                                        <span className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                                        <span className="text-2xl font-extrabold tracking-tight sm:text-3xl">
                                             {metric.value}
                                         </span>
                                     </div>
 
-                                    <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-2.5 text-[11px] gap-2 min-w-0">
-                                        <span className="text-muted-foreground truncate">
+                                    <div className="mt-3 flex min-w-0 items-center justify-between gap-2 border-t border-border/50 pt-2.5 text-[11px]">
+                                        <span className="truncate text-muted-foreground">
                                             {metric.description}
                                         </span>
 
-                                        <span className="flex items-center gap-0.5 font-bold text-primary shrink-0">
+                                        <span className="flex shrink-0 items-center gap-0.5 font-bold text-primary">
                                             View
                                             <ArrowUpRight className="h-3 w-3" />
                                         </span>
@@ -913,19 +968,19 @@ export default function Dashboard({
                     {/* ======================================================
                         SECTION 3 & 4 — ACTIVITY & PIPELINE
                     ====================================================== */}
-                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 w-full min-w-0">
+                    <div className="grid w-full min-w-0 grid-cols-1 gap-6 lg:grid-cols-3">
                         {/* --------------------------------------------------
                             MARKETING ACTIVITY & OUTPUT
                         -------------------------------------------------- */}
-                        <Card className="rounded-3xl border-border/80 bg-card p-4 sm:p-6 shadow-xs lg:col-span-2 w-full min-w-0 overflow-hidden">
-                            <div className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between w-full min-w-0">
+                        <Card className="w-full min-w-0 overflow-hidden rounded-3xl border-border/80 bg-card p-4 shadow-xs sm:p-6 lg:col-span-2">
+                            <div className="flex w-full min-w-0 flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2">
                                         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                             <BarChart3 className="h-4 w-4" />
                                         </div>
 
-                                        <h2 className="text-base font-bold tracking-tight truncate">
+                                        <h2 className="truncate text-base font-bold tracking-tight">
                                             Marketing Activity & Output
                                         </h2>
                                     </div>
@@ -936,14 +991,14 @@ export default function Dashboard({
                                     </p>
                                 </div>
 
-                                <div className="flex shrink-0 items-center gap-1 rounded-xl border border-border bg-muted/50 p-1 self-start sm:self-auto flex-wrap">
+                                <div className="flex shrink-0 flex-wrap items-center gap-1 self-start rounded-xl border border-border bg-muted/50 p-1 sm:self-auto">
                                     <button
                                         type="button"
                                         onClick={() =>
                                             setChartTimeframe('monthly')
                                         }
                                         className={cn(
-                                            'rounded-lg px-2.5 sm:px-3 py-1 text-xs font-bold transition-all cursor-pointer',
+                                            'cursor-pointer rounded-lg px-2.5 py-1 text-xs font-bold transition-all sm:px-3',
                                             chartTimeframe === 'monthly'
                                                 ? 'bg-card text-foreground shadow-xs'
                                                 : 'text-muted-foreground hover:text-foreground',
@@ -958,7 +1013,7 @@ export default function Dashboard({
                                             setChartTimeframe('weekly')
                                         }
                                         className={cn(
-                                            'rounded-lg px-2.5 sm:px-3 py-1 text-xs font-bold transition-all cursor-pointer',
+                                            'cursor-pointer rounded-lg px-2.5 py-1 text-xs font-bold transition-all sm:px-3',
                                             chartTimeframe === 'weekly'
                                                 ? 'bg-card text-foreground shadow-xs'
                                                 : 'text-muted-foreground hover:text-foreground',
@@ -969,7 +1024,7 @@ export default function Dashboard({
                                 </div>
                             </div>
 
-                            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs w-full min-w-0">
+                            <div className="mt-4 flex w-full min-w-0 flex-wrap items-center justify-between gap-3 text-xs">
                                 <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                                     <div className="flex items-center gap-1.5">
                                         <span className="h-3 w-3 shrink-0 rounded-md bg-primary" />
@@ -1005,110 +1060,127 @@ export default function Dashboard({
                                 )}
                             </div>
 
-                            <div className="pt-6 w-full min-w-0 overflow-x-auto">
+                            <div className="w-full min-w-0 overflow-x-auto pt-6">
                                 {hasActivity ? (
                                     <div
-                                        className="grid h-48 w-full items-end gap-2 border-b border-border/60 px-1 sm:px-2 sm:gap-4 min-w-0"
+                                        className="grid h-48 w-full min-w-0 items-end gap-2 border-b border-border/60 px-1 sm:gap-4 sm:px-2"
                                         style={{
                                             gridTemplateColumns: `repeat(${activeActivityData.length || 6}, minmax(0, 1fr))`,
                                         }}
                                     >
-                                        {activeActivityData.map((item, index) => {
-                                            const designs = item.designs || 0;
-                                            const campaigns = item.campaigns || 0;
+                                        {activeActivityData.map(
+                                            (item, index) => {
+                                                const designs =
+                                                    item.designs || 0;
+                                                const campaigns =
+                                                    item.campaigns || 0;
 
-                                            const designHeight =
-                                                designs > 0
-                                                    ? Math.max(
-                                                          12,
-                                                          Math.round(
-                                                              (designs /
-                                                                  maxChartValue) *
-                                                                  100,
-                                                          ),
-                                                      )
-                                                    : 4;
+                                                const designHeight =
+                                                    designs > 0
+                                                        ? Math.max(
+                                                              12,
+                                                              Math.round(
+                                                                  (designs /
+                                                                      maxChartValue) *
+                                                                      100,
+                                                              ),
+                                                          )
+                                                        : 4;
 
-                                            const campaignHeight =
-                                                campaigns > 0
-                                                    ? Math.max(
-                                                          8,
-                                                          Math.round(
-                                                              (campaigns /
-                                                                  maxChartValue) *
-                                                                  100,
-                                                          ),
-                                                      )
-                                                    : 4;
+                                                const campaignHeight =
+                                                    campaigns > 0
+                                                        ? Math.max(
+                                                              8,
+                                                              Math.round(
+                                                                  (campaigns /
+                                                                      maxChartValue) *
+                                                                      100,
+                                                              ),
+                                                          )
+                                                        : 4;
 
-                                            const hovered =
-                                                hoveredPointIndex === index;
+                                                const hovered =
+                                                    hoveredPointIndex === index;
 
-                                            return (
-                                                <div
-                                                    key={`${item.period}-${index}`}
-                                                    className="group relative flex h-full cursor-pointer flex-col items-center justify-end min-w-0"
-                                                    onMouseEnter={() =>
-                                                        setHoveredPointIndex(index)
-                                                    }
-                                                    onMouseLeave={() =>
-                                                        setHoveredPointIndex(null)
-                                                    }
-                                                >
-                                                    {hovered && (
-                                                        <div className="absolute -top-12 z-30 rounded-xl border border-border bg-popover px-3 py-1.5 text-[11px] font-semibold text-popover-foreground shadow-lg whitespace-nowrap">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="font-bold text-primary">
-                                                                    {designs} visual
-                                                                    {designs === 1
-                                                                        ? ''
-                                                                        : 's'}
-                                                                </span>
-                                                                <span>•</span>
-                                                                <span className="font-bold text-emerald-500">
-                                                                    {campaigns}{' '}
-                                                                    campaign
-                                                                    {campaigns ===
-                                                                    1
-                                                                        ? ''
-                                                                        : 's'}
-                                                                </span>
+                                                return (
+                                                    <div
+                                                        key={`${item.period}-${index}`}
+                                                        className="group relative flex h-full min-w-0 cursor-pointer flex-col items-center justify-end"
+                                                        onMouseEnter={() =>
+                                                            setHoveredPointIndex(
+                                                                index,
+                                                            )
+                                                        }
+                                                        onMouseLeave={() =>
+                                                            setHoveredPointIndex(
+                                                                null,
+                                                            )
+                                                        }
+                                                    >
+                                                        {hovered && (
+                                                            <div className="absolute -top-12 z-30 rounded-xl border border-border bg-popover px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap text-popover-foreground shadow-lg">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-bold text-primary">
+                                                                        {
+                                                                            designs
+                                                                        }{' '}
+                                                                        visual
+                                                                        {designs ===
+                                                                        1
+                                                                            ? ''
+                                                                            : 's'}
+                                                                    </span>
+                                                                    <span>
+                                                                        •
+                                                                    </span>
+                                                                    <span className="font-bold text-emerald-500">
+                                                                        {
+                                                                            campaigns
+                                                                        }{' '}
+                                                                        campaign
+                                                                        {campaigns ===
+                                                                        1
+                                                                            ? ''
+                                                                            : 's'}
+                                                                    </span>
+                                                                </div>
                                                             </div>
+                                                        )}
+
+                                                        <div className="flex h-36 w-full max-w-full items-end justify-center gap-1 sm:gap-1.5">
+                                                            <div
+                                                                style={{
+                                                                    height: `${designHeight}%`,
+                                                                }}
+                                                                className={cn(
+                                                                    'w-1/2 rounded-t-lg transition-all',
+                                                                    designs > 0
+                                                                        ? 'bg-primary/80 group-hover:bg-primary'
+                                                                        : 'bg-muted/40',
+                                                                )}
+                                                            />
+
+                                                            <div
+                                                                style={{
+                                                                    height: `${campaignHeight}%`,
+                                                                }}
+                                                                className={cn(
+                                                                    'w-1/2 rounded-t-lg transition-all',
+                                                                    campaigns >
+                                                                        0
+                                                                        ? 'bg-emerald-500/80 group-hover:bg-emerald-500'
+                                                                        : 'bg-muted/40',
+                                                                )}
+                                                            />
                                                         </div>
-                                                    )}
 
-                                                    <div className="flex h-36 w-full max-w-full items-end justify-center gap-1 sm:gap-1.5">
-                                                        <div
-                                                            style={{
-                                                                height: `${designHeight}%`,
-                                                            }}
-                                                            className={cn(
-                                                                'w-1/2 rounded-t-lg transition-all',
-                                                                designs > 0
-                                                                    ? 'bg-primary/80 group-hover:bg-primary'
-                                                                    : 'bg-muted/40',
-                                                            )}
-                                                        />
-
-                                                        <div
-                                                            style={{
-                                                                height: `${campaignHeight}%`,
-                                                            }}
-                                                            className={cn(
-                                                                'w-1/2 rounded-t-lg transition-all',
-                                                                campaigns > 0
-                                                                    ? 'bg-emerald-500/80 group-hover:bg-emerald-500'
-                                                                    : 'bg-muted/40',
-                                                            )}
-                                                        />
+                                                        <span className="mt-2 max-w-full truncate text-center text-xs font-bold text-muted-foreground">
+                                                            {item.period}
+                                                        </span>
                                                     </div>
-
-                                                    <span className="mt-2 text-xs font-bold text-muted-foreground truncate max-w-full text-center">
-                                                        {item.period}
-                                                    </span>
-                                                </div>
-                                            );
-                                        })}
+                                                );
+                                            },
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="flex h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-border/80 bg-muted/20 p-6 text-center">
@@ -1146,29 +1218,29 @@ export default function Dashboard({
                         {/* --------------------------------------------------
                             CAMPAIGN PIPELINE
                         -------------------------------------------------- */}
-                        <Card className="rounded-3xl border-border/80 bg-card p-4 sm:p-5 shadow-xs min-w-0">
-                            <div className="flex items-center justify-between border-b border-border/60 pb-3 gap-2">
-                                <div className="flex items-center gap-2 min-w-0">
+                        <Card className="min-w-0 rounded-3xl border-border/80 bg-card p-4 shadow-xs sm:p-5">
+                            <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-3">
+                                <div className="flex min-w-0 items-center gap-2">
                                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
                                         <PieChart className="h-4 w-4" />
                                     </div>
 
-                                    <h3 className="text-sm font-bold truncate">
+                                    <h3 className="truncate text-sm font-bold">
                                         Campaign Pipeline
                                     </h3>
                                 </div>
 
                                 <Badge
                                     variant="outline"
-                                    className="text-[10px] font-bold shrink-0"
+                                    className="shrink-0 text-[10px] font-bold"
                                 >
                                     {totalCampaignsTracked} Total
                                 </Badge>
                             </div>
 
-                            <div className="mt-4 space-y-3 min-w-0">
+                            <div className="mt-4 min-w-0 space-y-3">
                                 {/* Pipeline Distribution Bar */}
-                                <div className="flex h-3 overflow-hidden rounded-full bg-muted/60 min-w-0">
+                                <div className="flex h-3 min-w-0 overflow-hidden rounded-full bg-muted/60">
                                     {[
                                         {
                                             status: 'active',
@@ -1247,23 +1319,24 @@ export default function Dashboard({
                                             key={item.status}
                                             href="/campaigns"
                                             className={cn(
-                                                'flex items-center justify-between rounded-xl border border-border/60 bg-muted/20 p-2.5 transition-colors hover:bg-muted/60 min-w-0',
-                                                item.fullWidth && 'sm:col-span-2',
+                                                'flex min-w-0 items-center justify-between rounded-xl border border-border/60 bg-muted/20 p-2.5 transition-colors hover:bg-muted/60',
+                                                item.fullWidth &&
+                                                    'sm:col-span-2',
                                             )}
                                         >
-                                            <div className="flex items-center gap-1.5 min-w-0">
+                                            <div className="flex min-w-0 items-center gap-1.5">
                                                 <span
                                                     className={cn(
                                                         'h-2 w-2 shrink-0 rounded-full',
                                                         item.color,
                                                     )}
                                                 />
-                                                <span className="text-xs font-medium text-muted-foreground truncate">
+                                                <span className="truncate text-xs font-medium text-muted-foreground">
                                                     {item.label}
                                                 </span>
                                             </div>
 
-                                            <span className="text-xs font-bold shrink-0 ml-2">
+                                            <span className="ml-2 shrink-0 text-xs font-bold">
                                                 {item.count}
                                             </span>
                                         </Link>
@@ -1276,14 +1349,14 @@ export default function Dashboard({
                     {/* ======================================================
                         SECTION 5 & 6 — RECENT VISUALS & UPCOMING OPPORTUNITIES
                     ====================================================== */}
-                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 w-full min-w-0">
+                    <div className="grid w-full min-w-0 grid-cols-1 gap-6 lg:grid-cols-3">
                         {/* --------------------------------------------------
                             RECENT AI VISUALS
                         -------------------------------------------------- */}
-                        <div className="space-y-4 lg:col-span-2 w-full min-w-0">
+                        <div className="w-full min-w-0 space-y-4 lg:col-span-2">
                             <div className="flex items-center justify-between gap-2">
-                                <h2 className="flex items-center gap-2 text-base font-bold sm:text-lg truncate">
-                                    <ImageIcon className="h-4 w-4 text-primary shrink-0" />
+                                <h2 className="flex items-center gap-2 truncate text-base font-bold sm:text-lg">
+                                    <ImageIcon className="h-4 w-4 shrink-0 text-primary" />
                                     <span>Recent AI Visuals</span>
                                 </h2>
 
@@ -1291,7 +1364,7 @@ export default function Dashboard({
                                     asChild
                                     variant="ghost"
                                     size="sm"
-                                    className="text-xs font-bold text-primary shrink-0"
+                                    className="shrink-0 text-xs font-bold text-primary"
                                 >
                                     <Link href="/designs">
                                         View All ({totalDesigns})
@@ -1301,7 +1374,7 @@ export default function Dashboard({
                             </div>
 
                             {recent_designs.length === 0 ? (
-                                <Card className="rounded-3xl border-border/80 bg-card p-8 text-center shadow-xs w-full min-w-0">
+                                <Card className="w-full min-w-0 rounded-3xl border-border/80 bg-card p-8 text-center shadow-xs">
                                     <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                                         <ImageIcon className="h-6 w-6" />
                                     </div>
@@ -1328,7 +1401,7 @@ export default function Dashboard({
                                     </Button>
                                 </Card>
                             ) : (
-                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4 w-full min-w-0">
+                                <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
                                     {recent_designs.map((design) => (
                                         <button
                                             type="button"
@@ -1336,9 +1409,9 @@ export default function Dashboard({
                                             onClick={() =>
                                                 setPreviewDesign(design)
                                             }
-                                            className="group overflow-hidden rounded-2xl border border-border/80 bg-card text-left shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md w-full min-w-0 flex flex-col cursor-pointer"
+                                            className="group flex w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-border/80 bg-card text-left shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md"
                                         >
-                                            <div className="relative aspect-4/3 sm:aspect-auto sm:h-44 w-full overflow-hidden bg-muted shrink-0">
+                                            <div className="relative aspect-4/3 w-full shrink-0 overflow-hidden bg-muted sm:aspect-auto sm:h-44">
                                                 {design.image_url ? (
                                                     <img
                                                         src={design.image_url}
@@ -1356,12 +1429,12 @@ export default function Dashboard({
 
                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 
-                                                <span className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white opacity-0 backdrop-blur-md transition-opacity group-hover:opacity-100">
+                                                <span className="absolute top-2.5 right-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white opacity-0 backdrop-blur-md transition-opacity group-hover:opacity-100">
                                                     <Eye className="h-3.5 w-3.5" />
                                                 </span>
                                             </div>
 
-                                            <div className="space-y-1 p-3 sm:p-3.5 min-w-0 flex-1">
+                                            <div className="min-w-0 flex-1 space-y-1 p-3 sm:p-3.5">
                                                 <p className="truncate text-xs font-bold group-hover:text-primary">
                                                     {design.product_name ||
                                                         'Marketing Creative'}
@@ -1383,10 +1456,10 @@ export default function Dashboard({
                         {/* --------------------------------------------------
                             UPCOMING MARKETING OPPORTUNITIES
                         -------------------------------------------------- */}
-                        <div className="space-y-4 w-full min-w-0">
+                        <div className="w-full min-w-0 space-y-4">
                             <div className="flex items-center justify-between gap-2">
-                                <h2 className="flex items-center gap-2 text-base font-bold sm:text-lg truncate">
-                                    <Calendar className="h-4 w-4 text-primary shrink-0" />
+                                <h2 className="flex items-center gap-2 truncate text-base font-bold sm:text-lg">
+                                    <Calendar className="h-4 w-4 shrink-0 text-primary" />
                                     <span>Upcoming Opportunities</span>
                                 </h2>
 
@@ -1394,7 +1467,7 @@ export default function Dashboard({
                                     asChild
                                     variant="ghost"
                                     size="sm"
-                                    className="text-xs font-bold text-primary shrink-0"
+                                    className="shrink-0 text-xs font-bold text-primary"
                                 >
                                     <Link href="/calendar">
                                         Calendar
@@ -1404,7 +1477,7 @@ export default function Dashboard({
                             </div>
 
                             {upcoming_events.length === 0 ? (
-                                <Card className="rounded-3xl border-border/80 bg-card p-6 text-center shadow-xs w-full min-w-0">
+                                <Card className="w-full min-w-0 rounded-3xl border-border/80 bg-card p-6 text-center shadow-xs">
                                     <CalendarDays className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
 
                                     <p className="text-xs text-muted-foreground">
@@ -1424,19 +1497,19 @@ export default function Dashboard({
                                     </Button>
                                 </Card>
                             ) : (
-                                <div className="space-y-3 w-full min-w-0">
+                                <div className="w-full min-w-0 space-y-3">
                                     {upcoming_events.map((event) => (
                                         <div
                                             key={event.id}
-                                            className="group rounded-2xl border border-border/80 bg-card p-3.5 sm:p-4 shadow-xs transition-all hover:border-primary/40 hover:shadow-md w-full min-w-0"
+                                            className="group w-full min-w-0 rounded-2xl border border-border/80 bg-card p-3.5 shadow-xs transition-all hover:border-primary/40 hover:shadow-md sm:p-4"
                                         >
-                                            <div className="flex items-start justify-between gap-3 min-w-0">
+                                            <div className="flex min-w-0 items-start justify-between gap-3">
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="text-xs font-bold group-hover:text-primary truncate">
+                                                    <p className="truncate text-xs font-bold group-hover:text-primary">
                                                         {event.name}
                                                     </p>
 
-                                                    <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
+                                                    <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                                                         {event.date ||
                                                             'Upcoming'}
                                                     </p>
@@ -1445,15 +1518,15 @@ export default function Dashboard({
                                                 {event.days && (
                                                     <Badge
                                                         variant="secondary"
-                                                        className="border-primary/20 bg-primary/10 text-[10px] font-bold text-primary shrink-0"
+                                                        className="shrink-0 border-primary/20 bg-primary/10 text-[10px] font-bold text-primary"
                                                     >
                                                         {event.days}
                                                     </Badge>
                                                 )}
                                             </div>
 
-                                            <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 gap-2 min-w-0">
-                                                <span className="text-[11px] font-medium text-muted-foreground truncate">
+                                            <div className="mt-3 flex min-w-0 items-center justify-between gap-2 border-t border-border/40 pt-2">
+                                                <span className="truncate text-[11px] font-medium text-muted-foreground">
                                                     {formatEventCategory(
                                                         event.category,
                                                         event.type,
@@ -1464,7 +1537,7 @@ export default function Dashboard({
                                                     asChild
                                                     variant="ghost"
                                                     size="sm"
-                                                    className="h-7 rounded-lg px-2 text-xs font-bold text-primary shrink-0"
+                                                    className="h-7 shrink-0 rounded-lg px-2 text-xs font-bold text-primary"
                                                 >
                                                     <Link
                                                         href={`/generator?event_id=${event.id}`}
@@ -1484,41 +1557,41 @@ export default function Dashboard({
                     {/* ======================================================
                         SECTION 7 — CATALOG COVERAGE & RECOMMENDATIONS
                     ====================================================== */}
-                    <section className="grid grid-cols-1 gap-6 lg:grid-cols-3 w-full min-w-0">
+                    <section className="grid w-full min-w-0 grid-cols-1 gap-6 lg:grid-cols-3">
                         {/* CATALOG READINESS */}
-                        <Card className="rounded-3xl border-border/80 bg-card p-4 sm:p-5 shadow-xs lg:col-span-2 w-full min-w-0">
-                            <div className="flex items-center justify-between border-b border-border/60 pb-3 gap-2 min-w-0">
-                                <div className="flex items-center gap-2 min-w-0">
+                        <Card className="w-full min-w-0 rounded-3xl border-border/80 bg-card p-4 shadow-xs sm:p-5 lg:col-span-2">
+                            <div className="flex min-w-0 items-center justify-between gap-2 border-b border-border/60 pb-3">
+                                <div className="flex min-w-0 items-center gap-2">
                                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
                                         <Package className="h-4 w-4" />
                                     </div>
 
                                     <div className="min-w-0 flex-1">
-                                        <h3 className="text-sm font-bold truncate">
+                                        <h3 className="truncate text-sm font-bold">
                                             Catalog Visual Readiness
                                         </h3>
 
-                                        <p className="text-[10px] text-muted-foreground truncate">
+                                        <p className="truncate text-[10px] text-muted-foreground">
                                             Product coverage for AI marketing
                                             creatives
                                         </p>
                                     </div>
                                 </div>
 
-                                <span className="text-xs font-bold text-emerald-500 shrink-0">
+                                <span className="shrink-0 text-xs font-bold text-emerald-500">
                                     {catalogCoverage}% Ready
                                 </span>
                             </div>
 
-                            <div className="mt-4 space-y-4 w-full min-w-0">
+                            <div className="mt-4 w-full min-w-0 space-y-4">
                                 <Progress
                                     value={catalogCoverage}
                                     className="h-2"
                                 />
 
-                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 w-full min-w-0">
-                                    <div className="rounded-xl border border-border/60 bg-muted/20 p-3 min-w-0">
-                                        <span className="text-[11px] text-muted-foreground truncate block">
+                                <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <div className="min-w-0 rounded-xl border border-border/60 bg-muted/20 p-3">
+                                        <span className="block truncate text-[11px] text-muted-foreground">
                                             With Visuals
                                         </span>
 
@@ -1527,8 +1600,8 @@ export default function Dashboard({
                                         </p>
                                     </div>
 
-                                    <div className="rounded-xl border border-border/60 bg-muted/20 p-3 min-w-0">
-                                        <span className="text-[11px] text-muted-foreground truncate block">
+                                    <div className="min-w-0 rounded-xl border border-border/60 bg-muted/20 p-3">
+                                        <span className="block truncate text-[11px] text-muted-foreground">
                                             Needs Visuals
                                         </span>
 
@@ -1538,7 +1611,7 @@ export default function Dashboard({
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between w-full min-w-0">
+                                <div className="flex w-full min-w-0 flex-col gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
                                     <div className="min-w-0 flex-1">
                                         <p className="text-xs font-bold">
                                             {totalProducts === 0
@@ -1548,7 +1621,7 @@ export default function Dashboard({
                                                   : `${productsWithoutVisuals} ${productsWithoutVisuals === 1 ? 'product does' : 'products do'} not have marketing visuals yet.`}
                                         </p>
 
-                                        <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
+                                        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                                             {totalProducts === 0
                                                 ? 'Add your catalog products to start staging marketing creatives around your catalog.'
                                                 : catalogCoverage >= 100
@@ -1561,7 +1634,7 @@ export default function Dashboard({
                                         asChild
                                         size="sm"
                                         variant="outline"
-                                        className="shrink-0 rounded-xl text-xs font-bold self-start sm:self-auto"
+                                        className="shrink-0 self-start rounded-xl text-xs font-bold sm:self-auto"
                                     >
                                         <Link
                                             href={
@@ -1593,35 +1666,35 @@ export default function Dashboard({
                         </Card>
 
                         {/* MARKETING RECOMMENDATIONS */}
-                        <Card className="rounded-3xl border-border/80 bg-card p-4 sm:p-5 shadow-xs w-full min-w-0">
-                            <div className="border-b border-border/60 pb-3 min-w-0">
-                                <div className="flex items-center gap-2 min-w-0">
+                        <Card className="w-full min-w-0 rounded-3xl border-border/80 bg-card p-4 shadow-xs sm:p-5">
+                            <div className="min-w-0 border-b border-border/60 pb-3">
+                                <div className="flex min-w-0 items-center gap-2">
                                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                         <Zap className="h-4 w-4" />
                                     </div>
 
                                     <div className="min-w-0 flex-1">
-                                        <h3 className="text-sm font-bold truncate">
+                                        <h3 className="truncate text-sm font-bold">
                                             Marketing Recommendations
                                         </h3>
 
-                                        <p className="text-[10px] text-muted-foreground truncate">
+                                        <p className="truncate text-[10px] text-muted-foreground">
                                             Workspace review actions
                                         </p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="mt-3 space-y-2.5 w-full min-w-0">
+                            <div className="mt-3 w-full min-w-0 space-y-2.5">
                                 {recommendations.map((recommendation) => {
                                     const Icon = recommendation.icon;
 
                                     return (
                                         <div
                                             key={recommendation.id}
-                                            className="rounded-2xl border border-border/60 bg-muted/20 p-3 transition-colors hover:bg-muted/40 w-full min-w-0"
+                                            className="w-full min-w-0 rounded-2xl border border-border/60 bg-muted/20 p-3 transition-colors hover:bg-muted/40"
                                         >
-                                            <div className="flex gap-3 min-w-0">
+                                            <div className="flex min-w-0 gap-3">
                                                 <div
                                                     className={cn(
                                                         'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl',
@@ -1632,11 +1705,11 @@ export default function Dashboard({
                                                 </div>
 
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="text-xs font-bold truncate">
+                                                    <p className="truncate text-xs font-bold">
                                                         {recommendation.title}
                                                     </p>
 
-                                                    <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground line-clamp-2">
+                                                    <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-muted-foreground">
                                                         {
                                                             recommendation.description
                                                         }
@@ -1671,12 +1744,12 @@ export default function Dashboard({
                     {/* ======================================================
                         SECTION 8 — SYSTEM AUTOMATION & PIPELINE STATUS
                     ====================================================== */}
-                    <section className="rounded-3xl border border-border/80 bg-card/60 p-4 sm:p-5 shadow-xs w-full min-w-0">
-                        <div className="flex flex-col gap-2 border-b border-border/60 pb-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
-                            <div className="flex items-center gap-2 min-w-0">
-                                <ShieldCheck className="h-4 w-4 text-emerald-500 shrink-0" />
+                    <section className="w-full min-w-0 rounded-3xl border border-border/80 bg-card/60 p-4 shadow-xs sm:p-5">
+                        <div className="flex min-w-0 flex-col gap-2 border-b border-border/60 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex min-w-0 items-center gap-2">
+                                <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-500" />
 
-                                <h3 className="text-xs font-bold uppercase tracking-wider truncate">
+                                <h3 className="truncate text-xs font-bold tracking-wider uppercase">
                                     System Automation & Pipeline Status
                                 </h3>
                             </div>
@@ -1686,11 +1759,11 @@ export default function Dashboard({
                             </span>
                         </div>
 
-                        <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 min-w-0">
+                        <div className="mt-3 grid min-w-0 grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
                             {systemStatusList.map((item) => (
                                 <div
                                     key={item.label}
-                                    className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-muted/20 p-3 min-w-0"
+                                    className="flex min-w-0 items-center gap-2.5 rounded-xl border border-border/60 bg-muted/20 p-3"
                                 >
                                     <span
                                         className={cn(
@@ -1733,11 +1806,11 @@ export default function Dashboard({
                     onClick={() => setPreviewDesign(null)}
                 >
                     <div
-                        className="sticky top-0 z-[160] flex items-center justify-between border-b border-white/10 bg-black/80 px-4 py-3 backdrop-blur-md sm:px-8 gap-3"
+                        className="sticky top-0 z-[160] flex items-center justify-between gap-3 border-b border-white/10 bg-black/80 px-4 py-3 backdrop-blur-md sm:px-8"
                         onClick={(event) => event.stopPropagation()}
                     >
                         <div className="flex min-w-0 items-center gap-3">
-                            <h2 className="truncate text-sm font-bold sm:text-base max-w-[180px] sm:max-w-md">
+                            <h2 className="max-w-[180px] truncate text-sm font-bold sm:max-w-md sm:text-base">
                                 {previewDesign.product_name ||
                                     'Marketing Visual'}
                             </h2>
@@ -1745,19 +1818,19 @@ export default function Dashboard({
                             {previewDesign.campaign_name && (
                                 <Badge
                                     variant="outline"
-                                    className="hidden border-white/20 bg-white/5 text-[10px] text-white sm:inline-flex shrink-0"
+                                    className="hidden shrink-0 border-white/20 bg-white/5 text-[10px] text-white sm:inline-flex"
                                 >
                                     {previewDesign.campaign_name}
                                 </Badge>
                             )}
                         </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex shrink-0 items-center gap-2">
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDownload(previewDesign)}
-                                className="h-8 gap-1.5 rounded-xl border border-white/10 bg-white/10 text-xs text-white hover:bg-white/20 hover:text-white cursor-pointer"
+                                className="h-8 cursor-pointer gap-1.5 rounded-xl border border-white/10 bg-white/10 text-xs text-white hover:bg-white/20 hover:text-white"
                             >
                                 <Download className="h-3.5 w-3.5" />
                                 <span className="hidden sm:inline">
@@ -1770,7 +1843,7 @@ export default function Dashboard({
                                 size="icon"
                                 aria-label="Close image preview"
                                 onClick={() => setPreviewDesign(null)}
-                                className="h-8 w-8 rounded-full border border-white/10 bg-white/10 text-white hover:bg-white/20 hover:text-white cursor-pointer"
+                                className="h-8 w-8 cursor-pointer rounded-full border border-white/10 bg-white/10 text-white hover:bg-white/20 hover:text-white"
                             >
                                 <X className="h-4 w-4" />
                             </Button>
@@ -1790,7 +1863,7 @@ export default function Dashboard({
                                             previewDesign.product_name ||
                                             'Visual Preview'
                                         }
-                                        className="max-h-[70vh] sm:max-h-[calc(100vh-10rem)] max-w-[90vw] rounded-xl object-contain"
+                                        className="max-h-[70vh] max-w-[90vw] rounded-xl object-contain sm:max-h-[calc(100vh-10rem)]"
                                     />
                                 )}
                             </div>
@@ -1801,7 +1874,7 @@ export default function Dashboard({
                                 type="button"
                                 aria-label="Previous visual"
                                 onClick={handlePrevDesign}
-                                className="absolute left-2 sm:left-6 top-1/2 flex h-9 w-9 sm:h-10 sm:w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl backdrop-blur-md transition-all hover:scale-110 hover:bg-black/90 cursor-pointer"
+                                className="absolute top-1/2 left-2 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl backdrop-blur-md transition-all hover:scale-110 hover:bg-black/90 sm:left-6 sm:h-10 sm:w-10"
                             >
                                 <ChevronLeft className="h-5 w-5" />
                             </button>
@@ -1812,7 +1885,7 @@ export default function Dashboard({
                                 type="button"
                                 aria-label="Next visual"
                                 onClick={handleNextDesign}
-                                className="absolute right-2 sm:right-6 top-1/2 flex h-9 w-9 sm:h-10 sm:w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl backdrop-blur-md transition-all hover:scale-110 hover:bg-black/90 cursor-pointer"
+                                className="absolute top-1/2 right-2 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl backdrop-blur-md transition-all hover:scale-110 hover:bg-black/90 sm:right-6 sm:h-10 sm:w-10"
                             >
                                 <ChevronRight className="h-5 w-5" />
                             </button>
@@ -1828,7 +1901,7 @@ export default function Dashboard({
                 open={isCreateCampaignOpen}
                 onOpenChange={setIsCreateCampaignOpen}
             >
-                <DialogContent className="max-h-[90vh] overflow-y-auto w-[calc(100vw-2rem)] sm:max-w-md rounded-3xl border-border bg-card p-4 sm:p-6 shadow-2xl">
+                <DialogContent className="max-h-[90vh] w-[calc(100vw-2rem)] overflow-y-auto rounded-3xl border-border bg-card p-4 shadow-2xl sm:max-w-md sm:p-6">
                     <DialogHeader>
                         <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">

@@ -1,16 +1,12 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import {
     Archive,
     ArchiveRestore,
-    ArrowRight,
     Calendar,
     CalendarDays,
     Check,
     CheckCircle2,
-    ChevronLeft,
-    ChevronRight,
     Download,
-    Filter,
     FolderOpen,
     ImageIcon,
     Layers,
@@ -30,9 +26,9 @@ import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'sonner';
 
+import { AppPagination } from '@/components/ui/app-pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AppPagination } from '@/components/ui/app-pagination';
 import {
     Dialog,
     DialogContent,
@@ -298,8 +294,8 @@ export default function CampaignsPage({
                     name: evt
                         ? `${evt.name} Campaign`
                         : prodName
-                            ? `${prodName} Campaign`
-                            : '',
+                          ? `${prodName} Campaign`
+                          : '',
                     event_id: eventId,
                     start_date: evt?.date || '',
                     end_date: evt?.date || '',
@@ -907,10 +903,11 @@ export default function CampaignsPage({
                                         onClick={() =>
                                             changeStatusFilter(status)
                                         }
-                                        className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-all ${active
+                                        className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-all ${
+                                            active
                                                 ? 'bg-card font-semibold text-foreground shadow-xs'
                                                 : 'text-muted-foreground hover:bg-card/60 hover:text-foreground'
-                                            } `}
+                                        } `}
                                     >
                                         {status !== 'all' && (
                                             <span
@@ -956,18 +953,20 @@ export default function CampaignsPage({
                                         : 'View Archived Campaigns'
                                 }
                                 aria-label="Toggle Archived Campaigns"
-                                className={`relative h-8 w-8 rounded-xl p-0 transition-all ${statusFilter === 'archived'
+                                className={`relative h-8 w-8 rounded-xl p-0 transition-all ${
+                                    statusFilter === 'archived'
                                         ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
                                         : 'text-muted-foreground hover:text-foreground'
-                                    }`}
+                                }`}
                             >
                                 <Archive className="h-4 w-4" />
                                 {stats.archived > 0 && (
                                     <span
-                                        className={`absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold ${statusFilter === 'archived'
+                                        className={`absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold ${
+                                            statusFilter === 'archived'
                                                 ? 'bg-destructive text-destructive-foreground'
                                                 : 'bg-primary text-primary-foreground'
-                                            }`}
+                                        }`}
                                     >
                                         {stats.archived}
                                     </span>
@@ -981,7 +980,7 @@ export default function CampaignsPage({
                                         type="button"
                                         variant="outline"
                                         size="sm"
-                                        className="h-8 w-8 rounded-xl p-0 shadow-none text-muted-foreground hover:text-foreground"
+                                        className="h-8 w-8 rounded-xl p-0 text-muted-foreground shadow-none hover:text-foreground"
                                         aria-label="Switch view layout"
                                         title={`Switch view layout (current: ${viewMode} view)`}
                                     >
@@ -997,7 +996,9 @@ export default function CampaignsPage({
                                     className="w-32 rounded-xl p-1 shadow-md"
                                 >
                                     <DropdownMenuItem
-                                        onClick={() => handleSetViewMode('grid')}
+                                        onClick={() =>
+                                            handleSetViewMode('grid')
+                                        }
                                         className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
                                             viewMode === 'grid'
                                                 ? 'bg-primary/10 font-semibold text-primary'
@@ -1013,7 +1014,9 @@ export default function CampaignsPage({
                                         )}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                        onClick={() => handleSetViewMode('list')}
+                                        onClick={() =>
+                                            handleSetViewMode('list')
+                                        }
                                         className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
                                             viewMode === 'list'
                                                 ? 'bg-primary/10 font-semibold text-primary'
@@ -1067,11 +1070,9 @@ export default function CampaignsPage({
                         <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                             {sortedCampaigns.map((campaign: any) => {
                                 const status = campaign.status ?? 'active';
-                                const eventName =
-                                    campaign.event_name ?? 'No event selected';
                                 const designCount = Number(
                                     campaign.design_count ||
-                                    (campaign.designs?.length ?? 0),
+                                        (campaign.designs?.length ?? 0),
                                 );
                                 const currentGlow =
                                     statusGlow[status] ?? statusGlow.active;
@@ -1085,7 +1086,7 @@ export default function CampaignsPage({
                                         onClick={() =>
                                             router.visit(
                                                 campaign.show_url ??
-                                                `/campaigns/${campaign.id}`,
+                                                    `/campaigns/${campaign.id}`,
                                             )
                                         }
                                         role="button"
@@ -1097,7 +1098,7 @@ export default function CampaignsPage({
                                             ) {
                                                 router.visit(
                                                     campaign.show_url ??
-                                                    `/campaigns/${campaign.id}`,
+                                                        `/campaigns/${campaign.id}`,
                                                 );
                                             }
                                         }}
@@ -1194,7 +1195,7 @@ export default function CampaignsPage({
                                                             </DropdownMenuItem>
 
                                                             {campaign.status !==
-                                                                'archived' ? (
+                                                            'archived' ? (
                                                                 <DropdownMenuItem
                                                                     onClick={(
                                                                         e,
@@ -1307,7 +1308,7 @@ export default function CampaignsPage({
                                     campaign.event_name ?? 'No event selected';
                                 const designCount = Number(
                                     campaign.design_count ||
-                                    (campaign.designs?.length ?? 0),
+                                        (campaign.designs?.length ?? 0),
                                 );
                                 const currentIcon =
                                     statusIconColor[status] ??
@@ -1319,7 +1320,7 @@ export default function CampaignsPage({
                                         onClick={() =>
                                             router.visit(
                                                 campaign.show_url ??
-                                                `/campaigns/${campaign.id}`,
+                                                    `/campaigns/${campaign.id}`,
                                             )
                                         }
                                         role="button"
@@ -1331,7 +1332,7 @@ export default function CampaignsPage({
                                             ) {
                                                 router.visit(
                                                     campaign.show_url ??
-                                                    `/campaigns/${campaign.id}`,
+                                                        `/campaigns/${campaign.id}`,
                                                 );
                                             }
                                         }}
@@ -1358,7 +1359,7 @@ export default function CampaignsPage({
                                                 </span>
                                                 {eventName &&
                                                     eventName !==
-                                                    'No event selected' && (
+                                                        'No event selected' && (
                                                         <>
                                                             <span className="text-muted-foreground/40">
                                                                 •
@@ -1380,7 +1381,7 @@ export default function CampaignsPage({
                                                 )}
                                             </p>
                                             {campaign.product_name && (
-                                                <p className="text-[11px] text-muted-foreground/80 truncate">
+                                                <p className="truncate text-[11px] text-muted-foreground/80">
                                                     {campaign.product_name}
                                                 </p>
                                             )}
@@ -1439,7 +1440,7 @@ export default function CampaignsPage({
                                                     </DropdownMenuItem>
 
                                                     {campaign.status !==
-                                                        'archived' ? (
+                                                    'archived' ? (
                                                         <DropdownMenuItem
                                                             onClick={(e) => {
                                                                 e.preventDefault();
@@ -1593,27 +1594,30 @@ export default function CampaignsPage({
                                                     </p>
                                                     <Badge
                                                         variant="outline"
-                                                        className={`text-[9px] tracking-wider uppercase ${eventTypeStyles[
+                                                        className={`text-[9px] tracking-wider uppercase ${
+                                                            eventTypeStyles[
                                                                 selectedCreateEvent.category ||
-                                                                selectedCreateEvent.type ||
-                                                                'holiday'
+                                                                    selectedCreateEvent.type ||
+                                                                    'holiday'
                                                             ]?.bg
-                                                            } ${eventTypeStyles[
+                                                        } ${
+                                                            eventTypeStyles[
                                                                 selectedCreateEvent.category ||
-                                                                selectedCreateEvent.type ||
-                                                                'holiday'
+                                                                    selectedCreateEvent.type ||
+                                                                    'holiday'
                                                             ]?.text
-                                                            } ${eventTypeStyles[
+                                                        } ${
+                                                            eventTypeStyles[
                                                                 selectedCreateEvent.category ||
-                                                                selectedCreateEvent.type ||
-                                                                'holiday'
+                                                                    selectedCreateEvent.type ||
+                                                                    'holiday'
                                                             ]?.border
-                                                            }`}
+                                                        }`}
                                                     >
                                                         {eventTypeStyles[
                                                             selectedCreateEvent.category ||
-                                                            selectedCreateEvent.type ||
-                                                            'holiday'
+                                                                selectedCreateEvent.type ||
+                                                                'holiday'
                                                         ]?.label || 'Event'}
                                                     </Badge>
                                                 </div>
@@ -1663,10 +1667,11 @@ export default function CampaignsPage({
                                             setEventModalTarget('create');
                                             setIsEventModalOpen(true);
                                         }}
-                                        className={`flex h-11 w-full items-center justify-between rounded-xl border border-dashed bg-muted/20 px-4 text-xs font-medium transition-all hover:border-primary/50 hover:bg-primary/5 hover:text-foreground ${formErrors.event_id
+                                        className={`flex h-11 w-full items-center justify-between rounded-xl border border-dashed bg-muted/20 px-4 text-xs font-medium transition-all hover:border-primary/50 hover:bg-primary/5 hover:text-foreground ${
+                                            formErrors.event_id
                                                 ? 'border-destructive text-destructive'
                                                 : 'border-border text-muted-foreground'
-                                            }`}
+                                        }`}
                                     >
                                         <span className="flex items-center gap-2">
                                             <Calendar className="h-4 w-4 text-primary" />
@@ -1930,27 +1935,30 @@ export default function CampaignsPage({
                                                     </p>
                                                     <Badge
                                                         variant="outline"
-                                                        className={`text-[9px] tracking-wider uppercase ${eventTypeStyles[
+                                                        className={`text-[9px] tracking-wider uppercase ${
+                                                            eventTypeStyles[
                                                                 selectedEditEvent.category ||
-                                                                selectedEditEvent.type ||
-                                                                'holiday'
+                                                                    selectedEditEvent.type ||
+                                                                    'holiday'
                                                             ]?.bg
-                                                            } ${eventTypeStyles[
+                                                        } ${
+                                                            eventTypeStyles[
                                                                 selectedEditEvent.category ||
-                                                                selectedEditEvent.type ||
-                                                                'holiday'
+                                                                    selectedEditEvent.type ||
+                                                                    'holiday'
                                                             ]?.text
-                                                            } ${eventTypeStyles[
+                                                        } ${
+                                                            eventTypeStyles[
                                                                 selectedEditEvent.category ||
-                                                                selectedEditEvent.type ||
-                                                                'holiday'
+                                                                    selectedEditEvent.type ||
+                                                                    'holiday'
                                                             ]?.border
-                                                            }`}
+                                                        }`}
                                                     >
                                                         {eventTypeStyles[
                                                             selectedEditEvent.category ||
-                                                            selectedEditEvent.type ||
-                                                            'holiday'
+                                                                selectedEditEvent.type ||
+                                                                'holiday'
                                                         ]?.label || 'Event'}
                                                     </Badge>
                                                 </div>
@@ -2230,10 +2238,11 @@ export default function CampaignsPage({
                                             onClick={() =>
                                                 handleSelectEvent(evt)
                                             }
-                                            className={`group flex flex-col justify-between rounded-xl border p-3 text-left transition-all ${isSelected
+                                            className={`group flex flex-col justify-between rounded-xl border p-3 text-left transition-all ${
+                                                isSelected
                                                     ? 'border-primary bg-primary/10 shadow-xs ring-2 ring-primary/40'
                                                     : 'border-border bg-card hover:border-primary/50 hover:bg-muted/30'
-                                                }`}
+                                            }`}
                                         >
                                             <div className="space-y-1.5">
                                                 <div className="flex items-start justify-between gap-1.5">

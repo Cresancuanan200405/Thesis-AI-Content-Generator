@@ -55,11 +55,13 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                         'h-10 w-full justify-start gap-2.5 rounded-xl px-3.5 text-xs font-semibold transition-colors',
                                         isActive
                                             ? 'bg-primary/10 text-primary hover:bg-primary/15'
-                                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                                     )}
                                 >
                                     <Link href={item.href}>
-                                        {Icon && <Icon className="h-4 w-4 shrink-0" />}
+                                        {Icon && (
+                                            <Icon className="h-4 w-4 shrink-0" />
+                                        )}
                                         <span>{item.title}</span>
                                     </Link>
                                 </Button>
@@ -71,9 +73,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                 <Separator className="my-6 lg:hidden" />
 
                 <main className="flex-1 overflow-hidden">
-                    <div className="max-w-3xl space-y-8">
-                        {children}
-                    </div>
+                    <div className="max-w-3xl space-y-8">{children}</div>
                 </main>
             </div>
         </div>
