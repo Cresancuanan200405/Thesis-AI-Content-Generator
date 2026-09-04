@@ -14,7 +14,7 @@ export default function AppLogo() {
                     {name ?? 'MarketPilot'}
                 </span>
                 <span className="truncate text-[10px] font-medium text-muted-foreground">
-                    AI Marketing Automation
+                    MarketPilot
                 </span>
             </div>
         </div>
