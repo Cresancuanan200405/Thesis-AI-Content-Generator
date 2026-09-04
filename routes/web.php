@@ -218,7 +218,7 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
                 'name' => $user->business?->name,
                 'industry' => $user->business?->industry,
                 'category' => $user->business?->category,
-                'tagline' => $user->business?->tagline,
+                'description' => $user->business?->description,
             ],
         ]);
     })->name('dashboard');

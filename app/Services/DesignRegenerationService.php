@@ -38,8 +38,8 @@ class DesignRegenerationService
             $product = $design->product ?? Product::query()->where('id', $design->product_id)->first();
         }
 
-        $productName = $design->product_name ?: ($product?->name ?? 'Product');
-        $productDescription = $product?->description ?? $meta['product_description'] ?? null;
+        $productName = $design->product_name ?: ($product->name ?? 'Product');
+        $productDescription = $product->description ?? $meta['product_description'] ?? null;
 
         $numericPrice = $design->price;
         $priceForPrompt = null;
@@ -50,9 +50,9 @@ class DesignRegenerationService
         } elseif ($product && $product->price > 0) {
             $priceForPrompt = '₱'.number_format((float) $product->price, 2, '.', ',');
         }
-        $dbPrice = $numericPrice ?: ($product?->price ?? ($priceForPrompt ? (float) preg_replace('/[^0-9.]/', '', $priceForPrompt) : null));
+        $dbPrice = $numericPrice ?: ($product->price ?? ($priceForPrompt ? (float) preg_replace('/[^0-9.]/', '', $priceForPrompt) : null));
 
-        $referenceImagePath = $design->reference_image_path ?? $product?->image_path ?? null;
+        $referenceImagePath = $design->reference_image_path ?? $product->image_path ?? null;
         $productImageUrl = $product?->image_path ? Storage::url($product->image_path) : ($referenceImagePath ? Storage::url($referenceImagePath) : null);
 
         // 2. Recover Campaign Details
@@ -61,8 +61,8 @@ class DesignRegenerationService
         if ($design->campaign_id) {
             $campaign = $design->campaign ?? Campaign::query()->where('id', $design->campaign_id)->first();
         }
-        $campaignName = $campaign?->name ?? $meta['campaign_name'] ?? null;
-        $campaignObjective = $campaign?->objective ?? $meta['campaign_objective'] ?? $meta['marketing_goal'] ?? 'Refresh the existing marketing asset for this product';
+        $campaignName = $campaign->name ?? $meta['campaign_name'] ?? null;
+        $campaignObjective = $campaign->objective ?? $meta['campaign_objective'] ?? $meta['marketing_goal'] ?? 'Refresh the existing marketing asset for this product';
 
         // 3. Recover Event Details
         /** @var Event|null $event */
@@ -70,7 +70,7 @@ class DesignRegenerationService
         if ($design->event_id) {
             $event = $design->event ?? Event::query()->where('id', $design->event_id)->first();
         }
-        $eventName = $event?->name ?? $meta['event_name'] ?? null;
+        $eventName = $event->name ?? $meta['event_name'] ?? null;
 
         // 4. Recover Style, Brand Tone, Render Style & Visual Theme
         $brandTone = $this->normalizeList($design->brand_tone ?? $meta['brand_tone'] ?? []);
@@ -139,7 +139,7 @@ class DesignRegenerationService
                 // Step 1 — Product & Campaign
                 'product_name' => $productName,
                 'product_description' => $productDescription,
-                'product_category' => $product?->category ?? $business->category,
+                'product_category' => $business->category,
                 'business_category' => $business->category,
                 'product_image_url' => $productImageUrl,
                 'campaign_name' => $campaignName,
@@ -203,8 +203,8 @@ class DesignRegenerationService
             'product_name' => $productName,
             'prompt' => $prompt,
             'price' => $dbPrice,
-            'brand_tone' => is_array($brandTone) ? implode(', ', $brandTone) : (string) $brandTone,
-            'visual_theme' => is_array($contentStyle) ? implode(', ', $contentStyle) : (string) $contentStyle,
+            'brand_tone' => implode(', ', $brandTone),
+            'visual_theme' => implode(', ', $contentStyle),
             'tagline' => $normalizedTagline,
             'tagline_mode' => $design->tagline_mode ?? 'auto',
             'reference_image_path' => $referenceImagePath,
@@ -256,10 +256,13 @@ class DesignRegenerationService
             return trim((string) $meta['image_prompt']);
         }
 
-        if ($design->generationRequest) {
-            $reqNotes = trim((string) ($design->generationRequest->notes ?? ''));
-            if (! empty($reqNotes) && ! Str::startsWith($reqNotes, 'Regenerated from design #')) {
-                return $reqNotes;
+        if (! empty($meta['generation_request_id'])) {
+            $generationRequest = GenerationRequest::query()->find($meta['generation_request_id']);
+            if ($generationRequest) {
+                $reqNotes = trim((string) ($generationRequest->notes ?? ''));
+                if (! empty($reqNotes) && ! Str::startsWith($reqNotes, 'Regenerated from design #')) {
+                    return $reqNotes;
+                }
             }
         }
 

@@ -34,7 +34,7 @@ class ModularPromptOrchestrator
         // ---------------------------------------------------------------------
         $productName = $options['product_name'] ?? 'Product';
         $productDesc = $options['product_description'] ?? '';
-        $category = $options['product_category'] ?? $options['business_category'] ?? $business?->category ?? '';
+        $category = $options['product_category'] ?? $options['business_category'] ?? $business->category ?? '';
 
         $hasImageInput = ! empty($options['reference_image_path']) || ! empty($options['product_image_url']);
         $imageModel = $options['image_model'] ?? 'gpt-image-2';
@@ -94,7 +94,7 @@ class ModularPromptOrchestrator
 
         $brandName = null;
         if ($includeBusinessName) {
-            $brandName = ! empty($options['business_name']) ? trim((string) $options['business_name']) : ($business?->name ?? null);
+            $brandName = ! empty($options['business_name']) ? trim((string) $options['business_name']) : ($business->name ?? null);
         }
 
         $copyLines = [];
@@ -160,8 +160,8 @@ class ModularPromptOrchestrator
         // ---------------------------------------------------------------------
         // PRIORITY 6: INDUSTRY & CATEGORY ART DIRECTION MODULE
         // ---------------------------------------------------------------------
-        $industry = $options['business_industry'] ?? $business?->industry ?? 'General';
-        $businessCategory = $options['product_category'] ?? $options['business_category'] ?? $business?->category ?? 'General';
+        $industry = $options['business_industry'] ?? $business->industry ?? 'General';
+        $businessCategory = $options['product_category'] ?? $options['business_category'] ?? $business->category ?? 'General';
 
         $artDirectionData = $this->artDirectionService->resolveArtDirection((string) $industry, (string) $businessCategory, $productName);
         $modules[] = $this->artDirectionService->formatForPrompt($artDirectionData, $productName);
@@ -169,8 +169,8 @@ class ModularPromptOrchestrator
         // ---------------------------------------------------------------------
         // PRIORITY 7: BUSINESS CONTEXT & BRAND IDENTITY MODULE
         // ---------------------------------------------------------------------
-        $businessDesc = ! empty($options['business_description']) ? trim((string) $options['business_description']) : ($business?->description ?? null);
-        $businessCategoryForContext = $options['product_category'] ?? $options['business_category'] ?? $business?->category ?? $industry;
+        $businessDesc = ! empty($options['business_description']) ? trim((string) $options['business_description']) : ($business->description ?? null);
+        $businessCategoryForContext = $options['product_category'] ?? $options['business_category'] ?? $business->category ?? $industry;
 
         if ($brandName || $businessDesc || ($businessCategoryForContext && $businessCategoryForContext !== 'General')) {
             $bizContextLines = [];

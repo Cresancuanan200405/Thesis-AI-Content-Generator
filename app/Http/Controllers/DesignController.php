@@ -247,7 +247,7 @@ class DesignController extends Controller
 
         $businessName = null;
         if ($includeBusinessName) {
-            $businessName = $request->filled('business_name') ? trim((string) $request->input('business_name')) : ($business?->name ?? 'Brand');
+            $businessName = $request->filled('business_name') ? trim((string) $request->input('business_name')) : ($business->name ?? 'Brand');
         }
         $aspectRatio = (string) ($request->input('aspect_ratio') ?? '1:1');
         $normalizedTagline = TaglineNormalizationService::normalize($request->input('tagline'));
@@ -426,7 +426,7 @@ class DesignController extends Controller
                 'id' => $design->id,
                 'product_name' => $design->product_name,
                 'business_name' => $design->business?->name,
-                'business_industry' => $design->business?->industry ?? $design->user?->business?->industry,
+                'business_industry' => $design->business->industry ?? $design->user?->business?->industry,
                 'campaign_name' => $design->campaign?->name,
                 'event_name' => $design->event?->name,
                 'brand_tone' => $design->brand_tone,

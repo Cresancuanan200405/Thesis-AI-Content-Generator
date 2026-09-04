@@ -38,9 +38,9 @@ class UserProfileController extends Controller
             ],
             'business' => [
                 'id' => $user->business?->id,
-                'name' => $user->business?->name ?? 'Not configured',
-                'industry' => $user->business?->industry ?? 'General',
-                'category' => $user->business?->category ?? 'General',
+                'name' => $user->business->name ?? 'Not configured',
+                'industry' => $user->business->industry ?? 'General',
+                'category' => $user->business->category ?? 'General',
                 'description' => $user->business?->description,
             ],
             'stats' => [

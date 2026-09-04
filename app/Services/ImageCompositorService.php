@@ -47,11 +47,11 @@ class ImageCompositorService
 
         $includeBusinessName = array_key_exists('include_business_name', $params)
             ? (bool) $params['include_business_name']
-            : (! empty($params['business_name']) || ! empty($business?->name));
+            : (! empty($params['business_name']) || ! empty($business->name));
 
         $brandName = null;
         if ($includeBusinessName) {
-            $brandName = ! empty($params['business_name']) ? trim((string) $params['business_name']) : ($business?->name ?? null);
+            $brandName = ! empty($params['business_name']) ? trim((string) $params['business_name']) : ($business->name ?? null);
         }
 
         return [

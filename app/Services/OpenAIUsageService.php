@@ -431,13 +431,17 @@ class OpenAIUsageService
      *
      * @return array{
      *     status: string,
+     *     application_configured_limit: float,
      *     budget_limit: float,
      *     total_spent: null,
+     *     input_tokens: null,
      *     total_tokens: null,
      *     total_requests: null,
      *     total_images: null,
      *     api_credit_balance: null,
      *     credit_balance_available: false,
+     *     credit_balance_source: string,
+     *     remaining_configured_limit: null,
      *     remaining_budget: null,
      *     percentage_used: null,
      *     is_limit_reached: bool,
@@ -457,6 +461,7 @@ class OpenAIUsageService
 
         return [
             'status' => 'unavailable',
+            'application_configured_limit' => $budgetLimit,
             'budget_limit' => $budgetLimit,
             'total_spent' => null,
             'input_tokens' => null,

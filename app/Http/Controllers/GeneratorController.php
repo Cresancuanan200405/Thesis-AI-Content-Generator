@@ -194,7 +194,7 @@ class GeneratorController extends Controller
                 // Step 1 — Product & Campaign
                 'product_name' => $payload['product_name'],
                 'product_description' => $product?->description,
-                'product_category' => $product?->category ?? $business->category,
+                'product_category' => $business->category,
                 'business_category' => $business->category,
                 'product_image_url' => $productImageUrl,
                 'campaign_name' => $campaign?->name,
@@ -371,7 +371,7 @@ class GeneratorController extends Controller
             $generatedImagePath = $openAIService->generate($prompt, [
                 'product_name' => (string) $request->input('product_name'),
                 'product_description' => $product?->description,
-                'product_category' => $product?->category ?? $business->category,
+                'product_category' => $business->category,
                 'business_category' => $business->category,
                 'product_image_url' => $productImageUrl,
                 'campaign_name' => $campaign?->name,
