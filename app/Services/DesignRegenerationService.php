@@ -194,6 +194,8 @@ class DesignRegenerationService
             'status' => 'completed',
         ]);
 
+        $lastMeta = $this->openAIImageService->getLastGenerationMetadata() ?: [];
+
         return Design::create([
             'user_id' => $user->id,
             'business_id' => $business->id,
@@ -210,6 +212,7 @@ class DesignRegenerationService
             'reference_image_path' => $referenceImagePath,
             'generated_image_path' => $generatedImagePath,
             'generation_metadata' => array_merge(
+                $lastMeta,
                 [
                     'source' => 'openai',
                     'model' => $imageModel,
@@ -217,7 +220,8 @@ class DesignRegenerationService
                     'generation_method' => $referenceImagePath ? 'image_to_image_edit' : 'text_to_image',
                     'generation_mode' => 'PRODUCT_PRESERVING',
                     'prompt_version' => 'marketing-pipeline-v1',
-                    'product_preserved' => (bool) $referenceImagePath,
+                    'product_preserved' => (bool) ($lastMeta['product_preserved'] ?? (bool) $referenceImagePath),
+                    'reference_image_used' => (bool) ($lastMeta['reference_image_used'] ?? (bool) $referenceImagePath),
                     'quality' => $imageQuality,
                     'render_style' => $renderStyle,
                     'include_business_name' => $includeBusinessName,
@@ -227,8 +231,7 @@ class DesignRegenerationService
                     'regenerated_from_design_id' => $design->id,
                     'generation_request_id' => $generationRequest->id,
                     'status' => 'completed',
-                ],
-                $this->openAIImageService->getLastGenerationMetadata() ?: []
+                ]
             ),
             'status' => 'completed',
         ]);
