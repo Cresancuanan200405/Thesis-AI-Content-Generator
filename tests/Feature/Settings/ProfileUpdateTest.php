@@ -38,6 +38,66 @@ test('profile information can be updated', function () {
     expect($user->email_verified_at)->toBeNull();
 });
 
+test('personal information fields can be saved for the account owner', function () {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->patch(route('profile.update'), [
+            'name' => 'Jane Santos Dela Cruz',
+            'email' => 'jane@example.com',
+            'first_name' => 'Jane',
+            'middle_name' => 'Santos',
+            'last_name' => 'Dela Cruz',
+            'suffix' => 'MBA',
+            'mobile_number' => '+639171234567',
+        ]);
+
+    $response
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('profile.edit'));
+
+    $user->refresh();
+
+    expect($user->first_name)->toBe('Jane')
+        ->and($user->middle_name)->toBe('Santos')
+        ->and($user->last_name)->toBe('Dela Cruz')
+        ->and($user->suffix)->toBe('MBA')
+        ->and($user->mobile_number)->toBe('+639171234567');
+});
+
+test('business profile can store philippine address selections', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    Business::factory()->create(['user_id' => $user->id]);
+
+    $response = $this
+        ->actingAs($user)
+        ->from(route('profile.business'))
+        ->post(route('profile.business.update'), [
+            'name' => 'Updated Studio Labs',
+            'industry' => 'Technology & Digital Services',
+            'category' => 'Software / Digital Services',
+            'description' => 'A cutting-edge SaaS platform for creators.',
+            'business_address' => '123 Example Street',
+            'barangay' => 'San Antonio',
+            'city_municipality' => 'Pasig City',
+            'province' => 'Metro Manila',
+            'region' => 'NCR',
+        ]);
+
+    $response
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('profile.business'));
+
+    $business = $user->fresh()->business;
+
+    expect($business->business_address)->toBe('123 Example Street')
+        ->and($business->barangay)->toBe('San Antonio')
+        ->and($business->city_municipality)->toBe('Pasig City')
+        ->and($business->province)->toBe('Metro Manila')
+        ->and($business->region)->toBe('NCR');
+});
+
 test('email verification status is unchanged when the email address is unchanged', function () {
     $user = User::factory()->create();
 
@@ -117,7 +177,7 @@ test('business profile page is displayed with commercial context', function () {
         'user_id' => $user->id,
         'name' => 'Acme Creative Studio',
         'industry' => 'Fashion & Apparel',
-        'category' => 'Clothing Store',
+        'category' => 'Clothing',
         'description' => 'A premier fashion house.',
     ]);
 
@@ -130,7 +190,7 @@ test('business profile page is displayed with commercial context', function () {
             ->component('profile/business')
             ->where('business.name', 'Acme Creative Studio')
             ->where('business.industry', 'Fashion & Apparel')
-            ->where('business.category', 'Clothing Store')
+            ->where('business.category', 'Clothing')
             ->where('business.description', 'A premier fashion house.')
         );
 });
@@ -140,7 +200,7 @@ test('user can update business identity and setup details', function () {
     $business = Business::factory()->create([
         'user_id' => $user->id,
         'name' => 'Original Name',
-        'industry' => 'Retail',
+        'industry' => 'Retail & E-Commerce',
     ]);
 
     $response = $this
@@ -148,8 +208,8 @@ test('user can update business identity and setup details', function () {
         ->from(route('profile.business'))
         ->post(route('profile.business.update'), [
             'name' => 'Updated Studio Labs',
-            'industry' => 'Technology',
-            'category' => 'SaaS Business',
+            'industry' => 'Technology & Digital Services',
+            'category' => 'Software / Digital Services',
             'description' => 'A cutting-edge SaaS platform for creators.',
         ]);
 
@@ -159,7 +219,34 @@ test('user can update business identity and setup details', function () {
 
     $business->refresh();
     expect($business->name)->toBe('Updated Studio Labs')
-        ->and($business->industry)->toBe('Technology')
-        ->and($business->category)->toBe('SaaS Business')
+        ->and($business->industry)->toBe('Technology & Digital Services')
+        ->and($business->category)->toBe('Software / Digital Services')
         ->and($business->description)->toBe('A cutting-edge SaaS platform for creators.');
+});
+
+test('business profile update rejects invalid industry or mismatched category', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    Business::factory()->create(['user_id' => $user->id]);
+
+    $response = $this
+        ->actingAs($user)
+        ->from(route('profile.business'))
+        ->post(route('profile.business.update'), [
+            'name' => 'Invalid Studio',
+            'industry' => 'Invalid Industry Name',
+            'category' => 'Something',
+        ]);
+
+    $response->assertSessionHasErrors(['industry']);
+
+    $response2 = $this
+        ->actingAs($user)
+        ->from(route('profile.business'))
+        ->post(route('profile.business.update'), [
+            'name' => 'Mismatched Studio',
+            'industry' => 'Food & Beverage',
+            'category' => 'Auto Repair',
+        ]);
+
+    $response2->assertSessionHasErrors(['category']);
 });

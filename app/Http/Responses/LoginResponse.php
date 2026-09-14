@@ -18,6 +18,16 @@ class LoginResponse implements LoginResponseContract
             return new JsonResponse(['message' => 'Signed in successfully.'], 200);
         }
 
+        $user = $request->user();
+
+        if ($user && ! $user->hasCompletedPersonalInformation()) {
+            return redirect()->route('profile.edit');
+        }
+
+        if ($user && ! $user->onboarding_completed) {
+            return redirect()->route('onboarding.show');
+        }
+
         // NotificationService::recordLogin handles the authentic semantic in-app notification.
         return redirect()->intended(Fortify::redirects('login', '/dashboard'));
     }

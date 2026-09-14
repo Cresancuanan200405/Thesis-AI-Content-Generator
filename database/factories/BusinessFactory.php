@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Business;
 use App\Models\User;
+use App\Services\IndustryCategoryArtDirectionService;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -15,11 +16,15 @@ class BusinessFactory extends Factory
 
     public function definition(): array
     {
+        $industry = fake()->randomElement(IndustryCategoryArtDirectionService::getIndustries());
+        $categories = IndustryCategoryArtDirectionService::getCategoriesForIndustry($industry);
+        $category = fake()->randomElement($categories);
+
         return [
             'user_id' => User::factory(),
             'name' => fake()->company(),
-            'industry' => fake()->randomElement(['Retail', 'Hospitality', 'Fashion', 'Food & Beverage', 'Technology', 'Wellness']),
-            'category' => fake()->randomElement(['Boutique', 'E-commerce', 'Service Business', 'Brand Studio', 'Local Store', 'Professional Service']),
+            'industry' => $industry,
+            'category' => $category,
             'description' => fake()->paragraph(),
         ];
     }

@@ -71,26 +71,120 @@ export default function ProfileAndPreferencesSettings({
                         >
                             {({ processing, errors }) => (
                                 <>
-                                    <div className="space-y-2">
-                                        <Label
-                                            htmlFor="name"
-                                            className="text-xs font-bold text-foreground"
-                                        >
-                                            Full Name
-                                        </Label>
-                                        <Input
-                                            id="name"
-                                            defaultValue={user.name}
-                                            name="name"
-                                            required
-                                            autoComplete="name"
-                                            placeholder="Your full name"
-                                            className="h-11 rounded-xl text-sm"
-                                        />
-                                        <InputError
-                                            message={errors.name}
-                                            className="text-xs font-semibold text-destructive"
-                                        />
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <div className="space-y-2 md:col-span-2">
+                                            <Label
+                                                htmlFor="name"
+                                                className="text-xs font-bold text-foreground"
+                                            >
+                                                Full Name
+                                            </Label>
+                                            <Input
+                                                id="name"
+                                                defaultValue={user.name}
+                                                name="name"
+                                                required
+                                                autoComplete="name"
+                                                placeholder="Your full name"
+                                                className="h-11 rounded-xl text-sm"
+                                            />
+                                            <InputError
+                                                message={errors.name}
+                                                className="text-xs font-semibold text-destructive"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="first_name"
+                                                className="text-xs font-bold text-foreground"
+                                            >
+                                                First Name
+                                            </Label>
+                                            <Input
+                                                id="first_name"
+                                                defaultValue={
+                                                    user.first_name ?? ''
+                                                }
+                                                name="first_name"
+                                                autoComplete="given-name"
+                                                placeholder="Jane"
+                                                className="h-11 rounded-xl text-sm"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="middle_name"
+                                                className="text-xs font-bold text-foreground"
+                                            >
+                                                Middle Name
+                                            </Label>
+                                            <Input
+                                                id="middle_name"
+                                                defaultValue={
+                                                    user.middle_name ?? ''
+                                                }
+                                                name="middle_name"
+                                                autoComplete="additional-name"
+                                                placeholder="Santos"
+                                                className="h-11 rounded-xl text-sm"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="last_name"
+                                                className="text-xs font-bold text-foreground"
+                                            >
+                                                Last Name
+                                            </Label>
+                                            <Input
+                                                id="last_name"
+                                                defaultValue={
+                                                    user.last_name ?? ''
+                                                }
+                                                name="last_name"
+                                                autoComplete="family-name"
+                                                placeholder="Dela Cruz"
+                                                className="h-11 rounded-xl text-sm"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="suffix"
+                                                className="text-xs font-bold text-foreground"
+                                            >
+                                                Name Suffix
+                                            </Label>
+                                            <Input
+                                                id="suffix"
+                                                defaultValue={user.suffix ?? ''}
+                                                name="suffix"
+                                                placeholder="Jr., Sr., MBA"
+                                                className="h-11 rounded-xl text-sm"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2 md:col-span-2">
+                                            <Label
+                                                htmlFor="mobile_number"
+                                                className="text-xs font-bold text-foreground"
+                                            >
+                                                Mobile Number
+                                            </Label>
+                                            <Input
+                                                id="mobile_number"
+                                                defaultValue={
+                                                    user.mobile_number ?? ''
+                                                }
+                                                name="mobile_number"
+                                                autoComplete="tel"
+                                                placeholder="+63 917 123 4567"
+                                                className="h-11 rounded-xl text-sm"
+                                            />
+                                        </div>
                                     </div>
 
                                     <div className="space-y-2">

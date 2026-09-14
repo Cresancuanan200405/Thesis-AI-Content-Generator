@@ -13,20 +13,40 @@ test('registration screen can be rendered', function () {
     $response->assertOk();
 });
 
-test('new users can register', function () {
+test('new users can register with a username and without a full name', function () {
     $response = $this->post(route('register.store'), [
-        'name' => 'Test User',
+        'username' => 'testuser',
         'email' => 'test@example.com',
         'password' => 'password',
         'password_confirmation' => 'password',
     ]);
 
     $this->assertAuthenticated();
+    $user = User::where('email', 'test@example.com')->first();
+
+    expect($user)->not->toBeNull()
+        ->and($user->username)->toBe('testuser')
+        ->and($user->name)->toBe('testuser');
+
     $response->assertRedirect(route('verification.notice', absolute: false));
     $response->assertSessionHas('toast', [
         'type' => 'success',
         'message' => 'Account created successfully. Please verify your email to continue onboarding.',
     ]);
+});
+
+test('duplicate usernames are rejected during registration', function () {
+    User::factory()->create(['username' => 'takenuser']);
+
+    $response = $this->from(route('register'))->post(route('register.store'), [
+        'username' => 'takenuser',
+        'email' => 'new@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ]);
+
+    $response->assertSessionHasErrors('username');
+    $this->assertGuest();
 });
 
 test('unverified user is redirected to the verification notice instead of onboarding', function () {

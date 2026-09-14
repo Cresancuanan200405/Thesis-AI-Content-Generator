@@ -6,6 +6,8 @@ use App\Models\Product;
 use App\Models\User;
 use App\Services\DesignRegenerationService;
 use App\Services\ModularPromptOrchestrator;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 it('renders the profile page with business information', function () {
@@ -67,8 +69,20 @@ it('updates business name, description, industry, and category from profile form
     $response = $this->actingAs($user)->from('/profile/business')->post('/profile/business', [
         'name' => 'Apit Burger Co.',
         'industry' => 'Food & Beverage',
-        'category' => 'Fast Food',
+        'category' => 'Restaurant',
         'description' => 'Flame-grilled burgers, seasoned curly fries, and artisan shakes.',
+        'main_business_activity' => 'Burger restaurant and delivery service',
+        'business_address' => '456 Market Avenue',
+        'city_municipality' => 'Davao City',
+        'province' => 'Davao del Sur',
+        'region' => 'Davao Region',
+        'business_contact_number' => '+63 912 345 6789',
+        'business_email' => 'hello@apitburger.com',
+        'website_social_page' => 'https://apitburger.com',
+        'registration_type' => 'SEC Registration',
+        'registration_number' => 'SEC-2025-117',
+        'business_permit_number' => 'PERMIT-2025-99',
+        'registration_permit_date' => '2025-02-18',
     ]);
 
     $response->assertRedirect('/profile/business');
@@ -77,8 +91,17 @@ it('updates business name, description, industry, and category from profile form
     $business->refresh();
     expect($business->name)->toBe('Apit Burger Co.')
         ->and($business->industry)->toBe('Food & Beverage')
-        ->and($business->category)->toBe('Fast Food')
-        ->and($business->description)->toBe('Flame-grilled burgers, seasoned curly fries, and artisan shakes.');
+        ->and($business->category)->toBe('Restaurant')
+        ->and($business->description)->toBe('Flame-grilled burgers, seasoned curly fries, and artisan shakes.')
+        ->and($business->main_business_activity)->toBe('Burger restaurant and delivery service')
+        ->and($business->city_municipality)->toBe('Davao City')
+        ->and($business->province)->toBe('Davao del Sur')
+        ->and($business->region)->toBe('Davao Region')
+        ->and($business->business_email)->toBe('hello@apitburger.com')
+        ->and($business->registration_type)->toBe('SEC Registration')
+        ->and($business->registration_number)->toBe('SEC-2025-117')
+        ->and($business->business_permit_number)->toBe('PERMIT-2025-99')
+        ->and($business->registration_permit_date->format('Y-m-d'))->toBe('2025-02-18');
 });
 
 it('validates required business name on update', function () {
@@ -93,6 +116,49 @@ it('validates required business name on update', function () {
     ]);
 
     $response->assertSessionHasErrors(['name']);
+});
+
+it('stores an optional business registration document privately and supports secure replacement and deletion', function () {
+    Storage::fake('local');
+
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+
+    $file = UploadedFile::fake()->create('permit.pdf', 120, 'application/pdf');
+
+    $uploadResponse = $this->actingAs($user)->post('/profile/business/document', [
+        'business_registration_document' => $file,
+    ]);
+
+    $uploadResponse->assertRedirect('/profile/business');
+    $uploadResponse->assertSessionHas('success');
+
+    $business->refresh();
+    expect($business->business_registration_document_path)->not->toBeNull()
+        ->and(Storage::disk('local')->exists($business->business_registration_document_path))->toBeTrue();
+
+    $downloadResponse = $this->actingAs($user)->get('/profile/business/document');
+    $downloadResponse->assertOk();
+    $this->assertStringContainsString('document.pdf', $downloadResponse->headers->get('content-disposition', ''));
+
+    $replaceFile = UploadedFile::fake()->create('permit-updated.pdf', 160, 'application/pdf');
+    $replaceResponse = $this->actingAs($user)->post('/profile/business/document', [
+        'business_registration_document' => $replaceFile,
+    ]);
+
+    $replaceResponse->assertRedirect('/profile/business');
+    $replaceResponse->assertSessionHas('success');
+
+    $business->refresh();
+    expect($business->business_registration_document_path)->not->toBeNull()
+        ->and(Storage::disk('local')->exists($business->business_registration_document_path))->toBeTrue();
+
+    $deleteResponse = $this->actingAs($user)->delete('/profile/business/document');
+    $deleteResponse->assertRedirect('/profile/business');
+    $deleteResponse->assertSessionHas('success');
+
+    $business->refresh();
+    expect($business->business_registration_document_path)->toBeNull();
 });
 
 it('compiles dedicated BUSINESS CONTEXT module into ModularPromptOrchestrator prompt', function () {

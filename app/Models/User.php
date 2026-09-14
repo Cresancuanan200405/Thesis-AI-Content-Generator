@@ -21,6 +21,12 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 /**
  * @property int $id
  * @property string $name
+ * @property string|null $username
+ * @property string|null $first_name
+ * @property string|null $middle_name
+ * @property string|null $last_name
+ * @property string|null $suffix
+ * @property string|null $mobile_number
  * @property string $email
  * @property Carbon|null $email_verified_at
  * @property string $password
@@ -39,7 +45,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Collection<int,Event> $events
  * @property Collection<int,Design> $designs
  */
-#[Fillable(['name', 'email', 'password', 'provider_name', 'provider_id', 'avatar', 'email_verified_at', 'onboarding_completed', 'onboarding_completed_at'])]
+#[Fillable(['name', 'username', 'first_name', 'middle_name', 'last_name', 'suffix', 'mobile_number', 'email', 'password', 'provider_name', 'provider_id', 'avatar', 'email_verified_at', 'onboarding_completed', 'onboarding_completed_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -61,6 +67,11 @@ class User extends Authenticatable implements MustVerifyEmail
             'onboarding_completed' => 'boolean',
             'onboarding_completed_at' => 'datetime',
         ];
+    }
+
+    public function hasCompletedPersonalInformation(): bool
+    {
+        return filled($this->first_name) && filled($this->last_name);
     }
 
     public function sendEmailVerificationNotification(): void

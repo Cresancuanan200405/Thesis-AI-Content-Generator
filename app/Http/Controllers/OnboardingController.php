@@ -34,6 +34,19 @@ class OnboardingController extends Controller
             'industry' => $business ? $business->industry : '',
             'category' => $business ? $business->category : '',
             'description' => $business ? $business->description : '',
+            'main_business_activity' => $business?->main_business_activity,
+            'business_address' => $business?->business_address,
+            'barangay' => $business?->barangay,
+            'city_municipality' => $business?->city_municipality,
+            'province' => $business?->province,
+            'region' => $business?->region,
+            'business_contact_number' => $business?->business_contact_number,
+            'business_email' => $business?->business_email,
+            'website_social_page' => $business?->website_social_page,
+            'registration_type' => $business?->registration_type,
+            'registration_number' => $business?->registration_number,
+            'business_permit_number' => $business?->business_permit_number,
+            'registration_permit_date' => $business?->registration_permit_date?->format('Y-m-d'),
         ];
 
         return Inertia::render('onboarding/index', [

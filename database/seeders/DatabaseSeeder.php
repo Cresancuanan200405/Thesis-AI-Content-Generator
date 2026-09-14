@@ -34,8 +34,8 @@ class DatabaseSeeder extends Seeder
         $business = Business::factory()->create([
             'user_id' => $user->id,
             'name' => 'Northstar Studio',
-            'industry' => 'Retail',
-            'category' => 'E-commerce',
+            'industry' => 'Retail & E-Commerce',
+            'category' => 'Online Shop',
             'description' => 'A boutique lifestyle brand creating premium everyday essentials for modern homes.',
         ]);
 

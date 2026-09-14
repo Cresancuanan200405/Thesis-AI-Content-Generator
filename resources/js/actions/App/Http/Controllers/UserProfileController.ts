@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\UserProfileController::show
- * @see app/Http/Controllers/UserProfileController.php:17
+ * @see app/Http/Controllers/UserProfileController.php:22
  * @route '/profile'
  */
 export const show = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\UserProfileController::show
- * @see app/Http/Controllers/UserProfileController.php:17
+ * @see app/Http/Controllers/UserProfileController.php:22
  * @route '/profile'
  */
 show.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ show.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\UserProfileController::show
- * @see app/Http/Controllers/UserProfileController.php:17
+ * @see app/Http/Controllers/UserProfileController.php:22
  * @route '/profile'
  */
 show.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -34,7 +34,7 @@ show.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\UserProfileController::show
- * @see app/Http/Controllers/UserProfileController.php:17
+ * @see app/Http/Controllers/UserProfileController.php:22
  * @route '/profile'
  */
 show.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,7 +44,7 @@ show.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\UserProfileController::show
- * @see app/Http/Controllers/UserProfileController.php:17
+ * @see app/Http/Controllers/UserProfileController.php:22
  * @route '/profile'
  */
     const showForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -54,7 +54,7 @@ show.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\UserProfileController::show
- * @see app/Http/Controllers/UserProfileController.php:17
+ * @see app/Http/Controllers/UserProfileController.php:22
  * @route '/profile'
  */
         showForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -63,7 +63,7 @@ show.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\UserProfileController::show
- * @see app/Http/Controllers/UserProfileController.php:17
+ * @see app/Http/Controllers/UserProfileController.php:22
  * @route '/profile'
  */
         showForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -79,7 +79,7 @@ show.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     show.form = showForm
 /**
 * @see \App\Http\Controllers\UserProfileController::updateBusiness
- * @see app/Http/Controllers/UserProfileController.php:87
+ * @see app/Http/Controllers/UserProfileController.php:110
  * @route '/profile/business'
  */
 export const updateBusiness = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -94,7 +94,7 @@ updateBusiness.definition = {
 
 /**
 * @see \App\Http\Controllers\UserProfileController::updateBusiness
- * @see app/Http/Controllers/UserProfileController.php:87
+ * @see app/Http/Controllers/UserProfileController.php:110
  * @route '/profile/business'
  */
 updateBusiness.url = (options?: RouteQueryOptions) => {
@@ -103,7 +103,7 @@ updateBusiness.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\UserProfileController::updateBusiness
- * @see app/Http/Controllers/UserProfileController.php:87
+ * @see app/Http/Controllers/UserProfileController.php:110
  * @route '/profile/business'
  */
 updateBusiness.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -112,7 +112,7 @@ updateBusiness.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => 
 })
 /**
 * @see \App\Http\Controllers\UserProfileController::updateBusiness
- * @see app/Http/Controllers/UserProfileController.php:87
+ * @see app/Http/Controllers/UserProfileController.php:110
  * @route '/profile/business'
  */
 updateBusiness.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -122,7 +122,7 @@ updateBusiness.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> =
 
     /**
 * @see \App\Http\Controllers\UserProfileController::updateBusiness
- * @see app/Http/Controllers/UserProfileController.php:87
+ * @see app/Http/Controllers/UserProfileController.php:110
  * @route '/profile/business'
  */
     const updateBusinessForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -132,7 +132,7 @@ updateBusiness.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> =
 
             /**
 * @see \App\Http\Controllers\UserProfileController::updateBusiness
- * @see app/Http/Controllers/UserProfileController.php:87
+ * @see app/Http/Controllers/UserProfileController.php:110
  * @route '/profile/business'
  */
         updateBusinessForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -141,7 +141,7 @@ updateBusiness.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> =
         })
             /**
 * @see \App\Http\Controllers\UserProfileController::updateBusiness
- * @see app/Http/Controllers/UserProfileController.php:87
+ * @see app/Http/Controllers/UserProfileController.php:110
  * @route '/profile/business'
  */
         updateBusinessForm.patch = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -156,8 +156,206 @@ updateBusiness.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> =
     
     updateBusiness.form = updateBusinessForm
 /**
+* @see \App\Http\Controllers\UserProfileController::storeBusinessDocument
+ * @see app/Http/Controllers/UserProfileController.php:132
+ * @route '/profile/business/document'
+ */
+export const storeBusinessDocument = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: storeBusinessDocument.url(options),
+    method: 'post',
+})
+
+storeBusinessDocument.definition = {
+    methods: ["post"],
+    url: '/profile/business/document',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\UserProfileController::storeBusinessDocument
+ * @see app/Http/Controllers/UserProfileController.php:132
+ * @route '/profile/business/document'
+ */
+storeBusinessDocument.url = (options?: RouteQueryOptions) => {
+    return storeBusinessDocument.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\UserProfileController::storeBusinessDocument
+ * @see app/Http/Controllers/UserProfileController.php:132
+ * @route '/profile/business/document'
+ */
+storeBusinessDocument.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: storeBusinessDocument.url(options),
+    method: 'post',
+})
+
+    /**
+* @see \App\Http\Controllers\UserProfileController::storeBusinessDocument
+ * @see app/Http/Controllers/UserProfileController.php:132
+ * @route '/profile/business/document'
+ */
+    const storeBusinessDocumentForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+        action: storeBusinessDocument.url(options),
+        method: 'post',
+    })
+
+            /**
+* @see \App\Http\Controllers\UserProfileController::storeBusinessDocument
+ * @see app/Http/Controllers/UserProfileController.php:132
+ * @route '/profile/business/document'
+ */
+        storeBusinessDocumentForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+            action: storeBusinessDocument.url(options),
+            method: 'post',
+        })
+    
+    storeBusinessDocument.form = storeBusinessDocumentForm
+/**
+* @see \App\Http\Controllers\UserProfileController::downloadBusinessDocument
+ * @see app/Http/Controllers/UserProfileController.php:173
+ * @route '/profile/business/document'
+ */
+export const downloadBusinessDocument = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: downloadBusinessDocument.url(options),
+    method: 'get',
+})
+
+downloadBusinessDocument.definition = {
+    methods: ["get","head"],
+    url: '/profile/business/document',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\UserProfileController::downloadBusinessDocument
+ * @see app/Http/Controllers/UserProfileController.php:173
+ * @route '/profile/business/document'
+ */
+downloadBusinessDocument.url = (options?: RouteQueryOptions) => {
+    return downloadBusinessDocument.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\UserProfileController::downloadBusinessDocument
+ * @see app/Http/Controllers/UserProfileController.php:173
+ * @route '/profile/business/document'
+ */
+downloadBusinessDocument.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: downloadBusinessDocument.url(options),
+    method: 'get',
+})
+/**
+* @see \App\Http\Controllers\UserProfileController::downloadBusinessDocument
+ * @see app/Http/Controllers/UserProfileController.php:173
+ * @route '/profile/business/document'
+ */
+downloadBusinessDocument.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: downloadBusinessDocument.url(options),
+    method: 'head',
+})
+
+    /**
+* @see \App\Http\Controllers\UserProfileController::downloadBusinessDocument
+ * @see app/Http/Controllers/UserProfileController.php:173
+ * @route '/profile/business/document'
+ */
+    const downloadBusinessDocumentForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        action: downloadBusinessDocument.url(options),
+        method: 'get',
+    })
+
+            /**
+* @see \App\Http\Controllers\UserProfileController::downloadBusinessDocument
+ * @see app/Http/Controllers/UserProfileController.php:173
+ * @route '/profile/business/document'
+ */
+        downloadBusinessDocumentForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: downloadBusinessDocument.url(options),
+            method: 'get',
+        })
+            /**
+* @see \App\Http\Controllers\UserProfileController::downloadBusinessDocument
+ * @see app/Http/Controllers/UserProfileController.php:173
+ * @route '/profile/business/document'
+ */
+        downloadBusinessDocumentForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: downloadBusinessDocument.url({
+                        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                            _method: 'HEAD',
+                            ...(options?.query ?? options?.mergeQuery ?? {}),
+                        }
+                    }),
+            method: 'get',
+        })
+    
+    downloadBusinessDocument.form = downloadBusinessDocumentForm
+/**
+* @see \App\Http\Controllers\UserProfileController::deleteBusinessDocument
+ * @see app/Http/Controllers/UserProfileController.php:189
+ * @route '/profile/business/document'
+ */
+export const deleteBusinessDocument = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+    url: deleteBusinessDocument.url(options),
+    method: 'delete',
+})
+
+deleteBusinessDocument.definition = {
+    methods: ["delete"],
+    url: '/profile/business/document',
+} satisfies RouteDefinition<["delete"]>
+
+/**
+* @see \App\Http\Controllers\UserProfileController::deleteBusinessDocument
+ * @see app/Http/Controllers/UserProfileController.php:189
+ * @route '/profile/business/document'
+ */
+deleteBusinessDocument.url = (options?: RouteQueryOptions) => {
+    return deleteBusinessDocument.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\UserProfileController::deleteBusinessDocument
+ * @see app/Http/Controllers/UserProfileController.php:189
+ * @route '/profile/business/document'
+ */
+deleteBusinessDocument.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
+    url: deleteBusinessDocument.url(options),
+    method: 'delete',
+})
+
+    /**
+* @see \App\Http\Controllers\UserProfileController::deleteBusinessDocument
+ * @see app/Http/Controllers/UserProfileController.php:189
+ * @route '/profile/business/document'
+ */
+    const deleteBusinessDocumentForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+        action: deleteBusinessDocument.url({
+                    [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                        _method: 'DELETE',
+                        ...(options?.query ?? options?.mergeQuery ?? {}),
+                    }
+                }),
+        method: 'post',
+    })
+
+            /**
+* @see \App\Http\Controllers\UserProfileController::deleteBusinessDocument
+ * @see app/Http/Controllers/UserProfileController.php:189
+ * @route '/profile/business/document'
+ */
+        deleteBusinessDocumentForm.delete = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+            action: deleteBusinessDocument.url({
+                        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                            _method: 'DELETE',
+                            ...(options?.query ?? options?.mergeQuery ?? {}),
+                        }
+                    }),
+            method: 'post',
+        })
+    
+    deleteBusinessDocument.form = deleteBusinessDocumentForm
+/**
 * @see \App\Http\Controllers\UserProfileController::showBusiness
- * @see app/Http/Controllers/UserProfileController.php:57
+ * @see app/Http/Controllers/UserProfileController.php:67
  * @route '/profile/business'
  */
 export const showBusiness = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -172,7 +370,7 @@ showBusiness.definition = {
 
 /**
 * @see \App\Http\Controllers\UserProfileController::showBusiness
- * @see app/Http/Controllers/UserProfileController.php:57
+ * @see app/Http/Controllers/UserProfileController.php:67
  * @route '/profile/business'
  */
 showBusiness.url = (options?: RouteQueryOptions) => {
@@ -181,7 +379,7 @@ showBusiness.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\UserProfileController::showBusiness
- * @see app/Http/Controllers/UserProfileController.php:57
+ * @see app/Http/Controllers/UserProfileController.php:67
  * @route '/profile/business'
  */
 showBusiness.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -190,7 +388,7 @@ showBusiness.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\UserProfileController::showBusiness
- * @see app/Http/Controllers/UserProfileController.php:57
+ * @see app/Http/Controllers/UserProfileController.php:67
  * @route '/profile/business'
  */
 showBusiness.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -200,7 +398,7 @@ showBusiness.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\UserProfileController::showBusiness
- * @see app/Http/Controllers/UserProfileController.php:57
+ * @see app/Http/Controllers/UserProfileController.php:67
  * @route '/profile/business'
  */
     const showBusinessForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -210,7 +408,7 @@ showBusiness.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\UserProfileController::showBusiness
- * @see app/Http/Controllers/UserProfileController.php:57
+ * @see app/Http/Controllers/UserProfileController.php:67
  * @route '/profile/business'
  */
         showBusinessForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -219,7 +417,7 @@ showBusiness.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\UserProfileController::showBusiness
- * @see app/Http/Controllers/UserProfileController.php:57
+ * @see app/Http/Controllers/UserProfileController.php:67
  * @route '/profile/business'
  */
         showBusinessForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -233,6 +431,6 @@ showBusiness.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
     
     showBusiness.form = showBusinessForm
-const UserProfileController = { show, updateBusiness, showBusiness }
+const UserProfileController = { show, updateBusiness, storeBusinessDocument, downloadBusinessDocument, deleteBusinessDocument, showBusiness }
 
 export default UserProfileController

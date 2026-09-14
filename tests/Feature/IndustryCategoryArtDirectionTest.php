@@ -4,13 +4,84 @@ use App\Models\Product;
 use App\Services\IndustryCategoryArtDirectionService;
 use App\Services\ModularPromptOrchestrator;
 
+it('authoritative taxonomy exposes exactly 12 MSME industries', function () {
+    $industries = IndustryCategoryArtDirectionService::getIndustries();
+
+    expect($industries)->toHaveCount(12)
+        ->toBe([
+            'Food & Beverage',
+            'Retail & E-Commerce',
+            'Fashion & Apparel',
+            'Beauty & Personal Care',
+            'Home & Lifestyle',
+            'Agriculture & Agribusiness',
+            'Arts, Crafts & Creative Services',
+            'Tourism & Hospitality',
+            'Automotive & Transport Services',
+            'Technology & Digital Services',
+            'Education & Training',
+            'Health, Fitness & Wellness',
+        ]);
+});
+
+it('validates industry and category combinations correctly', function () {
+    expect(IndustryCategoryArtDirectionService::isValidCombination('Food & Beverage', 'Café / Coffee Shop'))->toBeTrue()
+        ->and(IndustryCategoryArtDirectionService::isValidCombination('Food & Beverage', 'Restaurant'))->toBeTrue()
+        ->and(IndustryCategoryArtDirectionService::isValidCombination('Automotive & Transport Services', 'Auto Repair'))->toBeTrue()
+        ->and(IndustryCategoryArtDirectionService::isValidCombination('Technology & Digital Services', 'Software / Digital Services'))->toBeTrue()
+        ->and(IndustryCategoryArtDirectionService::isValidCombination('Food & Beverage', 'Auto Repair'))->toBeFalse()
+        ->and(IndustryCategoryArtDirectionService::isValidCombination('Automotive & Transport Services', 'Skincare'))->toBeFalse()
+        ->and(IndustryCategoryArtDirectionService::isValidCombination('Invalid Industry', 'Restaurant'))->toBeFalse()
+        ->and(IndustryCategoryArtDirectionService::isValidCombination(null, null))->toBeFalse();
+});
+
+it('resolves dedicated structured visual art direction for all 12 MSME industries', function () {
+    $service = new IndustryCategoryArtDirectionService;
+    $industries = IndustryCategoryArtDirectionService::getIndustries();
+
+    foreach ($industries as $industry) {
+        $categories = IndustryCategoryArtDirectionService::getCategoriesForIndustry($industry);
+        expect($categories)->not->toBeEmpty();
+
+        $firstCategory = $categories[0];
+        $direction = $service->resolveArtDirection($industry, $firstCategory, 'Test MSME Hero Product');
+
+        expect($direction)->toHaveKeys([
+            'industry',
+            'category',
+            'environment',
+            'surfaces',
+            'lighting',
+            'props',
+            'commercial_conventions',
+            'things_to_avoid',
+        ])
+            ->and($direction['environment'])->not->toBeEmpty()
+            ->and($direction['surfaces'])->not->toBeEmpty()
+            ->and($direction['lighting'])->not->toBeEmpty()
+            ->and($direction['props'])->not->toBeEmpty()
+            ->and($direction['commercial_conventions'])->not->toBeEmpty()
+            ->and($direction['things_to_avoid'])->not->toBeEmpty();
+
+        $promptModule = $service->formatForPrompt($direction, 'Test MSME Hero Product');
+        expect($promptModule)->toContain("INDUSTRY & CATEGORY ART DIRECTION: {$industry} — {$firstCategory}")
+            ->toContain('• Commercial Environment:')
+            ->toContain('• Contextual Surfaces & Materials:')
+            ->toContain('• Commercial Lighting Direction:')
+            ->toContain('• Restrained Supporting Props:')
+            ->toContain('• Commercial Photography Standards:')
+            ->toContain('• Things to Avoid:')
+            ->toContain('• Hierarchy & Subordination: Industry and category staging must elevate Test MSME Hero Product as the undisputed hero');
+    }
+});
+
 it('resolves dedicated structured visual art direction for Food & Beverage and Cafe', function () {
     $service = new IndustryCategoryArtDirectionService;
 
-    $direction = $service->resolveArtDirection('Food & Beverage', 'Cafe', 'Iced Caramel Macchiato');
+    $direction = $service->resolveArtDirection('Food & Beverage', 'Café / Coffee Shop', 'Iced Caramel Macchiato');
 
     expect($direction['industry'])->toBe('Food & Beverage')
-        ->and($direction['category'])->toBe('Cafe')
+        ->and($direction['category'])->toBe('Café / Coffee Shop')
         ->and($direction['environment'])->toContain('café')
         ->and($direction['surfaces'])->toContain('wood')
         ->and($direction['lighting'])->toContain('Warm golden sunlight')
@@ -19,7 +90,7 @@ it('resolves dedicated structured visual art direction for Food & Beverage and C
         ->and($direction['things_to_avoid'])->toContain('Do not clutter');
 
     $promptModule = $service->formatForPrompt($direction, 'Iced Caramel Macchiato');
-    expect($promptModule)->toContain('INDUSTRY & CATEGORY ART DIRECTION: Food & Beverage — Cafe')
+    expect($promptModule)->toContain('INDUSTRY & CATEGORY ART DIRECTION: Food & Beverage — Café / Coffee Shop')
         ->toContain('• Commercial Environment:')
         ->toContain('• Contextual Surfaces & Materials:')
         ->toContain('• Commercial Lighting Direction:')
@@ -30,9 +101,9 @@ it('resolves dedicated structured visual art direction for Food & Beverage and C
 it('resolves distinct art direction for different industries (Automotive vs Beauty vs Technology)', function () {
     $service = new IndustryCategoryArtDirectionService;
 
-    $beauty = $service->resolveArtDirection('Beauty & Wellness', 'Skincare', 'Hydrating Facial Serum');
-    $auto = $service->resolveArtDirection('Automotive', 'Car Detailing', 'Ceramic Shield Polish');
-    $tech = $service->resolveArtDirection('Technology', 'SaaS Business', 'Cloud Management Suite');
+    $beauty = $service->resolveArtDirection('Beauty & Personal Care', 'Skincare', 'Hydrating Facial Serum');
+    $auto = $service->resolveArtDirection('Automotive & Transport Services', 'Car Wash / Detailing', 'Ceramic Shield Polish');
+    $tech = $service->resolveArtDirection('Technology & Digital Services', 'Software / Digital Services', 'Cloud Management Suite');
 
     // Beauty
     expect($beauty['environment'])->toContain('skincare vanity')
@@ -60,7 +131,7 @@ it('integrates industry and category art direction into ModularPromptOrchestrato
         'product_name' => 'Signature Blend Coffee',
         'reference_image_path' => 'products/coffee.png',
         'business_industry' => 'Food & Beverage',
-        'business_category' => 'Coffee Shop',
+        'business_category' => 'Café / Coffee Shop',
         'business_name' => 'CoffeYessir',
         'include_business_name' => true,
         'aspect_ratio' => '9:16',
@@ -72,7 +143,7 @@ it('integrates industry and category art direction into ModularPromptOrchestrato
         ->toContain('PRODUCT PRESERVATION:');
 
     // Verify Active Industry & Category Art Direction is present
-    expect($prompt)->toContain('INDUSTRY & CATEGORY ART DIRECTION: Food & Beverage — Coffee Shop')
+    expect($prompt)->toContain('INDUSTRY & CATEGORY ART DIRECTION: Food & Beverage — Café / Coffee Shop')
         ->toContain('• Commercial Environment: Artisanal specialty café counter')
         ->toContain('• Contextual Surfaces & Materials:')
         ->toContain('• Commercial Lighting Direction: Warm golden sunlight')
@@ -90,7 +161,7 @@ it('integrates industry and category art direction into ModularPromptOrchestrato
 
     $prompt = $orchestrator->orchestrate([
         'product_name' => 'Hydro Glow Serum',
-        'business_industry' => 'Beauty & Wellness',
+        'business_industry' => 'Beauty & Personal Care',
         'business_category' => 'Skincare',
         'business_name' => 'Luxe Skin Lab',
         'include_business_name' => true,
@@ -98,7 +169,7 @@ it('integrates industry and category art direction into ModularPromptOrchestrato
     ]);
 
     expect($prompt)->toContain('PRODUCT SOURCE & HANDLING (GENERATIVE PRODUCT & COMPLETE SCENE MODE):')
-        ->toContain('INDUSTRY & CATEGORY ART DIRECTION: Beauty & Wellness — Skincare')
+        ->toContain('INDUSTRY & CATEGORY ART DIRECTION: Beauty & Personal Care — Skincare')
         ->toContain('• Commercial Environment: Pristine luxury skincare vanity')
         ->toContain('• Commercial Photography Standards: Premium cosmetic and skincare advertising photography')
         ->toContain('STRICT LOGO RESTRICTION:');
@@ -110,13 +181,13 @@ it('incorporates supplemental business context without overriding product fideli
     $prompt = $orchestrator->orchestrate([
         'product_name' => 'Cold Brew Bottle',
         'business_industry' => 'Food & Beverage',
-        'business_category' => 'Cafe',
+        'business_category' => 'Café / Coffee Shop',
         'business_description' => 'A boutique micro-roastery serving specialty single-origin beans.',
     ]);
 
     expect($prompt)->toContain('BUSINESS CONTEXT:')
         ->toContain('• Business Description: A boutique micro-roastery serving specialty single-origin beans.')
-        ->toContain('• Business Category: Cafe')
+        ->toContain('• Business Category: Café / Coffee Shop')
         ->toContain('• Instruction: Use the business description only as contextual information for visual generation.');
 });
 
@@ -127,7 +198,7 @@ it('seamlessly combines Event + Industry + Category + Product + Tone + Style', f
         'product_name' => 'Espresso Caramel Blend',
         'event_name' => 'Mother\'s Day Special',
         'business_industry' => 'Food & Beverage',
-        'business_category' => 'Cafe',
+        'business_category' => 'Café / Coffee Shop',
         'business_name' => 'CoffeYessir',
         'brand_tone' => ['Warm & Welcoming', 'Playful'],
         'render_style' => 'Studio Product Still',
@@ -141,7 +212,7 @@ it('seamlessly combines Event + Industry + Category + Product + Tone + Style', f
         ->toContain('Mood: Warm, heartwarming & appreciative');
 
     // Industry Art Direction
-    expect($prompt)->toContain('INDUSTRY & CATEGORY ART DIRECTION: Food & Beverage — Cafe')
+    expect($prompt)->toContain('INDUSTRY & CATEGORY ART DIRECTION: Food & Beverage — Café / Coffee Shop')
         ->toContain('Artisanal specialty café counter');
 
     // Brand Identity & Tone

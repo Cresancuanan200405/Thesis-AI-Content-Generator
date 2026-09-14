@@ -5,6 +5,152 @@ namespace App\Services;
 class IndustryCategoryArtDirectionService
 {
     /**
+     * Authoritative 12 MSME-Oriented Industry & Category Taxonomy.
+     *
+     * @var array<string, array<int, string>>
+     */
+    public const TAXONOMY = [
+        'Food & Beverage' => [
+            'Restaurant',
+            'Café / Coffee Shop',
+            'Bakery / Pastry',
+            'Catering',
+            'Food Products',
+            'Beverage Products',
+            'Snacks / Desserts',
+        ],
+        'Retail & E-Commerce' => [
+            'General Retail',
+            'Online Shop',
+            'Specialty Store',
+            'Grocery / Convenience',
+            'Consumer Products',
+        ],
+        'Fashion & Apparel' => [
+            'Clothing',
+            'Footwear',
+            'Bags & Accessories',
+            'Jewelry / Accessories',
+            'Local / Handmade Fashion',
+        ],
+        'Beauty & Personal Care' => [
+            'Skincare',
+            'Cosmetics',
+            'Hair Salon / Barbershop',
+            'Nail / Beauty Services',
+            'Personal Care Products',
+        ],
+        'Home & Lifestyle' => [
+            'Furniture',
+            'Home Décor',
+            'Household Products',
+            'Interior / Home Services',
+            'Lifestyle Products',
+        ],
+        'Agriculture & Agribusiness' => [
+            'Farm Produce',
+            'Organic Products',
+            'Coffee / Cacao',
+            'Meat / Poultry',
+            'Seafood',
+            'Agricultural Products',
+        ],
+        'Arts, Crafts & Creative Services' => [
+            'Handmade Crafts',
+            'Souvenirs',
+            'Gifts',
+            'Printing',
+            'Photography / Creative Services',
+            'Local Artisan Products',
+        ],
+        'Tourism & Hospitality' => [
+            'Hotel / Resort',
+            'Homestay',
+            'Travel Services',
+            'Tour Services',
+            'Tourism Attractions',
+            'Events / Experiences',
+        ],
+        'Automotive & Transport Services' => [
+            'Auto Repair',
+            'Motorcycle Services',
+            'Car Wash / Detailing',
+            'Auto Parts',
+            'Transport Services',
+        ],
+        'Technology & Digital Services' => [
+            'Computer / Electronics Shop',
+            'IT Services',
+            'Software / Digital Services',
+            'Digital Marketing',
+            'Technology Services',
+        ],
+        'Education & Training' => [
+            'Tutorial Center',
+            'Training Center',
+            'Skills Training',
+            'Educational Services',
+            'Review / Learning Services',
+        ],
+        'Health, Fitness & Wellness' => [
+            'Fitness / Gym',
+            'Wellness Services',
+            'Massage / Spa',
+            'Health Products',
+            'Clinic / Health Services',
+        ],
+    ];
+
+    /**
+     * Get list of all supported industry names.
+     *
+     * @return array<int, string>
+     */
+    public static function getIndustries(): array
+    {
+        return array_keys(self::TAXONOMY);
+    }
+
+    /**
+     * Get categories for a specific industry.
+     *
+     * @return array<int, string>
+     */
+    public static function getCategoriesForIndustry(string $industry): array
+    {
+        return self::TAXONOMY[$industry] ?? [];
+    }
+
+    /**
+     * Get flat array of all valid categories across all industries.
+     *
+     * @return array<int, string>
+     */
+    public static function getAllCategories(): array
+    {
+        $categories = [];
+        foreach (self::TAXONOMY as $cats) {
+            $categories = array_merge($categories, $cats);
+        }
+
+        return array_values(array_unique($categories));
+    }
+
+    /**
+     * Validate if an industry and category combination is valid.
+     */
+    public static function isValidCombination(?string $industry, ?string $category): bool
+    {
+        if (! $industry || ! $category) {
+            return false;
+        }
+
+        $categories = self::getCategoriesForIndustry($industry);
+
+        return in_array($category, $categories, true);
+    }
+
+    /**
      * Resolve structured visual art direction based on the business industry and category.
      *
      * @return array{
@@ -26,49 +172,64 @@ class IndustryCategoryArtDirectionService
         $normIndustry = strtolower($rawIndustry);
         $normCategory = strtolower($rawCategory);
 
-        // 1. Match Industry & Category
-        if (str_contains($normIndustry, 'food') || str_contains($normIndustry, 'beverage') || str_contains($normCategory, 'cafe') || str_contains($normCategory, 'coffee') || str_contains($normCategory, 'restaurant') || str_contains($normCategory, 'bakery')) {
+        // 1. Food & Beverage
+        if (str_contains($normIndustry, 'food') || str_contains($normIndustry, 'beverage') || str_contains($normCategory, 'cafe') || str_contains($normCategory, 'coffee') || str_contains($normCategory, 'restaurant') || str_contains($normCategory, 'bakery') || str_contains($normCategory, 'pastry') || str_contains($normCategory, 'snack') || str_contains($normCategory, 'dessert') || str_contains($normCategory, 'catering')) {
             return $this->resolveFoodAndBeverage($rawIndustry, $rawCategory, $productName, $normCategory);
         }
 
-        if (str_contains($normIndustry, 'beauty') || str_contains($normIndustry, 'wellness') || str_contains($normCategory, 'skincare') || str_contains($normCategory, 'cosmetic') || str_contains($normCategory, 'salon') || str_contains($normCategory, 'spa')) {
-            return $this->resolveBeautyAndWellness($rawIndustry, $rawCategory, $productName, $normCategory);
+        // 2. Fashion & Apparel (matched before Retail to catch clothing/apparel)
+        if (str_contains($normIndustry, 'fashion') || str_contains($normIndustry, 'apparel') || str_contains($normCategory, 'clothing') || str_contains($normCategory, 'footwear') || str_contains($normCategory, 'bag') || str_contains($normCategory, 'jewelry') || str_contains($normCategory, 'accessory')) {
+            return $this->resolveFashionAndApparel($rawIndustry, $rawCategory, $productName, $normCategory);
         }
 
-        if (str_contains($normIndustry, 'automotive') || str_contains($normCategory, 'car') || str_contains($normCategory, 'auto') || str_contains($normCategory, 'motorcycle')) {
-            return $this->resolveAutomotive($rawIndustry, $rawCategory, $productName, $normCategory);
+        // 3. Retail & E-Commerce
+        if (str_contains($normIndustry, 'retail') || str_contains($normIndustry, 'e-commerce') || str_contains($normIndustry, 'ecommerce') || str_contains($normCategory, 'shop') || str_contains($normCategory, 'store') || str_contains($normCategory, 'grocery') || str_contains($normCategory, 'consumer product')) {
+            return $this->resolveRetailAndEcommerce($rawIndustry, $rawCategory, $productName, $normCategory);
         }
 
-        if (str_contains($normIndustry, 'tech') || str_contains($normCategory, 'software') || str_contains($normCategory, 'saas') || str_contains($normCategory, 'gadget') || str_contains($normCategory, 'hardware')) {
-            return $this->resolveTechnology($rawIndustry, $rawCategory, $productName, $normCategory);
+        // 4. Beauty & Personal Care
+        if (str_contains($normIndustry, 'beauty') || str_contains($normIndustry, 'personal care') || str_contains($normCategory, 'skincare') || str_contains($normCategory, 'cosmetic') || str_contains($normCategory, 'salon') || str_contains($normCategory, 'barber') || str_contains($normCategory, 'nail')) {
+            return $this->resolveBeautyAndPersonalCare($rawIndustry, $rawCategory, $productName, $normCategory);
         }
 
-        if (str_contains($normIndustry, 'retail') || str_contains($normCategory, 'clothing') || str_contains($normCategory, 'fashion') || str_contains($normCategory, 'apparel') || str_contains($normCategory, 'store')) {
-            return $this->resolveRetailAndFashion($rawIndustry, $rawCategory, $productName, $normCategory);
+        // 5. Home & Lifestyle
+        if (str_contains($normIndustry, 'home') || str_contains($normIndustry, 'lifestyle') || str_contains($normCategory, 'furniture') || str_contains($normCategory, 'd&eacute;cor') || str_contains($normCategory, 'decor') || str_contains($normCategory, 'household') || str_contains($normCategory, 'interior')) {
+            return $this->resolveHomeAndLifestyle($rawIndustry, $rawCategory, $productName, $normCategory);
         }
 
-        if (str_contains($normIndustry, 'real estate') || str_contains($normCategory, 'property') || str_contains($normCategory, 'interior') || str_contains($normCategory, 'home')) {
-            return $this->resolveRealEstate($rawIndustry, $rawCategory, $productName, $normCategory);
+        // 6. Agriculture & Agribusiness
+        if (str_contains($normIndustry, 'agri') || str_contains($normIndustry, 'farm') || str_contains($normCategory, 'produce') || str_contains($normCategory, 'organic') || str_contains($normCategory, 'cacao') || str_contains($normCategory, 'poultry') || str_contains($normCategory, 'seafood') || str_contains($normCategory, 'meat')) {
+            return $this->resolveAgricultureAndAgribusiness($rawIndustry, $rawCategory, $productName, $normCategory);
         }
 
-        if (str_contains($normIndustry, 'travel') || str_contains($normIndustry, 'hospitality') || str_contains($normCategory, 'hotel') || str_contains($normCategory, 'resort') || str_contains($normCategory, 'tour')) {
-            return $this->resolveTravelAndHospitality($rawIndustry, $rawCategory, $productName, $normCategory);
+        // 7. Arts, Crafts & Creative Services
+        if (str_contains($normIndustry, 'art') || str_contains($normIndustry, 'craft') || str_contains($normIndustry, 'creative') || str_contains($normCategory, 'handmade') || str_contains($normCategory, 'souvenir') || str_contains($normCategory, 'gift') || str_contains($normCategory, 'printing') || str_contains($normCategory, 'photography') || str_contains($normCategory, 'artisan')) {
+            return $this->resolveArtsAndCrafts($rawIndustry, $rawCategory, $productName, $normCategory);
         }
 
-        if (str_contains($normIndustry, 'health') || str_contains($normCategory, 'clinic') || str_contains($normCategory, 'medical') || str_contains($normCategory, 'dental') || str_contains($normCategory, 'pharmacy')) {
-            return $this->resolveHealthcare($rawIndustry, $rawCategory, $productName, $normCategory);
+        // 8. Tourism & Hospitality
+        if (str_contains($normIndustry, 'tourism') || str_contains($normIndustry, 'hospitality') || str_contains($normIndustry, 'travel') || str_contains($normCategory, 'hotel') || str_contains($normCategory, 'resort') || str_contains($normCategory, 'homestay') || str_contains($normCategory, 'tour') || str_contains($normCategory, 'experience')) {
+            return $this->resolveTourismAndHospitality($rawIndustry, $rawCategory, $productName, $normCategory);
         }
 
-        if (str_contains($normIndustry, 'fitness') || str_contains($normCategory, 'gym') || str_contains($normCategory, 'workout') || str_contains($normCategory, 'crossfit')) {
-            return $this->resolveFitness($rawIndustry, $rawCategory, $productName, $normCategory);
+        // 9. Automotive & Transport Services
+        if (str_contains($normIndustry, 'automotive') || str_contains($normIndustry, 'transport') || str_contains($normCategory, 'car') || str_contains($normCategory, 'auto') || str_contains($normCategory, 'motorcycle') || str_contains($normCategory, 'detailing')) {
+            return $this->resolveAutomotiveAndTransport($rawIndustry, $rawCategory, $productName, $normCategory);
         }
 
-        if (str_contains($normIndustry, 'professional') || str_contains($normIndustry, 'service') || str_contains($normIndustry, 'finance') || str_contains($normCategory, 'consulting') || str_contains($normCategory, 'agency') || str_contains($normCategory, 'legal') || str_contains($normCategory, 'accounting')) {
-            return $this->resolveProfessionalServices($rawIndustry, $rawCategory, $productName, $normCategory);
+        // 10. Technology & Digital Services
+        if (str_contains($normIndustry, 'tech') || str_contains($normIndustry, 'digital') || str_contains($normCategory, 'software') || str_contains($normCategory, 'it service') || str_contains($normCategory, 'marketing') || str_contains($normCategory, 'electronics') || str_contains($normCategory, 'computer')) {
+            return $this->resolveTechnologyAndDigital($rawIndustry, $rawCategory, $productName, $normCategory);
         }
 
-        if (str_contains($normIndustry, 'education') || str_contains($normCategory, 'school') || str_contains($normCategory, 'course') || str_contains($normCategory, 'tutorial')) {
-            return $this->resolveEducation($rawIndustry, $rawCategory, $productName, $normCategory);
+        // 11. Education & Training
+        if (str_contains($normIndustry, 'education') || str_contains($normIndustry, 'training') || str_contains($normCategory, 'tutorial') || str_contains($normCategory, 'learning') || str_contains($normCategory, 'skills') || str_contains($normCategory, 'school') || str_contains($normCategory, 'course')) {
+            return $this->resolveEducationAndTraining($rawIndustry, $rawCategory, $productName, $normCategory);
+        }
+
+        // 12. Health, Fitness & Wellness
+        if (str_contains($normIndustry, 'health') || str_contains($normIndustry, 'fitness') || str_contains($normIndustry, 'wellness') || str_contains($normCategory, 'gym') || str_contains($normCategory, 'clinic') || str_contains($normCategory, 'massage') || str_contains($normCategory, 'spa') || str_contains($normCategory, 'workout')) {
+            return $this->resolveHealthFitnessAndWellness($rawIndustry, $rawCategory, $productName, $normCategory);
         }
 
         return $this->resolveGenericCommerce($rawIndustry, $rawCategory, $productName);
@@ -94,11 +255,11 @@ class IndustryCategoryArtDirectionService
     }
 
     /**
-     * Food & Beverage / Café / Restaurant / Bakery Art Direction
+     * 1. Food & Beverage Art Direction
      */
     private function resolveFoodAndBeverage(string $industry, string $category, string $productName, string $normCategory): array
     {
-        if (str_contains($normCategory, 'coffee') || str_contains($normCategory, 'cafe')) {
+        if (str_contains($normCategory, 'coffee') || str_contains($normCategory, 'caf')) {
             return [
                 'industry' => $industry,
                 'category' => $category,
@@ -137,11 +298,45 @@ class IndustryCategoryArtDirectionService
     }
 
     /**
-     * Beauty & Wellness / Skincare / Cosmetics / Salon Art Direction
+     * 2. Retail & E-Commerce Art Direction
      */
-    private function resolveBeautyAndWellness(string $industry, string $category, string $productName, string $normCategory): array
+    private function resolveRetailAndEcommerce(string $industry, string $category, string $productName, string $normCategory): array
     {
-        if (str_contains($normCategory, 'salon') || str_contains($normCategory, 'hair') || str_contains($normCategory, 'barber')) {
+        return [
+            'industry' => $industry,
+            'category' => $category,
+            'environment' => 'Modern commercial retail showroom, curated storefront display, or high-end e-commerce product staging studio.',
+            'surfaces' => 'Clean architectural plinths, polished concrete, light Scandinavian oak, or smooth matte acrylic display blocks.',
+            'lighting' => 'Crisp balanced commercial studio lighting with soft diffused key light, precise fill, and subtle ground-level contact shadows.',
+            'props' => "Minimal geometric display pedestals, subtle premium packaging accents, or clean architectural partitions framing {$productName}.",
+            'commercial_conventions' => "High-conversion e-commerce and retail merchandising photography with razor-sharp product edge definition, true-to-life colors, and spacious commercial composition around {$productName}.",
+            'things_to_avoid' => 'Avoid barcode stickers, cluttered clearance bins, generic shopping cart icons, or distracting commercial signage.',
+        ];
+    }
+
+    /**
+     * 3. Fashion & Apparel Art Direction
+     */
+    private function resolveFashionAndApparel(string $industry, string $category, string $productName, string $normCategory): array
+    {
+        return [
+            'industry' => $industry,
+            'category' => $category,
+            'environment' => 'High-fashion editorial studio, boutique designer showroom, or sun-drenched architectural lifestyle terrace.',
+            'surfaces' => 'Raw linen fabric backdrops, polished terrazzo, pale oak parquet, or minimalist architectural concrete.',
+            'lighting' => 'Editorial fashion lighting with sculpted soft daylight, gentle shadow gradation, and rich textile texture illumination.',
+            'props' => "Subtle architectural archway, draped raw fabric texture, or minimalist hanger silhouette in background bokeh framing {$productName}.",
+            'commercial_conventions' => "Contemporary fashion lookbook and commercial catalog aesthetics with emphasis on silhouette, weave textures, garment drape, and luxury craftsmanship for {$productName}.",
+            'things_to_avoid' => 'Avoid messy retail clothes racks, cheap plastic mannequins, wrinkled backdrops, or distracting shopping bag logos.',
+        ];
+    }
+
+    /**
+     * 4. Beauty & Personal Care Art Direction
+     */
+    private function resolveBeautyAndPersonalCare(string $industry, string $category, string $productName, string $normCategory): array
+    {
+        if (str_contains($normCategory, 'salon') || str_contains($normCategory, 'hair') || str_contains($normCategory, 'barber') || str_contains($normCategory, 'nail')) {
             return [
                 'industry' => $industry,
                 'category' => $category,
@@ -167,9 +362,77 @@ class IndustryCategoryArtDirectionService
     }
 
     /**
-     * Automotive / Car Detailing / Dealership Art Direction
+     * 5. Home & Lifestyle Art Direction
      */
-    private function resolveAutomotive(string $industry, string $category, string $productName, string $normCategory): array
+    private function resolveHomeAndLifestyle(string $industry, string $category, string $productName, string $normCategory): array
+    {
+        return [
+            'industry' => $industry,
+            'category' => $category,
+            'environment' => 'Sunlit modern interior living space, contemporary minimalist home setting, or curated lifestyle interior suite.',
+            'surfaces' => 'Natural hardwood flooring, honed marble tabletop, linen-textured surfaces, and warm architectural wood panels.',
+            'lighting' => 'Expansive natural window daylight balanced with soft ambient warm interior lighting, creating an inviting, aspirational atmosphere.',
+            'props' => "Tasteful minimalist home accents (e.g. ceramic vase, leafy indoor plant in soft focus, designer coffee table book) framing {$productName}.",
+            'commercial_conventions' => "Sophisticated home and lifestyle advertising photography emphasizing comfort, functional beauty, organic materials, and refined interior harmony around {$productName}.",
+            'things_to_avoid' => 'Avoid messy domestic clutter, unmade beds, chaotic wires, or dark uninviting rooms.',
+        ];
+    }
+
+    /**
+     * 6. Agriculture & Agribusiness Art Direction
+     */
+    private function resolveAgricultureAndAgribusiness(string $industry, string $category, string $productName, string $normCategory): array
+    {
+        return [
+            'industry' => $industry,
+            'category' => $category,
+            'environment' => 'Sun-drenched organic farm landscape, lush fertile orchard terrace, or artisanal farm-to-table wooden harvest table.',
+            'surfaces' => 'Weathered rustic cedar wood, rich earthy stone, natural jute sackcloth, or sun-warmed slate.',
+            'lighting' => 'Radiant golden-hour agricultural sunlight with natural sun flare, luminous backlight on fresh leaves, and crisp organic textures.',
+            'props' => "Subtle fresh botanical vines, natural woven harvest basket, or lush green farm rows in distant soft-focus bokeh, highlighting {$productName}.",
+            'commercial_conventions' => "Wholesome, premium agricultural and agribusiness photography emphasizing farm-fresh authenticity, organic purity, harvest vitality, and sustainable commercial craftsmanship for {$productName}.",
+            'things_to_avoid' => 'Avoid industrial heavy machinery clutter, muddy grime, pest damage, withered produce, or artificial synthetic props.',
+        ];
+    }
+
+    /**
+     * 7. Arts, Crafts & Creative Services Art Direction
+     */
+    private function resolveArtsAndCrafts(string $industry, string $category, string $productName, string $normCategory): array
+    {
+        return [
+            'industry' => $industry,
+            'category' => $category,
+            'environment' => 'Sunlit artisan workshop atelier, boutique craft studio, or creative designer workbench.',
+            'surfaces' => 'Warm butcher-block workbench, raw canvas fabric, handmade textured ceramic, or natural kraft paper.',
+            'lighting' => 'Soft, natural studio window daylight with gentle directional modeling, illuminating delicate handmade details and handcrafted textures.',
+            'props' => "Curated artisan tools in distant soft bokeh (e.g. ceramic carving rib, fine paint brush, linen thread spool), keeping {$productName} centered.",
+            'commercial_conventions' => "Authentic artisan commercial photography showcasing tactile craftsmanship, bespoke handmade uniqueness, local creative heritage, and impeccable attention to detail for {$productName}.",
+            'things_to_avoid' => 'Avoid messy chaotic studio trash, spilled paint blobs, cluttered toolboxes, or cheap plastic novelty items.',
+        ];
+    }
+
+    /**
+     * 8. Tourism & Hospitality Art Direction
+     */
+    private function resolveTourismAndHospitality(string $industry, string $category, string $productName, string $normCategory): array
+    {
+        return [
+            'industry' => $industry,
+            'category' => $category,
+            'environment' => 'Tropical luxury boutique resort veranda, scenic destination terrace, or warm welcoming homestay patio.',
+            'surfaces' => 'Sun-bleached teak wood, natural coral stone, woven rattan, or pristine poolside travertine.',
+            'lighting' => 'Radiant tropical golden hour sunlight, soft turquoise water reflections, and breezy ambient warmth.',
+            'props' => "Gentle palm leaf silhouette in soft focus, crisp linen resort lounge, or distant ocean/mountain horizon providing deep atmospheric perspective framing {$productName}.",
+            'commercial_conventions' => "Aspirational travel and hospitality lifestyle photography creating an inviting, relaxing vacation aura that elevates {$productName}.",
+            'things_to_avoid' => 'Avoid crowded tourist mobs, tacky souvenir clutter, overcast gloomy skies, or chaotic transport terminals.',
+        ];
+    }
+
+    /**
+     * 9. Automotive & Transport Services Art Direction
+     */
+    private function resolveAutomotiveAndTransport(string $industry, string $category, string $productName, string $normCategory): array
     {
         if (str_contains($normCategory, 'detail') || str_contains($normCategory, 'wash')) {
             return [
@@ -191,20 +454,20 @@ class IndustryCategoryArtDirectionService
             'surfaces' => 'Polished concrete, dark asphalt, brushed aluminium, or architectural glass and steel.',
             'lighting' => 'Dramatic commercial automotive lighting with long linear softbox reflections, subtle rim lights, and high-contrast tonal depth.',
             'props' => "Sleek automotive design lines, distant showroom architecture, or clean metallic accents that complement {$productName}.",
-            'commercial_conventions' => 'High-impact automotive advertisement photography emphasizing precision engineering, speed, luxury, and premium automotive aesthetics.',
-            'things_to_avoid' => 'Avoid generic used car lots, cluttered license plates, or chaotic junkyard backgrounds.',
+            'commercial_conventions' => 'High-impact automotive advertisement photography emphasizing precision engineering, reliability, speed, and premium automotive aesthetics.',
+            'things_to_avoid' => 'Avoid generic used car lots, cluttered license plates, rusty junk, or chaotic junkyard backgrounds.',
         ];
     }
 
     /**
-     * Technology / SaaS / Hardware Art Direction
+     * 10. Technology & Digital Services Art Direction
      */
-    private function resolveTechnology(string $industry, string $category, string $productName, string $normCategory): array
+    private function resolveTechnologyAndDigital(string $industry, string $category, string $productName, string $normCategory): array
     {
         return [
             'industry' => $industry,
             'category' => $category,
-            'environment' => 'Futuristic minimalist tech studio, sleek executive workspace, or modern innovation lab.',
+            'environment' => 'Futuristic minimalist tech studio, sleek executive digital workspace, or modern innovation lab.',
             'surfaces' => 'Anodized aerospace aluminum, dark matte obsidian, smoked glass, or clean architectural resin tabletop.',
             'lighting' => 'Precision cool-white studio lighting with subtle ambient blue or cyan edge glow, accentuating crisp geometric product bevels.',
             'props' => "Minimalist wireless accessories, subtle ambient LED lightbar, or clean modern workspace elements in distant soft focus framing {$productName}.",
@@ -214,121 +477,62 @@ class IndustryCategoryArtDirectionService
     }
 
     /**
-     * Retail / Fashion & Apparel Art Direction
+     * 11. Education & Training Art Direction
      */
-    private function resolveRetailAndFashion(string $industry, string $category, string $productName, string $normCategory): array
+    private function resolveEducationAndTraining(string $industry, string $category, string $productName, string $normCategory): array
     {
         return [
             'industry' => $industry,
             'category' => $category,
-            'environment' => 'High-fashion editorial runway, boutique designer showroom, or sun-drenched architectural lifestyle terrace.',
-            'surfaces' => 'Raw linen fabric backdrops, polished terrazzo, pale oak parquet, or minimalist architectural concrete.',
-            'lighting' => 'Editorial fashion lighting with sculpted soft daylight, gentle shadow gradation, and rich textile texture illumination.',
-            'props' => "Subtle architectural archway, draped raw fabric texture, or minimalist hanger silhouette in background bokeh framing {$productName}.",
-            'commercial_conventions' => 'Contemporary fashion lookbook and commercial catalog aesthetics with emphasis on silhouette, weave textures, and garment drape.',
-            'things_to_avoid' => 'Avoid messy retail clothes racks, cheap plastic mannequins, wrinkled backdrops, or distracting shopping bag logos.',
-        ];
-    }
-
-    /**
-     * Real Estate & Interior Design Art Direction
-     */
-    private function resolveRealEstate(string $industry, string $category, string $productName, string $normCategory): array
-    {
-        return [
-            'industry' => $industry,
-            'category' => $category,
-            'environment' => 'Luxury contemporary interior space, sunlit penthouse living suite, or modern architectural property showcase.',
-            'surfaces' => 'Polished hardwood flooring, imported marble feature walls, floor-to-ceiling glass, and designer acoustic paneling.',
-            'lighting' => 'Natural expansive architectural sunlight balanced with warm interior ambient fixtures and subtle evening glow.',
-            'props' => 'Designer coffee table books, minimalist ceramic vase with pampas grass, and tasteful architectural furniture in soft focus.',
-            'commercial_conventions' => 'Professional architectural and interior design photography with straight vertical lines, wide spatial breathing room, and aspirational living appeal.',
-            'things_to_avoid' => 'Avoid distorted fisheye perspectives, cluttered personal clutter, dark unlit corners, or messy construction equipment.',
-        ];
-    }
-
-    /**
-     * Travel & Hospitality Art Direction
-     */
-    private function resolveTravelAndHospitality(string $industry, string $category, string $productName, string $normCategory): array
-    {
-        return [
-            'industry' => $industry,
-            'category' => $category,
-            'environment' => 'Tropical luxury resort terrace, boutique hotel veranda, or breathtaking scenic destination viewpoint.',
-            'surfaces' => 'Sun-bleached teak wood, natural coral stone, woven rattan, or pristine poolside travertine.',
-            'lighting' => 'Radiant tropical golden hour sunlight, soft turquoise water reflections, and breezy ambient warmth.',
-            'props' => 'Gentle palm leaf silhouette in soft focus, crisp linen resort lounge, or distant ocean horizon providing deep atmospheric perspective.',
-            'commercial_conventions' => "Aspirational travel lifestyle photography creating an inviting, relaxing vacation aura that elevates {$productName}.",
-            'things_to_avoid' => 'Avoid crowded tourist mobs, tacky souvenir clutter, overcast gloomy skies, or chaotic airport terminals.',
-        ];
-    }
-
-    /**
-     * Healthcare & Clinical Art Direction
-     */
-    private function resolveHealthcare(string $industry, string $category, string $productName, string $normCategory): array
-    {
-        return [
-            'industry' => $industry,
-            'category' => $category,
-            'environment' => 'Modern state-of-the-art wellness clinic, pristine medical consultation suite, or premium health studio.',
-            'surfaces' => 'Seamless antibacterial matte white composite, frosted tempered glass, polished light oak, or clean ceramic.',
-            'lighting' => 'Bright, uplifting high-CRI clinical daylight with clean gentle fill, promoting a sterile, trustworthy, and caring atmosphere.',
-            'props' => 'Subtle fresh botanical accent, clean ergonomic clipboard in soft background, or minimalist health laboratory glassware.',
-            'commercial_conventions' => 'Clean, trustworthy pharmaceutical and healthcare commercial photography emphasizing safety, wellness, and scientific precision.',
-            'things_to_avoid' => 'Avoid intimidating needles, scary surgical tools, blood, dramatic dark shadows, or cluttered medical charts.',
-        ];
-    }
-
-    /**
-     * Fitness & Gym Art Direction
-     */
-    private function resolveFitness(string $industry, string $category, string $productName, string $normCategory): array
-    {
-        return [
-            'industry' => $industry,
-            'category' => $category,
-            'environment' => 'High-performance athletic training facility, boutique fitness studio, or modern wellness gym.',
-            'surfaces' => 'Durable rubber gym flooring, matte black powder-coated steel, clean gym turf, or industrial concrete wall.',
-            'lighting' => 'High-energy directional athletic lighting with dramatic side-rim lights, bold contrast, and crisp product isolation.',
-            'props' => "Subtle matte dumbbell silhouette, clean athletic towel, or textured gym floor in soft peripheral focus framing {$productName}.",
-            'commercial_conventions' => 'Dynamic fitness commercial photography emphasizing motivation, performance, physical vitality, and premium athletic craft.',
-            'things_to_avoid' => 'Avoid messy sweaty gym benches, broken equipment, dark dingy basements, or cluttered weight racks.',
-        ];
-    }
-
-    /**
-     * Professional & Corporate Services Art Direction
-     */
-    private function resolveProfessionalServices(string $industry, string $category, string $productName, string $normCategory): array
-    {
-        return [
-            'industry' => $industry,
-            'category' => $category,
-            'environment' => 'Contemporary executive conference suite, bright creative agency workspace, or modern glass-walled corporate office.',
-            'surfaces' => 'Rich walnut executive desk, architectural frosted glass, brushed nickel, or premium matte leather blotter.',
-            'lighting' => 'Clean corporate ambient daylight paired with warm architectural desk lighting and soft office depth.',
-            'props' => "Minimalist leather notebook, premium pen, or architectural skyline in distant soft-focus bokeh behind {$productName}.",
-            'commercial_conventions' => 'Polished corporate B2B commercial photography conveying trust, prestige, strategic clarity, and professional excellence.',
-            'things_to_avoid' => 'Avoid messy stacks of paper, generic handshakes, boring cubicle farms, or cheesy corporate clip-art metaphors.',
-        ];
-    }
-
-    /**
-     * Education & Coaching Art Direction
-     */
-    private function resolveEducation(string $industry, string $category, string $productName, string $normCategory): array
-    {
-        return [
-            'industry' => $industry,
-            'category' => $category,
-            'environment' => 'Inspiring modern university library, bright interactive workshop studio, or collaborative learning campus lounge.',
+            'environment' => 'Inspiring modern learning library, bright interactive training studio, or collaborative campus workshop space.',
             'surfaces' => 'Light Scandinavian birchwood, matte whiteboard glass, acoustic felt, or clean polished laminate tabletop.',
             'lighting' => 'Inviting, natural classroom sunlight promoting focus, optimism, clarity, and intellectual vibrancy.',
-            'props' => 'Tastefully curated hardcover books, clean digital tablet, or architectural learning space in gentle soft focus.',
-            'commercial_conventions' => 'Inspiring educational commercial photography focusing on growth, discovery, achievement, and accessibility.',
+            'props' => "Tastefully curated hardcover books, clean digital tablet, or architectural learning space in gentle soft focus framing {$productName}.",
+            'commercial_conventions' => 'Inspiring educational commercial photography focusing on skills growth, discovery, achievement, clarity, and accessibility.',
             'things_to_avoid' => 'Avoid dusty old chalkboards, boring exam desks, chaotic student clutter, or dull institutional corridors.',
+        ];
+    }
+
+    /**
+     * 12. Health, Fitness & Wellness Art Direction
+     */
+    private function resolveHealthFitnessAndWellness(string $industry, string $category, string $productName, string $normCategory): array
+    {
+        if (str_contains($normCategory, 'fitness') || str_contains($normCategory, 'gym')) {
+            return [
+                'industry' => $industry,
+                'category' => $category,
+                'environment' => 'High-performance athletic training facility, boutique fitness studio, or modern wellness gym.',
+                'surfaces' => 'Durable rubber gym flooring, matte black powder-coated steel, clean gym turf, or industrial concrete wall.',
+                'lighting' => 'High-energy directional athletic lighting with dramatic side-rim lights, bold contrast, and crisp product isolation.',
+                'props' => "Subtle matte dumbbell silhouette, clean athletic towel, or textured gym floor in soft peripheral focus framing {$productName}.",
+                'commercial_conventions' => 'Dynamic fitness commercial photography emphasizing motivation, performance, physical vitality, and premium athletic craft.',
+                'things_to_avoid' => 'Avoid messy sweaty gym benches, broken equipment, dark dingy basements, or cluttered weight racks.',
+            ];
+        }
+
+        if (str_contains($normCategory, 'spa') || str_contains($normCategory, 'massage') || str_contains($normCategory, 'wellness')) {
+            return [
+                'industry' => $industry,
+                'category' => $category,
+                'environment' => 'Tranquil luxury wellness spa sanctuary, aromatherapy suite, or serene relaxation haven.',
+                'surfaces' => 'Honed river stone, warm bamboo, clean white ceramic, or soft linen decking.',
+                'lighting' => 'Gentle warm candle-glow ambient light paired with soft diffused natural daylight, creating serene tranquility.',
+                'props' => "Subtle smooth basalt stones, delicate orchid blossom, or aromatic diffuser in soft background bokeh framing {$productName}.",
+                'commercial_conventions' => 'Serene wellness and spa commercial photography conveying deep relaxation, balance, rejuvenation, and holistic self-care.',
+                'things_to_avoid' => 'Avoid harsh fluorescent lights, cluttered chemical bottles, dark dingy rooms, or sterile hospital vibes.',
+            ];
+        }
+
+        return [
+            'industry' => $industry,
+            'category' => $category,
+            'environment' => 'Modern state-of-the-art wellness clinic, pristine health consultation suite, or premium wellness studio.',
+            'surfaces' => 'Seamless antibacterial matte white composite, frosted tempered glass, polished light oak, or clean ceramic.',
+            'lighting' => 'Bright, uplifting high-CRI clinical daylight with clean gentle fill, promoting a trustworthy and caring atmosphere.',
+            'props' => "Subtle fresh botanical accent, clean ergonomic clipboard in soft background, or minimalist health laboratory glassware framing {$productName}.",
+            'commercial_conventions' => 'Clean, trustworthy healthcare and wellness commercial photography emphasizing safety, vitality, and professional precision.',
+            'things_to_avoid' => 'Avoid intimidating needles, scary surgical tools, blood, dramatic dark shadows, or cluttered medical charts.',
         ];
     }
 

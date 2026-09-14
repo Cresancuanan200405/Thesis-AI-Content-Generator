@@ -79,7 +79,7 @@ show.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     show.form = showForm
 /**
 * @see \App\Http\Controllers\OnboardingController::saveBusiness
- * @see app/Http/Controllers/OnboardingController.php:45
+ * @see app/Http/Controllers/OnboardingController.php:58
  * @route '/onboarding/business'
  */
 export const saveBusiness = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -94,7 +94,7 @@ saveBusiness.definition = {
 
 /**
 * @see \App\Http\Controllers\OnboardingController::saveBusiness
- * @see app/Http/Controllers/OnboardingController.php:45
+ * @see app/Http/Controllers/OnboardingController.php:58
  * @route '/onboarding/business'
  */
 saveBusiness.url = (options?: RouteQueryOptions) => {
@@ -103,7 +103,7 @@ saveBusiness.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\OnboardingController::saveBusiness
- * @see app/Http/Controllers/OnboardingController.php:45
+ * @see app/Http/Controllers/OnboardingController.php:58
  * @route '/onboarding/business'
  */
 saveBusiness.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -113,7 +113,7 @@ saveBusiness.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\OnboardingController::saveBusiness
- * @see app/Http/Controllers/OnboardingController.php:45
+ * @see app/Http/Controllers/OnboardingController.php:58
  * @route '/onboarding/business'
  */
     const saveBusinessForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -123,7 +123,7 @@ saveBusiness.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\OnboardingController::saveBusiness
- * @see app/Http/Controllers/OnboardingController.php:45
+ * @see app/Http/Controllers/OnboardingController.php:58
  * @route '/onboarding/business'
  */
         saveBusinessForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -189,7 +189,7 @@ savePreferences.post = (options?: RouteQueryOptions): RouteDefinition<'post'> =>
     savePreferences.form = savePreferencesForm
 /**
 * @see \App\Http\Controllers\OnboardingController::complete
- * @see app/Http/Controllers/OnboardingController.php:59
+ * @see app/Http/Controllers/OnboardingController.php:72
  * @route '/onboarding/complete'
  */
 export const complete = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -204,7 +204,7 @@ complete.definition = {
 
 /**
 * @see \App\Http\Controllers\OnboardingController::complete
- * @see app/Http/Controllers/OnboardingController.php:59
+ * @see app/Http/Controllers/OnboardingController.php:72
  * @route '/onboarding/complete'
  */
 complete.url = (options?: RouteQueryOptions) => {
@@ -213,7 +213,7 @@ complete.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\OnboardingController::complete
- * @see app/Http/Controllers/OnboardingController.php:59
+ * @see app/Http/Controllers/OnboardingController.php:72
  * @route '/onboarding/complete'
  */
 complete.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -223,7 +223,7 @@ complete.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\OnboardingController::complete
- * @see app/Http/Controllers/OnboardingController.php:59
+ * @see app/Http/Controllers/OnboardingController.php:72
  * @route '/onboarding/complete'
  */
     const completeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -233,7 +233,7 @@ complete.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\OnboardingController::complete
- * @see app/Http/Controllers/OnboardingController.php:59
+ * @see app/Http/Controllers/OnboardingController.php:72
  * @route '/onboarding/complete'
  */
         completeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

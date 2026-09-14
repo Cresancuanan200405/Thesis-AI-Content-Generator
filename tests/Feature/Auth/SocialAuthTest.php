@@ -46,12 +46,16 @@ test('it creates a new user and authenticates from socialite callback', function
         ->and($user->provider_id)->toBe('google_123456789')
         ->and($user->email_verified_at)->not->toBeNull();
 
-    $response->assertRedirect(route('onboarding.show'));
+    $response->assertRedirect(route('profile.edit'));
 });
 
 test('it links existing user by email from socialite callback', function () {
     $existingUser = User::factory()->create([
         'email' => 'sarah.existing@example.com',
+        'first_name' => 'Sarah',
+        'last_name' => 'Existing',
+        'username' => 'sarah_existing',
+        'password' => bcrypt('existing-password'),
         'provider_name' => null,
         'provider_id' => null,
         'onboarding_completed' => true,
@@ -74,7 +78,52 @@ test('it links existing user by email from socialite callback', function () {
 
     $existingUser->refresh();
     expect($existingUser->provider_name)->toBe('facebook')
-        ->and($existingUser->provider_id)->toBe('fb_99887766');
+        ->and($existingUser->provider_id)->toBe('fb_99887766')
+        ->and($existingUser->username)->toBe('sarah_existing')
+        ->and($existingUser->first_name)->toBe('Sarah')
+        ->and($existingUser->last_name)->toBe('Existing')
+        ->and($existingUser->email_verified_at)->not->toBeNull();
+
+    $response->assertRedirect(route('dashboard'));
+});
+
+test('it reuses an existing provider user and preserves their password and profile', function () {
+    $existingUser = User::factory()->create([
+        'name' => 'Google Member',
+        'username' => 'google_member',
+        'email' => 'google.member@example.com',
+        'first_name' => 'Google',
+        'last_name' => 'Member',
+        'password' => bcrypt('keep-this-password'),
+        'provider_name' => 'google',
+        'provider_id' => 'google_existing',
+        'email_verified_at' => null,
+        'onboarding_completed' => true,
+    ]);
+    $passwordHash = $existingUser->password;
+
+    $mockSocialiteUser = Mockery::mock(SocialiteUser::class);
+    $mockSocialiteUser->shouldReceive('getId')->andReturn('google_existing');
+    $mockSocialiteUser->shouldReceive('getName')->andReturn('Changed Google Name');
+    $mockSocialiteUser->shouldReceive('getEmail')->andReturn('google.member@example.com');
+    $mockSocialiteUser->shouldReceive('getAvatar')->andReturn('https://lh3.googleusercontent.com/a/new-avatar.jpg');
+
+    $mockProvider = Mockery::mock(Provider::class);
+    $mockProvider->shouldReceive('user')->andReturn($mockSocialiteUser);
+
+    Socialite::shouldReceive('driver')->with('google')->andReturn($mockProvider);
+
+    $response = $this->get(route('auth.social.callback', ['provider' => 'google']));
+
+    $this->assertAuthenticatedAs($existingUser);
+    expect(User::where('email', 'google.member@example.com')->count())->toBe(1);
+
+    $existingUser->refresh();
+    expect($existingUser->password)->toBe($passwordHash)
+        ->and($existingUser->username)->toBe('google_member')
+        ->and($existingUser->first_name)->toBe('Google')
+        ->and($existingUser->last_name)->toBe('Member')
+        ->and($existingUser->email_verified_at)->not->toBeNull();
 
     $response->assertRedirect(route('dashboard'));
 });

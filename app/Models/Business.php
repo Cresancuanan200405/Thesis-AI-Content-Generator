@@ -38,6 +38,20 @@ class Business extends Model
         'industry',
         'category',
         'description',
+        'main_business_activity',
+        'business_address',
+        'barangay',
+        'city_municipality',
+        'province',
+        'region',
+        'business_contact_number',
+        'business_email',
+        'website_social_page',
+        'registration_type',
+        'registration_number',
+        'business_permit_number',
+        'registration_permit_date',
+        'business_registration_document_path',
         'target_audience',
         'unique_selling_point',
         'content_style',
@@ -46,6 +60,7 @@ class Business extends Model
     ];
 
     protected $casts = [
+        'registration_permit_date' => 'date',
     ];
 
     /**

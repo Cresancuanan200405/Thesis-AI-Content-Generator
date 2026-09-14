@@ -17,6 +17,20 @@ trait ProfileValidationRules
     {
         return [
             'name' => $this->nameRules(),
+            'username' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'min:3',
+                'max:255',
+                'regex:/^[A-Za-z0-9._-]+$/',
+                Rule::unique(User::class)->ignore($userId ?? null),
+            ],
+            'first_name' => ['nullable', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'last_name' => ['nullable', 'string', 'max:255'],
+            'suffix' => ['nullable', 'string', 'max:20'],
+            'mobile_number' => ['nullable', 'string', 'max:30'],
             'email' => $this->emailRules($userId),
         ];
     }

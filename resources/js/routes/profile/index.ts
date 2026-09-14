@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\UserProfileController::show
- * @see app/Http/Controllers/UserProfileController.php:17
+ * @see app/Http/Controllers/UserProfileController.php:22
  * @route '/profile'
  */
 export const show = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\UserProfileController::show
- * @see app/Http/Controllers/UserProfileController.php:17
+ * @see app/Http/Controllers/UserProfileController.php:22
  * @route '/profile'
  */
 show.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ show.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\UserProfileController::show
- * @see app/Http/Controllers/UserProfileController.php:17
+ * @see app/Http/Controllers/UserProfileController.php:22
  * @route '/profile'
  */
 show.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -34,7 +34,7 @@ show.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\UserProfileController::show
- * @see app/Http/Controllers/UserProfileController.php:17
+ * @see app/Http/Controllers/UserProfileController.php:22
  * @route '/profile'
  */
 show.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,7 +44,7 @@ show.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\UserProfileController::show
- * @see app/Http/Controllers/UserProfileController.php:17
+ * @see app/Http/Controllers/UserProfileController.php:22
  * @route '/profile'
  */
     const showForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -54,7 +54,7 @@ show.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\UserProfileController::show
- * @see app/Http/Controllers/UserProfileController.php:17
+ * @see app/Http/Controllers/UserProfileController.php:22
  * @route '/profile'
  */
         showForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -63,7 +63,7 @@ show.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\UserProfileController::show
- * @see app/Http/Controllers/UserProfileController.php:17
+ * @see app/Http/Controllers/UserProfileController.php:22
  * @route '/profile'
  */
         showForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -79,7 +79,7 @@ show.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     show.form = showForm
 /**
 * @see \App\Http\Controllers\UserProfileController::business
- * @see app/Http/Controllers/UserProfileController.php:57
+ * @see app/Http/Controllers/UserProfileController.php:67
  * @route '/profile/business'
  */
 export const business = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -94,7 +94,7 @@ business.definition = {
 
 /**
 * @see \App\Http\Controllers\UserProfileController::business
- * @see app/Http/Controllers/UserProfileController.php:57
+ * @see app/Http/Controllers/UserProfileController.php:67
  * @route '/profile/business'
  */
 business.url = (options?: RouteQueryOptions) => {
@@ -103,7 +103,7 @@ business.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\UserProfileController::business
- * @see app/Http/Controllers/UserProfileController.php:57
+ * @see app/Http/Controllers/UserProfileController.php:67
  * @route '/profile/business'
  */
 business.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -112,7 +112,7 @@ business.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\UserProfileController::business
- * @see app/Http/Controllers/UserProfileController.php:57
+ * @see app/Http/Controllers/UserProfileController.php:67
  * @route '/profile/business'
  */
 business.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -122,7 +122,7 @@ business.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\UserProfileController::business
- * @see app/Http/Controllers/UserProfileController.php:57
+ * @see app/Http/Controllers/UserProfileController.php:67
  * @route '/profile/business'
  */
     const businessForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -132,7 +132,7 @@ business.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\UserProfileController::business
- * @see app/Http/Controllers/UserProfileController.php:57
+ * @see app/Http/Controllers/UserProfileController.php:67
  * @route '/profile/business'
  */
         businessForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -141,7 +141,7 @@ business.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\UserProfileController::business
- * @see app/Http/Controllers/UserProfileController.php:57
+ * @see app/Http/Controllers/UserProfileController.php:67
  * @route '/profile/business'
  */
         businessForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

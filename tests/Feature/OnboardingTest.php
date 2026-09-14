@@ -46,7 +46,19 @@ it('business information is saved correctly', function () {
         ->post('/onboarding/business', [
             'name' => 'North Star Coffee',
             'industry' => 'Food & Beverage',
-            'category' => 'Coffee Shop',
+            'category' => 'Café / Coffee Shop',
+            'main_business_activity' => 'Coffee roasting and café service',
+            'business_address' => '123 Rizal Street',
+            'city_municipality' => 'Quezon City',
+            'province' => 'Metro Manila',
+            'region' => 'NCR',
+            'business_contact_number' => '+63 917 123 4567',
+            'business_email' => 'hello@northstarcoffee.ph',
+            'website_social_page' => 'https://northstarcoffee.ph',
+            'registration_type' => 'DTI Business Name Registration',
+            'registration_number' => 'REG-2024-001',
+            'business_permit_number' => 'BP-2024-987',
+            'registration_permit_date' => '2024-06-15',
         ])
         ->assertRedirect('/onboarding?step=2');
 
@@ -55,7 +67,41 @@ it('business information is saved correctly', function () {
     expect($business)->not->toBeNull()
         ->and($business->name)->toBe('North Star Coffee')
         ->and($business->industry)->toBe('Food & Beverage')
-        ->and($business->category)->toBe('Coffee Shop');
+        ->and($business->category)->toBe('Café / Coffee Shop')
+        ->and($business->main_business_activity)->toBe('Coffee roasting and café service')
+        ->and($business->business_address)->toBe('123 Rizal Street')
+        ->and($business->city_municipality)->toBe('Quezon City')
+        ->and($business->province)->toBe('Metro Manila')
+        ->and($business->region)->toBe('NCR')
+        ->and($business->business_contact_number)->toBe('+63 917 123 4567')
+        ->and($business->business_email)->toBe('hello@northstarcoffee.ph')
+        ->and($business->website_social_page)->toBe('https://northstarcoffee.ph')
+        ->and($business->registration_type)->toBe('DTI Business Name Registration')
+        ->and($business->registration_number)->toBe('REG-2024-001')
+        ->and($business->business_permit_number)->toBe('BP-2024-987')
+        ->and($business->registration_permit_date->format('Y-m-d'))->toBe('2024-06-15');
+});
+
+it('rejects invalid industry and incompatible category in onboarding', function () {
+    $user = User::factory()->create();
+
+    // Invalid industry
+    $this->actingAs($user)
+        ->post('/onboarding/business', [
+            'name' => 'Invalid Business',
+            'industry' => 'Cryptocurrency & Mining',
+            'category' => 'Mining Farm',
+        ])
+        ->assertSessionHasErrors(['industry']);
+
+    // Incompatible category for valid industry
+    $this->actingAs($user)
+        ->post('/onboarding/business', [
+            'name' => 'Mismatched Business',
+            'industry' => 'Food & Beverage',
+            'category' => 'Auto Repair',
+        ])
+        ->assertSessionHasErrors(['category']);
 });
 
 it('onboarding can be completed directly after business setup', function () {
@@ -63,7 +109,7 @@ it('onboarding can be completed directly after business setup', function () {
     $user->business()->create([
         'name' => 'North Star Coffee',
         'industry' => 'Food & Beverage',
-        'category' => 'Coffee Shop',
+        'category' => 'Café / Coffee Shop',
     ]);
 
     $this->actingAs($user)
@@ -87,8 +133,8 @@ it('user cannot modify another users business record', function () {
     $this->actingAs($owner)
         ->post('/onboarding/business', [
             'name' => 'My Business',
-            'industry' => 'Retail',
-            'category' => 'Coffee Shop',
+            'industry' => 'Retail & E-Commerce',
+            'category' => 'General Retail',
         ])
         ->assertRedirect('/onboarding?step=2');
 
@@ -140,7 +186,7 @@ it('completed user can access dashboard', function () {
 
 it('registration creates a pending account before onboarding is complete', function () {
     $response = $this->post('/register', [
-        'name' => 'New Onboarder',
+        'username' => 'new_onboarder',
         'email' => 'new-onboarder@example.com',
         'password' => 'Password123!',
         'password_confirmation' => 'Password123!',
@@ -158,30 +204,30 @@ it('onboarding business step preserves existing values when revisiting', functio
     $user = User::factory()->create();
     $user->business()->create([
         'name' => 'Existing Business',
-        'industry' => 'Technology',
-        'category' => 'Software Company',
+        'industry' => 'Technology & Digital Services',
+        'category' => 'IT Services',
     ]);
 
     $this->actingAs($user)
         ->post('/onboarding/business', [
             'name' => 'Updated Business',
-            'industry' => 'Technology',
-            'category' => 'SaaS Company',
+            'industry' => 'Technology & Digital Services',
+            'category' => 'Software / Digital Services',
         ])
         ->assertRedirect('/onboarding?step=2');
 
     $business = $user->fresh()->business;
 
     expect($business->name)->toBe('Updated Business')
-        ->and($business->category)->toBe('SaaS Company');
+        ->and($business->category)->toBe('Software / Digital Services');
 });
 
 it('onboarding shows existing saved values in the response', function () {
     $user = User::factory()->create();
     $user->business()->create([
         'name' => 'Saved Business',
-        'industry' => 'Retail',
-        'category' => 'Clothing Store',
+        'industry' => 'Retail & E-Commerce',
+        'category' => 'General Retail',
     ]);
 
     $this->actingAs($user)
@@ -189,6 +235,6 @@ it('onboarding shows existing saved values in the response', function () {
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->where('business.name', 'Saved Business')
-            ->where('business.industry', 'Retail')
+            ->where('business.industry', 'Retail & E-Commerce')
         );
 });

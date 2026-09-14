@@ -10,8 +10,12 @@ test('login screen can be rendered', function () {
     $response->assertOk();
 });
 
-test('users can authenticate using the login screen', function () {
-    $user = User::factory()->create();
+test('users can authenticate using the login screen with their email', function () {
+    $user = User::factory()->create([
+        'first_name' => 'Jane',
+        'last_name' => 'Doe',
+        'onboarding_completed' => true,
+    ]);
 
     $response = $this->post(route('login.store'), [
         'email' => $user->email,
@@ -20,6 +24,40 @@ test('users can authenticate using the login screen', function () {
 
     $this->assertAuthenticated();
     $response->assertRedirect(route('dashboard', absolute: false));
+});
+
+test('users can authenticate using their username', function () {
+    $user = User::factory()->create([
+        'username' => 'demo_user',
+        'first_name' => 'Demo',
+        'last_name' => 'User',
+        'onboarding_completed' => true,
+    ]);
+
+    $response = $this->post(route('login.store'), [
+        'email' => 'demo_user',
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticatedAs($user);
+    $response->assertRedirect(route('dashboard', absolute: false));
+});
+
+test('incomplete personal information users are redirected to the profile form after login', function () {
+    $user = User::factory()->create([
+        'username' => 'incomplete_user',
+        'first_name' => null,
+        'last_name' => null,
+        'onboarding_completed' => false,
+    ]);
+
+    $response = $this->post(route('login.store'), [
+        'email' => 'incomplete_user',
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticatedAs($user);
+    $response->assertRedirect(route('profile.edit', absolute: false));
 });
 
 test('users with two factor enabled are redirected to two factor challenge', function () {

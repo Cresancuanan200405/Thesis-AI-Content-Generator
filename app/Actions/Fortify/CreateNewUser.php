@@ -21,14 +21,29 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
+        $username = trim((string) ($input['username'] ?? ''));
+
         Validator::make($input, [
-            ...$this->profileRules(),
+            'username' => [
+                'required',
+                'string',
+                'max:255',
+                'min:3',
+                'unique:users,username',
+                'regex:/^[A-Za-z0-9._-]+$/',
+            ],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => $this->passwordRules(),
+        ], [
+            'username.regex' => 'Username may only contain letters, numbers, dots, underscores, and dashes.',
         ])->validate();
 
+        $normalizedUsername = strtolower($username);
+
         $user = User::create([
-            'name' => $input['name'],
-            'email' => $input['email'],
+            'name' => $normalizedUsername,
+            'username' => $normalizedUsername,
+            'email' => strtolower(trim((string) $input['email'])),
             'password' => $input['password'],
             'onboarding_completed' => false,
             'onboarding_completed_at' => null,

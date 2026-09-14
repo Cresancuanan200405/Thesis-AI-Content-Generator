@@ -56,6 +56,8 @@ class SocialAuthController extends Controller
      */
     public function callback(Request $request, string $provider): RedirectResponse
     {
+        $correlationId = (string) Str::uuid();
+
         if (! in_array($provider, $this->supportedProviders, true)) {
             return redirect()->route('login')->with('error', 'Unsupported authentication provider.');
         }
@@ -76,17 +78,28 @@ class SocialAuthController extends Controller
         try {
             $socialId = $socialUser->getId();
             $email = $socialUser->getEmail();
-            $name = $socialUser->getName() ?: (explode('@', (string) $email)[0] ?: ucfirst($provider).' User');
+            $displayName = $socialUser->getName() ?: (explode('@', (string) $email)[0] ?: ucfirst($provider).' User');
             $avatar = $socialUser->getAvatar();
 
             if (empty($email)) {
                 $email = "{$provider}_{$socialId}@social.marketpilot.test";
             }
 
+            $baseUsername = strtolower(preg_replace('/[^A-Za-z0-9._-]+/', '', str_replace(' ', '_', trim((string) $displayName))) ?: preg_replace('/[^A-Za-z0-9._-]+/', '', explode('@', (string) $email)[0] ?? $provider));
+            $baseUsername = $baseUsername !== '' ? $baseUsername : $provider.'user';
+
             // 1. Check if user with matching provider credentials exists
             $user = User::where('provider_name', $provider)
                 ->where('provider_id', $socialId)
                 ->first();
+
+            if ($user) {
+                $user->forceFill([
+                    'avatar' => $user->avatar ?: $avatar,
+                    'email_verified_at' => $user->email_verified_at ?? now(),
+                    'username' => $user->username ?: $this->generateUniqueUsername($baseUsername, $email),
+                ])->save();
+            }
 
             // 2. If not found by provider ID, look up by email
             if (! $user) {
@@ -98,11 +111,19 @@ class SocialAuthController extends Controller
                         'provider_id' => $socialId,
                         'avatar' => $user->avatar ?: $avatar,
                         'email_verified_at' => $user->email_verified_at ?? now(),
+                        'username' => $user->username ?: $this->generateUniqueUsername($baseUsername, $email),
                     ])->save();
                 } else {
                     // 3. Create a brand new user
+                    $databaseDiagnostic = $this->databaseDiagnostic($correlationId);
+                    Log::info('Social auth user creation diagnostic', [
+                        ...$databaseDiagnostic,
+                        'stage' => 'before_user_create',
+                    ]);
+
                     $user = User::create([
-                        'name' => $name,
+                        'name' => $displayName,
+                        'username' => $this->generateUniqueUsername($baseUsername, $email),
                         'email' => $email,
                         'password' => Hash::make(Str::random(32)),
                         'provider_name' => $provider,
@@ -111,6 +132,12 @@ class SocialAuthController extends Controller
                         'email_verified_at' => now(),
                         'onboarding_completed' => false,
                     ]);
+
+                    Log::info('Social auth user creation diagnostic', [
+                        'correlation_id' => $correlationId,
+                        'stage' => 'after_user_create',
+                        'user_create_succeeded' => true,
+                    ]);
                 }
             }
 
@@ -118,17 +145,120 @@ class SocialAuthController extends Controller
 
             $request->session()->regenerate();
 
+            if (! $user->hasCompletedPersonalInformation()) {
+                return redirect()->route('profile.edit')->with('success', "Signed in with {$provider}! Please complete your personal information.");
+            }
+
             if (! $user->onboarding_completed) {
                 return redirect()->route('onboarding.show')->with('success', "Signed in with {$provider}! Let's set up your workspace.");
             }
 
             return redirect()->intended(route('dashboard'))->with('success', "Welcome back, {$user->name}!");
         } catch (Throwable $e) {
-            Log::error("Social auth {$provider} database/session error: ".$e->getMessage(), [
-                'exception' => $e,
+            Log::error("Social auth {$provider} database/session error", [
+                'correlation_id' => $correlationId,
+                ...$this->safeExceptionMetadata($e),
             ]);
 
             return redirect()->route('login')->with('error', "Failed to complete {$provider} sign-in. Please try again or use your email.");
         }
+    }
+
+    /**
+     * Capture non-sensitive metadata from the connection used by User models.
+     *
+     * @return array<string, mixed>
+     */
+    protected function databaseDiagnostic(string $correlationId): array
+    {
+        $userModel = new User;
+        $connection = $userModel->getConnection();
+        $driver = $connection->getDriverName();
+
+        $diagnostic = [
+            'correlation_id' => $correlationId,
+            'connection_name' => $connection->getName(),
+            'connection_driver' => $driver,
+            'connection_class' => $connection::class,
+            'database_host' => $this->redactHost($connection->getConfig('host')),
+            'database_port' => $connection->getConfig('port'),
+            'database_name' => $connection->getConfig('database'),
+            'in_transaction' => $connection->transactionLevel() > 0,
+            'expected_role_detected' => false,
+        ];
+
+        if ($driver !== 'pgsql') {
+            return $diagnostic;
+        }
+
+        try {
+            $identity = $connection->selectOne('select current_user, session_user, current_database()');
+            $databaseUser = $identity->current_user ?? null;
+
+            return [
+                ...$diagnostic,
+                'database_user' => $databaseUser,
+                'session_user' => $identity->session_user ?? null,
+                'database_name' => $identity->current_database ?? $diagnostic['database_name'],
+                'expected_role_detected' => $databaseUser === 'marketpilot_app',
+            ];
+        } catch (Throwable $e) {
+            return [
+                ...$diagnostic,
+                ...$this->safeExceptionMetadata($e, 'diagnostic_query'),
+            ];
+        }
+    }
+
+    protected function redactHost(mixed $host): ?string
+    {
+        if (! is_string($host) || trim($host) === '') {
+            return null;
+        }
+
+        $parsedHost = parse_url($host, PHP_URL_HOST);
+
+        return is_string($parsedHost) ? $parsedHost : preg_replace('/^[^@]+@/', '', $host);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function safeExceptionMetadata(Throwable $exception, string $stage = 'user_create_or_session'): array
+    {
+        $message = $exception->getPrevious()?->getMessage() ?: $exception->getMessage();
+        $message = preg_replace('/\s+\(SQL:.*$/s', '', $message) ?? $message;
+
+        return [
+            'stage' => $stage,
+            'exception_class' => $exception::class,
+            'sqlstate' => (string) $exception->getCode(),
+            'error_message' => $message,
+        ];
+    }
+
+    protected function generateUniqueUsername(string $baseUsername, string $email): string
+    {
+        $candidate = $baseUsername;
+
+        if (empty($candidate)) {
+            $candidate = preg_replace('/[^A-Za-z0-9._-]+/', '', explode('@', $email)[0] ?? 'user') ?: 'user';
+        }
+
+        $candidate = strtolower(trim((string) $candidate));
+
+        if ($candidate === '') {
+            $candidate = 'user';
+        }
+
+        $finalCandidate = $candidate;
+        $suffix = 1;
+
+        while (User::where('username', $finalCandidate)->exists()) {
+            $finalCandidate = $candidate.'_'.$suffix;
+            $suffix++;
+        }
+
+        return $finalCandidate;
     }
 }

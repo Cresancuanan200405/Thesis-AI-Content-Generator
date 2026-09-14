@@ -51,6 +51,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function () {
     Route::get('profile', [UserProfileController::class, 'show'])->name('profile.show');
     Route::match(['post', 'patch'], 'profile/business', [UserProfileController::class, 'updateBusiness'])->name('profile.business.update');
+    Route::post('profile/business/document', [UserProfileController::class, 'storeBusinessDocument'])->name('profile.business.document.store');
+    Route::get('profile/business/document', [UserProfileController::class, 'downloadBusinessDocument'])->name('profile.business.document.download');
+    Route::delete('profile/business/document', [UserProfileController::class, 'deleteBusinessDocument'])->name('profile.business.document.delete');
 
     Route::get('dashboard', function (Request $request) {
         $user = $request->user();

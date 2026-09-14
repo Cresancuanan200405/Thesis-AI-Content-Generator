@@ -120,7 +120,12 @@ test('user can mark all notifications as read and clear all notifications', func
 });
 
 test('login creates a single semantic success notification', function () {
-    $user = User::factory()->create(['password' => bcrypt('Password123!')]);
+    $user = User::factory()->create([
+        'password' => bcrypt('Password123!'),
+        'first_name' => 'Notification',
+        'last_name' => 'User',
+        'onboarding_completed' => true,
+    ]);
 
     $this->post('/login', [
         'email' => $user->email,

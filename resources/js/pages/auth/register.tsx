@@ -32,34 +32,34 @@ export default function Register({ passwordRules }: Props) {
                 {({ processing, errors }) => (
                     <>
                         <div className="grid gap-3">
-                            {/* Row 1: Name & Email side-by-side */}
+                            {/* Row 1: Username & Email side-by-side */}
                             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                                {/* Name */}
+                                {/* Username */}
                                 <div className="grid gap-1">
                                     <Label
-                                        htmlFor="name"
+                                        htmlFor="username"
                                         className="text-xs font-semibold text-foreground"
                                     >
-                                        Full name
+                                        Username
                                     </Label>
 
                                     <div className={fieldGlow}>
                                         <User className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground transition-colors duration-300 group-focus-within:text-[#2563EB]" />
 
                                         <Input
-                                            id="name"
+                                            id="username"
                                             type="text"
-                                            name="name"
+                                            name="username"
                                             required
                                             autoFocus
                                             tabIndex={1}
-                                            autoComplete="name"
-                                            placeholder="Full name"
+                                            autoComplete="username"
+                                            placeholder="username"
                                             className="h-9.5 rounded-xl border-border bg-background pl-9 text-xs text-foreground placeholder:text-muted-foreground/60 focus-visible:border-[#2563EB] focus-visible:ring-[#2563EB]/30"
                                         />
                                     </div>
 
-                                    <InputError message={errors.name} />
+                                    <InputError message={errors.username} />
                                 </div>
 
                                 {/* Email */}

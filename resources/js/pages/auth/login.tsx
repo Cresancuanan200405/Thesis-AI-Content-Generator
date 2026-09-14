@@ -34,13 +34,13 @@ export default function Login({ status, canResetPassword }: Props) {
                 {({ processing, errors }) => (
                     <>
                         <div className="grid gap-3">
-                            {/* Email Address */}
+                            {/* Username or Email */}
                             <div className="grid gap-1">
                                 <Label
                                     htmlFor="email"
                                     className="text-xs font-semibold text-foreground"
                                 >
-                                    Email address
+                                    Username or Email
                                 </Label>
 
                                 <div className={fieldGlow}>
@@ -48,13 +48,13 @@ export default function Login({ status, canResetPassword }: Props) {
 
                                     <Input
                                         id="email"
-                                        type="email"
+                                        type="text"
                                         name="email"
                                         required
                                         autoFocus
                                         tabIndex={1}
-                                        autoComplete="email"
-                                        placeholder="email@example.com"
+                                        autoComplete="username"
+                                        placeholder="username or email"
                                         className="h-9.5 rounded-xl border-border bg-background pl-9 text-xs text-foreground placeholder:text-muted-foreground/60 focus-visible:border-[#2563EB] focus-visible:ring-[#2563EB]/30"
                                     />
                                 </div>

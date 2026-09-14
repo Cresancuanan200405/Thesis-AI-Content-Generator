@@ -2,31 +2,25 @@ import { Head, router, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     ArrowRight,
-    Briefcase,
     Building2,
-    Car,
     Check,
     CheckCircle2,
-    Cpu,
-    GraduationCap,
-    HeartPulse,
-    Home,
-    Landmark,
     Layers,
-    Plane,
-    ShoppingBag,
-    ShoppingCart,
     Sparkles,
-    UtensilsCrossed,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import { PhilippineAddressSelectors } from '@/components/philippine-address-selectors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    industryCategories,
+    industryIcons,
+    industryOptions,
+} from '@/lib/industry-taxonomy';
 import { cn } from '@/lib/utils';
 
 /*
@@ -39,6 +33,19 @@ type BusinessForm = {
     name: string;
     industry: string;
     category: string;
+    main_business_activity: string;
+    business_address: string;
+    barangay: string;
+    city_municipality: string;
+    province: string;
+    region: string;
+    business_contact_number: string;
+    business_email: string;
+    website_social_page: string;
+    registration_type: string;
+    registration_number: string;
+    business_permit_number: string;
+    registration_permit_date: string;
 };
 
 type DescriptionForm = {
@@ -48,173 +55,6 @@ type DescriptionForm = {
 type Props = {
     step?: number;
     business?: Partial<BusinessForm & DescriptionForm> | null;
-};
-
-/*
-|--------------------------------------------------------------------------
-| Industry Data
-|--------------------------------------------------------------------------
-*/
-
-const industryCategories: Record<string, string[]> = {
-    Retail: [
-        'Clothing Store',
-        'Grocery Store',
-        'Convenience Store',
-        'Furniture Store',
-        'Electronics Store',
-        'Specialty Store',
-        'Department Store',
-        'Other Retail',
-    ],
-
-    'Food & Beverage': [
-        'Restaurant',
-        'Coffee Shop',
-        'Bakery',
-        'Cafe',
-        'Fast Food',
-        'Bar & Grill',
-        'Catering',
-        'Food Truck',
-        'Other Food & Beverage',
-    ],
-
-    Technology: [
-        'Software Company',
-        'SaaS Business',
-        'IT Services',
-        'Web Development',
-        'Mobile App Dev',
-        'Tech Consulting',
-        'Hardware',
-        'Other Technology',
-    ],
-
-    Healthcare: [
-        'Medical Clinic',
-        'Dental Clinic',
-        'Pharmacy',
-        'Wellness Center',
-        'Diagnostic Center',
-        'Healthcare Services',
-        'Hospital',
-        'Other Healthcare',
-    ],
-
-    'Real Estate': [
-        'Real Estate Agency',
-        'Property Developer',
-        'Property Management',
-        'Brokerage',
-        'Rental Properties',
-        'Commercial Real Estate',
-        'Other Real Estate',
-    ],
-
-    Education: [
-        'School',
-        'University',
-        'Training Center',
-        'Tutorial Center',
-        'Online Education',
-        'Coaching',
-        'Educational Services',
-        'Other Education',
-    ],
-
-    'Beauty & Wellness': [
-        'Salon',
-        'Barbershop',
-        'Spa',
-        'Skincare',
-        'Beauty Products',
-        'Fitness Center',
-        'Wellness Center',
-        'Other Beauty & Wellness',
-    ],
-
-    'Professional Services': [
-        'Consulting',
-        'Accounting',
-        'Legal Services',
-        'Marketing Agency',
-        'Design Agency',
-        'Business Services',
-        'Freelance Services',
-        'Other Services',
-    ],
-
-    'Travel & Hospitality': [
-        'Hotel',
-        'Resort',
-        'Travel Agency',
-        'Tour Operator',
-        'Vacation Rental',
-        'Hospitality',
-        'Transportation',
-        'Other Hospitality',
-    ],
-
-    Automotive: [
-        'Car Dealership',
-        'Auto Repair',
-        'Car Rental',
-        'Auto Parts',
-        'Car Wash',
-        'Motorcycle Business',
-        'Automotive Services',
-        'Other Automotive',
-    ],
-
-    Finance: [
-        'Banking',
-        'Insurance',
-        'Financial Services',
-        'Accounting Firm',
-        'Investment Services',
-        'Lending',
-        'FinTech',
-        'Other Finance',
-    ],
-
-    'E-commerce': [
-        'Online Store',
-        'Marketplace',
-        'Subscription',
-        'Dropshipping',
-        'Digital Products',
-        'Online Retail',
-        'Other E-commerce',
-    ],
-
-    Other: [
-        'Local Business',
-        'Service Business',
-        'Online Business',
-        'Startup',
-        'Nonprofit',
-        'Personal Brand',
-        'Other',
-    ],
-};
-
-const industryOptions = Object.keys(industryCategories);
-
-const industryIcons: Record<string, LucideIcon> = {
-    Retail: ShoppingBag,
-    'Food & Beverage': UtensilsCrossed,
-    Technology: Cpu,
-    Healthcare: HeartPulse,
-    'Real Estate': Home,
-    Education: GraduationCap,
-    'Beauty & Wellness': Sparkles,
-    'Professional Services': Briefcase,
-    'Travel & Hospitality': Plane,
-    Automotive: Car,
-    Finance: Landmark,
-    'E-commerce': ShoppingCart,
-    Other: Layers,
 };
 
 const steps = [
@@ -269,11 +109,20 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
         name: business?.name ?? '',
         industry: business?.industry ?? '',
         category: business?.category ?? '',
+        main_business_activity: business?.main_business_activity ?? '',
+        business_address: business?.business_address ?? '',
+        barangay: business?.barangay ?? '',
+        city_municipality: business?.city_municipality ?? '',
+        province: business?.province ?? '',
+        region: business?.region ?? '',
+        business_contact_number: business?.business_contact_number ?? '',
+        business_email: business?.business_email ?? '',
+        website_social_page: business?.website_social_page ?? '',
+        registration_type: business?.registration_type ?? '',
+        registration_number: business?.registration_number ?? '',
+        business_permit_number: business?.business_permit_number ?? '',
+        registration_permit_date: business?.registration_permit_date ?? '',
     });
-
-    const [customCategoryMode, setCustomCategoryMode] = useState(
-        business?.industry === 'Other',
-    );
 
     const [descriptionForm, setDescriptionForm] = useState<DescriptionForm>({
         description: business?.description ?? '',
@@ -334,16 +183,12 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
             industry,
             category: current.industry === industry ? current.category : '',
         }));
-
-        setCustomCategoryMode(industry === 'Other');
     };
 
     const handleSelectCategory = (category: string) => {
-        setCustomCategoryMode(category === 'Other');
-
         setBusinessForm((current) => ({
             ...current,
-            category: category === 'Other' ? '' : category,
+            category,
         }));
     };
 
@@ -370,6 +215,22 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                 name: businessForm.name.trim(),
                 industry: businessForm.industry,
                 category: businessForm.category,
+                main_business_activity:
+                    businessForm.main_business_activity.trim(),
+                business_address: businessForm.business_address.trim(),
+                barangay: businessForm.barangay.trim(),
+                city_municipality: businessForm.city_municipality.trim(),
+                province: businessForm.province.trim(),
+                region: businessForm.region.trim(),
+                business_contact_number:
+                    businessForm.business_contact_number.trim(),
+                business_email: businessForm.business_email.trim(),
+                website_social_page: businessForm.website_social_page.trim(),
+                registration_type: businessForm.registration_type.trim(),
+                registration_number: businessForm.registration_number.trim(),
+                business_permit_number:
+                    businessForm.business_permit_number.trim(),
+                registration_permit_date: businessForm.registration_permit_date,
             },
             {
                 preserveScroll: true,
@@ -462,11 +323,7 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
             }
 
             if (businessPage === 2) {
-                if (
-                    customCategoryMode
-                        ? businessForm.category.trim()
-                        : businessForm.category
-                ) {
+                if (businessForm.category) {
                     setBusinessPage(3);
                 }
 
@@ -502,9 +359,7 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
             }
 
             if (businessPage === 2) {
-                return customCategoryMode
-                    ? !!businessForm.category.trim()
-                    : !!businessForm.category;
+                return !!businessForm.category;
             }
 
             return !!businessForm.name.trim();
@@ -515,13 +370,7 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
         }
 
         return true;
-    }, [
-        currentStep,
-        businessPage,
-        businessForm,
-        customCategoryMode,
-        descriptionForm,
-    ]);
+    }, [currentStep, businessPage, businessForm, descriptionForm]);
 
     const getContinueLabel = () => {
         if (currentStep === 1) {
@@ -750,19 +599,20 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                                             </h1>
 
                                             <p className="mt-1 text-xs text-muted-foreground">
-                                                Choose a category or enter your
-                                                own.
+                                                Choose the category that best
+                                                matches your{' '}
+                                                {businessForm.industry}{' '}
+                                                business.
                                             </p>
                                         </div>
 
                                         <div className="space-y-3">
-                                            <div className="grid grid-cols-2 gap-2">
+                                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                                                 {availableCategories.map(
                                                     (category) => {
                                                         const selected =
-                                                            !customCategoryMode &&
                                                             businessForm.category ===
-                                                                category;
+                                                            category;
 
                                                         return (
                                                             <button
@@ -794,35 +644,6 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                                                     },
                                                 )}
                                             </div>
-
-                                            <div className="relative">
-                                                <div className="absolute inset-0 flex items-center">
-                                                    <span className="w-full border-t border-border/60" />
-                                                </div>
-
-                                                <div className="relative flex justify-center text-[9px] uppercase">
-                                                    <span className="bg-card px-2 text-muted-foreground">
-                                                        or enter custom
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <Input
-                                                value={businessForm.category}
-                                                onChange={(e) => {
-                                                    setCustomCategoryMode(true);
-
-                                                    setBusinessForm(
-                                                        (current) => ({
-                                                            ...current,
-                                                            category:
-                                                                e.target.value,
-                                                        }),
-                                                    );
-                                                }}
-                                                placeholder="e.g. Specialty Matcha Cafe"
-                                                className="h-10 rounded-xl bg-background/50 text-xs"
-                                            />
                                         </div>
                                     </div>
                                 )}
@@ -936,7 +757,7 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                                             })
                                         }
                                         placeholder="Example: We are a specialty coffee shop serving locally roasted coffee, pastries, and comfortable spaces for students and professionals."
-                                        className="h-32 resize-none rounded-xl bg-background/50 text-xs leading-relaxed sm:h-36"
+                                        className="h-24 resize-none rounded-xl bg-background/50 text-xs leading-relaxed sm:h-28"
                                         autoFocus
                                     />
 
@@ -945,6 +766,121 @@ export default function OnboardingIndex({ step = 1, business }: Props) {
                                             {errors.description}
                                         </p>
                                     )}
+                                </div>
+
+                                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                    <div className="space-y-2 sm:col-span-2">
+                                        <Label
+                                            htmlFor="main-business-activity"
+                                            className="text-[10px] font-bold tracking-wider uppercase"
+                                        >
+                                            Main Business Activity
+                                        </Label>
+                                        <Input
+                                            id="main-business-activity"
+                                            value={
+                                                businessForm.main_business_activity
+                                            }
+                                            onChange={(e) =>
+                                                setBusinessForm((current) => ({
+                                                    ...current,
+                                                    main_business_activity:
+                                                        e.target.value,
+                                                }))
+                                            }
+                                            placeholder="Coffee roasting and cafe service"
+                                            className="h-10 rounded-xl bg-background/50 text-xs"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2 sm:col-span-2">
+                                        <Label
+                                            htmlFor="business-address"
+                                            className="text-[10px] font-bold tracking-wider uppercase"
+                                        >
+                                            Street Address
+                                        </Label>
+                                        <Input
+                                            id="business-address"
+                                            value={
+                                                businessForm.business_address
+                                            }
+                                            onChange={(e) =>
+                                                setBusinessForm((current) => ({
+                                                    ...current,
+                                                    business_address:
+                                                        e.target.value,
+                                                }))
+                                            }
+                                            placeholder="123 Main Street"
+                                            className="h-10 rounded-xl bg-background/50 text-xs"
+                                        />
+                                    </div>
+
+                                    <div className="sm:col-span-2">
+                                        <PhilippineAddressSelectors
+                                            region={businessForm.region}
+                                            province={businessForm.province}
+                                            cityMunicipality={
+                                                businessForm.city_municipality
+                                            }
+                                            barangay={businessForm.barangay}
+                                            onChange={(field, value) =>
+                                                setBusinessForm((current) => ({
+                                                    ...current,
+                                                    [field]: value,
+                                                }))
+                                            }
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label
+                                            htmlFor="registration-type"
+                                            className="text-[10px] font-bold tracking-wider uppercase"
+                                        >
+                                            Registration Type
+                                        </Label>
+                                        <Input
+                                            id="registration-type"
+                                            value={
+                                                businessForm.registration_type
+                                            }
+                                            onChange={(e) =>
+                                                setBusinessForm((current) => ({
+                                                    ...current,
+                                                    registration_type:
+                                                        e.target.value,
+                                                }))
+                                            }
+                                            placeholder="DTI / SEC / Mayor's Permit"
+                                            className="h-10 rounded-xl bg-background/50 text-xs"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label
+                                            htmlFor="registration-number"
+                                            className="text-[10px] font-bold tracking-wider uppercase"
+                                        >
+                                            Registration Number
+                                        </Label>
+                                        <Input
+                                            id="registration-number"
+                                            value={
+                                                businessForm.registration_number
+                                            }
+                                            onChange={(e) =>
+                                                setBusinessForm((current) => ({
+                                                    ...current,
+                                                    registration_number:
+                                                        e.target.value,
+                                                }))
+                                            }
+                                            placeholder="REG-2024-001"
+                                            className="h-10 rounded-xl bg-background/50 text-xs"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="mt-3 flex items-start gap-2 rounded-xl border border-primary/10 bg-primary/5 p-3">

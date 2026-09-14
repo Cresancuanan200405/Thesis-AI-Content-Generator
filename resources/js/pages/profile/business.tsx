@@ -13,6 +13,7 @@ import {
 import React, { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { PhilippineAddressSelectors } from '@/components/philippine-address-selectors';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -26,145 +27,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { industryCategories, industryOptions } from '@/lib/industry-taxonomy';
 
-/*
-|--------------------------------------------------------------------------
-| Industry & Category Taxonomy (Synchronized with Art Direction Engine)
-|--------------------------------------------------------------------------
-*/
-
-const industryCategories: Record<string, string[]> = {
-    Retail: [
-        'Clothing Store',
-        'Grocery Store',
-        'Convenience Store',
-        'Furniture Store',
-        'Electronics Store',
-        'Specialty Store',
-        'Department Store',
-        'Other Retail',
-    ],
-    'Food & Beverage': [
-        'Restaurant',
-        'Coffee Shop',
-        'Bakery',
-        'Cafe',
-        'Fast Food',
-        'Bar & Grill',
-        'Catering',
-        'Food Truck',
-        'Other Food & Beverage',
-    ],
-    Technology: [
-        'Software Company',
-        'SaaS Business',
-        'IT Services',
-        'Web Development',
-        'Mobile App Dev',
-        'Tech Consulting',
-        'Hardware',
-        'Other Technology',
-    ],
-    Healthcare: [
-        'Medical Clinic',
-        'Dental Clinic',
-        'Pharmacy',
-        'Wellness Center',
-        'Diagnostic Center',
-        'Healthcare Services',
-        'Hospital',
-        'Other Healthcare',
-    ],
-    'Real Estate': [
-        'Real Estate Agency',
-        'Property Developer',
-        'Property Management',
-        'Brokerage',
-        'Rental Properties',
-        'Commercial Real Estate',
-        'Other Real Estate',
-    ],
-    Education: [
-        'School',
-        'University',
-        'Training Center',
-        'Tutorial Center',
-        'Online Education',
-        'Coaching',
-        'Educational Services',
-        'Other Education',
-    ],
-    'Beauty & Wellness': [
-        'Salon',
-        'Barbershop',
-        'Spa',
-        'Skincare',
-        'Beauty Products',
-        'Fitness Center',
-        'Wellness Center',
-        'Other Beauty & Wellness',
-    ],
-    'Professional Services': [
-        'Consulting',
-        'Accounting',
-        'Legal Services',
-        'Marketing Agency',
-        'Design Agency',
-        'Business Services',
-        'Freelance Services',
-        'Other Services',
-    ],
-    'Travel & Hospitality': [
-        'Hotel',
-        'Resort',
-        'Travel Agency',
-        'Tour Operator',
-        'Vacation Rental',
-        'Hospitality',
-        'Transportation',
-        'Other Hospitality',
-    ],
-    Automotive: [
-        'Car Dealership',
-        'Auto Repair',
-        'Car Rental',
-        'Auto Parts',
-        'Car Wash',
-        'Motorcycle Business',
-        'Automotive Services',
-        'Other Automotive',
-    ],
-    Finance: [
-        'Banking',
-        'Insurance',
-        'Financial Services',
-        'Accounting Firm',
-        'Investment Services',
-        'Lending',
-        'FinTech',
-        'Other Finance',
-    ],
-    'E-commerce': [
-        'Online Store',
-        'Marketplace',
-        'Subscription',
-        'Dropshipping',
-        'Digital Products',
-        'Online Retail',
-        'Other E-commerce',
-    ],
-    Other: [
-        'Local Business',
-        'Service Business',
-        'Online Business',
-        'Startup',
-        'Nonprofit',
-        'Personal Brand',
-        'Other',
-    ],
-};
-
-const industryOptions = Object.keys(industryCategories);
 const MAX_DESCRIPTION_LENGTH = 3000;
 
 interface BusinessProfileProps {
@@ -181,6 +45,20 @@ interface BusinessProfileProps {
         industry?: string;
         category?: string;
         description?: string;
+        main_business_activity?: string;
+        business_address?: string;
+        barangay?: string;
+        city_municipality?: string;
+        province?: string;
+        region?: string;
+        business_contact_number?: string;
+        business_email?: string;
+        website_social_page?: string;
+        registration_type?: string;
+        registration_number?: string;
+        business_permit_number?: string;
+        registration_permit_date?: string;
+        business_registration_document_path?: string;
         created_at?: string;
     };
 }
@@ -204,11 +82,25 @@ export default function BusinessProfilePage({
                     ? business.category
                     : 'Restaurant',
             description: business.description || '',
+            main_business_activity: business.main_business_activity || '',
+            business_address: business.business_address || '',
+            barangay: business.barangay || '',
+            city_municipality: business.city_municipality || '',
+            province: business.province || '',
+            region: business.region || '',
+            business_contact_number: business.business_contact_number || '',
+            business_email: business.business_email || '',
+            website_social_page: business.website_social_page || '',
+            registration_type: business.registration_type || '',
+            registration_number: business.registration_number || '',
+            business_permit_number: business.business_permit_number || '',
+            registration_permit_date: business.registration_permit_date || '',
         }),
         [business],
     );
 
     const [formData, setFormData] = useState(initialValues);
+    const [selectedDocument, setSelectedDocument] = useState<File | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -217,7 +109,26 @@ export default function BusinessProfilePage({
             formData.name !== initialValues.name ||
             formData.industry !== initialValues.industry ||
             formData.category !== initialValues.category ||
-            formData.description !== initialValues.description
+            formData.description !== initialValues.description ||
+            formData.main_business_activity !==
+                initialValues.main_business_activity ||
+            formData.business_address !== initialValues.business_address ||
+            formData.barangay !== initialValues.barangay ||
+            formData.city_municipality !== initialValues.city_municipality ||
+            formData.province !== initialValues.province ||
+            formData.region !== initialValues.region ||
+            formData.business_contact_number !==
+                initialValues.business_contact_number ||
+            formData.business_email !== initialValues.business_email ||
+            formData.website_social_page !==
+                initialValues.website_social_page ||
+            formData.registration_type !== initialValues.registration_type ||
+            formData.registration_number !==
+                initialValues.registration_number ||
+            formData.business_permit_number !==
+                initialValues.business_permit_number ||
+            formData.registration_permit_date !==
+                initialValues.registration_permit_date
         );
     }, [formData, initialValues]);
 
@@ -260,6 +171,53 @@ export default function BusinessProfilePage({
         toast.info('Form reset to saved values.');
     };
 
+    const handleDocumentUpload = () => {
+        if (!selectedDocument) {
+            toast.error('Please choose a PDF, JPG, PNG, or WebP file first.');
+
+            return;
+        }
+
+        router.post(
+            '/profile/business/document',
+            {
+                business_registration_document: selectedDocument,
+            },
+            {
+                forceFormData: true,
+                preserveScroll: true,
+                onSuccess: () => {
+                    setSelectedDocument(null);
+                    toast.success(
+                        'Business registration document uploaded successfully.',
+                    );
+                },
+                onError: (errors: Record<string, string>) => {
+                    const message =
+                        Object.values(errors)[0] ||
+                        'Unable to upload the business registration document.';
+                    toast.error(message);
+                },
+            },
+        );
+    };
+
+    const handleDocumentDelete = () => {
+        router.delete('/profile/business/document', {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success(
+                    'Business registration document removed successfully.',
+                );
+            },
+            onError: () => {
+                toast.error(
+                    'Unable to remove the business registration document.',
+                );
+            },
+        });
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -280,6 +238,20 @@ export default function BusinessProfilePage({
                 industry: formData.industry,
                 category: formData.category,
                 description: formData.description.trim(),
+                main_business_activity: formData.main_business_activity.trim(),
+                business_address: formData.business_address.trim(),
+                barangay: formData.barangay.trim(),
+                city_municipality: formData.city_municipality.trim(),
+                province: formData.province.trim(),
+                region: formData.region.trim(),
+                business_contact_number:
+                    formData.business_contact_number.trim(),
+                business_email: formData.business_email.trim(),
+                website_social_page: formData.website_social_page.trim(),
+                registration_type: formData.registration_type.trim(),
+                registration_number: formData.registration_number.trim(),
+                business_permit_number: formData.business_permit_number.trim(),
+                registration_permit_date: formData.registration_permit_date,
             },
             {
                 preserveScroll: true,
@@ -474,6 +446,320 @@ export default function BusinessProfilePage({
                                                     commercial lighting.
                                                 </p>
                                             </div>
+                                        </div>
+                                    </div>
+                                </Card>
+
+                                <Card className="overflow-hidden rounded-3xl border-border/80 bg-card p-6 shadow-xs md:p-7">
+                                    <div className="flex items-center gap-3 border-b border-border/60 pb-5">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                                            <Briefcase className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-base font-bold text-foreground">
+                                                Registration & Business Details
+                                            </h2>
+                                            <p className="text-xs text-muted-foreground">
+                                                Optional commercial information
+                                                used for verification and
+                                                contact details.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-6 grid gap-5 md:grid-cols-2">
+                                        <div className="space-y-2 md:col-span-2">
+                                            <Label
+                                                htmlFor="main-business-activity"
+                                                className="text-xs font-bold text-foreground"
+                                            >
+                                                Main Business Activity
+                                            </Label>
+                                            <Input
+                                                id="main-business-activity"
+                                                value={
+                                                    formData.main_business_activity
+                                                }
+                                                onChange={(e) =>
+                                                    handleFieldChange(
+                                                        'main_business_activity',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="Coffee shop and food service"
+                                                className="h-11 rounded-xl text-sm"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2 md:col-span-2">
+                                            <Label
+                                                htmlFor="business-address"
+                                                className="text-xs font-bold text-foreground"
+                                            >
+                                                Street Address
+                                            </Label>
+                                            <Input
+                                                id="business-address"
+                                                value={
+                                                    formData.business_address
+                                                }
+                                                onChange={(e) =>
+                                                    handleFieldChange(
+                                                        'business_address',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="123 Example Street"
+                                                className="h-11 rounded-xl text-sm"
+                                            />
+                                        </div>
+
+                                        <PhilippineAddressSelectors
+                                            region={formData.region}
+                                            province={formData.province}
+                                            cityMunicipality={
+                                                formData.city_municipality
+                                            }
+                                            barangay={formData.barangay}
+                                            onChange={(field, value) =>
+                                                handleFieldChange(field, value)
+                                            }
+                                        />
+
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="business-contact-number"
+                                                className="text-xs font-bold text-foreground"
+                                            >
+                                                Business Contact Number
+                                            </Label>
+                                            <Input
+                                                id="business-contact-number"
+                                                value={
+                                                    formData.business_contact_number
+                                                }
+                                                onChange={(e) =>
+                                                    handleFieldChange(
+                                                        'business_contact_number',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="+63 917 123 4567"
+                                                className="h-11 rounded-xl text-sm"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="business-email"
+                                                className="text-xs font-bold text-foreground"
+                                            >
+                                                Business Email
+                                            </Label>
+                                            <Input
+                                                id="business-email"
+                                                type="email"
+                                                value={formData.business_email}
+                                                onChange={(e) =>
+                                                    handleFieldChange(
+                                                        'business_email',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="hello@business.com"
+                                                className="h-11 rounded-xl text-sm"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2 md:col-span-2">
+                                            <Label
+                                                htmlFor="website-social-page"
+                                                className="text-xs font-bold text-foreground"
+                                            >
+                                                Website / Social Page
+                                            </Label>
+                                            <Input
+                                                id="website-social-page"
+                                                value={
+                                                    formData.website_social_page
+                                                }
+                                                onChange={(e) =>
+                                                    handleFieldChange(
+                                                        'website_social_page',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="https://example.com"
+                                                className="h-11 rounded-xl text-sm"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="registration-type"
+                                                className="text-xs font-bold text-foreground"
+                                            >
+                                                Registration Type
+                                            </Label>
+                                            <Input
+                                                id="registration-type"
+                                                value={
+                                                    formData.registration_type
+                                                }
+                                                onChange={(e) =>
+                                                    handleFieldChange(
+                                                        'registration_type',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="DTI / SEC / Mayor's Permit"
+                                                className="h-11 rounded-xl text-sm"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="registration-number"
+                                                className="text-xs font-bold text-foreground"
+                                            >
+                                                Registration Number
+                                            </Label>
+                                            <Input
+                                                id="registration-number"
+                                                value={
+                                                    formData.registration_number
+                                                }
+                                                onChange={(e) =>
+                                                    handleFieldChange(
+                                                        'registration_number',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="REG-2024-001"
+                                                className="h-11 rounded-xl text-sm"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="business-permit-number"
+                                                className="text-xs font-bold text-foreground"
+                                            >
+                                                Business Permit Number
+                                            </Label>
+                                            <Input
+                                                id="business-permit-number"
+                                                value={
+                                                    formData.business_permit_number
+                                                }
+                                                onChange={(e) =>
+                                                    handleFieldChange(
+                                                        'business_permit_number',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="BP-2024-987"
+                                                className="h-11 rounded-xl text-sm"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="registration-permit-date"
+                                                className="text-xs font-bold text-foreground"
+                                            >
+                                                Registration / Permit Date
+                                            </Label>
+                                            <Input
+                                                id="registration-permit-date"
+                                                type="date"
+                                                value={
+                                                    formData.registration_permit_date
+                                                }
+                                                onChange={(e) =>
+                                                    handleFieldChange(
+                                                        'registration_permit_date',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="h-11 rounded-xl text-sm"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2 md:col-span-2">
+                                            <Label className="text-xs font-bold text-foreground">
+                                                Registration / Permit Document
+                                            </Label>
+                                            {business.business_registration_document_path ? (
+                                                <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border/80 bg-muted/20 p-3">
+                                                    <a
+                                                        href="/profile/business/document"
+                                                        className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                    >
+                                                        View current document
+                                                    </a>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            const input =
+                                                                document.getElementById(
+                                                                    'business-registration-document-input',
+                                                                ) as HTMLInputElement | null;
+                                                            input?.click();
+                                                        }}
+                                                    >
+                                                        Replace
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        onClick={
+                                                            handleDocumentDelete
+                                                        }
+                                                    >
+                                                        Remove
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-border/80 bg-muted/20 p-3 md:flex-row md:items-center">
+                                                    <Input
+                                                        id="business-registration-document-input"
+                                                        type="file"
+                                                        accept=".pdf,.png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp,application/pdf"
+                                                        onChange={(event) => {
+                                                            const file =
+                                                                event.target
+                                                                    .files?.[0] ??
+                                                                null;
+                                                            setSelectedDocument(
+                                                                file,
+                                                            );
+                                                        }}
+                                                        className="h-11 w-full rounded-xl text-sm md:max-w-xs"
+                                                    />
+                                                    <Button
+                                                        type="button"
+                                                        onClick={
+                                                            handleDocumentUpload
+                                                        }
+                                                        className="h-11"
+                                                    >
+                                                        Upload document
+                                                    </Button>
+                                                </div>
+                                            )}
+                                            {selectedDocument &&
+                                            !business.business_registration_document_path ? (
+                                                <p className="text-xs text-muted-foreground">
+                                                    Selected file:{' '}
+                                                    {selectedDocument.name}
+                                                </p>
+                                            ) : null}
                                         </div>
                                     </div>
                                 </Card>
