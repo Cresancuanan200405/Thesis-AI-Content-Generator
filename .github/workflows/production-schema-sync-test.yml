@@ -55,7 +55,7 @@ jobs:
       - name: Execute synchronization artifact first time
         run: |
           psql --set=ON_ERROR_STOP=1 \
-            --file=database/production/marketpilot_production_schema_sync_v1.sql
+            --file="${GITHUB_WORKSPACE}/database/production/marketpilot_production_schema_sync_v1.sql"
 
       - name: Assert first synchronization result
         run: |
@@ -146,7 +146,7 @@ jobs:
       - name: Execute synchronization artifact second time
         run: |
           psql --set=ON_ERROR_STOP=1 \
-            --file=database/production/marketpilot_production_schema_sync_v1.sql
+            --file="${GITHUB_WORKSPACE}/database/production/marketpilot_production_schema_sync_v1.sql"
 
       - name: Assert idempotency and case-insensitive collision result
         run: |
