@@ -1,0 +1,645 @@
+MarketPilot Controlled Production Schema Synchronization Plan
+==============================================================
+
+STATUS
+------
+
+This is a READ/PREPARE-ONLY plan.
+
+No production SQL was executed while preparing this plan.
+No migrations were executed.
+No DDL was executed.
+No production data was changed.
+No application files were changed by this plan.
+No deployment was performed.
+No RLS, OAuth, Vercel, Supabase, or environment configuration was changed.
+
+PURPOSE
+-------
+
+Production is partially synchronized with the Laravel repository, but public.migrations does not exist. The deployed application expects schema elements that are absent from production.
+
+The synchronization must therefore be explicit and reviewed. It must not replay the entire historical Laravel migration chain.
+
+The recommended architecture is:
+
+1. Capture a production backup or verify a recoverable Supabase backup.
+2. Run read-only preflight checks.
+3. Apply a reviewed, one-time, idempotent synchronization process against the actual production schema.
+4. Separate schema changes, data backfill, constraints/indexes, and compatibility corrections.
+5. Run read-only postflight verification.
+6. Test authentication, profile, onboarding, and generation workflows.
+7. Establish a reliable Laravel migration baseline after the schema is known to match.
+
+A. REPOSITORY MIGRATIONS REVIEWED
+---------------------------------
+
+Users:
+
+- 0001_01_01_000000_create_users_table.php
+- 2025_08_14_170933_add_two_factor_columns_to_users_table.php
+- 2026_08_12_000001_add_onboarding_fields_to_users_table.php
+- 2026_08_19_000003_add_social_columns_to_users_table.php
+- 2026_09_14_050000_add_personal_information_fields_to_users_table.php
+- 2026_09_14_060000_add_username_to_users_table.php
+
+Businesses:
+
+- 2025_08_12_000001_create_businesses_table.php
+- 2025_08_12_000010_add_business_onboarding_fields_to_businesses_table.php
+- 2026_08_17_153805_add_marketing_preferences_to_businesses_table.php
+- 2026_08_18_074854_add_logo_path_to_businesses_table.php
+- 2026_08_30_000001_remove_logo_path_from_businesses_table.php
+- 2026_09_14_045000_add_registration_fields_to_businesses_table.php
+
+Products:
+
+- 2025_08_12_000003_create_products_table.php
+- 2026_08_19_000001_add_image_path_to_products_table.php
+- 2026_09_01_000001_add_soft_deletes_to_products_table.php
+
+Events:
+
+- 2025_08_12_000004_create_events_table.php
+- 2026_08_17_064329_add_country_and_source_to_events_table.php
+- 2026_08_17_120000_add_unique_constraint_to_events_table.php
+- 2026_08_19_160000_add_holiday_metadata_to_events_table.php
+
+Campaigns:
+
+- 2025_08_12_000005_create_campaigns_table.php
+- 2026_08_12_120000_add_campaign_fields_and_generation_context.php
+
+Designs:
+
+- 2025_08_12_000006_create_designs_table.php
+
+Generation requests:
+
+- 2026_08_12_061721_create_generation_requests_table.php
+- 2026_08_12_120000_add_campaign_fields_and_generation_context.php
+
+Notifications:
+
+- 2026_08_19_000002_create_app_notifications_table.php
+
+B. CONFIRMED PRODUCTION DRIFT
+-----------------------------
+
+Missing users columns:
+
+- first_name
+- middle_name
+- last_name
+- suffix
+- mobile_number
+- username
+
+Missing users indexes/constraints:
+
+- UNIQUE (username)
+- INDEX (provider_name, provider_id)
+
+Missing businesses columns:
+
+- main_business_activity
+- business_address
+- barangay
+- city_municipality
+- province
+- region
+- business_contact_number
+- business_email
+- website_social_page
+- registration_type
+- registration_number
+- business_permit_number
+- registration_permit_date
+- business_registration_document_path
+
+Other differences:
+
+- businesses.content_style is character varying in production; repository expects JSON.
+- campaigns.target_audience is text in production; repository expects varchar(255).
+- events.country is nullable without a default in production; repository expects nullable with default 'PH'.
+
+Products, events, campaigns, designs, generation_requests, and app_notifications otherwise appear substantially aligned with the repository according to the read-only audit.
+
+There is no repository or production table named generations. The repository uses generation_requests.
+There is no repository or production table named notifications. The repository uses app_notifications.
+
+C. SYNCHRONIZATION ARCHITECTURE DECISION
+----------------------------------------
+
+Recommended mechanism: a manually reviewed, one-time SQL synchronization script executed by the database owner/administrator, not the normal Laravel migration runner.
+
+Reason:
+
+- public.migrations does not exist.
+- Laravel cannot know which historical migrations were already applied.
+- Several historical migrations are non-idempotent.
+- Some repository migrations include data backfills.
+- Production already contains a partial schema.
+- A normal php artisan migrate could replay historical table creation or column changes.
+
+Do not create or use a Laravel migration that pretends the entire historical chain was applied.
+Do not run php artisan migrate --force against this production database.
+Do not execute the username migration blindly through Laravel's migration runner until the migration-ledger strategy is resolved.
+
+The synchronization script should be:
+
+- versioned outside the historical migration chain, or kept as a DBA-controlled deployment artifact;
+- reviewed before execution;
+- idempotent where practical;
+- run during a controlled maintenance window;
+- executed with the existing server-side database role only;
+- followed by read-only verification;
+- followed by a separately planned migration baseline.
+
+D. REQUIRED SCHEMA CHANGES
+--------------------------
+
+D1. Users columns
+
+Add these columns as nullable first:
+
+ALTER TABLE public.users
+    ADD COLUMN IF NOT EXISTS first_name varchar(255),
+    ADD COLUMN IF NOT EXISTS middle_name varchar(255),
+    ADD COLUMN IF NOT EXISTS last_name varchar(255),
+    ADD COLUMN IF NOT EXISTS suffix varchar(255),
+    ADD COLUMN IF NOT EXISTS mobile_number varchar(255),
+    ADD COLUMN IF NOT EXISTS username varchar(255);
+
+The nullable-first approach avoids breaking existing rows and allows the username backfill to complete before a unique constraint is added.
+
+D2. Businesses columns
+
+Add these columns as nullable:
+
+ALTER TABLE public.businesses
+    ADD COLUMN IF NOT EXISTS main_business_activity varchar(255),
+    ADD COLUMN IF NOT EXISTS business_address varchar(255),
+    ADD COLUMN IF NOT EXISTS barangay varchar(255),
+    ADD COLUMN IF NOT EXISTS city_municipality varchar(255),
+    ADD COLUMN IF NOT EXISTS province varchar(255),
+    ADD COLUMN IF NOT EXISTS region varchar(255),
+    ADD COLUMN IF NOT EXISTS business_contact_number varchar(255),
+    ADD COLUMN IF NOT EXISTS business_email varchar(255),
+    ADD COLUMN IF NOT EXISTS website_social_page varchar(255),
+    ADD COLUMN IF NOT EXISTS registration_type varchar(255),
+    ADD COLUMN IF NOT EXISTS registration_number varchar(255),
+    ADD COLUMN IF NOT EXISTS business_permit_number varchar(255),
+    ADD COLUMN IF NOT EXISTS registration_permit_date date,
+    ADD COLUMN IF NOT EXISTS business_registration_document_path varchar(255);
+
+These fields are nullable in the repository migration and should not be made required during synchronization.
+
+E. USERNAME BACKFILL STRATEGY
+-----------------------------
+
+The repository username migration performs a data backfill. The production synchronization must treat this as a separate, reviewed data operation.
+
+Required rules:
+
+1. Do not add UNIQUE(username) before the backfill.
+2. Process users in deterministic order, preferably ORDER BY id.
+3. Only backfill rows where username IS NULL or username = ''.
+4. Prefer the email local-part before the '@' character.
+5. If the email local-part is empty, use the legacy name.
+6. If both are empty or unusable, use 'user'.
+7. Lowercase the candidate.
+8. Remove characters outside A-Z, a-z, 0-9, dot, underscore, and dash.
+9. If normalization produces an empty string, use 'user'.
+10. If the candidate is already used, append _1, _2, _3, and so on.
+11. Check both existing usernames and usernames generated earlier in the same run.
+12. Keep assignment deterministic by processing users by id.
+13. Do not overwrite a non-empty username.
+14. Do not modify email, name, password, provider fields, or personal information.
+
+The production migration must first identify whether any username column already exists. The audit found it missing, but the synchronization should remain idempotent.
+
+Recommended implementation approach:
+
+- Add username as nullable.
+- Create a temporary staging structure or use a controlled procedural block to calculate candidates.
+- Preflight all candidate collisions.
+- Abort before applying the unique index if unresolved collisions exist.
+- Backfill only NULL/empty usernames.
+- Verify that username is unique and non-empty for all users.
+- Add the unique constraint after successful backfill.
+
+Conceptual PostgreSQL candidate expression:
+
+lower(
+    regexp_replace(
+        coalesce(
+            nullif(split_part(email, '@', 1), ''),
+            nullif(name, ''),
+            'user'
+        ),
+        '[^A-Za-z0-9._-]+',
+        '',
+        'g'
+    )
+)
+
+This expression alone is not sufficient to resolve collisions. Collision resolution must be deterministic and must account for existing usernames and candidates generated earlier in the same operation.
+
+F. USERNAME PREFLIGHT CHECKS
+----------------------------
+
+The following queries are examples for the controlled preflight. They are NOT to be executed as part of this read-only plan.
+
+1. Confirm the current users columns:
+
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'users'
+ORDER BY ordinal_position;
+
+2. Confirm whether username already exists:
+
+SELECT COUNT(*) AS username_column_count
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'users'
+  AND column_name = 'username';
+
+3. Count existing users requiring a username:
+
+SELECT COUNT(*) AS users_needing_username
+FROM public.users
+WHERE username IS NULL OR username = '';
+
+4. Preview normalized candidates without changing data:
+
+SELECT
+    id,
+    email,
+    name,
+    lower(
+        regexp_replace(
+            coalesce(
+                nullif(split_part(email, '@', 1), ''),
+                nullif(name, ''),
+                'user'
+            ),
+            '[^A-Za-z0-9._-]+',
+            '',
+            'g'
+        )
+    ) AS normalized_candidate
+FROM public.users
+WHERE username IS NULL OR username = ''
+ORDER BY id;
+
+5. Check duplicate normalized candidates:
+
+WITH candidates AS (
+    SELECT
+        lower(
+            regexp_replace(
+                coalesce(
+                    nullif(split_part(email, '@', 1), ''),
+                    nullif(name, ''),
+                    'user'
+                ),
+                '[^A-Za-z0-9._-]+',
+                '',
+                'g'
+            )
+        ) AS candidate
+    FROM public.users
+    WHERE username IS NULL OR username = ''
+)
+SELECT candidate, COUNT(*)
+FROM candidates
+GROUP BY candidate
+HAVING COUNT(*) > 1;
+
+6. Check duplicate existing usernames if the column exists:
+
+SELECT username, COUNT(*)
+FROM public.users
+WHERE username IS NOT NULL AND username <> ''
+GROUP BY username
+HAVING COUNT(*) > 1;
+
+7. Check for values that violate the application username format:
+
+SELECT id, username
+FROM public.users
+WHERE username IS NOT NULL
+  AND username !~ '^[A-Za-z0-9._-]+$';
+
+The backfill must not proceed until the operator has reviewed candidate collisions, blank fallback cases, and the number of affected rows.
+
+G. INDEX AND CONSTRAINT OPERATIONS
+----------------------------------
+
+After the username backfill succeeds:
+
+1. Create the username uniqueness constraint/index:
+
+ALTER TABLE public.users
+    ADD CONSTRAINT users_username_unique UNIQUE (username);
+
+Before applying it, verify that no duplicate or empty values remain in the backfilled set.
+
+2. Create the provider lookup index:
+
+CREATE INDEX users_provider_name_provider_id_index
+    ON public.users (provider_name, provider_id);
+
+The exact index name should be checked against production before creation. If an equivalent index already exists under another name, do not create a duplicate.
+
+3. The existing email unique constraint and users primary key should be retained.
+
+No user foreign keys are required.
+
+H. TYPE AND DEFAULT CORRECTIONS
+-------------------------------
+
+H1. businesses.content_style
+
+Repository expectation: JSON.
+Production type: character varying.
+
+Recommended immediate action: do not change automatically.
+
+Reason:
+
+- Existing production values may be plain strings rather than valid JSON.
+- A type conversion could fail or require a data transformation.
+- Current application compatibility should be tested first.
+- The field is not required to resolve the current username authentication failure.
+
+Before correcting it, inspect value shape and application usage. If correction is later approved, use an explicit conversion plan with a safe fallback for non-JSON values. Do not use a blind ALTER COLUMN TYPE.
+
+H2. campaigns.target_audience
+
+Repository expectation: varchar(255).
+Production type: text.
+
+Recommended immediate action: leave as text.
+
+Reason:
+
+- PostgreSQL text accepts the values expected by the application.
+- This is more permissive and does not block current authentication or onboarding.
+- Converting to varchar(255) could fail if any existing value exceeds 255 characters.
+
+If exact parity is required later, first measure maximum length and handle overlength data explicitly.
+
+H3. events.country
+
+Repository expectation: nullable with default 'PH'.
+Production: nullable with no default.
+
+Recommended immediate action: defer unless new event creation depends on the default.
+
+Reason:
+
+- Existing rows are not changed by adding a default.
+- Application behavior should be checked to determine whether country is always supplied.
+- If the default is required, the controlled operation would be:
+
+ALTER TABLE public.events
+    ALTER COLUMN country SET DEFAULT 'PH';
+
+Do not make the column NOT NULL.
+
+I. EXACT SYNCHRONIZATION ORDER
+------------------------------
+
+The following is the proposed order. It is a plan only and has not been executed.
+
+1. Freeze or coordinate deployments that write users and businesses.
+2. Verify a recoverable production backup.
+3. Run all read-only preflight queries.
+4. Confirm table owners, role privileges, RLS state, and current schema.
+5. Add nullable users columns.
+6. Add nullable businesses columns.
+7. Run and review the username candidate preflight.
+8. Perform the deterministic username backfill.
+9. Verify no duplicate or invalid usernames remain.
+10. Add the username unique constraint.
+11. Add the provider lookup index if absent.
+12. Decide separately whether events.country needs its default restored.
+13. Leave businesses.content_style unchanged until its data is reviewed.
+14. Leave campaigns.target_audience as text unless exact type parity is required.
+15. Run post-synchronization catalog verification.
+16. Run application tests against the synchronized schema or a faithful clone.
+17. Exercise normal login, Google login, Personal Information, business onboarding, and profile/document workflows.
+18. Establish the migration baseline only after verification.
+
+The sequence deliberately backfills before adding UNIQUE(username).
+
+J. POST-SYNCHRONIZATION VERIFICATION QUERIES
+--------------------------------------------
+
+These queries are examples for postflight verification. They are NOT to be executed as part of this plan.
+
+1. Verify users columns:
+
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'users'
+ORDER BY ordinal_position;
+
+2. Verify businesses columns:
+
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'businesses'
+ORDER BY ordinal_position;
+
+3. Verify username duplicates:
+
+SELECT username, COUNT(*)
+FROM public.users
+GROUP BY username
+HAVING COUNT(*) > 1;
+
+Expected result: no rows.
+
+4. Verify missing/blank usernames:
+
+SELECT COUNT(*) AS missing_username_count
+FROM public.users
+WHERE username IS NULL OR username = '';
+
+Expected result: zero for existing users after backfill.
+
+5. Verify username constraint/index:
+
+SELECT indexname, indexdef
+FROM pg_indexes
+WHERE schemaname = 'public'
+  AND tablename = 'users'
+ORDER BY indexname;
+
+6. Verify provider index:
+
+SELECT indexname, indexdef
+FROM pg_indexes
+WHERE schemaname = 'public'
+  AND tablename = 'users'
+  AND indexdef ILIKE '%provider_name%provider_id%';
+
+7. Verify remaining required columns:
+
+SELECT required.column_name
+FROM (
+    VALUES
+        ('first_name'),
+        ('middle_name'),
+        ('last_name'),
+        ('suffix'),
+        ('mobile_number'),
+        ('username')
+) AS required(column_name)
+LEFT JOIN information_schema.columns actual
+    ON actual.table_schema = 'public'
+   AND actual.table_name = 'users'
+   AND actual.column_name = required.column_name
+WHERE actual.column_name IS NULL;
+
+Expected result: no rows.
+
+8. Verify RLS remains enabled and unchanged:
+
+SELECT relname, relrowsecurity, relforcerowsecurity
+FROM pg_class
+WHERE oid = 'public.users'::regclass;
+
+SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check
+FROM pg_policies
+WHERE schemaname = 'public'
+  AND tablename = 'users';
+
+9. Verify the migration ledger is still not being falsely claimed:
+
+SELECT to_regclass('public.migrations') AS migrations_table;
+
+The synchronization process must not claim that all historical migrations have run.
+
+K. ROLLBACK AND RECOVERY PLAN
+-----------------------------
+
+Preferred recovery is database restore or point-in-time recovery, not an improvised reverse migration.
+
+Before synchronization:
+
+- Confirm a recoverable Supabase backup or point-in-time recovery window.
+- Export schema metadata.
+- Record row counts for users and businesses.
+- Record the number of NULL/empty usernames after the username column exists.
+- Store the candidate mapping for each affected user in a protected operator-only artifact if policy permits.
+- Record existing indexes and constraints.
+
+If the operation fails before commit:
+
+- Roll back the transaction if the chosen DDL/data process is transactional.
+- Do not continue to subsequent stages.
+- Preserve the error and preflight output.
+
+If the operation commits and a problem is discovered later:
+
+- Prefer restoring the database or using point-in-time recovery.
+- Do not drop username or personal-information columns after application traffic has begun using them.
+- Do not run the migration down method casually; dropping username would destroy the new identity data.
+- If only a new index is defective, remove only the reviewed index/constraint after confirming application impact and backup status.
+
+The username backfill is logically reversible only if the original NULL/empty state and generated mapping were preserved. Therefore the mapping must be captured before or during the controlled backfill if rollback-by-data-restoration is required.
+
+L. MIGRATION BASELINE STRATEGY
+------------------------------
+
+After synchronization and verification:
+
+1. Treat the synchronized production schema as the baseline state.
+2. Do not insert fabricated historical rows into public.migrations claiming that every old migration ran unless the exact historical state is proven.
+3. Choose one controlled baseline approach with the Laravel team:
+
+   Approach 1: Establish a new baseline migration representing the already-existing production schema, mark it as the baseline for future environments, and keep subsequent migrations after that baseline.
+
+   Approach 2: Use a separate deployment schema-management ledger outside Laravel's migrations table, recording the reviewed synchronization version and checksum.
+
+   Approach 3: Rebuild a faithful production clone, apply the repository migrations in a controlled environment, compare the result, and then reconcile the production baseline explicitly.
+
+4. Document which repository migrations are represented by the existing external schema.
+5. Document which synchronization operations were applied.
+6. From that point forward, require every new schema change to have an auditable migration or synchronization artifact.
+7. Never use local migration status as proof of production migration state.
+
+The preferred long-term approach is a reviewed baseline plus normal forward-only Laravel migrations for all future changes.
+
+M. RISK ASSESSMENT
+------------------
+
+High risk:
+
+- Username backfill collisions.
+- Creating UNIQUE(username) before resolving duplicates.
+- Running all historical migrations without a migration ledger.
+- Applying a blind type conversion to businesses.content_style.
+- Losing the mapping between original users and generated usernames.
+- Synchronizing while concurrent deployments write users or businesses.
+
+Medium risk:
+
+- Adding nullable columns during active traffic.
+- Creating indexes while high-volume writes are active.
+- Restoring events.country default without checking application expectations.
+- Establishing a baseline that falsely claims historical migrations were applied.
+
+Lower risk:
+
+- Adding nullable personal-information columns.
+- Adding nullable business registration/address columns.
+- Leaving campaigns.target_audience as text because it is more permissive than varchar(255).
+
+N. CURRENT GOOGLE ERROR
+-----------------------
+
+The controlled plan resolves the immediate schema cause of the current Google error only after the following are applied successfully:
+
+- users.username column exists.
+- New-user username backfill is complete for existing rows.
+- UNIQUE(username) is created successfully.
+- The deployed application is connected to the synchronized schema.
+
+The current error is:
+
+column "username" does not exist
+
+This is schema drift, not a reproducible RLS privilege failure. The direct production marketpilot_app INSERT test previously succeeded under the existing RLS policy.
+
+O. APPLICATION CODE IMPACT
+--------------------------
+
+No application code change is required for the confirmed username and personal-information drift if the production schema is synchronized to the current deployed application contract.
+
+No OAuth change is required.
+No RLS change is required.
+No database privilege change is required.
+No environment-variable change is required.
+
+The existing Laravel migrations should not be modified. The synchronization should be treated as a controlled production schema operation and the migration-baseline decision should be handled separately.
+
+FINAL DECISION
+--------------
+
+Use a reviewed controlled schema synchronization process based on the actual production schema (Option D), then establish a truthful production migration baseline (Option C).
+
+Do not run all historical Laravel migrations.
+Do not execute the username migration blindly through Laravel's migration ledger.
+Do not apply type/default corrections merely for cosmetic parity.
+Do not change RLS or privileges.
+
+This document is a plan only. No production changes were made.

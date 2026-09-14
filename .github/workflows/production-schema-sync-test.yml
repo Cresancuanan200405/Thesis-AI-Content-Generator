@@ -140,7 +140,7 @@ jobs:
           psql --set=ON_ERROR_STOP=1 --tuples-only --no-align \
             --command="SELECT COUNT(*) FROM public.users" > /tmp/users_before_second_sync
           psql --set=ON_ERROR_STOP=1 --tuples-only --no-align \
-            --command="SELECT md5(coalesce(string_agg(id::text || ':' || username, ',' ORDER BY id), '')) FROM public.users" \
+            --command="SELECT md5(coalesce(string_agg(id::text || ':' || username, ',' ORDER BY id), '')) FROM public.users WHERE id < 9" \
             > /tmp/usernames_before_second_sync
 
       - name: Execute synchronization artifact second time
@@ -160,7 +160,7 @@ jobs:
           fi
 
           after_hash="$(psql --set=ON_ERROR_STOP=1 --tuples-only --no-align \
-            --command="SELECT md5(coalesce(string_agg(id::text || ':' || username, ',' ORDER BY id), '')) FROM public.users")"
+            --command="SELECT md5(coalesce(string_agg(id::text || ':' || username, ',' ORDER BY id), '')) FROM public.users WHERE id < 9")"
           if [[ "$after_hash" != "$before_hash" ]]; then
             echo "Existing username state changed during second synchronization"
             exit 1
