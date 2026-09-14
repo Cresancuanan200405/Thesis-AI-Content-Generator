@@ -442,13 +442,32 @@ BEGIN
 
     SELECT EXISTS (
         SELECT 1
-        FROM pg_index
-        WHERE indrelid = 'public.users'::regclass
-          AND indisvalid
-          AND indpred IS NULL
-          AND indexprs IS NULL
-          AND indnkeyatts = 2
-          AND indkey = ARRAY[provider_attnum, provider_id_attnum]::int2vector
+        FROM pg_index AS index_meta
+        JOIN pg_class AS index_relation
+            ON index_relation.oid = index_meta.indexrelid
+        JOIN pg_am AS access_method
+            ON access_method.oid = index_relation.relam
+        JOIN pg_attribute AS first_indexed_column
+            ON first_indexed_column.attrelid = index_meta.indrelid
+           AND first_indexed_column.attnum = index_meta.indkey[0]
+           AND NOT first_indexed_column.attisdropped
+        JOIN pg_attribute AS second_indexed_column
+            ON second_indexed_column.attrelid = index_meta.indrelid
+           AND second_indexed_column.attnum = index_meta.indkey[1]
+           AND NOT second_indexed_column.attisdropped
+        WHERE index_meta.indrelid = 'public.users'::regclass
+          AND index_meta.indisvalid = true
+          AND index_meta.indpred IS NULL
+          AND index_meta.indexprs IS NULL
+          AND index_meta.indnkeyatts = 2
+          AND index_meta.indnatts = 2
+          AND index_meta.indkey[0] = provider_attnum
+          AND index_meta.indkey[1] = provider_id_attnum
+          AND first_indexed_column.attname = 'provider_name'
+          AND second_indexed_column.attname = 'provider_id'
+          AND access_method.amname = 'btree'
+          AND pg_get_indexdef(index_meta.indexrelid, 1, true) = 'provider_name'
+          AND pg_get_indexdef(index_meta.indexrelid, 2, true) = 'provider_id'
     ) INTO has_provider_index;
 
     IF NOT has_provider_index THEN
