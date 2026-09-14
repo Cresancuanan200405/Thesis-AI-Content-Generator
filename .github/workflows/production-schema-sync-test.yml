@@ -152,30 +152,23 @@ jobs:
         run: |
           before_count="$(cat /tmp/users_before_second_sync)"
           before_hash="$(cat /tmp/usernames_before_second_sync)"
-          psql --set=ON_ERROR_STOP=1 \
-            --variable="before_count=${before_count}" \
-            --variable="before_hash=${before_hash}" \
-            --quiet <<'SQL'
+          after_count="$(psql --set=ON_ERROR_STOP=1 --tuples-only --no-align \
+            --command="SELECT COUNT(*) FROM public.users")"
+          if [[ "$after_count" != "$before_count" ]]; then
+            echo "Unexpected user count change during second synchronization"
+            exit 1
+          fi
+
+          after_hash="$(psql --set=ON_ERROR_STOP=1 --tuples-only --no-align \
+            --command="SELECT md5(coalesce(string_agg(id::text || ':' || username, ',' ORDER BY id), '')) FROM public.users")"
+          if [[ "$after_hash" != "$before_hash" ]]; then
+            echo "Existing username state changed during second synchronization"
+            exit 1
+          fi
+
+          psql --set=ON_ERROR_STOP=1 --quiet <<'SQL'
           DO $$
-          DECLARE
-              before_count bigint;
-              after_count bigint;
-              before_hash text;
-              after_hash text;
           BEGIN
-            before_count := :'before_count';
-              after_count := (SELECT COUNT(*) FROM public.users);
-            IF after_count <> before_count THEN
-                  RAISE EXCEPTION 'Unexpected user count change during second synchronization';
-              END IF;
-                  before_hash := :'before_hash';
-                  after_hash := (
-                    SELECT md5(coalesce(string_agg(id::text || ':' || username, ',' ORDER BY id), ''))
-                    FROM public.users
-                  );
-                  IF after_hash <> before_hash THEN
-                    RAISE EXCEPTION 'Existing username state changed during second synchronization';
-                  END IF;
               IF (SELECT username FROM public.users WHERE id = 7) <> 'keep_me' THEN
                   RAISE EXCEPTION 'Existing username was overwritten';
               END IF;
