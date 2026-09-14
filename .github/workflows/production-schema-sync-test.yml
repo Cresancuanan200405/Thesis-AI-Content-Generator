@@ -1,0 +1,269 @@
+name: disposable production schema sync test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  production-schema-sync:
+    name: PostgreSQL schema sync clone test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: marketpilot_sync_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-only-not-production
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d marketpilot_sync_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGDATABASE: marketpilot_sync_test
+      PGUSER: postgres
+      PGPASSWORD: ci-only-not-production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+
+      - name: Report PostgreSQL version
+        run: psql --version
+
+      - name: Load synthetic partial production schema
+        run: |
+          psql --set=ON_ERROR_STOP=1 \
+            --file=database/production/testing/partial_production_schema.sql
+
+      - name: Execute synchronization artifact first time
+        run: |
+          psql --set=ON_ERROR_STOP=1 \
+            --file=database/production/marketpilot_production_schema_sync_v1.sql
+
+      - name: Assert first synchronization result
+        run: |
+          psql --set=ON_ERROR_STOP=1 --quiet <<'SQL'
+          DO $$
+          BEGIN
+              IF (SELECT username FROM public.users WHERE id = 1) <> 'maria' THEN
+                  RAISE EXCEPTION 'User 1 username assertion failed';
+              END IF;
+              IF (SELECT username FROM public.users WHERE id = 2) <> 'maria_1' THEN
+                  RAISE EXCEPTION 'User 2 username assertion failed';
+              END IF;
+              IF (SELECT username FROM public.users WHERE id = 3) <> 'maria_2' THEN
+                  RAISE EXCEPTION 'User 3 username assertion failed';
+              END IF;
+              IF (SELECT username FROM public.users WHERE id = 4) <> 'maria_3' THEN
+                  RAISE EXCEPTION 'User 4 normalization assertion failed';
+              END IF;
+              IF (SELECT username FROM public.users WHERE id = 5) <> 'legacyuser' THEN
+                  RAISE EXCEPTION 'User 5 legacy-name fallback assertion failed';
+              END IF;
+              IF (SELECT username FROM public.users WHERE id = 6) <> 'user' THEN
+                  RAISE EXCEPTION 'User 6 final fallback assertion failed';
+              END IF;
+              IF (SELECT username FROM public.users WHERE id = 8) <> 'marketpilot' THEN
+                  RAISE EXCEPTION 'User 8 initial username assertion failed';
+              END IF;
+              IF EXISTS (SELECT 1 FROM public.users WHERE username IS NULL OR btrim(username) = '') THEN
+                  RAISE EXCEPTION 'Blank username remains after first synchronization';
+              END IF;
+              IF EXISTS (SELECT lower(username) FROM public.users GROUP BY lower(username) HAVING COUNT(*) > 1) THEN
+                  RAISE EXCEPTION 'Case-insensitive duplicate remains after first synchronization';
+              END IF;
+              IF NOT EXISTS (
+                  SELECT 1 FROM pg_indexes
+                  WHERE schemaname = 'public'
+                    AND tablename = 'users'
+                    AND indexdef ILIKE '%UNIQUE%username%'
+              ) THEN
+                  RAISE EXCEPTION 'Username unique index is missing';
+              END IF;
+              IF NOT EXISTS (
+                  SELECT 1 FROM pg_indexes
+                  WHERE schemaname = 'public'
+                    AND tablename = 'users'
+                    AND indexdef ILIKE '%provider_name%provider_id%'
+              ) THEN
+                  RAISE EXCEPTION 'Provider lookup index is missing';
+              END IF;
+              IF (SELECT udt_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'businesses' AND column_name = 'content_style') <> 'varchar' THEN
+                  RAISE EXCEPTION 'Deferred businesses.content_style drift changed';
+              END IF;
+              IF (SELECT udt_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'campaigns' AND column_name = 'target_audience') <> 'text' THEN
+                  RAISE EXCEPTION 'Deferred campaigns.target_audience drift changed';
+              END IF;
+              IF (SELECT column_default FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'events' AND column_name = 'country') IS NOT NULL THEN
+                  RAISE EXCEPTION 'Deferred events.country default changed';
+              END IF;
+          END
+          $$;
+          SQL
+
+      - name: Prepare synthetic case-insensitive collision and preserved username
+        run: |
+          psql --set=ON_ERROR_STOP=1 --quiet <<'SQL'
+          UPDATE public.users
+          SET username = 'keep_me'
+          WHERE id = 7;
+
+          UPDATE public.users
+          SET username = 'MarketPilot'
+          WHERE id = 8;
+
+          INSERT INTO public.users
+              (id, name, email, password, email_verified_at, onboarding_completed, created_at, updated_at)
+          VALUES
+              (9, 'Synthetic Collision', 'marketpilot@collision.example.invalid', 'synthetic-password', now(), false, now(), now());
+          SQL
+
+      - name: Capture row count before idempotency run
+        run: |
+          psql --set=ON_ERROR_STOP=1 --tuples-only --no-align \
+            --command="SELECT COUNT(*) FROM public.users" > /tmp/users_before_second_sync
+          psql --set=ON_ERROR_STOP=1 --tuples-only --no-align \
+            --command="SELECT md5(coalesce(string_agg(id::text || ':' || username, ',' ORDER BY id), '')) FROM public.users" \
+            > /tmp/usernames_before_second_sync
+
+      - name: Execute synchronization artifact second time
+        run: |
+          psql --set=ON_ERROR_STOP=1 \
+            --file=database/production/marketpilot_production_schema_sync_v1.sql
+
+      - name: Assert idempotency and case-insensitive collision result
+        run: |
+          before_count="$(cat /tmp/users_before_second_sync)"
+          before_hash="$(cat /tmp/usernames_before_second_sync)"
+          psql --set=ON_ERROR_STOP=1 \
+            --variable="before_count=${before_count}" \
+            --variable="before_hash=${before_hash}" \
+            --quiet <<'SQL'
+          DO $$
+          DECLARE
+              before_count bigint;
+              after_count bigint;
+              before_hash text;
+              after_hash text;
+          BEGIN
+            before_count := :'before_count';
+              after_count := (SELECT COUNT(*) FROM public.users);
+            IF after_count <> before_count THEN
+                  RAISE EXCEPTION 'Unexpected user count change during second synchronization';
+              END IF;
+                  before_hash := :'before_hash';
+                  after_hash := (
+                    SELECT md5(coalesce(string_agg(id::text || ':' || username, ',' ORDER BY id), ''))
+                    FROM public.users
+                  );
+                  IF after_hash <> before_hash THEN
+                    RAISE EXCEPTION 'Existing username state changed during second synchronization';
+                  END IF;
+              IF (SELECT username FROM public.users WHERE id = 7) <> 'keep_me' THEN
+                  RAISE EXCEPTION 'Existing username was overwritten';
+              END IF;
+              IF (SELECT username FROM public.users WHERE id = 8) <> 'MarketPilot' THEN
+                  RAISE EXCEPTION 'Existing mixed-case username was overwritten';
+              END IF;
+              IF (SELECT username FROM public.users WHERE id = 9) <> 'marketpilot_1' THEN
+                  RAISE EXCEPTION 'Case-insensitive candidate collision was not suffixed deterministically';
+              END IF;
+              IF EXISTS (SELECT lower(username) FROM public.users GROUP BY lower(username) HAVING COUNT(*) > 1) THEN
+                  RAISE EXCEPTION 'Case-insensitive duplicate remains after second synchronization';
+              END IF;
+              IF EXISTS (SELECT 1 FROM public.users WHERE username IS NULL OR btrim(username) = '') THEN
+                  RAISE EXCEPTION 'Blank username remains after second synchronization';
+              END IF;
+          END
+          $$;
+          SQL
+
+      - name: Verify RLS and deferred schema state
+        run: |
+          psql --set=ON_ERROR_STOP=1 --quiet <<'SQL'
+          DO $$
+          DECLARE
+              rls_enabled boolean;
+              force_rls boolean;
+              policy_count integer;
+          BEGIN
+              SELECT relrowsecurity, relforcerowsecurity
+              INTO rls_enabled, force_rls
+              FROM pg_class
+              WHERE oid = 'public.users'::regclass;
+
+              IF rls_enabled IS DISTINCT FROM true OR force_rls IS DISTINCT FROM false THEN
+                  RAISE EXCEPTION 'RLS state assertion failed';
+              END IF;
+
+              SELECT COUNT(*)
+              INTO policy_count
+              FROM pg_policy AS pol
+              WHERE pol.polrelid = 'public.users'::regclass
+                AND pol.polname = 'marketpilot_app_full_access'
+                AND pol.polpermissive = true
+                AND pol.polcmd = '*'
+                AND pg_get_expr(pol.polqual, pol.polrelid) = 'true'
+                AND pg_get_expr(pol.polwithcheck, pol.polrelid) = 'true'
+                AND pol.polroles @> ARRAY[
+                    (SELECT oid FROM pg_roles WHERE rolname = 'marketpilot_app'),
+                    (SELECT oid FROM pg_roles WHERE rolname = 'postgres')
+                ]::oid[];
+
+              IF policy_count <> 1 THEN
+                  RAISE EXCEPTION 'RLS policy assertion failed';
+              END IF;
+
+              IF (SELECT udt_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'businesses' AND column_name = 'content_style') <> 'varchar' THEN
+                  RAISE EXCEPTION 'Deferred businesses.content_style drift changed';
+              END IF;
+              IF (SELECT udt_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'campaigns' AND column_name = 'target_audience') <> 'text' THEN
+                  RAISE EXCEPTION 'Deferred campaigns.target_audience drift changed';
+              END IF;
+              IF (SELECT column_default FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'events' AND column_name = 'country') IS NOT NULL THEN
+                  RAISE EXCEPTION 'Deferred events.country default changed';
+              END IF;
+          END
+          $$;
+          SQL
+
+      - name: Report safe aggregate result
+        run: |
+          psql --set=ON_ERROR_STOP=1 --tuples-only --no-align <<'SQL'
+          SELECT 'users=' || COUNT(*) FROM public.users;
+          SELECT 'blank_usernames=' || COUNT(*) FROM public.users WHERE username IS NULL OR btrim(username) = '';
+          SELECT 'case_insensitive_duplicate_groups=' || COUNT(*) FROM (
+              SELECT lower(username)
+              FROM public.users
+              GROUP BY lower(username)
+              HAVING COUNT(*) > 1
+          ) AS duplicates;
+          SELECT 'missing_users_columns=' || COUNT(*) FROM (
+              VALUES ('first_name'), ('middle_name'), ('last_name'), ('suffix'), ('mobile_number'), ('username')
+          ) AS required(column_name)
+          LEFT JOIN information_schema.columns actual
+            ON actual.table_schema = 'public'
+           AND actual.table_name = 'users'
+           AND actual.column_name = required.column_name
+          WHERE actual.column_name IS NULL;
+          SQL
+
+      # Rollback is covered by the artifact transaction and ON_ERROR_STOP behavior.
+      # Fault injection is intentionally omitted so this workflow never alters the artifact.
