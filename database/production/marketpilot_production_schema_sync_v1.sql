@@ -410,14 +410,26 @@ BEGIN
 
     SELECT EXISTS (
         SELECT 1
-        FROM pg_index
-        WHERE indrelid = 'public.users'::regclass
-          AND indisunique
-          AND indisvalid
-          AND indpred IS NULL
-          AND indexprs IS NULL
-          AND indnkeyatts = 1
-          AND indkey = ARRAY[username_attnum]::int2vector
+        FROM pg_index AS index_meta
+        JOIN pg_class AS index_relation
+            ON index_relation.oid = index_meta.indexrelid
+        JOIN pg_am AS access_method
+            ON access_method.oid = index_relation.relam
+        JOIN pg_attribute AS indexed_column
+            ON indexed_column.attrelid = index_meta.indrelid
+           AND indexed_column.attnum = index_meta.indkey[0]
+           AND NOT indexed_column.attisdropped
+        WHERE index_meta.indrelid = 'public.users'::regclass
+          AND index_meta.indisunique = true
+          AND index_meta.indisvalid = true
+          AND index_meta.indpred IS NULL
+          AND index_meta.indexprs IS NULL
+          AND index_meta.indnkeyatts = 1
+          AND index_meta.indnatts = 1
+          AND index_meta.indkey[0] = username_attnum
+          AND indexed_column.attname = 'username'
+          AND access_method.amname = 'btree'
+          AND pg_get_indexdef(index_meta.indexrelid, 1, true) = 'username'
     ) INTO has_username_unique_index;
 
     IF NOT has_username_unique_constraint AND NOT has_username_unique_index THEN
