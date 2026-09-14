@@ -244,7 +244,7 @@ BEGIN
     END IF;
 
     IF EXISTS (
-        SELECT username
+        SELECT 1
         FROM public.users
         WHERE username IS NOT NULL AND btrim(username) <> ''
         GROUP BY lower(username)
@@ -352,7 +352,7 @@ BEGIN
     END IF;
 
     IF EXISTS (
-        SELECT lower(username)
+        SELECT 1
         FROM public.users
         GROUP BY lower(username)
         HAVING COUNT(*) > 1
@@ -459,9 +459,9 @@ WHERE username IS NULL OR btrim(username) = '';
 
 SELECT COUNT(*) AS duplicate_username_groups
 FROM (
-    SELECT username
+    SELECT 1
     FROM public.users
-    GROUP BY username
+    GROUP BY lower(username)
     HAVING COUNT(*) > 1
 ) AS duplicate_groups;
 
