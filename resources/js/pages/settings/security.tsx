@@ -117,7 +117,6 @@ export default function SecuritySettings(props: Props) {
                 <PageHeader
                     title="Security"
                     description="Manage your password, two-factor authentication, and active browser sessions."
-                    breadcrumbs={breadcrumbs}
                 />
                 {/* 1. Update Password Card */}
                 <Card className="rounded-3xl border-border/80 bg-card shadow-xs">

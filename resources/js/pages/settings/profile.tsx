@@ -56,6 +56,7 @@ interface AccountSettingsProps {
     status?: string;
     hasPassword?: boolean;
     providerName?: string | null;
+    isIdentityVerified?: boolean;
     twoFactorEnabled?: boolean;
     canManageTwoFactor?: boolean;
     requiresConfirmation?: boolean;
@@ -85,6 +86,7 @@ export default function AccountSettingsPage({
     status,
     hasPassword = true,
     providerName: _providerName,
+    isIdentityVerified = false,
     twoFactorEnabled = false,
     canManageTwoFactor = false,
     requiresConfirmation = false,
@@ -153,7 +155,6 @@ export default function AccountSettingsPage({
                 <PageHeader
                     title="Account Settings"
                     description="Manage your account, security, and preferences."
-                    breadcrumbs={breadcrumbs}
                 />
 
                 {/* Pending Email Change Notice Banner */}
@@ -271,6 +272,7 @@ export default function AccountSettingsPage({
                                         hasPassword={hasPassword}
                                         twoFactorEnabled={twoFactorEnabled}
                                         isGoogle={isGoogle}
+                                        isIdentityVerified={isIdentityVerified}
                                         hasPendingChange={hasPendingEmailChange}
                                         pendingEmail={pendingEmail}
                                     />

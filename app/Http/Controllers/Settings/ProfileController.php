@@ -33,8 +33,9 @@ class ProfileController extends Controller
         $props = [
             'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
-            'hasPassword' => filled($user->password),
+            'hasPassword' => $user->hasUsablePassword(),
             'providerName' => $user->provider_name,
+            'isIdentityVerified' => Cache::has("email_change_auth:{$user->id}"),
             'twoFactorEnabled' => $user->hasEnabledTwoFactorAuthentication(),
             'canManageTwoFactor' => Features::canManageTwoFactorAuthentication(),
             'requiresConfirmation' => Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm'),

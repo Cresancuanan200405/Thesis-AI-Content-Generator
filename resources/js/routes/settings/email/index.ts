@@ -1,7 +1,8 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../wayfinder'
+import verify from './verify'
 /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::verifyIdentity
- * @see app/Http/Controllers/Settings/EmailChangeController.php:22
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:142
  * @route '/settings/email/verify-identity'
  */
 export const verifyIdentity = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +17,7 @@ verifyIdentity.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::verifyIdentity
- * @see app/Http/Controllers/Settings/EmailChangeController.php:22
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:142
  * @route '/settings/email/verify-identity'
  */
 verifyIdentity.url = (options?: RouteQueryOptions) => {
@@ -25,7 +26,7 @@ verifyIdentity.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::verifyIdentity
- * @see app/Http/Controllers/Settings/EmailChangeController.php:22
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:142
  * @route '/settings/email/verify-identity'
  */
 verifyIdentity.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -35,7 +36,7 @@ verifyIdentity.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => 
 
     /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::verifyIdentity
- * @see app/Http/Controllers/Settings/EmailChangeController.php:22
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:142
  * @route '/settings/email/verify-identity'
  */
     const verifyIdentityForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -45,7 +46,7 @@ verifyIdentity.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => 
 
             /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::verifyIdentity
- * @see app/Http/Controllers/Settings/EmailChangeController.php:22
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:142
  * @route '/settings/email/verify-identity'
  */
         verifyIdentityForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -56,7 +57,7 @@ verifyIdentity.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => 
     verifyIdentity.form = verifyIdentityForm
 /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::requestChange
- * @see app/Http/Controllers/Settings/EmailChangeController.php:88
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:214
  * @route '/settings/email/request-change'
  */
 export const requestChange = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -71,7 +72,7 @@ requestChange.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::requestChange
- * @see app/Http/Controllers/Settings/EmailChangeController.php:88
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:214
  * @route '/settings/email/request-change'
  */
 requestChange.url = (options?: RouteQueryOptions) => {
@@ -80,7 +81,7 @@ requestChange.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::requestChange
- * @see app/Http/Controllers/Settings/EmailChangeController.php:88
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:214
  * @route '/settings/email/request-change'
  */
 requestChange.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -90,7 +91,7 @@ requestChange.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => (
 
     /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::requestChange
- * @see app/Http/Controllers/Settings/EmailChangeController.php:88
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:214
  * @route '/settings/email/request-change'
  */
     const requestChangeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -100,7 +101,7 @@ requestChange.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => (
 
             /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::requestChange
- * @see app/Http/Controllers/Settings/EmailChangeController.php:88
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:214
  * @route '/settings/email/request-change'
  */
         requestChangeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -111,7 +112,7 @@ requestChange.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => (
     requestChange.form = requestChangeForm
 /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::confirmChange
- * @see app/Http/Controllers/Settings/EmailChangeController.php:146
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:272
  * @route '/settings/email/confirm-change'
  */
 export const confirmChange = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -126,7 +127,7 @@ confirmChange.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::confirmChange
- * @see app/Http/Controllers/Settings/EmailChangeController.php:146
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:272
  * @route '/settings/email/confirm-change'
  */
 confirmChange.url = (options?: RouteQueryOptions) => {
@@ -135,7 +136,7 @@ confirmChange.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::confirmChange
- * @see app/Http/Controllers/Settings/EmailChangeController.php:146
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:272
  * @route '/settings/email/confirm-change'
  */
 confirmChange.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -145,7 +146,7 @@ confirmChange.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => (
 
     /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::confirmChange
- * @see app/Http/Controllers/Settings/EmailChangeController.php:146
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:272
  * @route '/settings/email/confirm-change'
  */
     const confirmChangeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -155,7 +156,7 @@ confirmChange.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => (
 
             /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::confirmChange
- * @see app/Http/Controllers/Settings/EmailChangeController.php:146
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:272
  * @route '/settings/email/confirm-change'
  */
         confirmChangeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -166,7 +167,7 @@ confirmChange.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => (
     confirmChange.form = confirmChangeForm
 /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::resendCode
- * @see app/Http/Controllers/Settings/EmailChangeController.php:218
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:344
  * @route '/settings/email/resend-code'
  */
 export const resendCode = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -181,7 +182,7 @@ resendCode.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::resendCode
- * @see app/Http/Controllers/Settings/EmailChangeController.php:218
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:344
  * @route '/settings/email/resend-code'
  */
 resendCode.url = (options?: RouteQueryOptions) => {
@@ -190,7 +191,7 @@ resendCode.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::resendCode
- * @see app/Http/Controllers/Settings/EmailChangeController.php:218
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:344
  * @route '/settings/email/resend-code'
  */
 resendCode.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -200,7 +201,7 @@ resendCode.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::resendCode
- * @see app/Http/Controllers/Settings/EmailChangeController.php:218
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:344
  * @route '/settings/email/resend-code'
  */
     const resendCodeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -210,7 +211,7 @@ resendCode.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::resendCode
- * @see app/Http/Controllers/Settings/EmailChangeController.php:218
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:344
  * @route '/settings/email/resend-code'
  */
         resendCodeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -221,7 +222,7 @@ resendCode.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     resendCode.form = resendCodeForm
 /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::cancelChange
- * @see app/Http/Controllers/Settings/EmailChangeController.php:263
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:389
  * @route '/settings/email/cancel-change'
  */
 export const cancelChange = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -236,7 +237,7 @@ cancelChange.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::cancelChange
- * @see app/Http/Controllers/Settings/EmailChangeController.php:263
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:389
  * @route '/settings/email/cancel-change'
  */
 cancelChange.url = (options?: RouteQueryOptions) => {
@@ -245,7 +246,7 @@ cancelChange.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::cancelChange
- * @see app/Http/Controllers/Settings/EmailChangeController.php:263
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:389
  * @route '/settings/email/cancel-change'
  */
 cancelChange.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -255,7 +256,7 @@ cancelChange.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> =
 
     /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::cancelChange
- * @see app/Http/Controllers/Settings/EmailChangeController.php:263
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:389
  * @route '/settings/email/cancel-change'
  */
     const cancelChangeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -270,7 +271,7 @@ cancelChange.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> =
 
             /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::cancelChange
- * @see app/Http/Controllers/Settings/EmailChangeController.php:263
+ * @see app/Http/Controllers/Settings/EmailChangeController.php:389
  * @route '/settings/email/cancel-change'
  */
         cancelChangeForm.delete = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -285,7 +286,8 @@ cancelChange.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> =
     
     cancelChange.form = cancelChangeForm
 const email = {
-    verifyIdentity: Object.assign(verifyIdentity, verifyIdentity),
+    verify: Object.assign(verify, verify),
+verifyIdentity: Object.assign(verifyIdentity, verifyIdentity),
 requestChange: Object.assign(requestChange, requestChange),
 confirmChange: Object.assign(confirmChange, confirmChange),
 resendCode: Object.assign(resendCode, resendCode),

@@ -16,6 +16,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Secure Multi-Step Email Change
+    Route::get('settings/email/verify/google', [EmailChangeController::class, 'redirectToGoogle'])
+        ->middleware('throttle:10,1')
+        ->name('settings.email.verify.google');
+    Route::get('settings/email/verify/google/callback', [EmailChangeController::class, 'handleGoogleCallback'])
+        ->name('settings.email.verify.google.callback');
     Route::post('settings/email/verify-identity', [EmailChangeController::class, 'verifyIdentity'])
         ->middleware('throttle:6,1')
         ->name('settings.email.verify-identity');

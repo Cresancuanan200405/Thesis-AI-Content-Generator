@@ -74,6 +74,37 @@ class User extends Authenticatable implements MustVerifyEmail
         return filled($this->first_name) && filled($this->last_name);
     }
 
+    /**
+     * Determine whether the user has a usable local MarketPilot password.
+     *
+     * Accounts created via OAuth providers (e.g. Google) receive an auto-generated
+     * random placeholder password and do not possess a usable local password.
+     */
+    public function hasUsablePassword(): bool
+    {
+        if (empty($this->password)) {
+            return false;
+        }
+
+        if ($this->isGoogleUser()) {
+            return false;
+        }
+
+        if (! empty($this->provider_name)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Determine whether the account is connected via Google OAuth.
+     */
+    public function isGoogleUser(): bool
+    {
+        return strtolower((string) $this->provider_name) === 'google';
+    }
+
     public function sendEmailVerificationNotification(): void
     {
         $this->generateEmailVerificationCode();

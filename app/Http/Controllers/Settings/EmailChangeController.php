@@ -7,15 +7,135 @@ use App\Models\User;
 use App\Notifications\EmailChangeVerificationNotification;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider;
+use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\GoogleProvider;
+use Symfony\Component\HttpFoundation\RedirectResponse as SymfonyRedirectResponse;
 
 class EmailChangeController extends Controller
 {
+    /**
+     * Redirect user to Google OAuth specifically for email change identity verification.
+     */
+    public function redirectToGoogle(Request $request): RedirectResponse|SymfonyRedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (! $user->isGoogleUser() || empty($user->provider_id)) {
+            return redirect()->route('profile.edit')
+                ->with('error', __('Google verification is only available for accounts connected via Google Sign-In.'));
+        }
+
+        $clientId = config('services.google.client_id');
+        $clientSecret = config('services.google.client_secret');
+
+        if (empty($clientId) || empty($clientSecret)) {
+            return redirect()->route('profile.edit')
+                ->with('error', __('Google Sign-In is not configured yet.'));
+        }
+
+        $state = Str::random(40);
+        $request->session()->put('email_change_oauth_state', [
+            'user_id' => $user->id,
+            'state' => $state,
+            'initiated_at' => now()->timestamp,
+        ]);
+
+        /** @var GoogleProvider $driver */
+        $driver = Socialite::driver('google');
+        $driver->redirectUrl(route('settings.email.verify.google.callback'));
+
+        return $driver->with([
+            'prompt' => 'select_account',
+            'state' => $state,
+        ])->redirect();
+    }
+
+    /**
+     * Handle Google OAuth callback specifically for email change identity verification.
+     */
+    public function handleGoogleCallback(Request $request): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (! $user->isGoogleUser() || empty($user->provider_id)) {
+            return redirect()->route('profile.edit')
+                ->with('error', __('Google verification is only available for accounts connected via Google Sign-In.'));
+        }
+
+        if ($request->has('error')) {
+            return redirect()->route('profile.edit')
+                ->with('error', __('Google verification was cancelled: '.$request->input('error')));
+        }
+
+        $sessionState = $request->session()->get('email_change_oauth_state');
+        $request->session()->forget('email_change_oauth_state');
+
+        // 1. Verify OAuth state was initiated by current user and has not expired (10 min TTL)
+        if (
+            empty($sessionState) ||
+            empty($sessionState['state']) ||
+            ! hash_equals((string) $sessionState['state'], (string) $request->input('state')) ||
+            (int) ($sessionState['user_id'] ?? 0) !== (int) $user->id ||
+            (now()->timestamp - (int) ($sessionState['initiated_at'] ?? 0)) > 600
+        ) {
+            return redirect()->route('profile.edit')
+                ->with('error', __('The verification session has expired or is invalid. Please try again.'));
+        }
+
+        try {
+            /** @var GoogleProvider $driver */
+            $driver = Socialite::driver('google');
+            $driver->redirectUrl(route('settings.email.verify.google.callback'));
+
+            if (method_exists($driver, 'stateless')) {
+                $driver = $driver->stateless();
+            }
+
+            $socialUser = $driver->user();
+            $socialId = (string) $socialUser->getId();
+
+            // 2. Authoritative check: provider ID must match the current user's provider_id
+            if (empty($socialId) || ! hash_equals((string) $user->provider_id, $socialId)) {
+                Log::warning('Email change Google verification failed: provider ID mismatch', [
+                    'user_id' => $user->id,
+                    'expected_provider_id' => $user->provider_id,
+                    'received_provider_id' => $socialId,
+                ]);
+
+                return redirect()->route('profile.edit')
+                    ->with('error', __('The selected Google account does not match the Google account connected to your MarketPilot profile.'));
+            }
+
+            // 3. Grant 15-minute verification window (same token used by verifyIdentity)
+            Cache::put("email_change_auth:{$user->id}", [
+                'verified_at' => now()->timestamp,
+                'method' => 'google_oauth',
+            ], now()->addMinutes(15));
+
+            return redirect()->route('profile.edit')
+                ->with('success', __('Google identity verified successfully. You may now enter your new email address.'));
+        } catch (\Throwable $e) {
+            Log::error('Email change Google verification exception', [
+                'user_id' => $user->id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return redirect()->route('profile.edit')
+                ->with('error', __('Unable to complete Google verification. Please try again.'));
+        }
+    }
+
     /**
      * Step 1: Verify the authenticated user's current identity.
      */
@@ -23,6 +143,12 @@ class EmailChangeController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
+
+        if (! $user->hasUsablePassword()) {
+            throw ValidationException::withMessages([
+                'password' => [__('This account is authenticated through Google and does not use a local password. Please verify using your connected Google account.')],
+            ]);
+        }
 
         $rules = [
             'password' => ['required', 'string'],
