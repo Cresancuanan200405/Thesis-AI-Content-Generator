@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Settings\EmailChangeController;
+use App\Http\Controllers\Settings\GoogleAccountController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +36,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('settings.email.resend-code');
     Route::delete('settings/email/cancel-change', [EmailChangeController::class, 'cancelChange'])
         ->name('settings.email.cancel-change');
+
+    // Secure Change Google Account
+    Route::get('settings/google/verify-current', [GoogleAccountController::class, 'verifyCurrentAccount'])
+        ->middleware('throttle:10,1')
+        ->name('settings.google.verify-current');
+    Route::get('settings/google/verify-current/callback', [GoogleAccountController::class, 'handleVerifyCurrentCallback'])
+        ->name('settings.google.verify-current.callback');
+    Route::post('settings/google/verify-password', [GoogleAccountController::class, 'verifyPassword'])
+        ->middleware('throttle:6,1')
+        ->name('settings.google.verify-password');
+    Route::get('settings/google/change', [GoogleAccountController::class, 'redirectToNewGoogle'])
+        ->middleware('throttle:10,1')
+        ->name('settings.google.change');
+    Route::get('settings/google/change/callback', [GoogleAccountController::class, 'handleNewGoogleCallback'])
+        ->name('settings.google.change.callback');
 
     Route::get('settings/security', [SecurityController::class, 'edit'])->name('security.edit');
     Route::put('settings/password', [SecurityController::class, 'update'])

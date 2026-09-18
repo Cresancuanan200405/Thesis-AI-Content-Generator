@@ -43,6 +43,7 @@ class ProfileController extends Controller
             'sessions' => $this->getSessions($request),
             'hasPendingEmailChange' => ! empty($pendingChange),
             'pendingEmail' => $pendingChange['new_email'] ?? null,
+            'isGoogleChangeAuthorized' => Cache::has("google_account_change_auth:{$user->id}"),
         ];
 
         return Inertia::render('settings/profile', $props);
