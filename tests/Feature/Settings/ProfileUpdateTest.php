@@ -24,7 +24,7 @@ test('profile information can be updated', function () {
         ->actingAs($user)
         ->patch(route('profile.update'), [
             'name' => 'Test User',
-            'email' => 'test@example.com',
+            'email' => $user->email,
         ]);
 
     $response
@@ -34,8 +34,24 @@ test('profile information can be updated', function () {
     $user->refresh();
 
     expect($user->name)->toBe('Test User');
-    expect($user->email)->toBe('test@example.com');
-    expect($user->email_verified_at)->toBeNull();
+});
+
+test('attempting to change email directly via profile update is rejected', function () {
+    $user = User::factory()->create(['email' => 'original@example.com']);
+
+    $response = $this
+        ->actingAs($user)
+        ->from(route('profile.edit'))
+        ->patch(route('profile.update'), [
+            'name' => 'Test User',
+            'email' => 'new-direct@example.com',
+        ]);
+
+    $response
+        ->assertSessionHasErrors(['email'])
+        ->assertRedirect(route('profile.edit'));
+
+    expect($user->fresh()->email)->toBe('original@example.com');
 });
 
 test('personal information fields can be saved for the account owner', function () {
@@ -45,7 +61,7 @@ test('personal information fields can be saved for the account owner', function 
         ->actingAs($user)
         ->patch(route('profile.update'), [
             'name' => 'Jane Santos Dela Cruz',
-            'email' => 'jane@example.com',
+            'email' => $user->email,
             'first_name' => 'Jane',
             'middle_name' => 'Santos',
             'last_name' => 'Dela Cruz',

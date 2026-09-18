@@ -14,6 +14,7 @@ import SecurityController from '@/actions/App/Http/Controllers/Settings/Security
 import InputError from '@/components/input-error';
 import type { Props as ManageTwoFactorProps } from '@/components/manage-two-factor';
 import ManageTwoFactor from '@/components/manage-two-factor';
+import PageHeader from '@/components/page-header';
 import PasswordInput from '@/components/password-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,7 +30,6 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { edit } from '@/routes/security';
 
 interface SessionItem {
     id: string;
@@ -45,6 +45,25 @@ type Props = {
     passwordRules: string;
     sessions?: SessionItem[];
 } & ManageTwoFactorProps;
+
+const breadcrumbs = [
+    {
+        title: 'Dashboard',
+        href: '/dashboard',
+    },
+    {
+        title: 'Settings',
+        href: '/settings/profile',
+    },
+    {
+        title: 'Account Settings',
+        href: '/settings/profile',
+    },
+    {
+        title: 'Security',
+        href: '/settings/security',
+    },
+];
 
 export default function SecuritySettings(props: Props) {
     const passwordInput = useRef<HTMLInputElement>(null);
@@ -95,6 +114,11 @@ export default function SecuritySettings(props: Props) {
             <Head title="Security Settings" />
 
             <div className="space-y-8">
+                <PageHeader
+                    title="Security"
+                    description="Manage your password, two-factor authentication, and active browser sessions."
+                    breadcrumbs={breadcrumbs}
+                />
                 {/* 1. Update Password Card */}
                 <Card className="rounded-3xl border-border/80 bg-card shadow-xs">
                     <CardHeader className="border-b border-border/60 p-6 pb-4">
@@ -428,18 +452,5 @@ export default function SecuritySettings(props: Props) {
 }
 
 SecuritySettings.layout = {
-    breadcrumbs: [
-        {
-            title: 'Dashboard',
-            href: '/dashboard',
-        },
-        {
-            title: 'Account Settings',
-            href: '/settings/profile',
-        },
-        {
-            title: 'Security',
-            href: edit(),
-        },
-    ],
+    breadcrumbs,
 };

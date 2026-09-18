@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::destroy
- * @see app/Http/Controllers/Settings/SecurityController.php:68
+ * @see app/Http/Controllers/Settings/SecurityController.php:70
  * @route '/settings/sessions'
  */
 export const destroy = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -16,7 +16,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::destroy
- * @see app/Http/Controllers/Settings/SecurityController.php:68
+ * @see app/Http/Controllers/Settings/SecurityController.php:70
  * @route '/settings/sessions'
  */
 destroy.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ destroy.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Settings\SecurityController::destroy
- * @see app/Http/Controllers/Settings/SecurityController.php:68
+ * @see app/Http/Controllers/Settings/SecurityController.php:70
  * @route '/settings/sessions'
  */
 destroy.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -35,7 +35,7 @@ destroy.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
 
     /**
 * @see \App\Http\Controllers\Settings\SecurityController::destroy
- * @see app/Http/Controllers/Settings/SecurityController.php:68
+ * @see app/Http/Controllers/Settings/SecurityController.php:70
  * @route '/settings/sessions'
  */
     const destroyForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -50,7 +50,7 @@ destroy.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
 
             /**
 * @see \App\Http\Controllers\Settings\SecurityController::destroy
- * @see app/Http/Controllers/Settings/SecurityController.php:68
+ * @see app/Http/Controllers/Settings/SecurityController.php:70
  * @route '/settings/sessions'
  */
         destroyForm.delete = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
