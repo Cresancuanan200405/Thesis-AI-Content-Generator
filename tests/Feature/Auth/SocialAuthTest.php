@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\PendingOnboarding;
 use App\Models\User;
 use Laravel\Socialite\Contracts\Provider;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
@@ -24,7 +25,7 @@ test('it rejects unsupported provider', function () {
     $response->assertSessionHas('error');
 });
 
-test('it creates a new user and authenticates from socialite callback', function () {
+test('it creates pending onboarding without permanent user row from socialite callback', function () {
     $mockSocialiteUser = Mockery::mock(SocialiteUser::class);
     $mockSocialiteUser->shouldReceive('getId')->andReturn('google_123456789');
     $mockSocialiteUser->shouldReceive('getName')->andReturn('Alex Creator');
@@ -38,15 +39,20 @@ test('it creates a new user and authenticates from socialite callback', function
 
     $response = $this->get(route('auth.social.callback', ['provider' => 'google']));
 
-    $this->assertAuthenticated();
+    $this->assertGuest();
 
     $user = User::where('email', 'alex.creator@example.com')->first();
-    expect($user)->not->toBeNull()
-        ->and($user->provider_name)->toBe('google')
-        ->and($user->provider_id)->toBe('google_123456789')
-        ->and($user->email_verified_at)->not->toBeNull();
+    $pending = PendingOnboarding::where('email', 'alex.creator@example.com')->first();
 
-    $response->assertRedirect(route('profile.edit'));
+    expect($user)->toBeNull()
+        ->and($pending)->not->toBeNull()
+        ->and($pending->provider_name)->toBe('google')
+        ->and($pending->provider_id)->toBe('google_123456789')
+        ->and($pending->email_verified_at)->not->toBeNull()
+        ->and($pending->first_name)->toBe('Alex')
+        ->and($pending->last_name)->toBe('Creator');
+
+    $response->assertRedirect(route('onboarding.show'));
 });
 
 test('it links existing user by email from socialite callback', function () {

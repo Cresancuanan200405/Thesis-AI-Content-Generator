@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\UserProfileController::store
- * @see app/Http/Controllers/UserProfileController.php:132
+ * @see app/Http/Controllers/UserProfileController.php:128
  * @route '/profile/business/document'
  */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\UserProfileController::store
- * @see app/Http/Controllers/UserProfileController.php:132
+ * @see app/Http/Controllers/UserProfileController.php:128
  * @route '/profile/business/document'
  */
 store.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\UserProfileController::store
- * @see app/Http/Controllers/UserProfileController.php:132
+ * @see app/Http/Controllers/UserProfileController.php:128
  * @route '/profile/business/document'
  */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -35,7 +35,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\UserProfileController::store
- * @see app/Http/Controllers/UserProfileController.php:132
+ * @see app/Http/Controllers/UserProfileController.php:128
  * @route '/profile/business/document'
  */
     const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -45,7 +45,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\UserProfileController::store
- * @see app/Http/Controllers/UserProfileController.php:132
+ * @see app/Http/Controllers/UserProfileController.php:128
  * @route '/profile/business/document'
  */
         storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -56,7 +56,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     store.form = storeForm
 /**
 * @see \App\Http\Controllers\UserProfileController::download
- * @see app/Http/Controllers/UserProfileController.php:173
+ * @see app/Http/Controllers/UserProfileController.php:169
  * @route '/profile/business/document'
  */
 export const download = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -71,7 +71,7 @@ download.definition = {
 
 /**
 * @see \App\Http\Controllers\UserProfileController::download
- * @see app/Http/Controllers/UserProfileController.php:173
+ * @see app/Http/Controllers/UserProfileController.php:169
  * @route '/profile/business/document'
  */
 download.url = (options?: RouteQueryOptions) => {
@@ -80,7 +80,7 @@ download.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\UserProfileController::download
- * @see app/Http/Controllers/UserProfileController.php:173
+ * @see app/Http/Controllers/UserProfileController.php:169
  * @route '/profile/business/document'
  */
 download.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -89,7 +89,7 @@ download.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\UserProfileController::download
- * @see app/Http/Controllers/UserProfileController.php:173
+ * @see app/Http/Controllers/UserProfileController.php:169
  * @route '/profile/business/document'
  */
 download.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -99,7 +99,7 @@ download.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\UserProfileController::download
- * @see app/Http/Controllers/UserProfileController.php:173
+ * @see app/Http/Controllers/UserProfileController.php:169
  * @route '/profile/business/document'
  */
     const downloadForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -109,7 +109,7 @@ download.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\UserProfileController::download
- * @see app/Http/Controllers/UserProfileController.php:173
+ * @see app/Http/Controllers/UserProfileController.php:169
  * @route '/profile/business/document'
  */
         downloadForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -118,7 +118,7 @@ download.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\UserProfileController::download
- * @see app/Http/Controllers/UserProfileController.php:173
+ * @see app/Http/Controllers/UserProfileController.php:169
  * @route '/profile/business/document'
  */
         downloadForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -134,7 +134,7 @@ download.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     download.form = downloadForm
 /**
 * @see \App\Http\Controllers\UserProfileController::deleteMethod
- * @see app/Http/Controllers/UserProfileController.php:189
+ * @see app/Http/Controllers/UserProfileController.php:185
  * @route '/profile/business/document'
  */
 export const deleteMethod = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -149,7 +149,7 @@ deleteMethod.definition = {
 
 /**
 * @see \App\Http\Controllers\UserProfileController::deleteMethod
- * @see app/Http/Controllers/UserProfileController.php:189
+ * @see app/Http/Controllers/UserProfileController.php:185
  * @route '/profile/business/document'
  */
 deleteMethod.url = (options?: RouteQueryOptions) => {
@@ -158,7 +158,7 @@ deleteMethod.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\UserProfileController::deleteMethod
- * @see app/Http/Controllers/UserProfileController.php:189
+ * @see app/Http/Controllers/UserProfileController.php:185
  * @route '/profile/business/document'
  */
 deleteMethod.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -168,7 +168,7 @@ deleteMethod.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> =
 
     /**
 * @see \App\Http\Controllers\UserProfileController::deleteMethod
- * @see app/Http/Controllers/UserProfileController.php:189
+ * @see app/Http/Controllers/UserProfileController.php:185
  * @route '/profile/business/document'
  */
     const deleteMethodForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -183,7 +183,7 @@ deleteMethod.delete = (options?: RouteQueryOptions): RouteDefinition<'delete'> =
 
             /**
 * @see \App\Http\Controllers\UserProfileController::deleteMethod
- * @see app/Http/Controllers/UserProfileController.php:189
+ * @see app/Http/Controllers/UserProfileController.php:185
  * @route '/profile/business/document'
  */
         deleteMethodForm.delete = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

@@ -43,7 +43,7 @@ test('users can authenticate using their username', function () {
     $response->assertRedirect(route('dashboard', absolute: false));
 });
 
-test('incomplete personal information users are redirected to the profile form after login', function () {
+test('incomplete onboarding users are redirected to onboarding after login', function () {
     $user = User::factory()->create([
         'username' => 'incomplete_user',
         'first_name' => null,
@@ -53,6 +53,23 @@ test('incomplete personal information users are redirected to the profile form a
 
     $response = $this->post(route('login.store'), [
         'email' => 'incomplete_user',
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticatedAs($user);
+    $response->assertRedirect(route('onboarding.show', absolute: false));
+});
+
+test('incomplete personal information users with completed onboarding are redirected to the profile form after login', function () {
+    $user = User::factory()->create([
+        'username' => 'incomplete_personal_user',
+        'first_name' => null,
+        'last_name' => null,
+        'onboarding_completed' => true,
+    ]);
+
+    $response = $this->post(route('login.store'), [
+        'email' => 'incomplete_personal_user',
         'password' => 'password',
     ]);
 

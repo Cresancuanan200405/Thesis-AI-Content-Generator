@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\DesignController;
@@ -12,9 +13,11 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\UserProfileController;
 use App\Models\Event;
 use App\Services\OpenAIUsageService;
+use App\Services\PendingOnboardingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 Route::inertia('/', 'welcome')->name('home');
 
@@ -23,30 +26,93 @@ Route::get('auth/{provider}/redirect', [SocialAuthController::class, 'redirect']
 Route::get('auth/{provider}/callback', [SocialAuthController::class, 'callback'])
     ->name('auth.social.callback');
 
-Route::middleware('auth')->group(function () {
-    Route::post('email/verify-code', function (Request $request) {
-        $request->validate([
-            'code' => ['required', 'string', 'digits:6'],
-        ]);
+Route::post('register', [RegisteredUserController::class, 'store'])
+    ->middleware('guest')
+    ->name('register.store');
 
-        $user = $request->user();
+Route::get('email/verify', function (Request $request) {
+    $user = $request->user();
+    if ($user) {
+        return $user->hasVerifiedEmail()
+            ? redirect()->intended('/dashboard')
+            : Inertia::render('auth/verify-email', ['status' => $request->session()->get('status')]);
+    }
 
-        if (! $user || ! $user->verifyEmailCode($request->string('code')->toString())) {
+    $pending = app(PendingOnboardingService::class)->getPendingOnboarding($request);
+    if ($pending) {
+        return $pending->isEmailVerified()
+            ? redirect()->route('onboarding.show')
+            : Inertia::render('auth/verify-email', ['status' => $request->session()->get('status')]);
+    }
+
+    return redirect()->route('login');
+})->name('verification.notice');
+
+Route::post('email/verify-code', function (Request $request) {
+    $request->validate([
+        'code' => ['required', 'string', 'digits:6'],
+    ]);
+
+    $user = $request->user();
+    if ($user) {
+        if (! $user->verifyEmailCode($request->string('code')->toString())) {
             return back()->withErrors([
                 'code' => 'That verification code is invalid or has expired.',
             ])->withInput();
         }
 
-        return redirect()->intended('/dashboard');
-    })->name('verification.code');
-});
+        if (! $user->onboarding_completed) {
+            return redirect()->route('onboarding.show');
+        }
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('onboarding', [OnboardingController::class, 'show'])->name('onboarding.show');
-    Route::post('onboarding/business', [OnboardingController::class, 'saveBusiness'])->name('onboarding.business');
-    Route::post('onboarding/preferences', [OnboardingController::class, 'savePreferences'])->name('onboarding.preferences');
-    Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
-});
+        return redirect()->intended('/dashboard');
+    }
+
+    $pending = app(PendingOnboardingService::class)->getPendingOnboarding($request);
+    if ($pending) {
+        if (! $pending->verifyEmailCode($request->string('code')->toString())) {
+            return back()->withErrors([
+                'code' => 'That verification code is invalid or has expired.',
+            ])->withInput();
+        }
+
+        return redirect()->route('onboarding.show');
+    }
+
+    return redirect()->route('login');
+})->name('verification.code');
+
+Route::post('email/verification-notification', function (Request $request) {
+    $user = $request->user();
+    if ($user) {
+        if ($user->hasVerifiedEmail()) {
+            return redirect()->intended('/dashboard');
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return back()->with('status', 'verification-link-sent');
+    }
+
+    $pending = app(PendingOnboardingService::class)->getPendingOnboarding($request);
+    if ($pending) {
+        if ($pending->isEmailVerified()) {
+            return redirect()->route('onboarding.show');
+        }
+
+        $pending->sendEmailVerificationNotification();
+
+        return back()->with('status', 'verification-link-sent');
+    }
+
+    return redirect()->route('login');
+})->name('verification.send');
+
+Route::get('onboarding', [OnboardingController::class, 'show'])->name('onboarding.show');
+Route::post('onboarding/personal', [OnboardingController::class, 'savePersonal'])->name('onboarding.personal');
+Route::post('onboarding/business', [OnboardingController::class, 'saveBusiness'])->name('onboarding.business');
+Route::post('onboarding/preferences', [OnboardingController::class, 'savePreferences'])->name('onboarding.preferences');
+Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
 
 Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function () {
     Route::get('profile', [UserProfileController::class, 'show'])->name('profile.show');

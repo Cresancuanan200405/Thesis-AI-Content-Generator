@@ -11,8 +11,8 @@ import {
     Cpu,
     GraduationCap,
     HeartPulse,
-    type LucideIcon,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 /*
 |--------------------------------------------------------------------------
@@ -141,5 +141,6 @@ export function isValidIndustry(industry: string): boolean {
 
 export function isValidCategory(industry: string, category: string): boolean {
     const categories = getCategoriesForIndustry(industry);
+
     return categories.includes(category);
 }

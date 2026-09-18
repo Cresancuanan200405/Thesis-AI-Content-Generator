@@ -258,5 +258,7 @@ jobs:
           WHERE actual.column_name IS NULL;
           SQL
 
-      # Rollback is covered by the artifact transaction and ON_ERROR_STOP behavior.
-      # Fault injection is intentionally omitted so this workflow never alters the artifact.
+      - name: Execute and assert v2 synchronization artifact via test fixture
+        run: |
+          psql --set=ON_ERROR_STOP=1 \
+            --file="${GITHUB_WORKSPACE}/database/production/testing/test_production_schema_sync_v2.sql"

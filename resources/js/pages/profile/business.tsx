@@ -45,15 +45,11 @@ interface BusinessProfileProps {
         industry?: string;
         category?: string;
         description?: string;
-        main_business_activity?: string;
         business_address?: string;
         barangay?: string;
         city_municipality?: string;
         province?: string;
         region?: string;
-        business_contact_number?: string;
-        business_email?: string;
-        website_social_page?: string;
         registration_type?: string;
         registration_number?: string;
         business_permit_number?: string;
@@ -82,15 +78,11 @@ export default function BusinessProfilePage({
                     ? business.category
                     : 'Restaurant',
             description: business.description || '',
-            main_business_activity: business.main_business_activity || '',
             business_address: business.business_address || '',
             barangay: business.barangay || '',
             city_municipality: business.city_municipality || '',
             province: business.province || '',
             region: business.region || '',
-            business_contact_number: business.business_contact_number || '',
-            business_email: business.business_email || '',
-            website_social_page: business.website_social_page || '',
             registration_type: business.registration_type || '',
             registration_number: business.registration_number || '',
             business_permit_number: business.business_permit_number || '',
@@ -110,18 +102,11 @@ export default function BusinessProfilePage({
             formData.industry !== initialValues.industry ||
             formData.category !== initialValues.category ||
             formData.description !== initialValues.description ||
-            formData.main_business_activity !==
-                initialValues.main_business_activity ||
             formData.business_address !== initialValues.business_address ||
             formData.barangay !== initialValues.barangay ||
             formData.city_municipality !== initialValues.city_municipality ||
             formData.province !== initialValues.province ||
             formData.region !== initialValues.region ||
-            formData.business_contact_number !==
-                initialValues.business_contact_number ||
-            formData.business_email !== initialValues.business_email ||
-            formData.website_social_page !==
-                initialValues.website_social_page ||
             formData.registration_type !== initialValues.registration_type ||
             formData.registration_number !==
                 initialValues.registration_number ||
@@ -238,16 +223,11 @@ export default function BusinessProfilePage({
                 industry: formData.industry,
                 category: formData.category,
                 description: formData.description.trim(),
-                main_business_activity: formData.main_business_activity.trim(),
                 business_address: formData.business_address.trim(),
                 barangay: formData.barangay.trim(),
                 city_municipality: formData.city_municipality.trim(),
                 province: formData.province.trim(),
                 region: formData.region.trim(),
-                business_contact_number:
-                    formData.business_contact_number.trim(),
-                business_email: formData.business_email.trim(),
-                website_social_page: formData.website_social_page.trim(),
                 registration_type: formData.registration_type.trim(),
                 registration_number: formData.registration_number.trim(),
                 business_permit_number: formData.business_permit_number.trim(),
@@ -470,29 +450,6 @@ export default function BusinessProfilePage({
                                     <div className="mt-6 grid gap-5 md:grid-cols-2">
                                         <div className="space-y-2 md:col-span-2">
                                             <Label
-                                                htmlFor="main-business-activity"
-                                                className="text-xs font-bold text-foreground"
-                                            >
-                                                Main Business Activity
-                                            </Label>
-                                            <Input
-                                                id="main-business-activity"
-                                                value={
-                                                    formData.main_business_activity
-                                                }
-                                                onChange={(e) =>
-                                                    handleFieldChange(
-                                                        'main_business_activity',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                placeholder="Coffee shop and food service"
-                                                className="h-11 rounded-xl text-sm"
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2 md:col-span-2">
-                                            <Label
                                                 htmlFor="business-address"
                                                 className="text-xs font-bold text-foreground"
                                             >
@@ -528,80 +485,12 @@ export default function BusinessProfilePage({
 
                                         <div className="space-y-2">
                                             <Label
-                                                htmlFor="business-contact-number"
-                                                className="text-xs font-bold text-foreground"
-                                            >
-                                                Business Contact Number
-                                            </Label>
-                                            <Input
-                                                id="business-contact-number"
-                                                value={
-                                                    formData.business_contact_number
-                                                }
-                                                onChange={(e) =>
-                                                    handleFieldChange(
-                                                        'business_contact_number',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                placeholder="+63 917 123 4567"
-                                                className="h-11 rounded-xl text-sm"
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label
-                                                htmlFor="business-email"
-                                                className="text-xs font-bold text-foreground"
-                                            >
-                                                Business Email
-                                            </Label>
-                                            <Input
-                                                id="business-email"
-                                                type="email"
-                                                value={formData.business_email}
-                                                onChange={(e) =>
-                                                    handleFieldChange(
-                                                        'business_email',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                placeholder="hello@business.com"
-                                                className="h-11 rounded-xl text-sm"
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2 md:col-span-2">
-                                            <Label
-                                                htmlFor="website-social-page"
-                                                className="text-xs font-bold text-foreground"
-                                            >
-                                                Website / Social Page
-                                            </Label>
-                                            <Input
-                                                id="website-social-page"
-                                                value={
-                                                    formData.website_social_page
-                                                }
-                                                onChange={(e) =>
-                                                    handleFieldChange(
-                                                        'website_social_page',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                placeholder="https://example.com"
-                                                className="h-11 rounded-xl text-sm"
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label
                                                 htmlFor="registration-type"
                                                 className="text-xs font-bold text-foreground"
                                             >
                                                 Registration Type
                                             </Label>
-                                            <Input
+                                            <select
                                                 id="registration-type"
                                                 value={
                                                     formData.registration_type
@@ -612,9 +501,34 @@ export default function BusinessProfilePage({
                                                         e.target.value,
                                                     )
                                                 }
-                                                placeholder="DTI / SEC / Mayor's Permit"
-                                                className="h-11 rounded-xl text-sm"
-                                            />
+                                                className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                <option value="">
+                                                    Select registration type
+                                                    (optional)
+                                                </option>
+                                                <option value="DTI">
+                                                    DTI (Sole Proprietorship)
+                                                </option>
+                                                <option value="SEC">
+                                                    SEC (Corporation /
+                                                    Partnership)
+                                                </option>
+                                                <option value="CDA">
+                                                    CDA (Cooperative)
+                                                </option>
+                                                <option value="Mayor's Permit">
+                                                    Mayor's / LGU Business
+                                                    Permit
+                                                </option>
+                                                <option value="BIR">
+                                                    BIR Certificate of
+                                                    Registration
+                                                </option>
+                                                <option value="Other">
+                                                    Other Official Registration
+                                                </option>
+                                            </select>
                                         </div>
 
                                         <div className="space-y-2">

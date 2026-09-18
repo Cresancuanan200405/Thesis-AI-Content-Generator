@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../wayfinder'
 /**
 * @see \App\Http\Controllers\UserProfileController::update
- * @see app/Http/Controllers/UserProfileController.php:110
+ * @see app/Http/Controllers/UserProfileController.php:106
  * @route '/profile/business'
  */
 export const update = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\UserProfileController::update
- * @see app/Http/Controllers/UserProfileController.php:110
+ * @see app/Http/Controllers/UserProfileController.php:106
  * @route '/profile/business'
  */
 update.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ update.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\UserProfileController::update
- * @see app/Http/Controllers/UserProfileController.php:110
+ * @see app/Http/Controllers/UserProfileController.php:106
  * @route '/profile/business'
  */
 update.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -34,7 +34,7 @@ update.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 })
 /**
 * @see \App\Http\Controllers\UserProfileController::update
- * @see app/Http/Controllers/UserProfileController.php:110
+ * @see app/Http/Controllers/UserProfileController.php:106
  * @route '/profile/business'
  */
 update.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -44,7 +44,7 @@ update.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
 
     /**
 * @see \App\Http\Controllers\UserProfileController::update
- * @see app/Http/Controllers/UserProfileController.php:110
+ * @see app/Http/Controllers/UserProfileController.php:106
  * @route '/profile/business'
  */
     const updateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -54,7 +54,7 @@ update.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
 
             /**
 * @see \App\Http\Controllers\UserProfileController::update
- * @see app/Http/Controllers/UserProfileController.php:110
+ * @see app/Http/Controllers/UserProfileController.php:106
  * @route '/profile/business'
  */
         updateForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -63,7 +63,7 @@ update.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
         })
             /**
 * @see \App\Http\Controllers\UserProfileController::update
- * @see app/Http/Controllers/UserProfileController.php:110
+ * @see app/Http/Controllers/UserProfileController.php:106
  * @route '/profile/business'
  */
         updateForm.patch = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

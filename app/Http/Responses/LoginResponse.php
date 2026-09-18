@@ -20,12 +20,12 @@ class LoginResponse implements LoginResponseContract
 
         $user = $request->user();
 
-        if ($user && ! $user->hasCompletedPersonalInformation()) {
-            return redirect()->route('profile.edit');
-        }
-
         if ($user && ! $user->onboarding_completed) {
             return redirect()->route('onboarding.show');
+        }
+
+        if ($user && ! $user->hasCompletedPersonalInformation()) {
+            return redirect()->route('profile.edit');
         }
 
         // NotificationService::recordLogin handles the authentic semantic in-app notification.

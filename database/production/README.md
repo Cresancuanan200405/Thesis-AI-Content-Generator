@@ -2,15 +2,14 @@
 
 ## Status
 
-This directory contains a controlled production synchronization artifact. It is not part of Laravel's historical migration chain.
+This directory contains controlled production synchronization artifacts. They are not part of Laravel's historical migration chain.
 
-Artifact:
+Artifacts:
 
-```text
-database/production/marketpilot_production_schema_sync_v1.sql
-```
+* `database/production/marketpilot_production_schema_sync_v2.sql` (Current — creates missing `public.legal_acceptances` and `public.pending_onboardings` with RLS)
+* `database/production/marketpilot_production_schema_sync_v1.sql` (Historical — initial users/businesses drift and username backfill)
 
-The SQL file has been prepared only. It has not been executed against production.
+The SQL files are prepared for controlled maintenance execution only. They are not executed during normal local development.
 
 ## Why Normal Laravel Migrations Are Not Used Yet
 

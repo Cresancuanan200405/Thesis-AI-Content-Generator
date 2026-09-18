@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Business;
+use App\Models\PendingOnboarding;
 use App\Models\User;
 
 it('guest cannot access onboarding', function () {
@@ -47,20 +48,16 @@ it('business information is saved correctly', function () {
             'name' => 'North Star Coffee',
             'industry' => 'Food & Beverage',
             'category' => 'Café / Coffee Shop',
-            'main_business_activity' => 'Coffee roasting and café service',
             'business_address' => '123 Rizal Street',
             'city_municipality' => 'Quezon City',
             'province' => 'Metro Manila',
             'region' => 'NCR',
-            'business_contact_number' => '+63 917 123 4567',
-            'business_email' => 'hello@northstarcoffee.ph',
-            'website_social_page' => 'https://northstarcoffee.ph',
             'registration_type' => 'DTI Business Name Registration',
             'registration_number' => 'REG-2024-001',
             'business_permit_number' => 'BP-2024-987',
             'registration_permit_date' => '2024-06-15',
         ])
-        ->assertRedirect('/onboarding?step=2');
+        ->assertRedirect('/onboarding?step=4');
 
     $business = $user->fresh()->business;
 
@@ -68,14 +65,10 @@ it('business information is saved correctly', function () {
         ->and($business->name)->toBe('North Star Coffee')
         ->and($business->industry)->toBe('Food & Beverage')
         ->and($business->category)->toBe('Café / Coffee Shop')
-        ->and($business->main_business_activity)->toBe('Coffee roasting and café service')
         ->and($business->business_address)->toBe('123 Rizal Street')
         ->and($business->city_municipality)->toBe('Quezon City')
         ->and($business->province)->toBe('Metro Manila')
         ->and($business->region)->toBe('NCR')
-        ->and($business->business_contact_number)->toBe('+63 917 123 4567')
-        ->and($business->business_email)->toBe('hello@northstarcoffee.ph')
-        ->and($business->website_social_page)->toBe('https://northstarcoffee.ph')
         ->and($business->registration_type)->toBe('DTI Business Name Registration')
         ->and($business->registration_number)->toBe('REG-2024-001')
         ->and($business->business_permit_number)->toBe('BP-2024-987')
@@ -136,9 +129,41 @@ it('user cannot modify another users business record', function () {
             'industry' => 'Retail & E-Commerce',
             'category' => 'General Retail',
         ])
-        ->assertRedirect('/onboarding?step=2');
+        ->assertRedirect('/onboarding?step=3');
 
     expect($other->fresh()->business->name)->toBe('Other Business');
+});
+
+it('saves operating location on sub_step 1 without requiring legal agreements', function () {
+    $user = User::factory()->create(['onboarding_completed' => false]);
+    $user->business()->create([
+        'name' => 'My Coffee Hub',
+        'industry' => 'Food & Beverage',
+        'category' => 'Café / Coffee Shop',
+    ]);
+
+    $response = $this->actingAs($user)->post('/onboarding/business', [
+        'name' => 'My Coffee Hub',
+        'industry' => 'Food & Beverage',
+        'category' => 'Café / Coffee Shop',
+        'description' => 'A cozy neighborhood cafe in Laguna.',
+        'business_address' => 'Unit 12, Rizal St.',
+        'region' => 'Region IV-A',
+        'province' => 'Laguna',
+        'city_municipality' => 'Calamba City',
+        'barangay' => 'Real',
+        'sub_step' => 1,
+    ]);
+
+    $response->assertRedirect('/onboarding?step=3');
+
+    $business = $user->fresh()->business;
+    expect($business->region)->toBe('Region IV-A')
+        ->and($business->province)->toBe('Laguna')
+        ->and($business->city_municipality)->toBe('Calamba City')
+        ->and($business->barangay)->toBe('Real')
+        ->and($business->business_address)->toBe('Unit 12, Rizal St.')
+        ->and($business->description)->toBe('A cozy neighborhood cafe in Laguna.');
 });
 
 it('email verification accepts a six digit code', function () {
@@ -152,7 +177,7 @@ it('email verification accepts a six digit code', function () {
         ->post('/email/verify-code', [
             'code' => $code,
         ])
-        ->assertRedirect('/dashboard');
+        ->assertRedirect('/onboarding');
 
     $user->refresh();
 
@@ -194,10 +219,11 @@ it('registration creates a pending account before onboarding is complete', funct
 
     $response->assertRedirect('/email/verify');
 
-    $user = User::query()->where('email', 'new-onboarder@example.com')->firstOrFail();
+    $user = User::query()->where('email', 'new-onboarder@example.com')->first();
+    $pending = PendingOnboarding::query()->where('email', 'new-onboarder@example.com')->firstOrFail();
 
-    expect($user->onboarding_completed)->toBeFalse()
-        ->and($user->onboarding_completed_at)->toBeNull();
+    expect($user)->toBeNull()
+        ->and($pending->username)->toBe('new_onboarder');
 });
 
 it('onboarding business step preserves existing values when revisiting', function () {
@@ -214,7 +240,7 @@ it('onboarding business step preserves existing values when revisiting', functio
             'industry' => 'Technology & Digital Services',
             'category' => 'Software / Digital Services',
         ])
-        ->assertRedirect('/onboarding?step=2');
+        ->assertRedirect('/onboarding?step=3');
 
     $business = $user->fresh()->business;
 

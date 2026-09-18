@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\PendingOnboarding;
 use App\Models\User;
 use Laravel\Fortify\Features;
 
@@ -21,12 +22,13 @@ test('new users can register with a username and without a full name', function 
         'password_confirmation' => 'password',
     ]);
 
-    $this->assertAuthenticated();
+    $this->assertGuest();
     $user = User::where('email', 'test@example.com')->first();
+    $pending = PendingOnboarding::where('email', 'test@example.com')->first();
 
-    expect($user)->not->toBeNull()
-        ->and($user->username)->toBe('testuser')
-        ->and($user->name)->toBe('testuser');
+    expect($user)->toBeNull()
+        ->and($pending)->not->toBeNull()
+        ->and($pending->username)->toBe('testuser');
 
     $response->assertRedirect(route('verification.notice', absolute: false));
     $response->assertSessionHas('toast', [

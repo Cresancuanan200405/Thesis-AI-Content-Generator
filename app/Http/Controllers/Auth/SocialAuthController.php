@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\PendingOnboardingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
@@ -114,30 +114,20 @@ class SocialAuthController extends Controller
                         'username' => $user->username ?: $this->generateUniqueUsername($baseUsername, $email),
                     ])->save();
                 } else {
-                    // 3. Create a brand new user
-                    $databaseDiagnostic = $this->databaseDiagnostic($correlationId);
-                    Log::info('Social auth user creation diagnostic', [
-                        ...$databaseDiagnostic,
-                        'stage' => 'before_user_create',
-                    ]);
-
-                    $user = User::create([
-                        'name' => $displayName,
-                        'username' => $this->generateUniqueUsername($baseUsername, $email),
+                    // 3. Brand new social account: do NOT create permanent user before Launch Workspace
+                    $pendingService = app(PendingOnboardingService::class);
+                    $pendingService->startFromSocial([
+                        'provider' => $provider,
+                        'socialId' => $socialId,
                         'email' => $email,
-                        'password' => Hash::make(Str::random(32)),
-                        'provider_name' => $provider,
-                        'provider_id' => $socialId,
+                        'displayName' => $displayName,
                         'avatar' => $avatar,
-                        'email_verified_at' => now(),
-                        'onboarding_completed' => false,
-                    ]);
+                        'username' => $this->generateUniqueUsername($baseUsername, $email),
+                    ], $request);
 
-                    Log::info('Social auth user creation diagnostic', [
-                        'correlation_id' => $correlationId,
-                        'stage' => 'after_user_create',
-                        'user_create_succeeded' => true,
-                    ]);
+                    $request->session()->regenerate();
+
+                    return redirect()->route('onboarding.show')->with('success', "Signed in with {$provider}! Let's set up your workspace.");
                 }
             }
 
@@ -145,12 +135,12 @@ class SocialAuthController extends Controller
 
             $request->session()->regenerate();
 
-            if (! $user->hasCompletedPersonalInformation()) {
-                return redirect()->route('profile.edit')->with('success', "Signed in with {$provider}! Please complete your personal information.");
-            }
-
             if (! $user->onboarding_completed) {
                 return redirect()->route('onboarding.show')->with('success', "Signed in with {$provider}! Let's set up your workspace.");
+            }
+
+            if (! $user->hasCompletedPersonalInformation()) {
+                return redirect()->route('profile.edit')->with('success', "Signed in with {$provider}! Please complete your personal information.");
             }
 
             return redirect()->intended(route('dashboard'))->with('success', "Welcome back, {$user->name}!");

@@ -71,14 +71,10 @@ it('updates business name, description, industry, and category from profile form
         'industry' => 'Food & Beverage',
         'category' => 'Restaurant',
         'description' => 'Flame-grilled burgers, seasoned curly fries, and artisan shakes.',
-        'main_business_activity' => 'Burger restaurant and delivery service',
         'business_address' => '456 Market Avenue',
         'city_municipality' => 'Davao City',
         'province' => 'Davao del Sur',
         'region' => 'Davao Region',
-        'business_contact_number' => '+63 912 345 6789',
-        'business_email' => 'hello@apitburger.com',
-        'website_social_page' => 'https://apitburger.com',
         'registration_type' => 'SEC Registration',
         'registration_number' => 'SEC-2025-117',
         'business_permit_number' => 'PERMIT-2025-99',
@@ -93,11 +89,9 @@ it('updates business name, description, industry, and category from profile form
         ->and($business->industry)->toBe('Food & Beverage')
         ->and($business->category)->toBe('Restaurant')
         ->and($business->description)->toBe('Flame-grilled burgers, seasoned curly fries, and artisan shakes.')
-        ->and($business->main_business_activity)->toBe('Burger restaurant and delivery service')
         ->and($business->city_municipality)->toBe('Davao City')
         ->and($business->province)->toBe('Davao del Sur')
         ->and($business->region)->toBe('Davao Region')
-        ->and($business->business_email)->toBe('hello@apitburger.com')
         ->and($business->registration_type)->toBe('SEC Registration')
         ->and($business->registration_number)->toBe('SEC-2025-117')
         ->and($business->business_permit_number)->toBe('PERMIT-2025-99')

@@ -213,4 +213,12 @@ class User extends Authenticatable implements MustVerifyEmail
 
         return (float) ($usage['remaining_budget'] ?? $limit);
     }
+
+    /**
+     * @return HasMany<LegalAcceptance, $this>
+     */
+    public function legalAcceptances(): HasMany
+    {
+        return $this->hasMany(LegalAcceptance::class);
+    }
 }

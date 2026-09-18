@@ -13,6 +13,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 type AddressField = 'region' | 'province' | 'city_municipality' | 'barangay';
 
@@ -45,6 +46,7 @@ type PhilippineAddressSelectorsProps = {
     cityMunicipality: string;
     barangay: string;
     onChange: (field: AddressField, value: string) => void;
+    compact?: boolean;
 };
 
 const isRecordArray = (value: unknown): value is Record<string, unknown>[] =>
@@ -56,6 +58,7 @@ export function PhilippineAddressSelectors({
     cityMunicipality,
     barangay,
     onChange,
+    compact = false,
 }: PhilippineAddressSelectorsProps) {
     const [regionOptions, setRegionOptions] = useState<RegionOption[]>([]);
     const [provinceOptions, setProvinceOptions] = useState<ProvinceOption[]>(
@@ -70,6 +73,7 @@ export function PhilippineAddressSelectors({
     const [selectedProvinceCode, setSelectedProvinceCode] = useState('');
     const [selectedCityCode, setSelectedCityCode] = useState('');
 
+    // Fetch all regions on mount
     useEffect(() => {
         let isMounted = true;
 
@@ -99,22 +103,28 @@ export function PhilippineAddressSelectors({
         };
     }, []);
 
+    // Sync selectedRegionCode when region prop changes
+    useEffect(() => {
+        if (!region || regionOptions.length === 0) {
+            if (!region) {
+                setSelectedRegionCode('');
+            }
+
+            return;
+        }
+
+        const match = regionOptions.find((item) => item.region_name === region);
+
+        if (match && match.region_code !== selectedRegionCode) {
+            setSelectedRegionCode(match.region_code);
+        }
+    }, [region, regionOptions]);
+
+    // Fetch provinces when selectedRegionCode changes
     useEffect(() => {
         if (!selectedRegionCode) {
             setProvinceOptions([]);
             setSelectedProvinceCode('');
-
-            if (province) {
-                onChange('province', '');
-            }
-
-            if (cityMunicipality) {
-                onChange('city_municipality', '');
-            }
-
-            if (barangay) {
-                onChange('barangay', '');
-            }
 
             return;
         }
@@ -145,18 +155,6 @@ export function PhilippineAddressSelectors({
             }
 
             setSelectedProvinceCode('');
-
-            if (province) {
-                onChange('province', '');
-            }
-
-            if (cityMunicipality) {
-                onChange('city_municipality', '');
-            }
-
-            if (barangay) {
-                onChange('barangay', '');
-            }
         });
 
         return () => {
@@ -164,18 +162,30 @@ export function PhilippineAddressSelectors({
         };
     }, [selectedRegionCode]);
 
+    // Sync selectedProvinceCode when province prop changes
+    useEffect(() => {
+        if (!province || provinceOptions.length === 0) {
+            if (!province) {
+                setSelectedProvinceCode('');
+            }
+
+            return;
+        }
+
+        const match = provinceOptions.find(
+            (item) => item.province_name === province,
+        );
+
+        if (match && match.province_code !== selectedProvinceCode) {
+            setSelectedProvinceCode(match.province_code);
+        }
+    }, [province, provinceOptions]);
+
+    // Fetch cities when selectedProvinceCode changes
     useEffect(() => {
         if (!selectedProvinceCode) {
             setCityOptions([]);
             setSelectedCityCode('');
-
-            if (cityMunicipality) {
-                onChange('city_municipality', '');
-            }
-
-            if (barangay) {
-                onChange('barangay', '');
-            }
 
             return;
         }
@@ -206,14 +216,6 @@ export function PhilippineAddressSelectors({
             }
 
             setSelectedCityCode('');
-
-            if (cityMunicipality) {
-                onChange('city_municipality', '');
-            }
-
-            if (barangay) {
-                onChange('barangay', '');
-            }
         });
 
         return () => {
@@ -221,13 +223,29 @@ export function PhilippineAddressSelectors({
         };
     }, [selectedProvinceCode]);
 
+    // Sync selectedCityCode when cityMunicipality prop changes
+    useEffect(() => {
+        if (!cityMunicipality || cityOptions.length === 0) {
+            if (!cityMunicipality) {
+                setSelectedCityCode('');
+            }
+
+            return;
+        }
+
+        const match = cityOptions.find(
+            (item) => item.city_name === cityMunicipality,
+        );
+
+        if (match && match.city_code !== selectedCityCode) {
+            setSelectedCityCode(match.city_code);
+        }
+    }, [cityMunicipality, cityOptions]);
+
+    // Fetch barangays when selectedCityCode changes
     useEffect(() => {
         if (!selectedCityCode) {
             setBarangayOptions([]);
-
-            if (barangay) {
-                onChange('barangay', '');
-            }
 
             return;
         }
@@ -244,16 +262,6 @@ export function PhilippineAddressSelectors({
                 : [];
 
             setBarangayOptions(normalizedBarangays);
-
-            if (barangay) {
-                const match = normalizedBarangays.find(
-                    (item) => item.brgy_name === barangay,
-                );
-
-                if (!match && barangay) {
-                    onChange('barangay', '');
-                }
-            }
         });
 
         return () => {
@@ -306,28 +314,40 @@ export function PhilippineAddressSelectors({
         onChange('barangay', '');
     };
 
+    const triggerClasses = cn(
+        'w-full rounded-xl border border-input bg-background px-3 font-medium text-foreground shadow-xs transition-colors hover:bg-accent/30 focus-visible:border-ring focus-visible:ring-[2px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50',
+        compact ? 'h-9 text-xs' : 'h-10 text-sm',
+    );
+
+    const labelClasses = compact
+        ? 'text-[11px] font-semibold text-foreground'
+        : 'text-xs font-semibold text-foreground';
+
     return (
-        <div className="grid gap-5 md:grid-cols-2">
-            <div className="space-y-2">
-                <Label
-                    htmlFor="region"
-                    className="text-xs font-bold text-foreground"
-                >
+        <div
+            className={
+                compact
+                    ? 'grid gap-2.5 sm:grid-cols-2'
+                    : 'grid gap-4 sm:grid-cols-2'
+            }
+        >
+            <div className="space-y-1">
+                <Label htmlFor="region" className={labelClasses}>
                     Region
                 </Label>
                 <Select
                     value={region || undefined}
                     onValueChange={handleRegionChange}
                 >
-                    <SelectTrigger className="h-11 rounded-xl border-border/80 text-sm font-medium">
+                    <SelectTrigger className={triggerClasses}>
                         <SelectValue placeholder="Select Region" />
                     </SelectTrigger>
-                    <SelectContent className="max-h-64 rounded-xl">
+                    <SelectContent className="max-h-48 w-[var(--radix-select-trigger-width)] min-w-[200px] overflow-y-auto rounded-xl border border-border bg-popover text-popover-foreground shadow-lg sm:max-h-56">
                         {regionOptions.map((option) => (
                             <SelectItem
                                 key={option.region_code}
                                 value={option.region_name}
-                                className="cursor-pointer"
+                                className="cursor-pointer text-xs focus:bg-accent focus:text-accent-foreground"
                             >
                                 {option.region_name}
                             </SelectItem>
@@ -336,11 +356,8 @@ export function PhilippineAddressSelectors({
                 </Select>
             </div>
 
-            <div className="space-y-2">
-                <Label
-                    htmlFor="province"
-                    className="text-xs font-bold text-foreground"
-                >
+            <div className="space-y-1">
+                <Label htmlFor="province" className={labelClasses}>
                     Province
                 </Label>
                 <Select
@@ -348,15 +365,15 @@ export function PhilippineAddressSelectors({
                     onValueChange={handleProvinceChange}
                     disabled={!selectedRegionCode}
                 >
-                    <SelectTrigger className="h-11 rounded-xl border-border/80 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60">
+                    <SelectTrigger className={triggerClasses}>
                         <SelectValue placeholder="Select Province" />
                     </SelectTrigger>
-                    <SelectContent className="max-h-64 rounded-xl">
+                    <SelectContent className="max-h-48 w-[var(--radix-select-trigger-width)] min-w-[200px] overflow-y-auto rounded-xl border border-border bg-popover text-popover-foreground shadow-lg sm:max-h-56">
                         {provinceOptions.map((option) => (
                             <SelectItem
                                 key={option.province_code}
                                 value={option.province_name}
-                                className="cursor-pointer"
+                                className="cursor-pointer text-xs focus:bg-accent focus:text-accent-foreground"
                             >
                                 {option.province_name}
                             </SelectItem>
@@ -365,11 +382,8 @@ export function PhilippineAddressSelectors({
                 </Select>
             </div>
 
-            <div className="space-y-2">
-                <Label
-                    htmlFor="city-municipality"
-                    className="text-xs font-bold text-foreground"
-                >
+            <div className="space-y-1">
+                <Label htmlFor="city-municipality" className={labelClasses}>
                     Municipality / City
                 </Label>
                 <Select
@@ -377,15 +391,15 @@ export function PhilippineAddressSelectors({
                     onValueChange={handleCityChange}
                     disabled={!selectedProvinceCode}
                 >
-                    <SelectTrigger className="h-11 rounded-xl border-border/80 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60">
+                    <SelectTrigger className={triggerClasses}>
                         <SelectValue placeholder="Select Municipality / City" />
                     </SelectTrigger>
-                    <SelectContent className="max-h-64 rounded-xl">
+                    <SelectContent className="max-h-48 w-[var(--radix-select-trigger-width)] min-w-[200px] overflow-y-auto rounded-xl border border-border bg-popover text-popover-foreground shadow-lg sm:max-h-56">
                         {cityOptions.map((option) => (
                             <SelectItem
                                 key={option.city_code}
                                 value={option.city_name}
-                                className="cursor-pointer"
+                                className="cursor-pointer text-xs focus:bg-accent focus:text-accent-foreground"
                             >
                                 {option.city_name}
                             </SelectItem>
@@ -394,11 +408,8 @@ export function PhilippineAddressSelectors({
                 </Select>
             </div>
 
-            <div className="space-y-2">
-                <Label
-                    htmlFor="barangay"
-                    className="text-xs font-bold text-foreground"
-                >
+            <div className="space-y-1">
+                <Label htmlFor="barangay" className={labelClasses}>
                     Barangay
                 </Label>
                 <Select
@@ -406,15 +417,15 @@ export function PhilippineAddressSelectors({
                     onValueChange={(value) => onChange('barangay', value)}
                     disabled={!selectedCityCode}
                 >
-                    <SelectTrigger className="h-11 rounded-xl border-border/80 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60">
+                    <SelectTrigger className={triggerClasses}>
                         <SelectValue placeholder="Select Barangay" />
                     </SelectTrigger>
-                    <SelectContent className="max-h-64 rounded-xl">
+                    <SelectContent className="max-h-48 w-[var(--radix-select-trigger-width)] min-w-[200px] overflow-y-auto rounded-xl border border-border bg-popover text-popover-foreground shadow-lg sm:max-h-56">
                         {barangayOptions.map((option) => (
                             <SelectItem
                                 key={option.brgy_code}
                                 value={option.brgy_name}
-                                className="cursor-pointer"
+                                className="cursor-pointer text-xs focus:bg-accent focus:text-accent-foreground"
                             >
                                 {option.brgy_name}
                             </SelectItem>

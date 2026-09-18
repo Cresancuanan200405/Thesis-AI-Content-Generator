@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\OnboardingController::show
- * @see app/Http/Controllers/OnboardingController.php:13
+ * @see app/Http/Controllers/OnboardingController.php:25
  * @route '/onboarding'
  */
 export const show = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\OnboardingController::show
- * @see app/Http/Controllers/OnboardingController.php:13
+ * @see app/Http/Controllers/OnboardingController.php:25
  * @route '/onboarding'
  */
 show.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ show.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\OnboardingController::show
- * @see app/Http/Controllers/OnboardingController.php:13
+ * @see app/Http/Controllers/OnboardingController.php:25
  * @route '/onboarding'
  */
 show.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -34,7 +34,7 @@ show.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\OnboardingController::show
- * @see app/Http/Controllers/OnboardingController.php:13
+ * @see app/Http/Controllers/OnboardingController.php:25
  * @route '/onboarding'
  */
 show.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,7 +44,7 @@ show.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\OnboardingController::show
- * @see app/Http/Controllers/OnboardingController.php:13
+ * @see app/Http/Controllers/OnboardingController.php:25
  * @route '/onboarding'
  */
     const showForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -54,7 +54,7 @@ show.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\OnboardingController::show
- * @see app/Http/Controllers/OnboardingController.php:13
+ * @see app/Http/Controllers/OnboardingController.php:25
  * @route '/onboarding'
  */
         showForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -63,7 +63,7 @@ show.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\OnboardingController::show
- * @see app/Http/Controllers/OnboardingController.php:13
+ * @see app/Http/Controllers/OnboardingController.php:25
  * @route '/onboarding'
  */
         showForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -78,8 +78,63 @@ show.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     
     show.form = showForm
 /**
+* @see \App\Http\Controllers\OnboardingController::personal
+ * @see app/Http/Controllers/OnboardingController.php:124
+ * @route '/onboarding/personal'
+ */
+export const personal = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: personal.url(options),
+    method: 'post',
+})
+
+personal.definition = {
+    methods: ["post"],
+    url: '/onboarding/personal',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\OnboardingController::personal
+ * @see app/Http/Controllers/OnboardingController.php:124
+ * @route '/onboarding/personal'
+ */
+personal.url = (options?: RouteQueryOptions) => {
+    return personal.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\OnboardingController::personal
+ * @see app/Http/Controllers/OnboardingController.php:124
+ * @route '/onboarding/personal'
+ */
+personal.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: personal.url(options),
+    method: 'post',
+})
+
+    /**
+* @see \App\Http\Controllers\OnboardingController::personal
+ * @see app/Http/Controllers/OnboardingController.php:124
+ * @route '/onboarding/personal'
+ */
+    const personalForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+        action: personal.url(options),
+        method: 'post',
+    })
+
+            /**
+* @see \App\Http\Controllers\OnboardingController::personal
+ * @see app/Http/Controllers/OnboardingController.php:124
+ * @route '/onboarding/personal'
+ */
+        personalForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+            action: personal.url(options),
+            method: 'post',
+        })
+
+    personal.form = personalForm
+/**
 * @see \App\Http\Controllers\OnboardingController::business
- * @see app/Http/Controllers/OnboardingController.php:58
+ * @see app/Http/Controllers/OnboardingController.php:168
  * @route '/onboarding/business'
  */
 export const business = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -94,7 +149,7 @@ business.definition = {
 
 /**
 * @see \App\Http\Controllers\OnboardingController::business
- * @see app/Http/Controllers/OnboardingController.php:58
+ * @see app/Http/Controllers/OnboardingController.php:168
  * @route '/onboarding/business'
  */
 business.url = (options?: RouteQueryOptions) => {
@@ -103,7 +158,7 @@ business.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\OnboardingController::business
- * @see app/Http/Controllers/OnboardingController.php:58
+ * @see app/Http/Controllers/OnboardingController.php:168
  * @route '/onboarding/business'
  */
 business.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -113,7 +168,7 @@ business.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\OnboardingController::business
- * @see app/Http/Controllers/OnboardingController.php:58
+ * @see app/Http/Controllers/OnboardingController.php:168
  * @route '/onboarding/business'
  */
     const businessForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -123,7 +178,7 @@ business.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\OnboardingController::business
- * @see app/Http/Controllers/OnboardingController.php:58
+ * @see app/Http/Controllers/OnboardingController.php:168
  * @route '/onboarding/business'
  */
         businessForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -189,7 +244,7 @@ preferences.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     preferences.form = preferencesForm
 /**
 * @see \App\Http\Controllers\OnboardingController::complete
- * @see app/Http/Controllers/OnboardingController.php:72
+ * @see app/Http/Controllers/OnboardingController.php:285
  * @route '/onboarding/complete'
  */
 export const complete = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -204,7 +259,7 @@ complete.definition = {
 
 /**
 * @see \App\Http\Controllers\OnboardingController::complete
- * @see app/Http/Controllers/OnboardingController.php:72
+ * @see app/Http/Controllers/OnboardingController.php:285
  * @route '/onboarding/complete'
  */
 complete.url = (options?: RouteQueryOptions) => {
@@ -213,7 +268,7 @@ complete.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\OnboardingController::complete
- * @see app/Http/Controllers/OnboardingController.php:72
+ * @see app/Http/Controllers/OnboardingController.php:285
  * @route '/onboarding/complete'
  */
 complete.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -223,7 +278,7 @@ complete.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\OnboardingController::complete
- * @see app/Http/Controllers/OnboardingController.php:72
+ * @see app/Http/Controllers/OnboardingController.php:285
  * @route '/onboarding/complete'
  */
     const completeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -233,7 +288,7 @@ complete.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\OnboardingController::complete
- * @see app/Http/Controllers/OnboardingController.php:72
+ * @see app/Http/Controllers/OnboardingController.php:285
  * @route '/onboarding/complete'
  */
         completeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -244,6 +299,7 @@ complete.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     complete.form = completeForm
 const onboarding = {
     show: Object.assign(show, show),
+personal: Object.assign(personal, personal),
 business: Object.assign(business, business),
 preferences: Object.assign(preferences, preferences),
 complete: Object.assign(complete, complete),
