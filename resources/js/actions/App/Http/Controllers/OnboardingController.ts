@@ -130,7 +130,7 @@ savePersonal.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
             action: savePersonal.url(options),
             method: 'post',
         })
-
+    
     savePersonal.form = savePersonalForm
 /**
 * @see \App\Http\Controllers\OnboardingController::saveBusiness

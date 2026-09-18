@@ -52,6 +52,8 @@ class UserProfileController extends Controller
                 'industry' => $user->business->industry ?? 'General',
                 'category' => $user->business->category ?? 'General',
                 'description' => $user->business?->description,
+                'city_municipality' => $user->business?->city_municipality,
+                'province' => $user->business?->province,
             ],
             'stats' => [
                 'products_count' => $user->business?->products()->count() ?? 0,

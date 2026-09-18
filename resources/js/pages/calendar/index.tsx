@@ -1990,3 +1990,16 @@ export default function MarketingCalendarPage({
         </>
     );
 }
+
+MarketingCalendarPage.layout = {
+    breadcrumbs: [
+        {
+            title: 'Dashboard',
+            href: '/dashboard',
+        },
+        {
+            title: 'Marketing Calendar',
+            href: '/calendar',
+        },
+    ],
+};

@@ -3044,3 +3044,16 @@ export default function DesignsPage({
         </>
     );
 }
+
+DesignsPage.layout = {
+    breadcrumbs: [
+        {
+            title: 'Dashboard',
+            href: '/dashboard',
+        },
+        {
+            title: 'My Designs',
+            href: '/designs',
+        },
+    ],
+};

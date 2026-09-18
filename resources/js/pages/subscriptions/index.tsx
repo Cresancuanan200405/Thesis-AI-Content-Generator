@@ -754,7 +754,7 @@ SubscriptionsIndexPage.layout = {
             href: '/dashboard',
         },
         {
-            title: 'Subscriptions & Quota',
+            title: 'Subscriptions',
             href: '/subscriptions',
         },
     ],

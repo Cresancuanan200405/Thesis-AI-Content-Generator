@@ -1162,9 +1162,12 @@ export default function ProductsIndexPage({
 ProductsIndexPage.layout = {
     breadcrumbs: [
         {
+            title: 'Dashboard',
+            href: '/dashboard',
+        },
+        {
             title: 'Products',
             href: '/products',
-            current: true,
         },
     ],
 };

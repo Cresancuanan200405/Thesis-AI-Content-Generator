@@ -863,33 +863,21 @@ export default function Dashboard({
                                     </p>
                                 </div>
 
-                                <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:gap-2.5 lg:w-auto">
+                                <div className="flex w-full shrink-0 flex-wrap items-center gap-2.5 sm:gap-3 lg:w-auto">
                                     <Button
                                         asChild
-                                        className="h-10 min-w-fit flex-1 gap-2 rounded-xl px-4 text-xs font-bold shadow-xs transition-all hover:scale-[1.02] active:scale-95 sm:flex-initial"
+                                        className="h-11 min-w-fit gap-2 rounded-xl bg-primary px-5 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:scale-[1.02] active:scale-95"
                                     >
                                         <Link href="/generator">
                                             <Sparkles className="h-4 w-4" />
-                                            Generate Visual
+                                            Create Marketing Design
                                         </Link>
                                     </Button>
 
                                     <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() =>
-                                            setIsCreateCampaignOpen(true)
-                                        }
-                                        className="h-10 min-w-fit flex-1 cursor-pointer gap-1.5 rounded-xl px-3.5 text-xs font-semibold sm:flex-initial"
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                        Create Campaign
-                                    </Button>
-
-                                    <Button
                                         asChild
                                         variant="outline"
-                                        className="h-10 min-w-fit flex-1 gap-1.5 rounded-xl px-3.5 text-xs font-semibold sm:flex-initial"
+                                        className="h-11 min-w-fit gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
                                     >
                                         <Link href="/products/create">
                                             <Package className="h-4 w-4" />
@@ -900,11 +888,22 @@ export default function Dashboard({
                                     <Button
                                         asChild
                                         variant="outline"
-                                        className="h-10 min-w-fit flex-1 gap-1.5 rounded-xl px-3.5 text-xs font-semibold sm:flex-initial"
+                                        className="h-11 min-w-fit gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
                                     >
                                         <Link href="/calendar">
                                             <Calendar className="h-4 w-4" />
-                                            Calendar
+                                            View Calendar
+                                        </Link>
+                                    </Button>
+
+                                    <Button
+                                        asChild
+                                        variant="outline"
+                                        className="h-11 min-w-fit gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
+                                    >
+                                        <Link href="/designs">
+                                            <ImageIcon className="h-4 w-4" />
+                                            View My Designs
                                         </Link>
                                     </Button>
                                 </div>

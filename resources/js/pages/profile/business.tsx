@@ -1,33 +1,32 @@
 import { Head, router } from '@inertiajs/react';
 import {
-    Briefcase,
     Building2,
+    Calendar,
+    Download,
+    FileCheck,
     FileText,
+    Hash,
     Info,
     Loader2,
+    Lock,
+    MapPin,
     RotateCcw,
     Save,
-    Store,
+    Shield,
     Tag,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { PhilippineAddressSelectors } from '@/components/philippine-address-selectors';
+import ProtectedField from '@/components/protected-field';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { industryCategories, industryOptions } from '@/lib/industry-taxonomy';
+import type { BreadcrumbItem } from '@/types';
 
 const MAX_DESCRIPTION_LENGTH = 3000;
 
@@ -59,8 +58,22 @@ interface BusinessProfileProps {
     };
 }
 
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Dashboard',
+        href: '/dashboard',
+    },
+    {
+        title: 'My Profile',
+        href: '/profile',
+    },
+    {
+        title: 'Business Profile',
+        href: '/profile/business',
+    },
+];
+
 export default function BusinessProfilePage({
-    profile: _profile = {},
     business = {},
 }: BusinessProfileProps) {
     const initialValues = useMemo(
@@ -69,822 +82,493 @@ export default function BusinessProfilePage({
                 business.name && business.name !== 'Not specified'
                     ? business.name
                     : '',
-            industry:
-                business.industry && business.industry !== 'General'
-                    ? business.industry
-                    : 'Food & Beverage',
-            category:
-                business.category && business.category !== 'General'
-                    ? business.category
-                    : 'Restaurant',
             description: business.description || '',
             business_address: business.business_address || '',
             barangay: business.barangay || '',
             city_municipality: business.city_municipality || '',
             province: business.province || '',
             region: business.region || '',
-            registration_type: business.registration_type || '',
-            registration_number: business.registration_number || '',
-            business_permit_number: business.business_permit_number || '',
-            registration_permit_date: business.registration_permit_date || '',
+            // Protected values preserved for request validation
+            industry: business.industry || 'General',
+            category: business.category || 'General',
         }),
         [business],
     );
 
     const [formData, setFormData] = useState(initialValues);
-    const [selectedDocument, setSelectedDocument] = useState<File | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
     const hasUnsavedChanges = useMemo(() => {
         return (
             formData.name !== initialValues.name ||
-            formData.industry !== initialValues.industry ||
-            formData.category !== initialValues.category ||
             formData.description !== initialValues.description ||
             formData.business_address !== initialValues.business_address ||
             formData.barangay !== initialValues.barangay ||
             formData.city_municipality !== initialValues.city_municipality ||
             formData.province !== initialValues.province ||
-            formData.region !== initialValues.region ||
-            formData.registration_type !== initialValues.registration_type ||
-            formData.registration_number !==
-                initialValues.registration_number ||
-            formData.business_permit_number !==
-                initialValues.business_permit_number ||
-            formData.registration_permit_date !==
-                initialValues.registration_permit_date
+            formData.region !== initialValues.region
         );
     }, [formData, initialValues]);
 
-    const availableCategories = useMemo(() => {
-        if (!formData.industry) {
-            return [];
-        }
-
-        return industryCategories[formData.industry] ?? [];
-    }, [formData.industry]);
-
-    const handleIndustryChange = (selectedIndustry: string) => {
-        const defaultCategory = industryCategories[selectedIndustry]?.[0] || '';
-        setFormData((prev) => ({
-            ...prev,
-            industry: selectedIndustry,
-            category: defaultCategory,
-        }));
-    };
-
-    const handleFieldChange = (field: string, value: string) => {
-        setFormData((prev) => ({
-            ...prev,
-            [field]: value,
-        }));
-
-        if (formErrors[field]) {
-            setFormErrors((prev) => {
-                const next = { ...prev };
-                delete next[field];
-
-                return next;
-            });
-        }
-    };
-
-    const handleReset = () => {
-        setFormData(initialValues);
-        setFormErrors({});
-        toast.info('Form reset to saved values.');
-    };
-
-    const handleDocumentUpload = () => {
-        if (!selectedDocument) {
-            toast.error('Please choose a PDF, JPG, PNG, or WebP file first.');
-
-            return;
-        }
-
-        router.post(
-            '/profile/business/document',
-            {
-                business_registration_document: selectedDocument,
-            },
-            {
-                forceFormData: true,
-                preserveScroll: true,
-                onSuccess: () => {
-                    setSelectedDocument(null);
-                    toast.success(
-                        'Business registration document uploaded successfully.',
-                    );
-                },
-                onError: (errors: Record<string, string>) => {
-                    const message =
-                        Object.values(errors)[0] ||
-                        'Unable to upload the business registration document.';
-                    toast.error(message);
-                },
-            },
-        );
-    };
-
-    const handleDocumentDelete = () => {
-        router.delete('/profile/business/document', {
-            preserveScroll: true,
-            onSuccess: () => {
-                toast.success(
-                    'Business registration document removed successfully.',
-                );
-            },
-            onError: () => {
-                toast.error(
-                    'Unable to remove the business registration document.',
-                );
-            },
-        });
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSaveBusiness = (e: React.FormEvent) => {
         e.preventDefault();
+        setFormErrors({});
 
         if (!formData.name.trim()) {
             setFormErrors({ name: 'Business name is required.' });
-            toast.error('Please enter your business name.');
+            toast.error('Please provide your business name.');
 
             return;
         }
 
         setIsSubmitting(true);
-        setFormErrors({});
 
-        router.post(
-            '/profile/business',
-            {
-                name: formData.name.trim(),
-                industry: formData.industry,
-                category: formData.category,
-                description: formData.description.trim(),
-                business_address: formData.business_address.trim(),
-                barangay: formData.barangay.trim(),
-                city_municipality: formData.city_municipality.trim(),
-                province: formData.province.trim(),
-                region: formData.region.trim(),
-                registration_type: formData.registration_type.trim(),
-                registration_number: formData.registration_number.trim(),
-                business_permit_number: formData.business_permit_number.trim(),
-                registration_permit_date: formData.registration_permit_date,
+        router.patch('/profile/business', formData, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsSubmitting(false);
+                toast.success('Business profile updated successfully.');
             },
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    setIsSubmitting(false);
-                    toast.success('Business profile updated successfully.');
-                },
-                onError: (errors: Record<string, string>) => {
-                    setIsSubmitting(false);
-                    setFormErrors(errors);
-                    toast.error(
-                        'Please resolve the highlighted issues and try again.',
-                    );
-                },
+            onError: (errors) => {
+                setIsSubmitting(false);
+                setFormErrors(errors);
+                toast.error(
+                    'Failed to update business profile. Please check the form.',
+                );
             },
-        );
+        });
+    };
+
+    const handleReset = () => {
+        setFormData(initialValues);
+        setFormErrors({});
+        toast.info('Changes reverted to saved values.');
     };
 
     return (
         <>
             <Head title="Business Profile" />
 
-            <div className="min-h-screen bg-background pb-24 text-foreground">
-                <div className="mx-auto max-w-6xl space-y-8 p-4 md:p-8">
-                    {/* Top Navigation Bar */}
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                            <div className="flex items-center gap-2.5">
-                                <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                                    Business Profile
-                                </h1>
-                                {hasUnsavedChanges ? (
-                                    <Badge
-                                        variant="outline"
-                                        className="animate-pulse border-amber-500/30 bg-amber-500/10 text-[11px] font-semibold text-amber-600 dark:text-amber-400"
-                                    >
-                                        Unsaved Changes
-                                    </Badge>
-                                ) : (
-                                    <Badge
-                                        variant="outline"
-                                        className="border-emerald-500/30 bg-emerald-500/10 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400"
-                                    >
-                                        Synchronized
-                                    </Badge>
-                                )}
-                            </div>
-                            <p className="text-xs text-muted-foreground sm:text-sm">
-                                Persistent commercial context used by the AI
-                                engine to calibrate authentic visual generation.
-                            </p>
+            <div className="mx-auto max-w-5xl space-y-8 p-4 md:p-8">
+                {/* 1. Page Header */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2.5">
+                            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                                Business Profile
+                            </h1>
+                            <Badge
+                                variant="outline"
+                                className="border-primary/30 bg-primary/10 text-xs font-semibold text-primary"
+                            >
+                                Commercial Identity
+                            </Badge>
                         </div>
+                        <p className="text-sm text-muted-foreground">
+                            Manage the persistent information MarketPilot uses
+                            to understand and stage your brand.
+                        </p>
                     </div>
 
-                    {/* Main Form Content - 2-Column Responsive Layout */}
-                    <form onSubmit={handleSubmit}>
-                        <div className="grid gap-8 lg:grid-cols-12">
-                            {/* Left Column (8 cols): Primary Business Information Inputs */}
-                            <div className="space-y-6 lg:col-span-8">
-                                {/* Card 1: Core Business Identity */}
-                                <Card className="overflow-hidden rounded-3xl border-border/80 bg-card p-6 shadow-xs md:p-7">
-                                    <div className="flex items-center gap-3 border-b border-border/60 pb-5">
-                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                                            <Building2 className="h-5 w-5" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-base font-bold text-foreground">
-                                                Business Identity
-                                            </h2>
-                                            <p className="text-xs text-muted-foreground">
-                                                The official registered name and
-                                                commercial vertical of your
-                                                brand.
-                                            </p>
-                                        </div>
-                                    </div>
+                    {hasUnsavedChanges && (
+                        <div className="flex items-center gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={handleReset}
+                                disabled={isSubmitting}
+                                className="h-9 gap-1.5 rounded-xl text-xs font-medium"
+                            >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                                <span>Revert</span>
+                            </Button>
+                            <Button
+                                type="button"
+                                size="sm"
+                                onClick={handleSaveBusiness}
+                                disabled={isSubmitting}
+                                className="h-9 gap-1.5 rounded-xl bg-foreground text-xs font-semibold text-background hover:bg-foreground/90"
+                            >
+                                {isSubmitting ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                    <Save className="h-3.5 w-3.5" />
+                                )}
+                                <span>Save Changes</span>
+                            </Button>
+                        </div>
+                    )}
+                </div>
 
-                                    <div className="mt-6 space-y-6">
-                                        {/* Business Name Field */}
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <Label
-                                                    htmlFor="business-name"
-                                                    className="flex items-center gap-1.5 text-xs font-bold text-foreground"
-                                                >
-                                                    <Store className="h-3.5 w-3.5 text-primary" />
-                                                    Business Name
-                                                    <span className="text-rose-500">
-                                                        *
-                                                    </span>
-                                                </Label>
-                                                <span className="text-[11px] font-medium text-muted-foreground">
-                                                    Required
-                                                </span>
-                                            </div>
-                                            <Input
-                                                id="business-name"
-                                                value={formData.name}
-                                                onChange={(e) =>
-                                                    handleFieldChange(
-                                                        'name',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                placeholder="e.g. Apit Burger, Cafe Dolce, Artisan Studio"
-                                                className={`h-11 rounded-xl text-sm font-medium transition-colors ${
-                                                    formErrors.name
-                                                        ? 'border-destructive focus-visible:ring-destructive'
-                                                        : 'border-border/80 focus-visible:border-primary'
-                                                }`}
-                                            />
-                                            {formErrors.name && (
-                                                <p className="text-xs font-semibold text-destructive">
-                                                    {formErrors.name}
-                                                </p>
-                                            )}
-                                        </div>
+                <form onSubmit={handleSaveBusiness} className="space-y-8">
+                    {/* SECTION 1: Business Information (Editable) */}
+                    <Card className="rounded-3xl border-border/80 bg-card shadow-xs">
+                        <CardHeader className="border-b border-border/60 p-6 pb-4">
+                            <div className="flex items-center gap-2.5">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                    <Building2 className="h-4 w-4" />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-base font-bold text-foreground">
+                                        Business Information
+                                    </CardTitle>
+                                    <p className="text-xs text-muted-foreground">
+                                        Core identity used in marketing
+                                        campaigns and creative prompts
+                                    </p>
+                                </div>
+                            </div>
+                        </CardHeader>
 
-                                        {/* Industry & Category Dual Selectors */}
-                                        <div className="grid gap-5 sm:grid-cols-2">
-                                            {/* Industry */}
-                                            <div className="space-y-2">
-                                                <Label className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-                                                    <Briefcase className="h-3.5 w-3.5 text-primary" />
-                                                    Industry Sector
-                                                </Label>
-                                                <Select
-                                                    value={formData.industry}
-                                                    onValueChange={
-                                                        handleIndustryChange
-                                                    }
-                                                >
-                                                    <SelectTrigger className="h-11 rounded-xl border-border/80 text-sm font-medium">
-                                                        <SelectValue placeholder="Select Industry" />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="max-h-64 rounded-xl">
-                                                        {industryOptions.map(
-                                                            (ind) => (
-                                                                <SelectItem
-                                                                    key={ind}
-                                                                    value={ind}
-                                                                    className="cursor-pointer"
-                                                                >
-                                                                    {ind}
-                                                                </SelectItem>
-                                                            ),
-                                                        )}
-                                                    </SelectContent>
-                                                </Select>
-                                                <p className="text-[11px] text-muted-foreground">
-                                                    Determines visual art
-                                                    direction and environmental
-                                                    materials.
-                                                </p>
-                                            </div>
+                        <CardContent className="space-y-5 p-6">
+                            <div className="space-y-2">
+                                <Label
+                                    htmlFor="business_name"
+                                    className="text-xs font-bold text-foreground"
+                                >
+                                    Business Name{' '}
+                                    <span className="text-destructive">*</span>
+                                </Label>
+                                <Input
+                                    id="business_name"
+                                    value={formData.name}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            name: e.target.value,
+                                        }))
+                                    }
+                                    placeholder="e.g., Kape Juan Butuan"
+                                    className="h-11 rounded-xl text-sm"
+                                    required
+                                />
+                                {formErrors.name && (
+                                    <p className="text-xs font-medium text-destructive">
+                                        {formErrors.name}
+                                    </p>
+                                )}
+                            </div>
 
-                                            {/* Niche Category */}
-                                            <div className="space-y-2">
-                                                <Label className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-                                                    <Tag className="h-3.5 w-3.5 text-primary" />
-                                                    Niche Category
-                                                </Label>
-                                                <Select
-                                                    value={formData.category}
-                                                    onValueChange={(val) =>
-                                                        handleFieldChange(
-                                                            'category',
-                                                            val,
-                                                        )
-                                                    }
-                                                >
-                                                    <SelectTrigger className="h-11 rounded-xl border-border/80 text-sm font-medium">
-                                                        <SelectValue placeholder="Select Category" />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="max-h-64 rounded-xl">
-                                                        {availableCategories.map(
-                                                            (cat) => (
-                                                                <SelectItem
-                                                                    key={cat}
-                                                                    value={cat}
-                                                                    className="cursor-pointer"
-                                                                >
-                                                                    {cat}
-                                                                </SelectItem>
-                                                            ),
-                                                        )}
-                                                    </SelectContent>
-                                                </Select>
-                                                <p className="text-[11px] text-muted-foreground">
-                                                    Calibrates specific
-                                                    supporting props and
-                                                    commercial lighting.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Card>
-
-                                <Card className="overflow-hidden rounded-3xl border-border/80 bg-card p-6 shadow-xs md:p-7">
-                                    <div className="flex items-center gap-3 border-b border-border/60 pb-5">
-                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                                            <Briefcase className="h-5 w-5" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-base font-bold text-foreground">
-                                                Registration & Business Details
-                                            </h2>
-                                            <p className="text-xs text-muted-foreground">
-                                                Optional commercial information
-                                                used for verification and
-                                                contact details.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-6 grid gap-5 md:grid-cols-2">
-                                        <div className="space-y-2 md:col-span-2">
-                                            <Label
-                                                htmlFor="business-address"
-                                                className="text-xs font-bold text-foreground"
-                                            >
-                                                Street Address
-                                            </Label>
-                                            <Input
-                                                id="business-address"
-                                                value={
-                                                    formData.business_address
-                                                }
-                                                onChange={(e) =>
-                                                    handleFieldChange(
-                                                        'business_address',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                placeholder="123 Example Street"
-                                                className="h-11 rounded-xl text-sm"
-                                            />
-                                        </div>
-
-                                        <PhilippineAddressSelectors
-                                            region={formData.region}
-                                            province={formData.province}
-                                            cityMunicipality={
-                                                formData.city_municipality
-                                            }
-                                            barangay={formData.barangay}
-                                            onChange={(field, value) =>
-                                                handleFieldChange(field, value)
-                                            }
-                                        />
-
-                                        <div className="space-y-2">
-                                            <Label
-                                                htmlFor="registration-type"
-                                                className="text-xs font-bold text-foreground"
-                                            >
-                                                Registration Type
-                                            </Label>
-                                            <select
-                                                id="registration-type"
-                                                value={
-                                                    formData.registration_type
-                                                }
-                                                onChange={(e) =>
-                                                    handleFieldChange(
-                                                        'registration_type',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                                            >
-                                                <option value="">
-                                                    Select registration type
-                                                    (optional)
-                                                </option>
-                                                <option value="DTI">
-                                                    DTI (Sole Proprietorship)
-                                                </option>
-                                                <option value="SEC">
-                                                    SEC (Corporation /
-                                                    Partnership)
-                                                </option>
-                                                <option value="CDA">
-                                                    CDA (Cooperative)
-                                                </option>
-                                                <option value="Mayor's Permit">
-                                                    Mayor's / LGU Business
-                                                    Permit
-                                                </option>
-                                                <option value="BIR">
-                                                    BIR Certificate of
-                                                    Registration
-                                                </option>
-                                                <option value="Other">
-                                                    Other Official Registration
-                                                </option>
-                                            </select>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label
-                                                htmlFor="registration-number"
-                                                className="text-xs font-bold text-foreground"
-                                            >
-                                                Registration Number
-                                            </Label>
-                                            <Input
-                                                id="registration-number"
-                                                value={
-                                                    formData.registration_number
-                                                }
-                                                onChange={(e) =>
-                                                    handleFieldChange(
-                                                        'registration_number',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                placeholder="REG-2024-001"
-                                                className="h-11 rounded-xl text-sm"
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label
-                                                htmlFor="business-permit-number"
-                                                className="text-xs font-bold text-foreground"
-                                            >
-                                                Business Permit Number
-                                            </Label>
-                                            <Input
-                                                id="business-permit-number"
-                                                value={
-                                                    formData.business_permit_number
-                                                }
-                                                onChange={(e) =>
-                                                    handleFieldChange(
-                                                        'business_permit_number',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                placeholder="BP-2024-987"
-                                                className="h-11 rounded-xl text-sm"
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label
-                                                htmlFor="registration-permit-date"
-                                                className="text-xs font-bold text-foreground"
-                                            >
-                                                Registration / Permit Date
-                                            </Label>
-                                            <Input
-                                                id="registration-permit-date"
-                                                type="date"
-                                                value={
-                                                    formData.registration_permit_date
-                                                }
-                                                onChange={(e) =>
-                                                    handleFieldChange(
-                                                        'registration_permit_date',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                className="h-11 rounded-xl text-sm"
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2 md:col-span-2">
-                                            <Label className="text-xs font-bold text-foreground">
-                                                Registration / Permit Document
-                                            </Label>
-                                            {business.business_registration_document_path ? (
-                                                <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border/80 bg-muted/20 p-3">
-                                                    <a
-                                                        href="/profile/business/document"
-                                                        className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                    >
-                                                        View current document
-                                                    </a>
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            const input =
-                                                                document.getElementById(
-                                                                    'business-registration-document-input',
-                                                                ) as HTMLInputElement | null;
-                                                            input?.click();
-                                                        }}
-                                                    >
-                                                        Replace
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        variant="destructive"
-                                                        size="sm"
-                                                        onClick={
-                                                            handleDocumentDelete
-                                                        }
-                                                    >
-                                                        Remove
-                                                    </Button>
-                                                </div>
-                                            ) : (
-                                                <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-border/80 bg-muted/20 p-3 md:flex-row md:items-center">
-                                                    <Input
-                                                        id="business-registration-document-input"
-                                                        type="file"
-                                                        accept=".pdf,.png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp,application/pdf"
-                                                        onChange={(event) => {
-                                                            const file =
-                                                                event.target
-                                                                    .files?.[0] ??
-                                                                null;
-                                                            setSelectedDocument(
-                                                                file,
-                                                            );
-                                                        }}
-                                                        className="h-11 w-full rounded-xl text-sm md:max-w-xs"
-                                                    />
-                                                    <Button
-                                                        type="button"
-                                                        onClick={
-                                                            handleDocumentUpload
-                                                        }
-                                                        className="h-11"
-                                                    >
-                                                        Upload document
-                                                    </Button>
-                                                </div>
-                                            )}
-                                            {selectedDocument &&
-                                            !business.business_registration_document_path ? (
-                                                <p className="text-xs text-muted-foreground">
-                                                    Selected file:{' '}
-                                                    {selectedDocument.name}
-                                                </p>
-                                            ) : null}
-                                        </div>
-                                    </div>
-                                </Card>
-
-                                {/* Card 2: Business Description & Craft Details */}
-                                <Card className="overflow-hidden rounded-3xl border-border/80 bg-card p-6 shadow-xs md:p-7">
-                                    <div className="flex items-center justify-between border-b border-border/60 pb-5">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                                                <FileText className="h-5 w-5" />
-                                            </div>
-                                            <div>
-                                                <h2 className="text-base font-bold text-foreground">
-                                                    Business Description
-                                                </h2>
-                                                <p className="text-xs text-muted-foreground">
-                                                    Detailed context informing
-                                                    the AI about your products,
-                                                    culinary style, or craft.
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <span
-                                            className={`font-mono text-xs ${
-                                                formData.description.length >
-                                                MAX_DESCRIPTION_LENGTH - 100
-                                                    ? 'font-bold text-rose-500'
-                                                    : 'text-muted-foreground'
-                                            }`}
-                                        >
-                                            {formData.description.length} /{' '}
-                                            {MAX_DESCRIPTION_LENGTH}
-                                        </span>
-                                    </div>
-
-                                    <div className="mt-6 space-y-4">
-                                        <Textarea
-                                            id="business-description"
-                                            rows={5}
-                                            maxLength={MAX_DESCRIPTION_LENGTH}
-                                            value={formData.description}
-                                            onChange={(e) =>
-                                                handleFieldChange(
-                                                    'description',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder="e.g. An approachable local burger shop specializing in flame-grilled burgers, crispy fries, craft milkshakes, and refreshing comfort food."
-                                            className={`resize-y rounded-2xl text-sm leading-relaxed ${
-                                                formErrors.description
-                                                    ? 'border-destructive focus-visible:ring-destructive'
-                                                    : 'border-border/80 focus-visible:border-primary'
-                                            }`}
-                                        />
-
-                                        {formErrors.description && (
-                                            <p className="text-xs font-semibold text-destructive">
-                                                {formErrors.description}
-                                            </p>
-                                        )}
-
-                                        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-xs text-muted-foreground">
-                                            <div className="flex items-start gap-2.5">
-                                                <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                                                <p className="leading-relaxed">
-                                                    Describe what your business
-                                                    offers. This information
-                                                    helps the AI create more
-                                                    relevant environments,
-                                                    styling, props, and
-                                                    commercial visuals when
-                                                    generating images. It is
-                                                    used strictly as background
-                                                    context and will not be
-                                                    printed as text in the
-                                                    image.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Card>
-
-                                {/* Action Buttons Footer */}
-                                <div className="flex items-center justify-between rounded-2xl border border-border/80 bg-card/60 p-4 shadow-xs">
-                                    <div className="flex items-center gap-2">
-                                        {hasUnsavedChanges && (
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={handleReset}
-                                                disabled={isSubmitting}
-                                                className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-                                            >
-                                                <RotateCcw className="h-3.5 w-3.5" />
-                                                Reset
-                                            </Button>
-                                        )}
-                                    </div>
-
-                                    <Button
-                                        type="submit"
-                                        disabled={
-                                            isSubmitting || !hasUnsavedChanges
-                                        }
-                                        className="min-w-36 gap-2 rounded-xl px-6 text-xs font-bold shadow-xs"
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label
+                                        htmlFor="business_description"
+                                        className="text-xs font-bold text-foreground"
                                     >
-                                        {isSubmitting ? (
-                                            <>
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                                Saving...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Save className="h-4 w-4" />
-                                                Save Changes
-                                            </>
-                                        )}
-                                    </Button>
+                                        Business Description
+                                    </Label>
+                                    <span className="text-[11px] text-muted-foreground">
+                                        {formData.description.length} /{' '}
+                                        {MAX_DESCRIPTION_LENGTH} characters
+                                    </span>
+                                </div>
+                                <Textarea
+                                    id="business_description"
+                                    value={formData.description}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            description: e.target.value.slice(
+                                                0,
+                                                MAX_DESCRIPTION_LENGTH,
+                                            ),
+                                        }))
+                                    }
+                                    placeholder="Describe your specialty products, customer vibe, unique value proposition, and brand personality..."
+                                    rows={4}
+                                    className="resize-none rounded-xl text-sm leading-relaxed"
+                                />
+                                <p className="text-[11px] text-muted-foreground">
+                                    The AI uses this description to calibrate
+                                    visual ambiance, scene elements, and brand
+                                    tone.
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* SECTION 2: Business Location (Editable) */}
+                    <Card className="rounded-3xl border-border/80 bg-card shadow-xs">
+                        <CardHeader className="border-b border-border/60 p-6 pb-4">
+                            <div className="flex items-center gap-2.5">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                                    <MapPin className="h-4 w-4" />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-base font-bold text-foreground">
+                                        Business Location
+                                    </CardTitle>
+                                    <p className="text-xs text-muted-foreground">
+                                        Philippine geographic context for local
+                                        marketing relevance
+                                    </p>
+                                </div>
+                            </div>
+                        </CardHeader>
+
+                        <CardContent className="space-y-5 p-6">
+                            <div className="space-y-2">
+                                <Label
+                                    htmlFor="business_address"
+                                    className="text-xs font-bold text-foreground"
+                                >
+                                    Street Address / Building / Unit
+                                </Label>
+                                <Input
+                                    id="business_address"
+                                    value={formData.business_address}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            business_address: e.target.value,
+                                        }))
+                                    }
+                                    placeholder="e.g., Unit 4B, J.C. Aquino Avenue"
+                                    className="h-11 rounded-xl text-sm"
+                                />
+                            </div>
+
+                            <PhilippineAddressSelectors
+                                region={formData.region}
+                                province={formData.province}
+                                cityMunicipality={formData.city_municipality}
+                                barangay={formData.barangay}
+                                onChange={(field, value) =>
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        [field]: value,
+                                    }))
+                                }
+                            />
+                        </CardContent>
+                    </Card>
+
+                    {/* SECTION 3: Industry & Category (Protected / Read-Only) */}
+                    <Card className="rounded-3xl border-border/80 bg-card shadow-xs">
+                        <CardHeader className="border-b border-border/60 p-6 pb-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                                        <Tag className="h-4 w-4" />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-base font-bold text-foreground">
+                                            Industry & Category
+                                        </CardTitle>
+                                        <p className="text-xs text-muted-foreground">
+                                            Art-direction taxonomy assigned
+                                            during onboarding
+                                        </p>
+                                    </div>
+                                </div>
+                                <Badge
+                                    variant="outline"
+                                    className="flex items-center gap-1 border-border/70 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+                                >
+                                    <Lock className="h-2.5 w-2.5" />
+                                    <span>Protected</span>
+                                </Badge>
+                            </div>
+                        </CardHeader>
+
+                        <CardContent className="space-y-4 p-6">
+                            <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
+                                <div className="flex items-start gap-2.5">
+                                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                                    <p className="text-xs leading-relaxed text-muted-foreground">
+                                        Industry and Category define your visual
+                                        art direction, prompt styling profiles,
+                                        and commercial design templates. These
+                                        details are locked after onboarding
+                                        activation.
+                                    </p>
                                 </div>
                             </div>
 
-                            {/* Right Column (4 cols): Context Overview & Guidance */}
-                            <div className="space-y-6 lg:col-span-4">
-                                {/* Card 3: Live Context Summary */}
-                                <Card className="overflow-hidden rounded-3xl border-border/80 bg-card p-6 shadow-xs">
-                                    <div className="flex items-center gap-2.5 border-b border-border/60 pb-4">
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                            <Store className="h-4 w-4" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-sm font-bold text-foreground">
-                                                Live Context Summary
-                                            </h3>
-                                            <p className="text-[11px] text-muted-foreground">
-                                                Active values supplied to AI
-                                                Studio
-                                            </p>
-                                        </div>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <ProtectedField
+                                    label="Industry"
+                                    value={business.industry || 'General'}
+                                    icon={Tag}
+                                />
+                                <ProtectedField
+                                    label="Category"
+                                    value={business.category || 'General'}
+                                    icon={Tag}
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* SECTION 4: Registration & Compliance (Protected / Read-Only) */}
+                    <Card className="rounded-3xl border-border/80 bg-card shadow-xs">
+                        <CardHeader className="border-b border-border/60 p-6 pb-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                                        <Shield className="h-4 w-4" />
                                     </div>
+                                    <div>
+                                        <CardTitle className="text-base font-bold text-foreground">
+                                            Registration & Compliance
+                                        </CardTitle>
+                                        <p className="text-xs text-muted-foreground">
+                                            Official business registration
+                                            records
+                                        </p>
+                                    </div>
+                                </div>
+                                <Badge
+                                    variant="outline"
+                                    className="flex items-center gap-1 border-border/70 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+                                >
+                                    <Lock className="h-2.5 w-2.5" />
+                                    <span>Compliance Protected</span>
+                                </Badge>
+                            </div>
+                        </CardHeader>
 
-                                    <div className="mt-5 space-y-4">
-                                        <div className="space-y-1">
-                                            <p className="text-[11px] font-semibold text-muted-foreground uppercase">
-                                                Business Name
-                                            </p>
-                                            <p className="text-sm font-bold text-foreground">
-                                                {formData.name.trim() || (
-                                                    <span className="text-muted-foreground italic">
-                                                        Not specified
-                                                    </span>
-                                                )}
-                                            </p>
-                                        </div>
+                        <CardContent className="space-y-5 p-6">
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <ProtectedField
+                                    label="Registration Type"
+                                    value={
+                                        business.registration_type
+                                            ? business.registration_type.toUpperCase()
+                                            : 'None Specified'
+                                    }
+                                    icon={FileText}
+                                />
+                                <ProtectedField
+                                    label="Registration Number"
+                                    value={
+                                        business.registration_number ||
+                                        'None Specified'
+                                    }
+                                    icon={Hash}
+                                />
+                                <ProtectedField
+                                    label="Business Permit Number"
+                                    value={
+                                        business.business_permit_number ||
+                                        'None Specified'
+                                    }
+                                    icon={Hash}
+                                />
+                                <ProtectedField
+                                    label="Registration / Permit Date"
+                                    value={
+                                        business.registration_permit_date ||
+                                        'None Specified'
+                                    }
+                                    icon={Calendar}
+                                />
+                            </div>
 
-                                        <div className="space-y-1.5">
-                                            <p className="text-[11px] font-semibold text-muted-foreground uppercase">
-                                                Industry & Classification
-                                            </p>
-                                            <div className="flex flex-wrap gap-1.5">
-                                                <Badge
-                                                    variant="outline"
-                                                    className="border-primary/30 bg-primary/10 text-xs font-semibold text-primary"
-                                                >
-                                                    {formData.industry}
-                                                </Badge>
-                                                {formData.category && (
-                                                    <Badge
-                                                        variant="secondary"
-                                                        className="text-xs font-medium"
-                                                    >
-                                                        {formData.category}
-                                                    </Badge>
-                                                )}
+                            {/* Registration Document Privacy & Management Area (Protected) */}
+                            <div className="space-y-2 pt-2">
+                                <div className="flex items-center justify-between gap-2">
+                                    <Label className="text-xs font-semibold text-muted-foreground">
+                                        Business Registration Document
+                                    </Label>
+                                    <Badge
+                                        variant="outline"
+                                        className="flex items-center gap-1 border-border/70 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+                                    >
+                                        <Lock className="h-2.5 w-2.5 shrink-0" />
+                                        <span>Protected after onboarding</span>
+                                    </Badge>
+                                </div>
+
+                                {business.business_registration_document_path ? (
+                                    <div className="flex flex-col gap-3 rounded-2xl border border-border/80 bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex items-center gap-3 overflow-hidden">
+                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                                                <FileCheck className="h-5 w-5" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="truncate text-xs font-bold text-foreground">
+                                                    Official Registration
+                                                    Document
+                                                </p>
+                                                <p className="text-[11px] text-muted-foreground">
+                                                    Protected verification
+                                                    record. Stored securely in
+                                                    private tenant storage.
+                                                </p>
                                             </div>
                                         </div>
 
-                                        <div className="space-y-1">
-                                            <p className="text-[11px] font-semibold text-muted-foreground uppercase">
-                                                Description Status
-                                            </p>
-                                            <p className="line-clamp-3 text-xs text-muted-foreground">
-                                                {formData.description.trim() || (
-                                                    <span className="italic">
-                                                        No description added
-                                                        yet.
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                asChild
+                                                className="h-8 gap-1.5 rounded-lg text-xs font-medium"
+                                            >
+                                                <a
+                                                    href="/profile/business/document"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                >
+                                                    <Download className="h-3.5 w-3.5" />
+                                                    <span>
+                                                        Download Document
                                                     </span>
-                                                )}
-                                            </p>
+                                                </a>
+                                            </Button>
                                         </div>
                                     </div>
-                                </Card>
+                                ) : (
+                                    <div className="flex min-h-10 items-center justify-between rounded-xl border border-border/60 bg-muted/30 px-3.5 py-2.5 text-xs text-muted-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                            <span>
+                                                No registration document was
+                                                uploaded during onboarding.
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                    </form>
-                </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Bottom Save Action Bar */}
+                    <div className="flex items-center justify-end gap-3 pt-2">
+                        {hasUnsavedChanges && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleReset}
+                                disabled={isSubmitting}
+                                className="h-10 rounded-xl px-5 text-xs font-medium sm:text-sm"
+                            >
+                                Cancel
+                            </Button>
+                        )}
+                        <Button
+                            type="submit"
+                            disabled={isSubmitting || !hasUnsavedChanges}
+                            className="h-10 gap-2 rounded-xl bg-foreground px-6 text-xs font-semibold text-background hover:bg-foreground/90 sm:text-sm"
+                        >
+                            {isSubmitting ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Save className="h-4 w-4" />
+                            )}
+                            <span>Save Business Profile</span>
+                        </Button>
+                    </div>
+                </form>
             </div>
         </>
     );
 }
 
 BusinessProfilePage.layout = {
-    breadcrumbs: [
-        {
-            title: 'Dashboard',
-            href: '/dashboard',
-        },
-        {
-            title: 'Business Profile',
-            href: '/profile/business',
-        },
-    ],
+    breadcrumbs,
 };

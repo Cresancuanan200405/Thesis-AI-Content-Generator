@@ -6476,3 +6476,16 @@ export default function GeneratorPage() {
         </>
     );
 }
+
+GeneratorPage.layout = {
+    breadcrumbs: [
+        {
+            title: 'Dashboard',
+            href: '/dashboard',
+        },
+        {
+            title: 'AI Marketing Studio',
+            href: '/generator',
+        },
+    ],
+};
