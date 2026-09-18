@@ -27,21 +27,36 @@ use RuntimeException;
 
 class GeneratorController extends Controller
 {
-    public function index(Request $request, PhilippineHolidayService $holidayService): Response
+    public function index(Request $request, PhilippineHolidayService $holidayService): Response|RedirectResponse
     {
         /** @var User|null $user */
         $user = $request->user();
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        $campaignParam = $request->route('campaign');
+        $campaignId = $campaignParam instanceof Campaign
+            ? $campaignParam->id
+            : ($campaignParam ?: ($request->input('campaign_id') ?: $request->input('campaign')));
+
+        if (! $campaignId) {
+            return redirect()->route('campaigns.index')
+                ->with('info', 'Please select or create a Campaign before generating AI marketing visuals.');
+        }
+
+        /** @var Campaign|null $campaign */
+        $campaign = $user->campaigns()->with(['product', 'event', 'business'])->whereKey($campaignId)->first();
+
+        if (! $campaign) {
+            return redirect()->route('campaigns.index')
+                ->with('error', 'The requested Campaign was not found or belongs to another business.');
+        }
+
         /** @var Business|null $business */
-        $business = $user?->business()->first();
+        $business = $user->business()->first();
         /** @var Collection<int, Product> $products */
         $products = $business?->products()->orderBy('name')->get() ?? collect();
-        /** @var Campaign|null $campaign */
-        $campaign = null;
-
-        $campaignId = $request->input('campaign_id') ?: $request->input('campaign');
-        if ($campaignId) {
-            $campaign = $user?->campaigns()->with(['product', 'event', 'business'])->whereKey($campaignId)->first();
-        }
 
         // Sync holidays for current year and upcoming 2 years
         foreach ([now()->year, now()->year + 1, now()->year + 2] as $year) {
@@ -141,13 +156,13 @@ class GeneratorController extends Controller
             $referenceImagePath = $request->file('reference_image')->store('generation-requests');
         }
 
-        // Resolve product details for context
+        // Resolve campaign details for context
+        /** @var Campaign $campaign */
+        $campaign = $user->campaigns()->whereKey($payload['campaign_id'])->firstOrFail();
         /** @var Product|null $product */
-        $product = ! empty($payload['product_id']) ? Product::query()->where('id', $payload['product_id'])->first() : null;
-        /** @var Campaign|null $campaign */
-        $campaign = ! empty($payload['campaign_id']) ? Campaign::query()->where('id', $payload['campaign_id'])->first() : null;
+        $product = ! empty($payload['product_id']) ? Product::query()->where('id', $payload['product_id'])->first() : $campaign->product;
         /** @var Event|null $event */
-        $event = ! empty($payload['event_id']) ? Event::query()->where('id', $payload['event_id'])->first() : null;
+        $event = ! empty($payload['event_id']) ? Event::query()->where('id', $payload['event_id'])->first() : $campaign->event;
 
         if (! $referenceImagePath && $product?->image_path) {
             $referenceImagePath = $product->image_path;
@@ -171,9 +186,9 @@ class GeneratorController extends Controller
         $generationRequest = GenerationRequest::create([
             'user_id' => $user->id,
             'business_id' => $business->id,
-            'campaign_id' => $payload['campaign_id'] ?? null,
-            'product_id' => $payload['product_id'] ?? null,
-            'event_id' => $payload['event_id'] ?? null,
+            'campaign_id' => $campaign->id,
+            'product_id' => $product?->id ?? ($payload['product_id'] ?? null),
+            'event_id' => $event?->id ?? ($payload['event_id'] ?? null),
             'product_name' => $payload['product_name'],
             'marketing_goal' => $payload['marketing_goal'],
             'content_style' => $payload['content_style'] ?? [],
@@ -197,8 +212,8 @@ class GeneratorController extends Controller
                 'product_category' => $business->category,
                 'business_category' => $business->category,
                 'product_image_url' => $productImageUrl,
-                'campaign_name' => $campaign?->name,
-                'campaign_objective' => $campaign?->objective,
+                'campaign_name' => $campaign->name,
+                'campaign_objective' => $campaign->objective,
                 'event_name' => $event?->name,
                 'price' => $payload['price'] ?? null,
 
@@ -244,11 +259,11 @@ class GeneratorController extends Controller
                 $user,
                 'AI Generation Failed',
                 'Your design could not be generated: '.($exception->getMessage() ?: 'An unexpected error occurred during generation.'),
-                route('generator.index'),
+                route('campaigns.generator', $campaign),
                 ['error' => $exception->getMessage()]
             );
 
-            return redirect()->route('generator.index')->with('error', 'Your design could not be generated right now. Please try again.');
+            return redirect()->route('campaigns.generator', $campaign)->with('error', 'Your design could not be generated right now. Please try again.');
         }
 
         $generationRequest->update([
@@ -258,9 +273,9 @@ class GeneratorController extends Controller
         Design::create([
             'user_id' => $user->id,
             'business_id' => $business->id,
-            'campaign_id' => $payload['campaign_id'] ?? null,
-            'event_id' => $payload['event_id'] ?? null,
-            'product_id' => $payload['product_id'] ?? null,
+            'campaign_id' => $campaign->id,
+            'event_id' => $event?->id ?? ($payload['event_id'] ?? null),
+            'product_id' => $product?->id ?? ($payload['product_id'] ?? null),
             'product_name' => $payload['product_name'],
             'prompt' => $prompt,
             'price' => ! empty($payload['price']) ? (float) preg_replace('/[^0-9.]/', '', (string) $payload['price']) : null,
@@ -292,7 +307,7 @@ class GeneratorController extends Controller
             'status' => 'completed',
         ]);
 
-        return redirect()->route('generator.index')->with('success', 'Your marketing asset has been generated.');
+        return redirect()->route('campaigns.generator', $campaign)->with('success', 'Your marketing asset has been generated.');
     }
 
     /**
@@ -319,10 +334,20 @@ class GeneratorController extends Controller
         $business = $user->business()->firstOrFail();
 
         $request->validate([
+            'campaign_id' => ['required', 'exists:campaigns,id'],
             'product_name' => ['required', 'string', 'max:255'],
             'image_prompt' => ['nullable', 'string'],
-            'event_id' => ['required', 'exists:events,id'],
+            'event_id' => ['nullable', 'exists:events,id'],
         ]);
+
+        /** @var Campaign|null $campaign */
+        $campaign = $user->campaigns()->whereKey($request->input('campaign_id'))->first();
+        if (! $campaign) {
+            return response()->json([
+                'success' => false,
+                'message' => 'A valid owned Campaign is required before generating creative visuals.',
+            ], 422);
+        }
 
         $referenceImagePath = null;
         if ($request->hasFile('reference_image')) {
@@ -330,11 +355,9 @@ class GeneratorController extends Controller
         }
 
         /** @var Product|null $product */
-        $product = $request->filled('product_id') ? Product::query()->where('id', $request->input('product_id'))->first() : null;
-        /** @var Campaign|null $campaign */
-        $campaign = $request->filled('campaign_id') ? Campaign::query()->where('id', $request->input('campaign_id'))->first() : null;
+        $product = $request->filled('product_id') ? Product::query()->where('id', $request->input('product_id'))->first() : $campaign->product;
         /** @var Event|null $event */
-        $event = $request->filled('event_id') ? Event::query()->where('id', $request->input('event_id'))->first() : null;
+        $event = $request->filled('event_id') ? Event::query()->where('id', $request->input('event_id'))->first() : $campaign->event;
 
         if (! $referenceImagePath && $product?->image_path) {
             $referenceImagePath = $product->image_path;
@@ -423,7 +446,7 @@ class GeneratorController extends Controller
                 $user,
                 'AI Generation Failed',
                 'Your visual creative could not be synthesized: '.($e->getMessage() ?: 'An unexpected error occurred during generation.'),
-                route('generator.index'),
+                route('campaigns.generator', $campaign),
                 ['error' => $e->getMessage()]
             );
 

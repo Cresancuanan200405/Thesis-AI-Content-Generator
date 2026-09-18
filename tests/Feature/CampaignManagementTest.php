@@ -6,6 +6,8 @@ use App\Models\Design;
 use App\Models\Event;
 use App\Models\Product;
 use App\Models\User;
+use Carbon\Carbon;
+use Inertia\Testing\AssertableInertia as Assert;
 
 it('guest cannot view campaigns', function () {
     $this->get('/campaigns')->assertRedirect('/login');
@@ -322,4 +324,257 @@ it('generator can preselect campaign context', function () {
     ]);
 
     $this->actingAs($user)->get('/generator?campaign='.$campaign->id)->assertOk();
+});
+
+it('restricts campaigns events to account creation or finalization year and excludes prior or future years', function () {
+    Carbon::setTestNow('2026-06-15 12:00:00');
+
+    $user = User::factory()->create([
+        'onboarding_completed' => true,
+        'onboarding_completed_at' => Carbon::parse('2026-02-15 10:00:00'),
+        'created_at' => Carbon::parse('2026-01-10 10:00:00'),
+    ]);
+    Business::factory()->create(['user_id' => $user->id]);
+
+    // Create 2025 event (prior year)
+    Event::factory()->global()->create([
+        'name' => 'Past Year Holiday 2025',
+        'date' => '2025-12-25',
+        'type' => 'holiday',
+    ]);
+
+    // Create 2026 event (account year)
+    $event2026 = Event::factory()->global()->create([
+        'name' => 'Current Year Holiday 2026',
+        'date' => '2026-07-04',
+        'type' => 'holiday',
+    ]);
+
+    // Create 2027 event (future year)
+    Event::factory()->global()->create([
+        'name' => 'Next Year Holiday 2027',
+        'date' => '2027-01-01',
+        'type' => 'holiday',
+    ]);
+
+    $response = $this->actingAs($user)->get('/campaigns');
+    $response->assertOk();
+
+    $response->assertInertia(function (Assert $page) use ($event2026) {
+        $props = $page->toArray()['props'];
+        expect($props['campaign_year'])->toBe(2026);
+        expect($props['account_year'])->toBe(2026);
+
+        $events = collect($props['events']);
+        expect($events->pluck('id')->all())->toContain($event2026->id);
+
+        foreach ($events as $event) {
+            expect(str_starts_with($event['date'], '2026-'))->toBeTrue();
+        }
+    });
+
+    Carbon::setTestNow();
+});
+
+it('does not classify events before account finalization date as missed promotional opportunities', function () {
+    Carbon::setTestNow('2026-06-15 12:00:00');
+
+    // Account finalized on 2026-02-15
+    $user = User::factory()->create([
+        'onboarding_completed' => true,
+        'onboarding_completed_at' => Carbon::parse('2026-02-15 10:00:00'),
+        'created_at' => Carbon::parse('2026-01-10 10:00:00'),
+    ]);
+    Business::factory()->create(['user_id' => $user->id]);
+
+    // Event on 2026-02-14 (before account finalized)
+    $preAccountEvent = Event::factory()->global()->create([
+        'name' => "Valentine's Day 2026",
+        'date' => '2026-02-14',
+        'type' => 'holiday',
+    ]);
+
+    // Event on 2026-03-01 (after account finalized, before test now, no campaign)
+    $postAccountPastEvent = Event::factory()->global()->create([
+        'name' => 'Spring Festival 2026',
+        'date' => '2026-03-01',
+        'type' => 'commercial',
+    ]);
+
+    $response = $this->actingAs($user)->get('/campaigns');
+    $response->assertOk();
+
+    $response->assertInertia(function (Assert $page) use ($preAccountEvent, $postAccountPastEvent) {
+        $events = collect($page->toArray()['props']['events']);
+
+        $val = $events->firstWhere('id', $preAccountEvent->id);
+        expect($val)->not->toBeNull();
+        expect($val['is_missed'])->toBeFalse();
+        expect($val['is_past'])->toBeTrue();
+
+        $spring = $events->firstWhere('id', $postAccountPastEvent->id);
+        expect($spring)->not->toBeNull();
+        expect($spring['is_missed'])->toBeTrue();
+        expect($spring['is_past'])->toBeTrue();
+    });
+
+    Carbon::setTestNow();
+});
+
+it('correctly provides upcoming opportunities with relative timing ordered chronologically', function () {
+    Carbon::setTestNow('2026-09-01 00:00:00');
+
+    $user = User::factory()->create([
+        'onboarding_completed' => true,
+        'onboarding_completed_at' => Carbon::parse('2026-01-15 10:00:00'),
+        'created_at' => Carbon::parse('2026-01-15 10:00:00'),
+    ]);
+    Business::factory()->create(['user_id' => $user->id]);
+
+    Event::factory()->global()->create([
+        'name' => 'Christmas Day 2026',
+        'date' => '2026-12-25',
+        'type' => 'holiday',
+    ]);
+
+    Event::factory()->global()->create([
+        'name' => 'Autumn Launch 2026',
+        'date' => '2026-09-04',
+        'type' => 'commercial',
+    ]);
+
+    Event::factory()->global()->create([
+        'name' => 'Labor Holiday 2026',
+        'date' => '2026-09-01',
+        'type' => 'holiday',
+    ]);
+
+    $response = $this->actingAs($user)->get('/campaigns');
+    $response->assertOk();
+
+    $response->assertInertia(function (Assert $page) {
+        $upcoming = collect($page->toArray()['props']['upcoming_opportunities']);
+
+        expect($upcoming->count())->toBeGreaterThanOrEqual(3);
+
+        $first = $upcoming->first();
+        expect($first['date'])->toBe('2026-09-01');
+        expect($first['relative_timing'])->toBe('Today');
+        expect($first['is_upcoming'])->toBeTrue();
+
+        $dates = $upcoming->pluck('date')->all();
+        $sortedDates = $dates;
+        sort($sortedDates);
+        expect($dates)->toEqual($sortedDates);
+    });
+
+    Carbon::setTestNow();
+});
+
+it('links existing campaign to event and marks has_campaign as true', function () {
+    Carbon::setTestNow('2026-09-01 00:00:00');
+
+    $user = User::factory()->create([
+        'onboarding_completed' => true,
+        'onboarding_completed_at' => Carbon::parse('2026-01-15 10:00:00'),
+        'created_at' => Carbon::parse('2026-01-15 10:00:00'),
+    ]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+    $product = Product::factory()->create(['business_id' => $business->id]);
+
+    $event = Event::factory()->global()->create([
+        'name' => 'Special Sales 2026',
+        'date' => '2026-10-10',
+        'type' => 'commercial',
+    ]);
+
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'product_id' => $product->id,
+        'event_id' => $event->id,
+        'name' => '10.10 Super Sale',
+        'status' => 'active',
+    ]);
+
+    $response = $this->actingAs($user)->get('/campaigns');
+    $response->assertOk();
+
+    $response->assertInertia(function (Assert $page) use ($event, $campaign) {
+        $events = collect($page->toArray()['props']['events']);
+        $matched = $events->firstWhere('id', $event->id);
+
+        expect($matched)->not->toBeNull();
+        expect($matched['has_campaign'])->toBeTrue();
+        expect($matched['campaign_id'])->toBe($campaign->id);
+        expect($matched['campaign_name'])->toBe('10.10 Super Sale');
+    });
+
+    Carbon::setTestNow();
+});
+
+it('redirects /generator to /campaigns when accessed without campaign_id', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    Business::factory()->create(['user_id' => $user->id]);
+
+    $this->actingAs($user)
+        ->get('/generator')
+        ->assertRedirect('/campaigns');
+});
+
+it('defaults /campaigns view to opportunities', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    Business::factory()->create(['user_id' => $user->id]);
+
+    $response = $this->actingAs($user)->get('/campaigns');
+    $response->assertOk();
+
+    $response->assertInertia(function (Assert $page) {
+        $page->component('campaigns/index')
+            ->where('view', 'opportunities')
+            ->has('upcoming_opportunities')
+            ->has('events')
+            ->has('campaigns')
+            ->has('currentCampaignYear');
+    });
+});
+
+it('supports explicitly switching to opportunities view', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    Business::factory()->create(['user_id' => $user->id]);
+
+    $response = $this->actingAs($user)->get('/campaigns?view=opportunities');
+    $response->assertOk();
+
+    $response->assertInertia(function (Assert $page) {
+        $page->component('campaigns/index')
+            ->where('view', 'opportunities');
+    });
+});
+
+it('supports switching to campaign hub view', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    Business::factory()->create(['user_id' => $user->id]);
+
+    $response = $this->actingAs($user)->get('/campaigns?view=hub');
+    $response->assertOk();
+
+    $response->assertInertia(function (Assert $page) {
+        $page->component('campaigns/index')
+            ->where('view', 'hub')
+            ->has('campaigns');
+    });
+});
+
+it('falls back to opportunities for invalid view param', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    Business::factory()->create(['user_id' => $user->id]);
+
+    $response = $this->actingAs($user)->get('/campaigns?view=invalid_view');
+    $response->assertOk();
+
+    $response->assertInertia(function (Assert $page) {
+        $page->component('campaigns/index')
+            ->where('view', 'opportunities');
+    });
 });

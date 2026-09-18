@@ -49,14 +49,17 @@ export function ChangePasswordDialog({
 
             <DialogContent className="rounded-3xl p-6 sm:max-w-md">
                 <DialogHeader>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-1">
+                    <div className="mb-1 flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                         <Lock className="h-5 w-5" />
                     </div>
                     <DialogTitle className="text-lg font-bold text-foreground">
-                        {hasPassword ? 'Change Account Password' : 'Set Account Password'}
+                        {hasPassword
+                            ? 'Change Account Password'
+                            : 'Set Account Password'}
                     </DialogTitle>
                     <DialogDescription className="text-xs leading-relaxed text-muted-foreground">
-                        Ensure your account uses a strong, unique password to stay protected against unauthorized access.
+                        Ensure your account uses a strong, unique password to
+                        stay protected against unauthorized access.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -168,7 +171,9 @@ export function ChangePasswordDialog({
                                     disabled={processing}
                                     className="rounded-xl px-5 text-xs font-bold shadow-xs"
                                 >
-                                    {processing ? 'Updating...' : 'Update Password'}
+                                    {processing
+                                        ? 'Updating...'
+                                        : 'Update Password'}
                                 </Button>
                             </DialogFooter>
                         </>

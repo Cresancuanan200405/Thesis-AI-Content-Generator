@@ -53,10 +53,12 @@ export function ChangeEmailModal({
     const initialStep: Step = hasPendingChange
         ? 'verify-code'
         : isIdentityVerified
-        ? 'enter-email'
-        : 'verify';
+          ? 'enter-email'
+          : 'verify';
 
-    const [open, setOpen] = useState(hasPendingChange || (isIdentityVerified && !hasPendingChange));
+    const [open, setOpen] = useState(
+        hasPendingChange || (isIdentityVerified && !hasPendingChange),
+    );
     const [step, setStep] = useState<Step>(initialStep);
 
     // Step 1: Verification form state
@@ -110,7 +112,13 @@ export function ChangeEmailModal({
         setEmailError('');
         setCode('');
         setCodeError('');
-        setStep(hasPendingChange ? 'verify-code' : isIdentityVerified ? 'enter-email' : 'verify');
+        setStep(
+            hasPendingChange
+                ? 'verify-code'
+                : isIdentityVerified
+                  ? 'enter-email'
+                  : 'verify',
+        );
     };
 
     const handleOpenChange = (newOpen: boolean) => {
@@ -147,7 +155,11 @@ export function ChangeEmailModal({
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
                     'X-CSRF-TOKEN':
-                        (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+                        (
+                            document.querySelector(
+                                'meta[name="csrf-token"]',
+                            ) as HTMLMetaElement
+                        )?.content || '',
                 },
                 body: JSON.stringify({
                     password,
@@ -188,8 +200,12 @@ export function ChangeEmailModal({
             return;
         }
 
-        if (newEmail.trim().toLowerCase() === currentEmail.trim().toLowerCase()) {
-            setEmailError('The new email address cannot be the same as your current email address.');
+        if (
+            newEmail.trim().toLowerCase() === currentEmail.trim().toLowerCase()
+        ) {
+            setEmailError(
+                'The new email address cannot be the same as your current email address.',
+            );
 
             return;
         }
@@ -209,7 +225,11 @@ export function ChangeEmailModal({
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
                     'X-CSRF-TOKEN':
-                        (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+                        (
+                            document.querySelector(
+                                'meta[name="csrf-token"]',
+                            ) as HTMLMetaElement
+                        )?.content || '',
                 },
                 body: JSON.stringify({
                     email: newEmail,
@@ -264,7 +284,11 @@ export function ChangeEmailModal({
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
                     'X-CSRF-TOKEN':
-                        (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+                        (
+                            document.querySelector(
+                                'meta[name="csrf-token"]',
+                            ) as HTMLMetaElement
+                        )?.content || '',
                 },
                 body: JSON.stringify({
                     code: cleanedCode,
@@ -288,7 +312,9 @@ export function ChangeEmailModal({
             setConfirmedEmail(data.new_email || newEmail);
             setStep('success');
             toast.success('Email address updated successfully.');
-            router.reload({ only: ['auth', 'hasPendingEmailChange', 'pendingEmail'] });
+            router.reload({
+                only: ['auth', 'hasPendingEmailChange', 'pendingEmail'],
+            });
         } catch {
             setIsConfirming(false);
             setCodeError('An unexpected error occurred. Please try again.');
@@ -311,14 +337,20 @@ export function ChangeEmailModal({
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
                     'X-CSRF-TOKEN':
-                        (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+                        (
+                            document.querySelector(
+                                'meta[name="csrf-token"]',
+                            ) as HTMLMetaElement
+                        )?.content || '',
                 },
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                setCodeError(data.message || 'Unable to resend code right now.');
+                setCodeError(
+                    data.message || 'Unable to resend code right now.',
+                );
                 setIsResending(false);
 
                 return;
@@ -342,7 +374,11 @@ export function ChangeEmailModal({
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
                     'X-CSRF-TOKEN':
-                        (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+                        (
+                            document.querySelector(
+                                'meta[name="csrf-token"]',
+                            ) as HTMLMetaElement
+                        )?.content || '',
                 },
             });
             toast.info('Email change request was cancelled.');
@@ -384,7 +420,9 @@ export function ChangeEmailModal({
                             >
                                 1
                             </span>
-                            <span className={`text-xs ${step === 'verify' ? 'font-bold text-foreground' : 'text-muted-foreground'}`}>
+                            <span
+                                className={`text-xs ${step === 'verify' ? 'font-bold text-foreground' : 'text-muted-foreground'}`}
+                            >
                                 Verify
                             </span>
                         </div>
@@ -399,7 +437,9 @@ export function ChangeEmailModal({
                             >
                                 2
                             </span>
-                            <span className={`text-xs ${step === 'enter-email' ? 'font-bold text-foreground' : 'text-muted-foreground'}`}>
+                            <span
+                                className={`text-xs ${step === 'enter-email' ? 'font-bold text-foreground' : 'text-muted-foreground'}`}
+                            >
                                 New Email
                             </span>
                         </div>
@@ -414,7 +454,9 @@ export function ChangeEmailModal({
                             >
                                 3
                             </span>
-                            <span className={`text-xs ${step === 'verify-code' ? 'font-bold text-foreground' : 'text-muted-foreground'}`}>
+                            <span
+                                className={`text-xs ${step === 'verify-code' ? 'font-bold text-foreground' : 'text-muted-foreground'}`}
+                            >
                                 Confirm
                             </span>
                         </div>
@@ -425,14 +467,16 @@ export function ChangeEmailModal({
                 {step === 'verify' && (
                     <>
                         <DialogHeader>
-                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 mb-1">
+                            <div className="mb-1 flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600">
                                 <Shield className="h-5 w-5" />
                             </div>
                             <DialogTitle className="text-lg font-bold text-foreground">
                                 Verify Your Identity
                             </DialogTitle>
                             <DialogDescription className="text-xs leading-relaxed text-muted-foreground">
-                                Changing your account email address is a security-sensitive action. Please verify your identity before continuing.
+                                Changing your account email address is a
+                                security-sensitive action. Please verify your
+                                identity before continuing.
                             </DialogDescription>
                         </DialogHeader>
 
@@ -442,9 +486,14 @@ export function ChangeEmailModal({
                                     <div className="flex items-start gap-2.5">
                                         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
                                         <div className="space-y-1 text-xs text-blue-900 dark:text-blue-300">
-                                            <p className="font-semibold">Connected with Google Sign-In</p>
+                                            <p className="font-semibold">
+                                                Connected with Google Sign-In
+                                            </p>
                                             <p className="leading-relaxed">
-                                                Your MarketPilot account is authenticated directly through Google. Verify your identity with Google to continue.
+                                                Your MarketPilot account is
+                                                authenticated directly through
+                                                Google. Verify your identity
+                                                with Google to continue.
                                             </p>
                                         </div>
                                     </div>
@@ -462,11 +511,15 @@ export function ChangeEmailModal({
                                     <Button
                                         type="button"
                                         onClick={() => {
-                                            window.location.href = '/settings/email/verify/google';
+                                            window.location.href =
+                                                '/settings/email/verify/google';
                                         }}
                                         className="h-10 rounded-xl bg-blue-600 px-4 text-xs font-bold text-white shadow-sm hover:bg-blue-700"
                                     >
-                                        <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                                        <svg
+                                            className="mr-2 h-4 w-4"
+                                            viewBox="0 0 24 24"
+                                        >
                                             <path
                                                 fill="currentColor"
                                                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -489,7 +542,10 @@ export function ChangeEmailModal({
                                 </div>
                             </div>
                         ) : (
-                            <form onSubmit={handleVerifyIdentity} className="space-y-4 pt-2">
+                            <form
+                                onSubmit={handleVerifyIdentity}
+                                className="space-y-4 pt-2"
+                            >
                                 <div className="space-y-1.5">
                                     <Label
                                         htmlFor="verify_current_password"
@@ -500,7 +556,9 @@ export function ChangeEmailModal({
                                     <PasswordInput
                                         id="verify_current_password"
                                         value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
+                                        onChange={(e) =>
+                                            setPassword(e.target.value)
+                                        }
                                         autoComplete="current-password"
                                         placeholder="Enter your current password"
                                         className="h-11 rounded-xl text-sm"
@@ -529,9 +587,11 @@ export function ChangeEmailModal({
                                             inputMode="numeric"
                                             maxLength={8}
                                             value={twoFactorCode}
-                                            onChange={(e) => setTwoFactorCode(e.target.value)}
+                                            onChange={(e) =>
+                                                setTwoFactorCode(e.target.value)
+                                            }
                                             placeholder="e.g., 123456 or recovery code"
-                                            className="h-11 rounded-xl text-sm font-mono tracking-wider"
+                                            className="h-11 rounded-xl font-mono text-sm tracking-wider"
                                         />
                                     </div>
                                 )}
@@ -575,23 +635,28 @@ export function ChangeEmailModal({
                 {step === 'enter-email' && (
                     <>
                         <DialogHeader>
-                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-1">
+                            <div className="mb-1 flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                                 <Mail className="h-5 w-5" />
                             </div>
                             <DialogTitle className="text-lg font-bold text-foreground">
                                 Change Email Address
                             </DialogTitle>
                             <DialogDescription className="text-xs leading-relaxed text-muted-foreground">
-                                Enter your candidate new email address. We will send a single-use verification code to ensure you own this address.
+                                Enter your candidate new email address. We will
+                                send a single-use verification code to ensure
+                                you own this address.
                             </DialogDescription>
                         </DialogHeader>
 
-                        <form onSubmit={handleRequestChange} className="space-y-4 pt-2">
+                        <form
+                            onSubmit={handleRequestChange}
+                            className="space-y-4 pt-2"
+                        >
                             <div className="space-y-1 rounded-2xl border border-border/60 bg-muted/40 p-3.5">
-                                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                                <span className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
                                     Current Email
                                 </span>
-                                <p className="text-xs font-semibold text-foreground break-all">
+                                <p className="text-xs font-semibold break-all text-foreground">
                                     {currentEmail}
                                 </p>
                             </div>
@@ -608,7 +673,9 @@ export function ChangeEmailModal({
                                     type="email"
                                     required
                                     value={newEmail}
-                                    onChange={(e) => setNewEmail(e.target.value)}
+                                    onChange={(e) =>
+                                        setNewEmail(e.target.value)
+                                    }
                                     autoComplete="email"
                                     placeholder="new-email@example.com"
                                     className="h-11 rounded-xl text-sm"
@@ -627,7 +694,9 @@ export function ChangeEmailModal({
                                     type="email"
                                     required
                                     value={emailConfirmation}
-                                    onChange={(e) => setEmailConfirmation(e.target.value)}
+                                    onChange={(e) =>
+                                        setEmailConfirmation(e.target.value)
+                                    }
                                     autoComplete="email"
                                     placeholder="Confirm new email address"
                                     className="h-11 rounded-xl text-sm"
@@ -683,7 +752,7 @@ export function ChangeEmailModal({
                 {step === 'verify-code' && (
                     <>
                         <DialogHeader>
-                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600 mb-1">
+                            <div className="mb-1 flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600">
                                 <KeyRound className="h-5 w-5" />
                             </div>
                             <DialogTitle className="text-lg font-bold text-foreground">
@@ -700,7 +769,10 @@ export function ChangeEmailModal({
                             </span>
                         </div>
 
-                        <form onSubmit={handleConfirmCode} className="space-y-4 pt-2">
+                        <form
+                            onSubmit={handleConfirmCode}
+                            className="space-y-4 pt-2"
+                        >
                             <div className="space-y-1.5 text-center">
                                 <Label
                                     htmlFor="change_verification_code"
@@ -771,7 +843,10 @@ export function ChangeEmailModal({
                                 </Button>
                                 <Button
                                     type="submit"
-                                    disabled={isConfirming || code.replace(/\D/g, '').length !== 6}
+                                    disabled={
+                                        isConfirming ||
+                                        code.replace(/\D/g, '').length !== 6
+                                    }
                                     className="rounded-xl px-5 text-xs font-bold shadow-xs"
                                 >
                                     {isConfirming ? (
@@ -800,12 +875,13 @@ export function ChangeEmailModal({
                                 Email Address Updated
                             </h3>
                             <p className="text-xs text-muted-foreground">
-                                Your MarketPilot account email address has been successfully changed.
+                                Your MarketPilot account email address has been
+                                successfully changed.
                             </p>
                         </div>
 
                         <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-                            <p className="text-sm font-bold text-emerald-800 dark:text-emerald-200 break-all">
+                            <p className="text-sm font-bold break-all text-emerald-800 dark:text-emerald-200">
                                 {confirmedEmail}
                             </p>
                             <div className="mt-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">

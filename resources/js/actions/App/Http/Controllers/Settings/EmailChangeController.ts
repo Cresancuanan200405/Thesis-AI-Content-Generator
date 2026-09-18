@@ -75,7 +75,7 @@ redirectToGoogle.head = (options?: RouteQueryOptions): RouteDefinition<'head'> =
                     }),
             method: 'get',
         })
-
+    
     redirectToGoogle.form = redirectToGoogleForm
 /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::handleGoogleCallback
@@ -153,7 +153,7 @@ handleGoogleCallback.head = (options?: RouteQueryOptions): RouteDefinition<'head
                     }),
             method: 'get',
         })
-
+    
     handleGoogleCallback.form = handleGoogleCallbackForm
 /**
 * @see \App\Http\Controllers\Settings\EmailChangeController::verifyIdentity

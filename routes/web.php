@@ -314,6 +314,7 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
     Route::get('campaigns/create', fn () => redirect()->route('campaigns.index', ['create' => 'true']))->name('campaigns.create');
     Route::post('campaigns', [CampaignController::class, 'store'])->name('campaigns.store');
     Route::get('campaigns/{campaign}', [CampaignController::class, 'show'])->name('campaigns.show');
+    Route::get('campaigns/{campaign}/generator', [GeneratorController::class, 'index'])->name('campaigns.generator');
     Route::post('campaigns/{campaign}/attach-designs', [CampaignController::class, 'attachDesigns'])->name('campaigns.attach-designs');
     Route::post('campaigns/{campaign}/archive', [CampaignController::class, 'archive'])->name('campaigns.archive');
     Route::post('campaigns/{campaign}/unarchive', [CampaignController::class, 'unarchive'])->name('campaigns.unarchive');

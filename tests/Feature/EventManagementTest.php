@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Business;
+use App\Models\Campaign;
 use App\Models\Design;
 use App\Models\Event;
 use App\Models\User;
@@ -251,14 +253,20 @@ it('global events cannot be modified by normal users', function () {
 
 it('generator accepts a valid global event selection', function () {
     $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
     $event = Event::factory()->global()->create([
         'name' => 'Christmas',
         'date' => now()->month(12)->day(25)->toDateString(),
         'type' => 'holiday',
     ]);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event->id,
+    ]);
 
     $this->actingAs($user)
-        ->get('/generator?event='.$event->id)
+        ->get('/generator?campaign_id='.$campaign->id.'&event='.$event->id)
         ->assertOk();
 });
 

@@ -79,7 +79,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     index.form = indexForm
 /**
 * @see \App\Http\Controllers\EventController::yearEvents
- * @see app/Http/Controllers/EventController.php:142
+ * @see app/Http/Controllers/EventController.php:155
  * @route '/calendar/events-year'
  */
 export const yearEvents = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -94,7 +94,7 @@ yearEvents.definition = {
 
 /**
 * @see \App\Http\Controllers\EventController::yearEvents
- * @see app/Http/Controllers/EventController.php:142
+ * @see app/Http/Controllers/EventController.php:155
  * @route '/calendar/events-year'
  */
 yearEvents.url = (options?: RouteQueryOptions) => {
@@ -103,7 +103,7 @@ yearEvents.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\EventController::yearEvents
- * @see app/Http/Controllers/EventController.php:142
+ * @see app/Http/Controllers/EventController.php:155
  * @route '/calendar/events-year'
  */
 yearEvents.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -112,7 +112,7 @@ yearEvents.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\EventController::yearEvents
- * @see app/Http/Controllers/EventController.php:142
+ * @see app/Http/Controllers/EventController.php:155
  * @route '/calendar/events-year'
  */
 yearEvents.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -122,7 +122,7 @@ yearEvents.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\EventController::yearEvents
- * @see app/Http/Controllers/EventController.php:142
+ * @see app/Http/Controllers/EventController.php:155
  * @route '/calendar/events-year'
  */
     const yearEventsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -132,7 +132,7 @@ yearEvents.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\EventController::yearEvents
- * @see app/Http/Controllers/EventController.php:142
+ * @see app/Http/Controllers/EventController.php:155
  * @route '/calendar/events-year'
  */
         yearEventsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -141,7 +141,7 @@ yearEvents.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\EventController::yearEvents
- * @see app/Http/Controllers/EventController.php:142
+ * @see app/Http/Controllers/EventController.php:155
  * @route '/calendar/events-year'
  */
         yearEventsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

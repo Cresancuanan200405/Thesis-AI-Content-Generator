@@ -8,6 +8,7 @@ use App\Models\Campaign;
 use App\Models\Design;
 use App\Models\Event;
 use App\Models\User;
+use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -65,19 +66,89 @@ class CampaignController extends Controller
             $query->where('status', $status);
         }
 
+        $view = $request->query('view', 'opportunities');
+        if (! in_array($view, ['opportunities', 'hub'], true)) {
+            $view = 'opportunities';
+        }
+
         /** @var LengthAwarePaginator<int, Campaign> $campaigns */
         $campaigns = $query->paginate(12)->withQueryString();
 
-        $events = Event::query()
+        $today = now()->startOfDay();
+        $accountFinalizedAt = $user->onboarding_completed_at ?? $user->created_at;
+        $accountCreatedDate = $accountFinalizedAt?->copy()->startOfDay();
+        $accountYear = (int) ($accountFinalizedAt ? $accountFinalizedAt->format('Y') : now()->format('Y'));
+
+        $allEvents = Event::query()
             ->where(fn ($query) => $query->where('user_id', $user->id)->orWhere('is_global', true))
+            ->whereYear('date', $accountYear)
             ->orderBy('date')
+            ->get();
+
+        $campaignsByEvent = $user->campaigns()
+            ->whereNotNull('event_id')
             ->get()
-            ->map(fn ($event): array => [
+            ->keyBy('event_id');
+
+        $events = $allEvents->map(function (Event $event) use ($campaignsByEvent, $today, $accountCreatedDate): array {
+            $campaign = $campaignsByEvent->get($event->id);
+            $eventDate = $event->date?->startOfDay();
+            $isPast = $eventDate ? $eventDate->lt($today) : false;
+            $isUpcoming = $eventDate ? $eventDate->gte($today) : true;
+            $hasCampaign = $campaign !== null;
+
+            // Eligibility boundary for missed promotional opportunity:
+            // Event must belong to account creation year (enforced by whereYear),
+            // occurred on or after the account's finalized creation timestamp and has no campaign
+            $isEligibleForMissed = $isPast && $accountCreatedDate !== null && $eventDate && $eventDate->gte($accountCreatedDate);
+            $isMissed = $isEligibleForMissed && ! $hasCampaign;
+
+            $diffInDays = $eventDate ? (int) $today->diffInDays($eventDate, false) : 0;
+            $relativeTiming = null;
+            if ($isUpcoming) {
+                if ($diffInDays === 0) {
+                    $relativeTiming = 'Today';
+                } elseif ($diffInDays === 1) {
+                    $relativeTiming = 'Tomorrow';
+                } elseif ($diffInDays === 7) {
+                    $relativeTiming = 'In 1 week';
+                } elseif ($diffInDays === 14) {
+                    $relativeTiming = 'In 2 weeks';
+                } elseif ($diffInDays % 7 === 0 && $diffInDays <= 28) {
+                    $weeks = (int) ($diffInDays / 7);
+                    $relativeTiming = "In {$weeks} weeks";
+                } else {
+                    $relativeTiming = "In {$diffInDays} days";
+                }
+            }
+
+            return [
                 'id' => $event->id,
                 'name' => $event->name,
                 'date' => $event->date?->format('Y-m-d'),
+                'date_formatted' => $event->date?->format('M j, Y'),
                 'type' => $event->type,
-            ])
+                'category' => $event->category ?? $event->type,
+                'description' => $event->description,
+                'is_past' => $isPast,
+                'is_upcoming' => $isUpcoming,
+                'relative_timing' => $relativeTiming,
+                'days_until' => $diffInDays,
+                'has_campaign' => $hasCampaign,
+                'campaign_id' => $campaign?->id,
+                'campaign_name' => $campaign?->name,
+                'campaign_status' => $campaign?->status,
+                'is_eligible_for_missed' => $isEligibleForMissed,
+                'is_missed' => $isMissed,
+                'can_create_anyway' => $isPast && ! $hasCampaign,
+                'show_url' => $campaign ? route('campaigns.show', $campaign) : null,
+                'generator_url' => $campaign ? route('campaigns.generator', $campaign) : null,
+            ];
+        })->values()->all();
+
+        $upcomingOpportunities = collect($events)
+            ->where('is_upcoming', true)
+            ->sortBy('date')
             ->values()
             ->all();
 
@@ -109,14 +180,16 @@ class CampaignController extends Controller
                         'download_url' => route('designs.download', $design),
                     ])->values()->all(),
                     'show_url' => route('campaigns.show', $campaign),
-                    'generator_url' => route('generator.index', array_filter([
-                        'campaign_id' => $campaign->id,
-                        'event_id' => $campaign->event_id,
-                        'product_name' => $campaign->product?->name,
-                    ])),
+                    'generator_url' => route('campaigns.generator', $campaign),
                 ];
             })->values()->all(),
+            'account_year' => $accountYear,
+            'campaign_year' => $accountYear,
+            'currentCampaignYear' => $accountYear,
+            'view' => $view,
             'events' => $events,
+            'events_and_holidays' => $events,
+            'upcoming_opportunities' => $upcomingOpportunities,
             'stats' => [
                 'total' => (clone $allUserCampaigns)->count(),
                 'active' => (clone $allUserCampaigns)->where('status', 'active')->count(),
@@ -128,6 +201,7 @@ class CampaignController extends Controller
             'filters' => [
                 'search' => $search,
                 'status' => $status ?? '',
+                'view' => $view,
             ],
             'pagination' => [
                 'current_page' => $campaigns->currentPage(),
@@ -206,11 +280,7 @@ class CampaignController extends Controller
                     'image_url' => $design->generated_image_path ? Storage::url($design->generated_image_path) : null,
                     'download_url' => route('designs.download', $design),
                 ])->values()->all(),
-                'generator_url' => route('generator.index', array_filter([
-                    'campaign_id' => $campaign->id,
-                    'event_id' => $campaign->event_id,
-                    'product_name' => $campaign->product?->name,
-                ])),
+                'generator_url' => route('campaigns.generator', $campaign),
             ],
         ]);
     }
@@ -266,6 +336,18 @@ class CampaignController extends Controller
         $startDate = $request->input('start_date') ?: now()->toDateString();
         $endDate = $request->input('end_date') ?: $startDate;
 
+        $today = now()->startOfDay();
+        $start = Carbon::parse($startDate)->startOfDay();
+        $end = Carbon::parse($endDate)->startOfDay();
+        if ($end->lt($today)) {
+            $lifecycleStatus = 'completed';
+        } elseif ($start->gt($today)) {
+            $lifecycleStatus = 'scheduled';
+        } else {
+            $lifecycleStatus = 'active';
+        }
+        $status = $request->input('status') ?: $lifecycleStatus;
+
         $campaign = $user->campaigns()->create([
             'business_id' => $businessId,
             'product_id' => $request->input('product_id') ?: null,
@@ -276,7 +358,7 @@ class CampaignController extends Controller
             'target_audience' => $request->input('target_audience') ?: null,
             'start_date' => $startDate,
             'end_date' => $endDate,
-            'status' => $request->input('status', 'active') ?: 'active',
+            'status' => $status,
         ]);
 
         if ($request->filled('design_id')) {

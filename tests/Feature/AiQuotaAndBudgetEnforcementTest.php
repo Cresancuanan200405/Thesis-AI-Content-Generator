@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Business;
+use App\Models\Campaign;
 use App\Models\Design;
 use App\Models\Event;
 use App\Models\User;
@@ -79,10 +80,16 @@ test('generator store endpoint blocks new generation when budget limit is reache
     ]);
 
     $user = User::factory()->create(['onboarding_completed' => true]);
-    Business::factory()->create(['user_id' => $user->id]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
     $event = Event::factory()->create(['user_id' => $user->id]);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event->id,
+    ]);
 
     $response = $this->actingAs($user)->post(route('generator.store'), [
+        'campaign_id' => $campaign->id,
         'product_name' => 'Sample Product',
         'marketing_goal' => 'Holiday Sale',
         'event_id' => $event->id,

@@ -44,7 +44,7 @@ class StoreDesignRequest extends FormRequest
             'price' => ['nullable', 'numeric', 'min:0'],
             'event_id' => ['nullable', 'exists:events,id'],
             'product_id' => ['nullable', 'exists:products,id'],
-            'campaign_id' => ['nullable', 'exists:campaigns,id'],
+            'campaign_id' => ['required', 'exists:campaigns,id'],
             'brand_tone' => ['nullable'],
             'brand_tone.*' => ['string', 'max:255'],
             'visual_theme' => ['nullable'],

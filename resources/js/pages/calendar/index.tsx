@@ -53,6 +53,9 @@ type CalendarEvent = {
     user_id?: number | null;
     has_design?: boolean;
     is_missed?: boolean;
+    has_campaign?: boolean;
+    campaign_id?: string | number | null;
+    campaign_name?: string | null;
 };
 
 const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -1524,8 +1527,13 @@ export default function MarketingCalendarPage({
                                     const isPast = isEventPast(
                                         selectedEvent.date,
                                     );
+                                    const hasCampaign = Boolean(
+                                        selectedEvent.has_campaign,
+                                    );
                                     const isMissed =
-                                        isPast && !selectedEvent.has_design;
+                                        isPast &&
+                                        !selectedEvent.has_design &&
+                                        !hasCampaign;
                                     const styleKey =
                                         selectedEvent.category ||
                                         selectedEvent.type ||
@@ -1542,12 +1550,19 @@ export default function MarketingCalendarPage({
                                             >
                                                 {style.label}
                                             </Badge>
-                                            {isMissed ? (
+                                            {hasCampaign ? (
                                                 <Badge
                                                     variant="outline"
-                                                    className="border-slate-500/30 bg-slate-500/10 font-mono text-[10px] font-semibold text-slate-400"
+                                                    className="border-primary/40 bg-primary/10 text-[10px] font-semibold text-primary"
                                                 >
-                                                    Missed (No Visuals)
+                                                    Campaign Linked
+                                                </Badge>
+                                            ) : isMissed ? (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="border-amber-500/40 bg-amber-500/10 font-mono text-[10px] font-semibold text-amber-600 dark:text-amber-400"
+                                                >
+                                                    Missed Opportunity
                                                 </Badge>
                                             ) : isPast ? (
                                                 <Badge
@@ -1592,62 +1607,147 @@ export default function MarketingCalendarPage({
                             </div>
                         )}
 
-                        {isEventPast(selectedEvent.date) &&
-                            !selectedEvent.has_design && (
-                                <div className="rounded-2xl border border-slate-500/20 bg-slate-500/5 p-3.5 text-xs text-muted-foreground">
-                                    <span className="font-semibold text-foreground">
-                                        Missed Event:
-                                    </span>{' '}
-                                    This event date has passed without an AI
-                                    marketing visual being generated.
-                                </div>
-                            )}
+                        {(() => {
+                            const isPast = isEventPast(selectedEvent.date);
+                            const hasCampaign = Boolean(
+                                selectedEvent.has_campaign,
+                            );
+                            const isMissed =
+                                isPast &&
+                                !selectedEvent.has_design &&
+                                !hasCampaign;
+
+                            if (isMissed) {
+                                return (
+                                    <div className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-3.5 text-xs text-muted-foreground">
+                                        <span className="font-semibold text-foreground">
+                                            Missed Promotional Opportunity:
+                                        </span>{' '}
+                                        This marketing date passed without an
+                                        active campaign or design. You can still
+                                        launch a marketing campaign anytime
+                                        using Create Campaign Anyway.
+                                    </div>
+                                );
+                            }
+
+                            if (hasCampaign && selectedEvent.campaign_name) {
+                                return (
+                                    <div className="rounded-2xl border border-primary/25 bg-primary/5 p-3.5 text-xs text-muted-foreground">
+                                        <span className="font-semibold text-foreground">
+                                            Campaign Active:
+                                        </span>{' '}
+                                        Organized under "
+                                        {selectedEvent.campaign_name}".
+                                    </div>
+                                );
+                            }
+
+                            return null;
+                        })()}
 
                         <DialogFooter className="mt-4 flex-col gap-2 sm:flex-row">
-                            {!(
-                                isEventPast(selectedEvent.date) &&
-                                !selectedEvent.has_design
-                            ) ? (
-                                <>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                            router.visit(
-                                                `/generator?event_id=${selectedEvent.id}`,
-                                            );
-                                        }}
-                                        className="w-full gap-1.5 text-xs font-semibold shadow-none sm:w-auto"
-                                    >
-                                        <Sparkles className="h-3.5 w-3.5 text-primary" />
-                                        Generate Visuals
-                                    </Button>
+                            {(() => {
+                                const isPast = isEventPast(selectedEvent.date);
+                                const hasCampaign = Boolean(
+                                    selectedEvent.has_campaign,
+                                );
 
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        onClick={() => {
-                                            router.visit(
-                                                `/campaigns?create=true&event_id=${selectedEvent.id}`,
-                                            );
-                                        }}
-                                        className="w-full text-xs font-semibold shadow-xs sm:w-auto"
-                                    >
-                                        Create Campaign
-                                    </Button>
-                                </>
-                            ) : (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setSelectedEvent(null)}
-                                    className="w-full text-xs font-semibold shadow-none sm:w-auto"
-                                >
-                                    Close
-                                </Button>
-                            )}
+                                if (hasCampaign && selectedEvent.campaign_id) {
+                                    return (
+                                        <>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                onClick={() => {
+                                                    router.visit(
+                                                        `/campaigns/${selectedEvent.campaign_id}`,
+                                                    );
+                                                }}
+                                                className="w-full text-xs font-semibold shadow-xs sm:w-auto"
+                                            >
+                                                Open Campaign
+                                            </Button>
+
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => {
+                                                    router.visit(
+                                                        `/campaigns/${selectedEvent.campaign_id}/generator`,
+                                                    );
+                                                }}
+                                                className="w-full gap-1.5 text-xs font-semibold shadow-none sm:w-auto"
+                                            >
+                                                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                                                AI Marketing Studio
+                                            </Button>
+                                        </>
+                                    );
+                                }
+
+                                if (!isPast) {
+                                    return (
+                                        <>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                onClick={() => {
+                                                    router.visit(
+                                                        `/campaigns?create=true&event_id=${selectedEvent.id}`,
+                                                    );
+                                                }}
+                                                className="w-full text-xs font-semibold shadow-xs sm:w-auto"
+                                            >
+                                                Create Campaign
+                                            </Button>
+
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() =>
+                                                    setSelectedEvent(null)
+                                                }
+                                                className="w-full text-xs font-semibold shadow-none sm:w-auto"
+                                            >
+                                                Close
+                                            </Button>
+                                        </>
+                                    );
+                                }
+
+                                return (
+                                    <>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                router.visit(
+                                                    '/campaigns?create=true',
+                                                );
+                                            }}
+                                            className="w-full text-xs font-semibold shadow-none sm:w-auto"
+                                        >
+                                            Create Campaign Anyway
+                                        </Button>
+
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() =>
+                                                setSelectedEvent(null)
+                                            }
+                                            className="w-full text-xs font-semibold shadow-none sm:w-auto"
+                                        >
+                                            Close
+                                        </Button>
+                                    </>
+                                );
+                            })()}
 
                             {(() => {
                                 const isRegularOrGlobal = Boolean(

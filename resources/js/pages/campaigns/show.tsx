@@ -393,7 +393,7 @@ export default function CampaignShowPage({
                                                 <Link
                                                     href={
                                                         campaign?.generator_url ??
-                                                        `/generator?event_id=${campaign?.event_id || ''}&campaign_id=${campaign?.id}`
+                                                        `/campaigns/${campaign?.id}/generator`
                                                     }
                                                 >
                                                     <Sparkles className="h-4 w-4" />
@@ -645,7 +645,7 @@ export default function CampaignShowPage({
                                                 className="h-7 gap-1 px-2.5 text-xs shadow-xs"
                                             >
                                                 <Link
-                                                    href={`/generator?campaign_id=${campaign.id}${campaign.event_id ? `&event_id=${campaign.event_id}` : ''}${campaign.product_name ? `&product_name=${encodeURIComponent(campaign.product_name)}` : ''}`}
+                                                    href={`/campaigns/${campaign.id}/generator${campaign.event_id ? `?event_id=${campaign.event_id}` : ''}${campaign.product_name ? `${campaign.event_id ? '&' : '?'}product_name=${encodeURIComponent(campaign.product_name)}` : ''}`}
                                                 >
                                                     <Plus className="h-3.5 w-3.5" />
                                                     Generate
@@ -692,7 +692,7 @@ export default function CampaignShowPage({
                                                     className="h-7 text-xs"
                                                 >
                                                     <Link
-                                                        href={`/generator?campaign_id=${campaign.id}${campaign.event_id ? `&event_id=${campaign.event_id}` : ''}${campaign.product_name ? `&product_name=${encodeURIComponent(campaign.product_name)}` : ''}`}
+                                                        href={`/campaigns/${campaign.id}/generator${campaign.event_id ? `?event_id=${campaign.event_id}` : ''}${campaign.product_name ? `${campaign.event_id ? '&' : '?'}product_name=${encodeURIComponent(campaign.product_name)}` : ''}`}
                                                     >
                                                         <Sparkles className="mr-1 h-3 w-3" />
                                                         Create Visual
@@ -823,7 +823,7 @@ export default function CampaignShowPage({
                                             className="h-7 gap-1.5 text-xs shadow-none"
                                         >
                                             <Link
-                                                href={`/generator?campaign_id=${campaign.id}${campaign.event_id ? `&event_id=${campaign.event_id}` : ''}${campaign.product_name ? `&product_name=${encodeURIComponent(campaign.product_name)}` : ''}`}
+                                                href={`/campaigns/${campaign.id}/generator${campaign.event_id ? `?event_id=${campaign.event_id}` : ''}${campaign.product_name ? `${campaign.event_id ? '&' : '?'}product_name=${encodeURIComponent(campaign.product_name)}` : ''}`}
                                             >
                                                 <Sparkles className="h-3 w-3 text-primary" />
                                                 Generate Visual in AI Studio
@@ -1185,10 +1185,10 @@ export default function CampaignShowPage({
                                         className="h-9 cursor-pointer gap-2 bg-primary px-4 text-xs font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:scale-105 hover:bg-primary/90"
                                     >
                                         <Link
-                                            href={`/generator?event_id=${campaign?.event_id || ''}&campaign_id=${campaign.id}&product_name=${encodeURIComponent(
+                                            href={`/campaigns/${campaign.id}/generator?product_name=${encodeURIComponent(
                                                 previewDesign.product_name ||
                                                     '',
-                                            )}&price=${encodeURIComponent(previewDesign.price || '')}&tagline=${encodeURIComponent(previewDesign.tagline || '')}&prompt=${encodeURIComponent(previewDesign.prompt || '')}&aspect_ratio=${encodeURIComponent(previewDesign.aspect_ratio || '1:1')}`}
+                                            )}${campaign?.event_id ? `&event_id=${campaign.event_id}` : ''}&price=${encodeURIComponent(previewDesign.price || '')}&tagline=${encodeURIComponent(previewDesign.tagline || '')}&prompt=${encodeURIComponent(previewDesign.prompt || '')}&aspect_ratio=${encodeURIComponent(previewDesign.aspect_ratio || '1:1')}`}
                                         >
                                             <Sparkles className="h-4 w-4" />
                                             Edit in AI Studio

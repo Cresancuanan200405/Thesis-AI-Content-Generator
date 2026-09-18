@@ -38,7 +38,9 @@ export function ChangeGoogleAccountModal({
     trigger,
 }: ChangeGoogleAccountModalProps) {
     const [open, setOpen] = useState(isAuthorized);
-    const [step, setStep] = useState<'verify' | 'connect'>(isAuthorized ? 'connect' : 'verify');
+    const [step, setStep] = useState<'verify' | 'connect'>(
+        isAuthorized ? 'connect' : 'verify',
+    );
     const [password, setPassword] = useState('');
     const [isVerifyingPassword, setIsVerifyingPassword] = useState(false);
     const [verifyError, setVerifyError] = useState('');
@@ -56,6 +58,7 @@ export function ChangeGoogleAccountModal({
 
         if (!password) {
             setVerifyError('Please enter your password.');
+
             return;
         }
 
@@ -68,7 +71,11 @@ export function ChangeGoogleAccountModal({
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
                     'X-CSRF-TOKEN':
-                        (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+                        (
+                            document.querySelector(
+                                'meta[name="csrf-token"]',
+                            ) as HTMLMetaElement
+                        )?.content || '',
                 },
                 body: JSON.stringify({ password }),
             });
@@ -76,14 +83,21 @@ export function ChangeGoogleAccountModal({
             const data = await response.json();
 
             if (!response.ok) {
-                setVerifyError(data.errors?.password?.[0] || data.message || 'Incorrect password.');
+                setVerifyError(
+                    data.errors?.password?.[0] ||
+                        data.message ||
+                        'Incorrect password.',
+                );
                 setIsVerifyingPassword(false);
+
                 return;
             }
 
             setIsVerifyingPassword(false);
             setStep('connect');
-            toast.success('Ownership verified. You may now connect a Google account.');
+            toast.success(
+                'Ownership verified. You may now connect a Google account.',
+            );
         } catch {
             setIsVerifyingPassword(false);
             setVerifyError('Verification failed. Please try again.');
@@ -107,7 +121,7 @@ export function ChangeGoogleAccountModal({
 
             <DialogContent className="rounded-3xl p-6 sm:max-w-md">
                 <DialogHeader>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600 mb-1">
+                    <div className="mb-1 flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600">
                         <svg className="h-5 w-5" viewBox="0 0 24 24">
                             <path
                                 fill="currentColor"
@@ -131,7 +145,9 @@ export function ChangeGoogleAccountModal({
                         Change Linked Google Account
                     </DialogTitle>
                     <DialogDescription className="text-xs leading-relaxed text-muted-foreground">
-                        Replace the Google account currently linked to your MarketPilot account. All your workspace data, campaigns, and designs will remain in this account.
+                        Replace the Google account currently linked to your
+                        MarketPilot account. All your workspace data, campaigns,
+                        and designs will remain in this account.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -143,9 +159,15 @@ export function ChangeGoogleAccountModal({
                                     <div className="flex items-start gap-2.5">
                                         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
                                         <div className="space-y-1 text-xs text-blue-900 dark:text-blue-300">
-                                            <p className="font-semibold">Verify Current Google Ownership</p>
+                                            <p className="font-semibold">
+                                                Verify Current Google Ownership
+                                            </p>
                                             <p className="leading-relaxed">
-                                                For security, you must first verify ownership of your currently connected Google account ({currentEmail}) before replacing it.
+                                                For security, you must first
+                                                verify ownership of your
+                                                currently connected Google
+                                                account ({currentEmail}) before
+                                                replacing it.
                                             </p>
                                         </div>
                                     </div>
@@ -163,7 +185,8 @@ export function ChangeGoogleAccountModal({
                                     <Button
                                         type="button"
                                         onClick={() => {
-                                            window.location.href = '/settings/google/verify-current';
+                                            window.location.href =
+                                                '/settings/google/verify-current';
                                         }}
                                         className="h-10 rounded-xl bg-blue-600 px-4 text-xs font-bold text-white shadow-sm hover:bg-blue-700"
                                     >
@@ -173,20 +196,30 @@ export function ChangeGoogleAccountModal({
                                 </div>
                             </div>
                         ) : hasPassword ? (
-                            <form onSubmit={handleVerifyPassword} className="space-y-4">
+                            <form
+                                onSubmit={handleVerifyPassword}
+                                className="space-y-4"
+                            >
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="verify_current_pwd" className="text-xs font-bold text-foreground">
+                                    <Label
+                                        htmlFor="verify_current_pwd"
+                                        className="text-xs font-bold text-foreground"
+                                    >
                                         Current Password
                                     </Label>
                                     <PasswordInput
                                         id="verify_current_pwd"
                                         value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
+                                        onChange={(e) =>
+                                            setPassword(e.target.value)
+                                        }
                                         placeholder="Enter your current password"
                                         className="h-11 rounded-xl text-sm"
                                     />
                                     {verifyError && (
-                                        <p className="text-xs font-medium text-destructive">{verifyError}</p>
+                                        <p className="text-xs font-medium text-destructive">
+                                            {verifyError}
+                                        </p>
                                     )}
                                 </div>
 
@@ -225,20 +258,36 @@ export function ChangeGoogleAccountModal({
                             <div className="flex items-start gap-2.5">
                                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
                                 <div className="space-y-1 text-xs text-emerald-900 dark:text-emerald-300">
-                                    <p className="font-semibold">Current Account Ownership Verified</p>
+                                    <p className="font-semibold">
+                                        Current Account Ownership Verified
+                                    </p>
                                     <p className="leading-relaxed">
-                                        You may now select the new Google account you wish to link. It will replace your current Google login for this MarketPilot profile.
+                                        You may now select the new Google
+                                        account you wish to link. It will
+                                        replace your current Google login for
+                                        this MarketPilot profile.
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-border/70 bg-muted/40 p-3.5 text-xs space-y-1.5">
-                            <p className="font-semibold text-foreground">What happens next:</p>
-                            <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
-                                <li>You will be redirected to Google to choose your new account.</li>
-                                <li>The new Google account will become the login for this MarketPilot account.</li>
-                                <li>All your existing data and business settings remain in this same account.</li>
+                        <div className="space-y-1.5 rounded-2xl border border-border/70 bg-muted/40 p-3.5 text-xs">
+                            <p className="font-semibold text-foreground">
+                                What happens next:
+                            </p>
+                            <ul className="list-disc space-y-1 pl-4 text-muted-foreground">
+                                <li>
+                                    You will be redirected to Google to choose
+                                    your new account.
+                                </li>
+                                <li>
+                                    The new Google account will become the login
+                                    for this MarketPilot account.
+                                </li>
+                                <li>
+                                    All your existing data and business settings
+                                    remain in this same account.
+                                </li>
                             </ul>
                         </div>
 
@@ -254,11 +303,15 @@ export function ChangeGoogleAccountModal({
                             <Button
                                 type="button"
                                 onClick={() => {
-                                    window.location.href = '/settings/google/change';
+                                    window.location.href =
+                                        '/settings/google/change';
                                 }}
                                 className="h-10 rounded-xl bg-blue-600 px-4 text-xs font-bold text-white shadow-sm hover:bg-blue-700"
                             >
-                                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                                <svg
+                                    className="mr-2 h-4 w-4"
+                                    viewBox="0 0 24 24"
+                                >
                                     <path
                                         fill="currentColor"
                                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"

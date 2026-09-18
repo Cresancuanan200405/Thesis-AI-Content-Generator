@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Business;
+use App\Models\Campaign;
 use App\Models\Design;
 use App\Models\Event;
 use App\Models\Product;
@@ -31,8 +32,15 @@ it('validates generation requests without requiring any logo parameters', functi
         'price' => 149.00,
     ]);
     $event = Event::factory()->create(['user_id' => $user->id]);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'product_id' => $product->id,
+        'event_id' => $event->id,
+    ]);
 
     $response = $this->actingAs($user)->post('/generator', [
+        'campaign_id' => $campaign->id,
         'product_id' => $product->id,
         'event_id' => $event->id,
         'product_name' => 'Caramel Machiato',

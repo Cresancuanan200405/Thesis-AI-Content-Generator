@@ -28,12 +28,7 @@ import PasswordInput from '@/components/password-input';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 import {
     Dialog,
@@ -113,8 +108,7 @@ export default function AccountSettingsPage({
 
     const { appearance, updateAppearance } = useAppearance();
 
-    const isGoogle =
-        (user as any).provider_name?.toLowerCase() === 'google';
+    const isGoogle = (user as any).provider_name?.toLowerCase() === 'google';
 
     const isEmailVerified = Boolean(user.email_verified_at);
 
@@ -132,6 +126,7 @@ export default function AccountSettingsPage({
 
         if (!logoutPassword) {
             setLogoutPasswordError('Please enter your current password.');
+
             return;
         }
 
@@ -150,9 +145,7 @@ export default function AccountSettingsPage({
                 setIsSessionsModalOpen(false);
                 setLogoutPassword('');
 
-                toast.success(
-                    'Logged out of all other browser sessions.',
-                );
+                toast.success('Logged out of all other browser sessions.');
             },
 
             onError: (errors) => {
@@ -250,9 +243,7 @@ export default function AccountSettingsPage({
                         <CardContent className="p-0">
                             {/* EMAIL */}
                             <SettingsRow
-                                icon={
-                                    <Mail className="h-4 w-4" />
-                                }
+                                icon={<Mail className="h-4 w-4" />}
                                 title="Email address"
                                 description={
                                     isEmailVerified
@@ -265,18 +256,14 @@ export default function AccountSettingsPage({
                                         hasPassword={hasPassword}
                                         twoFactorEnabled={twoFactorEnabled}
                                         isGoogle={isGoogle}
-                                        isIdentityVerified={
-                                            isIdentityVerified
-                                        }
-                                        hasPendingChange={
-                                            hasPendingEmailChange
-                                        }
+                                        isIdentityVerified={isIdentityVerified}
+                                        hasPendingChange={hasPendingEmailChange}
                                         pendingEmail={pendingEmail}
                                     />
                                 }
                             >
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <span className="break-all text-sm font-semibold text-foreground">
+                                    <span className="text-sm font-semibold break-all text-foreground">
                                         {user.email}
                                     </span>
 
@@ -321,10 +308,10 @@ export default function AccountSettingsPage({
 
                                         {status ===
                                             'verification-link-sent' && (
-                                                <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                                                    Verification link sent.
-                                                </span>
-                                            )}
+                                            <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                                                Verification link sent.
+                                            </span>
+                                        )}
                                     </div>
                                 )}
                             </SettingsRow>
@@ -332,9 +319,7 @@ export default function AccountSettingsPage({
                             {/* GOOGLE */}
                             {isGoogle && (
                                 <SettingsRow
-                                    icon={
-                                        <Globe className="h-4 w-4" />
-                                    }
+                                    icon={<Globe className="h-4 w-4" />}
                                     title="Connected Google account"
                                     description="Manage the Google account linked to your MarketPilot account."
                                     action={
@@ -365,9 +350,7 @@ export default function AccountSettingsPage({
 
                             {/* PASSWORD */}
                             <SettingsRow
-                                icon={
-                                    <Shield className="h-4 w-4" />
-                                }
+                                icon={<Shield className="h-4 w-4" />}
                                 title="Password"
                                 description={
                                     hasPassword
@@ -409,17 +392,13 @@ export default function AccountSettingsPage({
                         <CardContent className="p-0">
                             {/* TWO FACTOR */}
                             <SettingsRow
-                                icon={
-                                    <ShieldCheck className="h-4 w-4" />
-                                }
+                                icon={<ShieldCheck className="h-4 w-4" />}
                                 title="Two-factor authentication"
                                 description="Add an extra verification step using an authenticator app."
                                 action={
                                     <Dialog
                                         open={isTwoFactorModalOpen}
-                                        onOpenChange={
-                                            setIsTwoFactorModalOpen
-                                        }
+                                        onOpenChange={setIsTwoFactorModalOpen}
                                     >
                                         <DialogTrigger asChild>
                                             <Button
@@ -484,17 +463,13 @@ export default function AccountSettingsPage({
 
                             {/* SESSIONS */}
                             <SettingsRow
-                                icon={
-                                    <Laptop className="h-4 w-4" />
-                                }
+                                icon={<Laptop className="h-4 w-4" />}
                                 title="Active sessions"
                                 description="Review browsers and devices currently signed in to your account."
                                 action={
                                     <Dialog
                                         open={isSessionsModalOpen}
-                                        onOpenChange={
-                                            setIsSessionsModalOpen
-                                        }
+                                        onOpenChange={setIsSessionsModalOpen}
                                     >
                                         <DialogTrigger asChild>
                                             <Button
@@ -516,63 +491,59 @@ export default function AccountSettingsPage({
                                                 <DialogDescription className="text-xs leading-5">
                                                     Review devices currently
                                                     logged into your account and
-                                                    terminate sessions you do not
-                                                    recognize.
+                                                    terminate sessions you do
+                                                    not recognize.
                                                 </DialogDescription>
                                             </DialogHeader>
 
                                             <div className="space-y-2.5 pt-2">
                                                 {sessions &&
-                                                    sessions.length > 0 ? (
-                                                    sessions.map(
-                                                        (session) => (
-                                                            <div
-                                                                key={
-                                                                    session.id
-                                                                }
-                                                                className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/20 p-3"
-                                                            >
-                                                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-background text-muted-foreground">
-                                                                    {session.is_desktop ? (
-                                                                        <Laptop className="h-4 w-4" />
-                                                                    ) : (
-                                                                        <Smartphone className="h-4 w-4" />
-                                                                    )}
-                                                                </div>
-
-                                                                <div className="min-w-0 flex-1">
-                                                                    <p className="truncate text-xs font-semibold text-foreground">
-                                                                        {
-                                                                            session.platform
-                                                                        }{' '}
-                                                                        —{' '}
-                                                                        {
-                                                                            session.browser
-                                                                        }
-                                                                    </p>
-
-                                                                    <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
-                                                                        {session.ip_address ??
-                                                                            'IP unavailable'}{' '}
-                                                                        • Last
-                                                                        active{' '}
-                                                                        {
-                                                                            session.last_active
-                                                                        }
-                                                                    </p>
-                                                                </div>
-
-                                                                {session.is_current_device && (
-                                                                    <Badge
-                                                                        variant="outline"
-                                                                        className="shrink-0 border-emerald-500/25 bg-emerald-500/10 text-[9px] font-bold text-emerald-600 dark:text-emerald-400"
-                                                                    >
-                                                                        Current
-                                                                    </Badge>
+                                                sessions.length > 0 ? (
+                                                    sessions.map((session) => (
+                                                        <div
+                                                            key={session.id}
+                                                            className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/20 p-3"
+                                                        >
+                                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-background text-muted-foreground">
+                                                                {session.is_desktop ? (
+                                                                    <Laptop className="h-4 w-4" />
+                                                                ) : (
+                                                                    <Smartphone className="h-4 w-4" />
                                                                 )}
                                                             </div>
-                                                        ),
-                                                    )
+
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="truncate text-xs font-semibold text-foreground">
+                                                                    {
+                                                                        session.platform
+                                                                    }{' '}
+                                                                    —{' '}
+                                                                    {
+                                                                        session.browser
+                                                                    }
+                                                                </p>
+
+                                                                <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                                                                    {session.ip_address ??
+                                                                        'IP unavailable'}{' '}
+                                                                    • Last
+                                                                    active{' '}
+                                                                    {
+                                                                        session.last_active
+                                                                    }
+                                                                </p>
+                                                            </div>
+
+                                                            {session.is_current_device && (
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="shrink-0 border-emerald-500/25 bg-emerald-500/10 text-[9px] font-bold text-emerald-600 dark:text-emerald-400"
+                                                                >
+                                                                    Current
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    ))
                                                 ) : (
                                                     <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/20 p-3">
                                                         <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-background text-muted-foreground">
@@ -601,9 +572,7 @@ export default function AccountSettingsPage({
 
                                             <div className="flex flex-col gap-3 border-t border-border/60 pt-4 sm:flex-row sm:items-center sm:justify-between">
                                                 <Dialog
-                                                    open={
-                                                        isLogoutModalOpen
-                                                    }
+                                                    open={isLogoutModalOpen}
                                                     onOpenChange={
                                                         setIsLogoutModalOpen
                                                     }
@@ -758,8 +727,7 @@ export default function AccountSettingsPage({
                             </CardTitle>
 
                             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                                Select a theme or follow your device
-                                preference.
+                                Select a theme or follow your device preference.
                             </p>
                         </CardHeader>
 
@@ -767,38 +735,26 @@ export default function AccountSettingsPage({
                             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                                 <AppearanceOption
                                     active={appearance === 'light'}
-                                    icon={
-                                        <Sun className="h-4 w-4" />
-                                    }
+                                    icon={<Sun className="h-4 w-4" />}
                                     title="Light"
                                     description="Bright interface"
-                                    onClick={() =>
-                                        updateAppearance('light')
-                                    }
+                                    onClick={() => updateAppearance('light')}
                                 />
 
                                 <AppearanceOption
                                     active={appearance === 'dark'}
-                                    icon={
-                                        <Moon className="h-4 w-4" />
-                                    }
+                                    icon={<Moon className="h-4 w-4" />}
                                     title="Dark"
                                     description="Dark interface"
-                                    onClick={() =>
-                                        updateAppearance('dark')
-                                    }
+                                    onClick={() => updateAppearance('dark')}
                                 />
 
                                 <AppearanceOption
                                     active={appearance === 'system'}
-                                    icon={
-                                        <Monitor className="h-4 w-4" />
-                                    }
+                                    icon={<Monitor className="h-4 w-4" />}
                                     title="System"
                                     description="Use device setting"
-                                    onClick={() =>
-                                        updateAppearance('system')
-                                    }
+                                    onClick={() => updateAppearance('system')}
                                 />
                             </div>
                         </CardContent>
@@ -874,9 +830,7 @@ function SettingsSection({
                 <h2
                     className={cn(
                         'text-sm font-bold tracking-tight',
-                        danger
-                            ? 'text-destructive'
-                            : 'text-foreground',
+                        danger ? 'text-destructive' : 'text-foreground',
                     )}
                 >
                     {title}
@@ -916,7 +870,7 @@ function SettingsRow({
 
                 <div className="min-w-0 flex-1 space-y-1.5">
                     <div>
-                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
                             {title}
                         </p>
 
@@ -925,9 +879,7 @@ function SettingsRow({
                         </p>
                     </div>
 
-                    {children && (
-                        <div className="pt-0.5">{children}</div>
-                    )}
+                    {children && <div className="pt-0.5">{children}</div>}
                 </div>
             </div>
 
@@ -978,9 +930,7 @@ function AppearanceOption({
                 <p
                     className={cn(
                         'text-xs font-bold',
-                        active
-                            ? 'text-foreground'
-                            : 'text-foreground/90',
+                        active ? 'text-foreground' : 'text-foreground/90',
                     )}
                 >
                     {title}

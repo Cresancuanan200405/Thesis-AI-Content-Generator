@@ -6,7 +6,6 @@ import {
     Megaphone,
     Package,
     Plus,
-    Sparkles,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
@@ -30,9 +29,9 @@ const mainNavItems: NavItem[] = [
         icon: LayoutDashboard,
     },
     {
-        title: 'AI Marketing Studio',
-        href: '/generator',
-        icon: Sparkles,
+        title: 'Campaigns',
+        href: '/campaigns',
+        icon: Megaphone,
     },
     {
         title: 'Marketing Calendar',
@@ -48,11 +47,6 @@ const mainNavItems: NavItem[] = [
         title: 'Products',
         href: '/products',
         icon: Package,
-    },
-    {
-        title: 'Campaigns',
-        href: '/campaigns',
-        icon: Megaphone,
     },
 ];
 
@@ -76,7 +70,7 @@ export function AppSidebar() {
                         className="w-full justify-start gap-2 rounded-xl bg-foreground font-semibold text-background shadow-sm transition-all hover:bg-foreground/90 active:scale-[0.98]"
                         size="sm"
                     >
-                        <Link href="/generator">
+                        <Link href="/campaigns?create=true">
                             <Plus className="h-4 w-4 shrink-0 stroke-[2.5]" />
                             <span>Quick Create</span>
                         </Link>

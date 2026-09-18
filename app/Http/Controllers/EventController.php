@@ -39,6 +39,13 @@ class EventController extends Controller
             ->unique()
             ->all();
 
+        $userCampaignsByEvent = $user->campaigns()
+            ->whereNotNull('event_id')
+            ->get(['id', 'event_id', 'name', 'status'])
+            ->keyBy('event_id');
+
+        $coveredEventIds = array_unique(array_merge($userDesignEventIds, $userCampaignsByEvent->keys()->map(fn ($id) => (int) $id)->all()));
+
         $query = Event::query()
             ->where(fn ($query) => $query->where('user_id', $user->id)->orWhere('is_global', true))
             ->orderBy('date');
@@ -61,17 +68,19 @@ class EventController extends Controller
             $query->where('type', 'custom');
         } elseif ($filter === 'missed') {
             $query->whereDate('date', '<', now()->toDateString())
-                ->whereNotIn('id', $userDesignEventIds);
+                ->whereNotIn('id', $coveredEventIds);
         }
 
         $events = $query->get();
 
         return Inertia::render('calendar/index', [
-            'events' => $events->map(function (Event $event) use ($userDesignEventIds): array {
+            'events' => $events->map(function (Event $event) use ($userDesignEventIds, $userCampaignsByEvent): array {
                 $eventDate = $event->getAttributeValue('date');
                 $eventDateStr = $eventDate instanceof CarbonInterface ? $eventDate->format('Y-m-d') : null;
+                $campaign = $userCampaignsByEvent->get($event->id);
+                $hasCampaign = $campaign !== null;
                 $hasDesign = in_array((int) $event->id, $userDesignEventIds, true);
-                $isMissed = $eventDateStr && $eventDateStr < now()->toDateString() && ! $hasDesign;
+                $isMissed = $eventDateStr && $eventDateStr < now()->toDateString() && ! $hasCampaign && ! $hasDesign;
 
                 return [
                     'id' => $event->id,
@@ -87,6 +96,10 @@ class EventController extends Controller
                     'is_global' => (bool) $event->is_global,
                     'user_id' => $event->user_id,
                     'has_design' => $hasDesign,
+                    'has_campaign' => $hasCampaign,
+                    'campaign_id' => $campaign?->id,
+                    'campaign_name' => $campaign?->name,
+                    'campaign_status' => $campaign?->status,
                     'is_missed' => $isMissed,
                     'show_url' => route('events.show', $event),
                 ];
@@ -160,6 +173,11 @@ class EventController extends Controller
             ->unique()
             ->all();
 
+        $userCampaignsByEvent = $user->campaigns()
+            ->whereNotNull('event_id')
+            ->get(['id', 'name', 'status', 'event_id'])
+            ->keyBy('event_id');
+
         // Build query for events in the specified year
         $query = Event::query()
             ->where(fn ($query) => $query->where('user_id', $user->id)->orWhere('is_global', true))
@@ -184,19 +202,22 @@ class EventController extends Controller
         } elseif ($filter === 'custom') {
             $query->where('type', 'custom');
         } elseif ($filter === 'missed') {
+            $coveredEventIds = array_unique(array_merge($userDesignEventIds, $userCampaignsByEvent->keys()->map(fn ($id) => (int) $id)->all()));
             $query->whereDate('date', '<', now()->toDateString())
-                ->whereNotIn('id', $userDesignEventIds);
+                ->whereNotIn('id', $coveredEventIds);
         }
 
         $events = $query->get();
 
         return response()->json([
             'year' => $year,
-            'events' => $events->map(function (Event $event) use ($userDesignEventIds): array {
+            'events' => $events->map(function (Event $event) use ($userDesignEventIds, $userCampaignsByEvent): array {
                 $eventDate = $event->getAttributeValue('date');
                 $eventDateStr = $eventDate instanceof CarbonInterface ? $eventDate->format('Y-m-d') : null;
                 $hasDesign = in_array((int) $event->id, $userDesignEventIds, true);
-                $isMissed = $eventDateStr && $eventDateStr < now()->toDateString() && ! $hasDesign;
+                $campaign = $userCampaignsByEvent->get($event->id);
+                $hasCampaign = $campaign !== null;
+                $isMissed = $eventDateStr && $eventDateStr < now()->toDateString() && ! $hasDesign && ! $hasCampaign;
 
                 return [
                     'id' => $event->id,
@@ -212,6 +233,10 @@ class EventController extends Controller
                     'is_global' => (bool) $event->is_global,
                     'user_id' => $event->user_id,
                     'has_design' => $hasDesign,
+                    'has_campaign' => $hasCampaign,
+                    'campaign_id' => $campaign?->id,
+                    'campaign_name' => $campaign?->name,
+                    'campaign_status' => $campaign?->status,
                     'is_missed' => $isMissed,
                 ];
             })->values()->all(),

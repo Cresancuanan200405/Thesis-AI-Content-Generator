@@ -1577,17 +1577,9 @@ export default function GeneratorPage() {
         targetEvent = selectedEvent,
         targetProductName = form.product_name,
     ) => {
-        if (!targetEvent && !form.event_id) {
-            toast.info(
-                'Please select a holiday or marketing event first to generate a tailored visual prompt.',
-            );
-            setEventModalOpen(true);
-
-            return;
-        }
-
         const prod = targetProductName.trim() || 'featured product';
-        const evt = targetEvent?.name || 'seasonal promotion';
+        const evt =
+            targetEvent?.name || activeCampaign?.name || 'promotional campaign';
 
         let nextIdx = Math.floor(Math.random() * promptArchetypes.length);
 
@@ -1777,9 +1769,9 @@ export default function GeneratorPage() {
             return;
         }
 
-        if (!form.event_id) {
+        if (!form.campaign_id) {
             toast.error(
-                'Please select a Philippine holiday or marketing event for your campaign creative.',
+                'A Campaign is required before generating marketing creatives.',
             );
 
             return;
@@ -2002,8 +1994,10 @@ export default function GeneratorPage() {
                 formData.append('product_id', String(form.product_id));
             }
 
-            if (targetCampaignId) {
-                formData.append('campaign_id', String(targetCampaignId));
+            const effectiveCampaignId = targetCampaignId || form.campaign_id;
+
+            if (effectiveCampaignId) {
+                formData.append('campaign_id', String(effectiveCampaignId));
             }
 
             if (form.aspect_ratio) {
@@ -2248,7 +2242,7 @@ export default function GeneratorPage() {
     const stepOneValid =
         form.product_name.trim().length > 0 &&
         form.image_prompt.trim().length > 0 &&
-        Boolean(form.event_id);
+        Boolean(form.campaign_id);
     const canGenerate =
         stepOneValid && !isQuotaExceeded && generationState !== 'generating';
 
@@ -2371,19 +2365,47 @@ export default function GeneratorPage() {
                     {generationState !== 'generating' && (
                         <div className="sticky top-11 z-20 -mx-4 -mt-4 flex flex-col gap-3 border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur-xl transition-all sm:top-12 sm:-mx-6 sm:-mt-6 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:-mx-8 lg:-mt-8 lg:px-8 dark:bg-background/90">
                             <div className="flex items-center gap-2.5">
+                                {activeCampaign && (
+                                    <Button
+                                        asChild
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-xl text-muted-foreground hover:text-foreground"
+                                        title={`Back to ${activeCampaign.name}`}
+                                    >
+                                        <Link
+                                            href={`/campaigns/${activeCampaign.id}`}
+                                        >
+                                            <ArrowLeft className="h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                )}
                                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                                     <Sparkles className="h-4 w-4" />
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2">
+                                        {activeCampaign && (
+                                            <>
+                                                <Link
+                                                    href={`/campaigns/${activeCampaign.id}`}
+                                                    className="text-xs font-semibold text-muted-foreground transition-colors hover:text-primary"
+                                                >
+                                                    {activeCampaign.name}
+                                                </Link>
+                                                <span className="text-muted-foreground">
+                                                    /
+                                                </span>
+                                            </>
+                                        )}
                                         <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
                                             AI Marketing Studio
                                         </h1>
                                     </div>
                                     <p className="text-xs text-muted-foreground">
-                                        Create campaign-ready marketing visuals
-                                        tailored to holidays and product
-                                        launches.
+                                        {activeCampaign
+                                            ? `Generating marketing visuals for "${activeCampaign.name}"`
+                                            : 'Create campaign-ready marketing visuals tailored to holidays and product launches.'}
                                     </p>
                                 </div>
                             </div>
@@ -2496,28 +2518,25 @@ export default function GeneratorPage() {
                                             variant="outline"
                                             className="border-primary/20 bg-primary/10 text-[10px] font-semibold text-primary"
                                         >
-                                            Auto-Linked
+                                            Campaign Context
                                         </Badge>
                                     </div>
                                     <p className="mt-0.5 text-xs text-muted-foreground">
-                                        Visual creative will be automatically
-                                        organized under this marketing campaign.
+                                        All visuals generated in this studio
+                                        session are automatically linked to this
+                                        campaign.
                                     </p>
                                 </div>
                             </div>
                             <Button
-                                type="button"
-                                variant="ghost"
+                                asChild
+                                variant="outline"
                                 size="sm"
-                                onClick={() =>
-                                    setForm((prev) => ({
-                                        ...prev,
-                                        campaign_id: '',
-                                    }))
-                                }
-                                className="h-8 text-xs text-muted-foreground hover:text-destructive"
+                                className="h-8 text-xs font-semibold"
                             >
-                                Unlink
+                                <Link href={`/campaigns/${activeCampaign.id}`}>
+                                    View Campaign
+                                </Link>
                             </Button>
                         </div>
                     )}

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Business;
+use App\Models\Campaign;
 use App\Models\Design;
 use App\Models\Event;
 use App\Models\Product;
@@ -27,20 +28,42 @@ it('authenticated user can view the generator with business context', function (
         'business_id' => $business->id,
     ]);
 
-    Event::factory()->create([
+    $event = Event::factory()->create([
         'user_id' => $user->id,
         'name' => 'Spring Launch',
+    ]);
+
+    // Campaign is now required before accessing the generator
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event->id,
+        'name' => 'Spring Launch Campaign',
     ]);
 
     $expectedProductName = Product::query()->orderBy('name')->first()->name;
 
     $this->actingAs($user)
-        ->get('/generator')
+        ->get("/campaigns/{$campaign->id}/generator")
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->where('business.name', 'North Star Coffee')
             ->where('products.0.name', $expectedProductName)
         );
+});
+
+it('authenticated user redirected to campaigns when visiting generator without campaign', function () {
+    $user = User::factory()->create([
+        'onboarding_completed' => true,
+    ]);
+
+    Business::factory()->create([
+        'user_id' => $user->id,
+    ]);
+
+    $this->actingAs($user)
+        ->get('/generator')
+        ->assertRedirect('/campaigns');
 });
 
 it('authenticated user can create a generator request', function () {
@@ -63,6 +86,13 @@ it('authenticated user can create a generator request', function () {
         'name' => 'Spring Launch',
     ]);
 
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event->id,
+        'name' => 'Spring Launch Campaign',
+    ]);
+
     config()->set('services.openai.api_key', 'test-key');
     Http::fake([
         'https://api.openai.com/v1/images/generations' => Http::response([
@@ -74,6 +104,7 @@ it('authenticated user can create a generator request', function () {
 
     $this->actingAs($user)
         ->post('/generator', [
+            'campaign_id' => $campaign->id,
             'product_id' => $product->id,
             'event_id' => $event->id,
             'product_name' => 'Signature Latte',
@@ -85,7 +116,7 @@ it('authenticated user can create a generator request', function () {
             'unique_selling_point' => 'Small-batch roasting and seasonal ingredients',
             'notes' => 'Use warm studio lighting and clean copy.',
         ])
-        ->assertRedirect('/generator')
+        ->assertRedirect()
         ->assertSessionHas('success', 'Your marketing asset has been generated.');
 
     $this->assertDatabaseHas('generation_requests', [
@@ -123,10 +154,18 @@ it('generates fallback visual when OpenAI API key is missing', function () {
         'name' => 'Spring Launch',
     ]);
 
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event->id,
+        'name' => 'Spring Launch Campaign',
+    ]);
+
     config()->set('services.openai.api_key', null);
 
     $this->actingAs($user)
         ->post('/generator', [
+            'campaign_id' => $campaign->id,
             'product_id' => $product->id,
             'event_id' => $event->id,
             'product_name' => 'Signature Latte',
@@ -134,7 +173,7 @@ it('generates fallback visual when OpenAI API key is missing', function () {
             'content_style' => ['Product-focused'],
             'brand_tone' => ['Professional'],
         ])
-        ->assertRedirect('/generator')
+        ->assertRedirect()
         ->assertSessionHas('success', 'Your marketing asset has been generated.');
 
     $this->assertDatabaseHas('generation_requests', [
@@ -144,7 +183,7 @@ it('generates fallback visual when OpenAI API key is missing', function () {
     ]);
 });
 
-it('validates event_id is required for generator request', function () {
+it('validates campaign_id is required for generator request', function () {
     $user = User::factory()->create([
         'onboarding_completed' => true,
     ]);
@@ -158,7 +197,7 @@ it('validates event_id is required for generator request', function () {
             'product_name' => 'Signature Latte',
             'marketing_goal' => 'Drive sales',
         ])
-        ->assertSessionHasErrors(['event_id']);
+        ->assertSessionHasErrors(['campaign_id']);
 });
 
 it('validates image quality input', function () {
@@ -174,8 +213,15 @@ it('validates image quality input', function () {
         'user_id' => $user->id,
     ]);
 
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event->id,
+    ]);
+
     $this->actingAs($user)
         ->post('/generator', [
+            'campaign_id' => $campaign->id,
             'product_name' => 'Signature Latte',
             'marketing_goal' => 'Drive sales',
             'event_id' => $event->id,
@@ -194,6 +240,12 @@ it('normalizes tagline during preview generation', function () {
         'user_id' => $user->id,
         'name' => 'Spring Launch',
     ]);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event->id,
+        'name' => 'Spring Launch Campaign',
+    ]);
 
     config()->set('services.openai.api_key', 'test-key');
     Http::fake([
@@ -206,9 +258,10 @@ it('normalizes tagline during preview generation', function () {
 
     $response = $this->actingAs($user)
         ->postJson('/generator/preview', [
+            'campaign_id' => $campaign->id,
             'product_name' => 'Signature Latte',
             'event_id' => $event->id,
-            'tagline' => '“Fresh Flavor Daily...” &',
+            'tagline' => '"Fresh Flavor Daily..." &',
             'marketing_goal' => 'Drive sales',
             'aspect_ratio' => '1:1',
         ]);

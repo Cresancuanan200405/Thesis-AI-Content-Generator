@@ -79,7 +79,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     index.form = indexForm
 /**
 * @see \App\Http\Controllers\GeneratorController::store
- * @see app/Http/Controllers/GeneratorController.php:121
+ * @see app/Http/Controllers/GeneratorController.php:136
  * @route '/generator'
  */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -94,7 +94,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\GeneratorController::store
- * @see app/Http/Controllers/GeneratorController.php:121
+ * @see app/Http/Controllers/GeneratorController.php:136
  * @route '/generator'
  */
 store.url = (options?: RouteQueryOptions) => {
@@ -103,7 +103,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\GeneratorController::store
- * @see app/Http/Controllers/GeneratorController.php:121
+ * @see app/Http/Controllers/GeneratorController.php:136
  * @route '/generator'
  */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -113,7 +113,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\GeneratorController::store
- * @see app/Http/Controllers/GeneratorController.php:121
+ * @see app/Http/Controllers/GeneratorController.php:136
  * @route '/generator'
  */
     const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -123,7 +123,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\GeneratorController::store
- * @see app/Http/Controllers/GeneratorController.php:121
+ * @see app/Http/Controllers/GeneratorController.php:136
  * @route '/generator'
  */
         storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -134,7 +134,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     store.form = storeForm
 /**
 * @see \App\Http\Controllers\GeneratorController::preview
- * @see app/Http/Controllers/GeneratorController.php:301
+ * @see app/Http/Controllers/GeneratorController.php:316
  * @route '/generator/preview'
  */
 export const preview = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -149,7 +149,7 @@ preview.definition = {
 
 /**
 * @see \App\Http\Controllers\GeneratorController::preview
- * @see app/Http/Controllers/GeneratorController.php:301
+ * @see app/Http/Controllers/GeneratorController.php:316
  * @route '/generator/preview'
  */
 preview.url = (options?: RouteQueryOptions) => {
@@ -158,7 +158,7 @@ preview.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\GeneratorController::preview
- * @see app/Http/Controllers/GeneratorController.php:301
+ * @see app/Http/Controllers/GeneratorController.php:316
  * @route '/generator/preview'
  */
 preview.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -168,7 +168,7 @@ preview.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\GeneratorController::preview
- * @see app/Http/Controllers/GeneratorController.php:301
+ * @see app/Http/Controllers/GeneratorController.php:316
  * @route '/generator/preview'
  */
     const previewForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -178,7 +178,7 @@ preview.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\GeneratorController::preview
- * @see app/Http/Controllers/GeneratorController.php:301
+ * @see app/Http/Controllers/GeneratorController.php:316
  * @route '/generator/preview'
  */
         previewForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

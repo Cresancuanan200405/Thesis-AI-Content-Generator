@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Campaign;
 use App\Models\Event;
 use App\Models\Product;
 use Illuminate\Contracts\Validation\Validator;
@@ -21,8 +22,8 @@ class GeneratorRequest extends FormRequest
     {
         return [
             'product_id' => ['nullable', 'exists:products,id'],
-            'campaign_id' => ['nullable', 'exists:campaigns,id'],
-            'event_id' => ['required', 'exists:events,id'],
+            'campaign_id' => ['required', 'exists:campaigns,id'],
+            'event_id' => ['nullable', 'exists:events,id'],
             'product_name' => ['required', 'string', 'max:255'],
             'price' => ['nullable', 'numeric', 'min:0'],
             'marketing_goal' => ['required', 'string', 'max:2000'],
@@ -58,6 +59,14 @@ class GeneratorRequest extends FormRequest
 
             if (! $user) {
                 return;
+            }
+
+            if ($this->filled('campaign_id')) {
+                $campaign = Campaign::query()->whereKey($this->input('campaign_id'))->first();
+
+                if (! $campaign || $campaign->user_id !== $user->id) {
+                    $validator->errors()->add('campaign_id', 'The selected campaign does not belong to your account.');
+                }
             }
 
             if ($this->filled('product_id')) {

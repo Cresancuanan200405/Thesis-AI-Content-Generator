@@ -17,9 +17,16 @@ it('user can save a design from ai marketing studio in mockup mode', function ()
     $user = User::factory()->create(['onboarding_completed' => true]);
     $business = Business::factory()->create(['user_id' => $user->id]);
     $event = Event::factory()->create(['user_id' => $user->id, 'name' => 'Christmas Sale']);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event->id,
+        'name' => 'Christmas Sale Campaign',
+    ]);
 
     $response = $this->actingAs($user)
         ->postJson('/designs', [
+            'campaign_id' => $campaign->id,
             'product_name' => 'Winter Glow Cream',
             'image_prompt' => 'A luxury winter skincare product on snow background',
             'prompt' => 'A luxury winter skincare product on snow background',
@@ -59,9 +66,15 @@ it('user can save a design from ai marketing studio in mockup mode', function ()
 it('saved design reflects in my designs list and show page', function () {
     $user = User::factory()->create(['onboarding_completed' => true]);
     $business = Business::factory()->create(['user_id' => $user->id]);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'name' => 'Coffee Brand Campaign',
+    ]);
 
     $this->actingAs($user)
         ->postJson('/designs', [
+            'campaign_id' => $campaign->id,
             'product_name' => 'Artisan Coffee Blend',
             'prompt' => 'Fresh roasted organic coffee beans visual',
             'tagline' => 'Start every morning right.',
@@ -80,9 +93,17 @@ it('user can create a campaign and link a generated design to it', function () {
     $business = Business::factory()->create(['user_id' => $user->id]);
     $event = Event::factory()->create(['user_id' => $user->id, 'name' => 'Black Friday 2026']);
 
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event->id,
+        'name' => 'Black Friday Audio Campaign',
+    ]);
+
     // First save the design
     $this->actingAs($user)
         ->postJson('/designs', [
+            'campaign_id' => $campaign->id,
             'product_name' => 'Wireless Noise Canceling Headphones',
             'prompt' => 'Studio headphones in deep neon lighting',
             'tagline' => 'Hear the silence.',
@@ -91,32 +112,7 @@ it('user can create a campaign and link a generated design to it', function () {
         ->assertOk();
 
     $design = Design::where('product_name', 'Wireless Noise Canceling Headphones')->first();
-    expect($design->campaign_id)->toBeNull();
-
-    // Now create campaign and link design
-    $campaignResponse = $this->actingAs($user)
-        ->postJson('/campaigns', [
-            'name' => 'Black Friday Audio Campaign',
-            'event_id' => $event->id,
-            'start_date' => now()->toDateString(),
-            'end_date' => now()->addDays(7)->toDateString(),
-            'objective' => 'Drive holiday audio gear sales',
-            'design_id' => $design->id,
-        ]);
-
-    $campaignResponse->assertOk()
-        ->assertJson([
-            'success' => true,
-            'campaign' => [
-                'name' => 'Black Friday Audio Campaign',
-            ],
-        ]);
-
-    $campaign = Campaign::where('name', 'Black Friday Audio Campaign')->first();
-    expect($campaign)->not->toBeNull();
-
-    // Verify the design was linked to the campaign
-    $design->refresh();
+    // Design is now linked to the campaign created above
     expect($design->campaign_id)->toBe($campaign->id);
 
     // Verify campaign show page displays the linked design
@@ -135,9 +131,15 @@ it('user can save a design with custom business_name enabled', function () {
         'user_id' => $user->id,
         'name' => 'Aura Cosmetics',
     ]);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'name' => 'Aura Brand Campaign',
+    ]);
 
     $response = $this->actingAs($user)
         ->postJson('/designs', [
+            'campaign_id' => $campaign->id,
             'product_name' => 'Rose Hydrating Mist',
             'prompt' => 'Dewy skincare bottle on marble',
             'business_name' => 'Aura Luxury Boutique',
@@ -360,8 +362,16 @@ it('generator store passes catalog product image to reference image path and Ope
     $event = Event::factory()->create(['user_id' => $user->id]);
     Storage::disk('public')->put('products/barako-cold-brew.png', 'cold-brew-bytes');
 
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event->id,
+        'name' => 'Summer Cold Brew Campaign',
+    ]);
+
     $response = $this->actingAs($user)
         ->post('/generator', [
+            'campaign_id' => $campaign->id,
             'product_id' => $product->id,
             'event_id' => $event->id,
             'product_name' => 'Barako Cold Brew',
