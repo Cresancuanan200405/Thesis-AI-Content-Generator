@@ -11,7 +11,7 @@ import {
     Wand2,
     X,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { HelpTooltip } from '@/components/help-tooltip';
@@ -94,6 +94,18 @@ export default function AutomaticGenerator({
     const [creativeConcept, setCreativeConcept] = useState('');
     const [visualStrategy, setVisualStrategy] = useState('');
     const [previousConcepts, setPreviousConcepts] = useState<string[]>([]);
+    const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+    const adjustPromptHeight = useCallback(() => {
+        const el = promptTextareaRef.current;
+        if (!el) return;
+        el.style.height = 'auto';
+        el.style.height = `${Math.max(el.scrollHeight + 4, 110)}px`;
+    }, []);
+
+    useEffect(() => {
+        adjustPromptHeight();
+    }, [imagePrompt, adjustPromptHeight]);
 
     // Step 3 & AI Engine settings
     const [aspectRatio, setAspectRatio] = useState('1:1');
@@ -539,7 +551,7 @@ export default function AutomaticGenerator({
             if (response.ok && data.success) {
                 setIsSavedToDesigns(true);
                 if (data.design) {
-                    setSavedDesign((prev) => ({ ...prev, id: data.design.id }));
+                    setSavedDesign((prev) => (prev ? { ...prev, id: data.design.id } : prev));
                 }
                 toast.success('Saved to My Designs!');
             } else {
@@ -832,11 +844,9 @@ export default function AutomaticGenerator({
                                                         Leave blank for AI auto-generation.
                                                     </p>
                                                 )}
-                                            </div>
-
-                                            {/* Visual Prompt Card */}
+                                            </div>                                            {/* Visual Prompt Card */}
                                             <div className="space-y-2.5 rounded-2xl border border-border/80 bg-card/60 p-4 shadow-xs">
-                                                <div className="flex items-center justify-between">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
                                                     <div className="flex items-center gap-1.5">
                                                         <Label className="text-xs font-bold text-foreground">
                                                             Visual Prompt & Scene Concept
@@ -856,42 +866,48 @@ export default function AutomaticGenerator({
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        disabled={isGeneratingPrompt}
-                                                        onClick={handleGenerateVisualPrompt}
-                                                        className={`relative h-8 gap-1.5 rounded-xl px-3 text-xs font-bold shadow-xs transition-all disabled:pointer-events-none disabled:opacity-60 active:scale-95 ${
-                                                            imagePrompt.trim()
-                                                                ? 'border-primary/40 bg-primary/10 text-primary ring-1 ring-primary/30 hover:border-primary hover:bg-primary hover:text-primary-foreground'
-                                                                : 'border-primary bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
-                                                        }`}
-                                                    >
-                                                        {isGeneratingPrompt ? (
-                                                            <>
-                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                                                <span>Generating...</span>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Sparkles className="h-3.5 w-3.5" />
-                                                                <span>
-                                                                    {imagePrompt.trim()
-                                                                        ? 'Suggest Different Angle'
-                                                                        : 'Generate with AI'}
-                                                                </span>
-                                                            </>
-                                                        )}
-                                                    </Button>
+                                                    <div className="flex items-center gap-2">
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            disabled={isGeneratingPrompt}
+                                                            onClick={handleGenerateVisualPrompt}
+                                                            className={`relative h-8 gap-1.5 rounded-xl px-3 text-xs font-bold shadow-xs transition-all disabled:pointer-events-none disabled:opacity-60 active:scale-95 ${
+                                                                imagePrompt.trim()
+                                                                    ? 'border-primary/40 bg-primary/10 text-primary ring-1 ring-primary/30 hover:border-primary hover:bg-primary hover:text-primary-foreground'
+                                                                    : 'border-primary bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
+                                                            }`}
+                                                        >
+                                                            {isGeneratingPrompt ? (
+                                                                <>
+                                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                                    <span>Generating...</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Sparkles className="h-3.5 w-3.5" />
+                                                                    <span>
+                                                                        {imagePrompt.trim()
+                                                                            ? 'Suggest Different Angle'
+                                                                            : 'Generate with AI'}
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    </div>
                                                 </div>
 
+                                                {/* Responsive Textarea with vertical resizing & full visibility */}
                                                 <Textarea
+                                                    ref={promptTextareaRef}
                                                     value={imagePrompt}
                                                     onChange={(e) => setImagePrompt(e.target.value)}
                                                     placeholder="Click Generate with AI to compose a prompt, or write your own scene staging, lighting, and composition..."
-                                                    rows={3}
-                                                    className="resize-none text-xs leading-relaxed"
+                                                    className="w-full resize-y text-xs leading-relaxed transition-all focus-visible:ring-primary/30 rounded-xl border-border/80 bg-background/80 p-3 min-h-[120px]"
+                                                    style={{
+                                                        fieldSizing: 'content',
+                                                    }}
                                                 />
 
                                                 {imagePrompt.trim() ? (

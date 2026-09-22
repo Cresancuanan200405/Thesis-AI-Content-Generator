@@ -15,7 +15,7 @@ import {
     Wand2,
     X,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { HelpTooltip } from '@/components/help-tooltip';
@@ -109,6 +109,18 @@ export default function ManualGenerator({
     const [renderStyle, setRenderStyle] = useState('Studio Product Still');
     const [contentStyle, setContentStyle] = useState<string[]>(['Commercial', 'Studio Lighting']);
     const [brandTone, setBrandTone] = useState<string[]>(['Professional', 'Bold']);
+    const scenePromptTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+    const adjustScenePromptHeight = useCallback(() => {
+        const el = scenePromptTextareaRef.current;
+        if (!el) return;
+        el.style.height = 'auto';
+        el.style.height = `${Math.max(el.scrollHeight + 4, 110)}px`;
+    }, []);
+
+    useEffect(() => {
+        adjustScenePromptHeight();
+    }, [scenePrompt, adjustScenePromptHeight]);
 
     // Step 3 state: Canvas Dimensions & Identity
     const [aspectRatio, setAspectRatio] = useState('1:1');
@@ -239,7 +251,7 @@ export default function ManualGenerator({
                 .filter((p) => p.name.trim())
                 .map((p) => ({ name: p.name, price: p.price || null }));
 
-            const response = await fetch('/generator/prompt', {
+            const response = await fetch('/generator/manual/suggest-tagline', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -252,17 +264,13 @@ export default function ManualGenerator({
                 },
                 body: JSON.stringify({
                     campaign_id: campaign.id,
-                    generation_mode: 'manual',
-                    require_tagline: true,
-                    target: 'tagline',
                     catalog_product_ids: catalogIds,
                     custom_products: customItems,
-                    user_instruction: scenePrompt.trim(),
+                    product_name: effectiveProductName,
                     render_style: renderStyle,
                     visual_theme: contentStyle,
                     brand_tone: brandTone,
-                    aspect_ratio: aspectRatio,
-                    include_business_name: includeBusinessName,
+                    user_instruction: scenePrompt.trim() ? scenePrompt.trim().slice(0, 500) : undefined,
                 }),
             });
 
@@ -573,7 +581,7 @@ export default function ManualGenerator({
             if (response.ok && data.success) {
                 setIsSavedToDesigns(true);
                 if (data.design) {
-                    setSavedDesign((prev) => ({ ...prev, id: data.design.id }));
+                    setSavedDesign((prev) => (prev ? { ...prev, id: data.design.id } : prev));
                 }
                 toast.success('Saved to My Designs!');
             } else {
@@ -864,11 +872,9 @@ export default function ManualGenerator({
                                                         Enter a tagline or use AI to suggest one.
                                                     </p>
                                                 )}
-                                            </div>
-
-                                            {/* Visual Scene Prompt Card */}
+                                            </div>                                            {/* Visual Scene Prompt Card */}
                                             <div className="space-y-2.5 rounded-2xl border border-border/80 bg-card/60 p-4 shadow-xs">
-                                                <div className="flex items-center justify-between">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
                                                     <div className="flex items-center gap-1.5">
                                                         <Label className="text-xs font-bold text-foreground">
                                                             Visual Scene Prompt
@@ -888,43 +894,51 @@ export default function ManualGenerator({
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        disabled={isGeneratingPrompt}
-                                                        onClick={handleGenerateVisualPrompt}
-                                                        className="relative h-7.5 gap-1.5 rounded-lg border-primary/40 bg-primary/10 px-3 text-xs font-bold text-primary shadow-xs ring-1 ring-primary/30 transition-all hover:border-primary hover:bg-primary hover:text-primary-foreground disabled:pointer-events-none disabled:opacity-60 active:scale-95"
-                                                    >
-                                                        {isGeneratingPrompt ? (
-                                                            <>
-                                                                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                                                                <span>Generating...</span>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Sparkles className="h-3.5 w-3.5 animate-pulse" />
-                                                                <span>
-                                                                    {scenePrompt.trim()
-                                                                        ? 'Suggest Different Angle'
-                                                                        : 'Generate Visual Prompt'}
-                                                                </span>
-                                                            </>
-                                                        )}
-                                                    </Button>
+                                                    <div className="flex items-center gap-2">
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            disabled={isGeneratingPrompt}
+                                                            onClick={handleGenerateVisualPrompt}
+                                                            className="relative h-7.5 gap-1.5 rounded-lg border-primary/40 bg-primary/10 px-3 text-xs font-bold text-primary shadow-xs ring-1 ring-primary/30 transition-all hover:border-primary hover:bg-primary hover:text-primary-foreground disabled:pointer-events-none disabled:opacity-60 active:scale-95"
+                                                        >
+                                                            {isGeneratingPrompt ? (
+                                                                <>
+                                                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                                                                    <span>Generating...</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+                                                                    <span>
+                                                                        {scenePrompt.trim()
+                                                                            ? 'Suggest Different Angle'
+                                                                            : 'Generate Visual Prompt'}
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    </div>
                                                 </div>
 
+                                                {/* Responsive Textarea with vertical resizing & full visibility */}
                                                 <Textarea
+                                                    ref={scenePromptTextareaRef}
                                                     value={scenePrompt}
                                                     onChange={(e) => setScenePrompt(e.target.value)}
                                                     placeholder="Describe scene staging, festive props, lighting, or backdrop (or click Generate Visual Prompt to have AI compose one)..."
-                                                    rows={4}
-                                                    className="resize-none text-xs leading-relaxed"
+                                                    className="w-full resize-y text-xs leading-relaxed transition-all focus-visible:ring-primary/30 rounded-xl border-border/80 bg-background/80 p-3 min-h-[120px]"
+                                                    style={{
+                                                        fieldSizing: 'content',
+                                                    }}
                                                 />
 
                                                 {scenePrompt.trim() ? (
                                                     <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                                                        <span>Custom visual prompt is ready to guide image rendering.</span>
+                                                        <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+                                                            <Check className="h-3 w-3" /> Custom visual prompt is ready to guide image rendering.
+                                                        </span>
                                                         <button
                                                             type="button"
                                                             onClick={() => setScenePrompt('')}

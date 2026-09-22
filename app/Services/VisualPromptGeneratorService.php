@@ -206,6 +206,322 @@ class VisualPromptGeneratorService
     }
 
     /**
+     * Generate an AI-powered marketing tagline using OpenAI Responses API.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function generateTagline(
+        User $user,
+        Campaign $campaign,
+        ?Business $business,
+        array $options = []
+    ): string {
+        $apiKey = config('services.openai.api_key');
+
+        if (blank($apiKey)) {
+            throw new RuntimeException('OpenAI API key is not configured. Please configure OPENAI_API_KEY.');
+        }
+
+        $model = $this->modelRegistry->getTextModel();
+        $startTime = microtime(true);
+
+        $systemInstructions = $this->buildTaglineSystemInstructions();
+        $userContext = $this->buildTaglineContextPayload($campaign, $business, $options);
+
+        $headers = [
+            'Authorization' => 'Bearer '.$apiKey,
+            'Content-Type' => 'application/json',
+        ];
+
+        if ($org = config('services.openai.organization')) {
+            $headers['OpenAI-Organization'] = $org;
+        }
+
+        $schema = [
+            'type' => 'object',
+            'properties' => [
+                'tagline' => [
+                    'type' => 'string',
+                    'description' => 'A concise, punchy, original commercial marketing tagline tailored to the business, product/service, and campaign event context. Free of invented claims, fake promotions, fake awards, or unsupported discounts.',
+                ],
+            ],
+            'required' => ['tagline'],
+            'additionalProperties' => false,
+        ];
+
+        $payload = [
+            'model' => $model,
+            'instructions' => $systemInstructions,
+            'input' => $userContext,
+            'text' => [
+                'format' => [
+                    'type' => 'json_schema',
+                    'name' => 'tagline_suggestion_response',
+                    'strict' => true,
+                    'schema' => $schema,
+                ],
+            ],
+        ];
+
+        try {
+            $response = Http::withHeaders($headers)
+                ->timeout(30)
+                ->post('https://api.openai.com/v1/responses', $payload);
+        } catch (Exception $e) {
+            Log::error('OpenAI Responses API network failure during tagline suggestion: '.$e->getMessage(), [
+                'campaign_id' => $campaign->id,
+                'user_id' => $user->id,
+            ]);
+
+            throw new RuntimeException('Unable to communicate with the tagline service. Please try again.');
+        }
+
+        if (! $response->successful()) {
+            $status = $response->status();
+            $body = $response->body();
+            Log::error("OpenAI Responses API error during tagline suggestion (HTTP {$status}): {$body}", [
+                'campaign_id' => $campaign->id,
+                'user_id' => $user->id,
+            ]);
+
+            throw new RuntimeException('OpenAI tagline generation failed with HTTP status '.$status);
+        }
+
+        $responseData = $response->json();
+        $duration = round(microtime(true) - $startTime, 2);
+
+        $rawTagline = $this->extractTaglineResult($responseData);
+        $usage = $this->extractUsage($responseData);
+
+        Log::info('OpenAI Tagline Generated', [
+            'model' => $model,
+            'campaign_id' => $campaign->id,
+            'user_id' => $user->id,
+            'duration_seconds' => $duration,
+            'input_tokens' => $usage['input_tokens'] ?? null,
+            'output_tokens' => $usage['output_tokens'] ?? null,
+            'total_tokens' => $usage['total_tokens'] ?? null,
+        ]);
+
+        $normalized = TaglineNormalizationService::normalize($rawTagline);
+
+        if (empty($normalized)) {
+            throw new RuntimeException('Generated tagline could not be normalized into a valid marketing phrase.');
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Build system instructions for tagline generation.
+     */
+    protected function buildTaglineSystemInstructions(): string
+    {
+        return <<<'INSTRUCTIONS'
+You are MarketPilot's AI Creative Copywriter and Brand Strategist.
+
+Your job is to generate a concise, punchy, commercially viable, and original marketing tagline tailored to the business, product/service, campaign event/holiday, target audience, brand tone, and marketing style.
+
+TAGLINE MANDATE:
+- The tagline must be campaign-relevant, event/holiday-aware, and aligned with the business, industry, and product/service.
+- Concise, punchy, memorable, and commercially usable (typically 3-8 words).
+- Grounded strictly in factual truth: NO invented factual claims, NO fake awards, NO fake certifications, NO fake promotions, and NO unsupported discounts (never invent "50% off", "World's Best", "100% Organic", or "Guaranteed Results" unless explicitly provided in business or product context).
+- Never contradict catalog pricing, campaign facts, or business positioning.
+- Tailor the voice and personality to the specified Brand Tone and Content Style if provided.
+
+Output Format:
+You must return a JSON object adhering to the schema with one key:
+"tagline": A single concise, punchy marketing tagline.
+Do not include commentary or Markdown formatting outside the JSON object.
+INSTRUCTIONS;
+    }
+
+    /**
+     * Build the context payload for tagline suggestion.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    protected function buildTaglineContextPayload(Campaign $campaign, ?Business $business, array $options = []): string
+    {
+        $sections = [];
+
+        // 1. Campaign Details
+        $campaignLines = [
+            'CAMPAIGN DETAILS:',
+            '- Campaign Name: '.$campaign->name,
+            '- Objective: '.($campaign->objective ?: 'General Commercial Engagement'),
+        ];
+        if (! empty($campaign->target_audience)) {
+            $campaignLines[] = '- Campaign Target Audience: '.$campaign->target_audience;
+        }
+        $sections[] = implode("\n", $campaignLines);
+
+        // 2. Linked Event / Holiday Context
+        $event = $campaign->event;
+        if ($event) {
+            $eventLines = [
+                'MARKETING OCCASION / EVENT:',
+                '- Event Name: '.$event->name,
+            ];
+            if (! empty($event->event_date)) {
+                $eventLines[] = '- Date: '.$event->event_date;
+            }
+            if (! empty($event->description)) {
+                $eventLines[] = '- Event Description: '.$event->description;
+            }
+            $sections[] = implode("\n", $eventLines);
+        }
+
+        // 3. Business Profile Context
+        if ($business) {
+            $bizLines = [
+                'BUSINESS PROFILE:',
+                '- Business Name: '.$business->name,
+                '- Industry: '.($business->industry ?: 'General'),
+                '- Category: '.($business->category ?: 'General'),
+            ];
+            if (! empty($business->description)) {
+                $bizLines[] = '- Description: '.$business->description;
+            }
+            if (! empty($business->unique_selling_point)) {
+                $bizLines[] = '- USP: '.$business->unique_selling_point;
+            }
+            if (! empty($business->target_audience)) {
+                $bizLines[] = '- Business Target Audience: '.$business->target_audience;
+            }
+            $sections[] = implode("\n", $bizLines);
+        }
+
+        // 4. Products & Services Context
+        $productLines = ['PRODUCTS & SERVICES:'];
+        $catalogProducts = $options['catalog_products'] ?? [];
+        if (! empty($catalogProducts)) {
+            $productLines[] = '• Catalog Products:';
+            foreach ($catalogProducts as $prod) {
+                $pName = is_array($prod) ? ($prod['name'] ?? 'Product') : $prod->name;
+                $pPrice = is_array($prod) ? ($prod['price'] ?? null) : $prod->price;
+                $pDesc = is_array($prod) ? ($prod['description'] ?? null) : $prod->description;
+
+                $line = "  - {$pName}";
+                if ($pPrice !== null && $pPrice !== '') {
+                    $formattedPrice = is_numeric($pPrice) ? '₱'.number_format((float) $pPrice, 2) : (string) $pPrice;
+                    $line .= " (Price: {$formattedPrice})";
+                }
+                if (! empty($pDesc)) {
+                    $line .= " — {$pDesc}";
+                }
+                $productLines[] = $line;
+            }
+        }
+
+        $customProducts = $options['custom_products'] ?? [];
+        if (! empty($customProducts) && is_array($customProducts)) {
+            $productLines[] = '• Custom Products / Services:';
+            foreach ($customProducts as $cProd) {
+                if (! empty($cProd['name'])) {
+                    $cLine = "  - {$cProd['name']}";
+                    if (! empty($cProd['price'])) {
+                        $cLine .= " (Price: {$cProd['price']})";
+                    }
+                    $productLines[] = $cLine;
+                }
+            }
+        }
+
+        if (empty($catalogProducts) && empty($customProducts)) {
+            $productLines[] = '• Featured Product: '.(is_string($options['product_name'] ?? null) && trim($options['product_name']) !== '' ? $options['product_name'] : 'Featured Product');
+        }
+        $sections[] = implode("\n", $productLines);
+
+        // 5. Creative Preferences
+        $prefLines = ['CREATIVE PREFERENCES:'];
+        if (! empty($options['render_style'])) {
+            $prefLines[] = '- Marketing Style: '.$options['render_style'];
+        }
+        if (! empty($options['visual_theme'])) {
+            $themes = is_array($options['visual_theme']) ? implode(', ', $options['visual_theme']) : (string) $options['visual_theme'];
+            $prefLines[] = '- Theme: '.$themes;
+        }
+        if (! empty($options['brand_tone'])) {
+            $tones = is_array($options['brand_tone']) ? implode(', ', $options['brand_tone']) : (string) $options['brand_tone'];
+            $prefLines[] = '- Brand Tone: '.$tones;
+        }
+        if (count($prefLines) > 1) {
+            $sections[] = implode("\n", $prefLines);
+        }
+
+        // 6. Optional Scene / Creative Context
+        $instruction = trim((string) ($options['user_instruction'] ?? $options['notes'] ?? ''));
+        if (! empty($instruction)) {
+            $bounded = mb_substr($instruction, 0, 1000);
+            $sections[] = "CREATIVE SETTING CONTEXT:\n\"{$bounded}\"";
+        }
+
+        return implode("\n\n", $sections);
+    }
+
+    /**
+     * Extract the tagline from the OpenAI Responses API result.
+     */
+    public function extractTaglineResult(?array $data): string
+    {
+        if (empty($data)) {
+            throw new RuntimeException('Received empty response from tagline service.');
+        }
+
+        $rawText = null;
+
+        if (! empty($data['output']) && is_array($data['output'])) {
+            foreach ($data['output'] as $item) {
+                if (! empty($item['content']) && is_array($item['content'])) {
+                    foreach ($item['content'] as $contentBlock) {
+                        $type = $contentBlock['type'] ?? null;
+
+                        if (
+                            in_array($type, ['output_text', 'text'], true)
+                            && isset($contentBlock['text'])
+                            && is_string($contentBlock['text'])
+                            && trim($contentBlock['text']) !== ''
+                        ) {
+                            $rawText = $contentBlock['text'];
+                            break 2;
+                        }
+                    }
+                }
+            }
+        }
+
+        if ($rawText === null) {
+            if (! empty($data['output_text']) && is_string($data['output_text']) && trim($data['output_text']) !== '') {
+                $rawText = $data['output_text'];
+            } elseif (! empty($data['choices'][0]['message']['content']) && is_string($data['choices'][0]['message']['content'])) {
+                $rawText = (string) $data['choices'][0]['message']['content'];
+            }
+        }
+
+        if (empty($rawText)) {
+            throw new RuntimeException('Tagline service returned no readable text.');
+        }
+
+        $decoded = json_decode($rawText, true);
+        if (! is_array($decoded)) {
+            $clean = trim(preg_replace('/^```(?:json)?\s*|\s*```$/i', '', trim($rawText)) ?? '');
+            $decoded = json_decode($clean, true);
+        }
+
+        $tagline = null;
+        if (is_array($decoded) && isset($decoded['tagline']) && is_string($decoded['tagline'])) {
+            $tagline = trim($decoded['tagline']);
+        }
+
+        if (empty($tagline)) {
+            throw new RuntimeException('Tagline generated was empty.');
+        }
+
+        return $tagline;
+    }
+
+    /**
      * Resolve previous creative concepts from in-session requests and database history.
      *
      * @param  array<int, string>  $clientPreviousConcepts

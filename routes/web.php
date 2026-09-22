@@ -297,6 +297,7 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
     Route::post('generator/automatic', [AutomaticGeneratorController::class, 'generate'])->name('generator.automatic');
     Route::get('generator/manual', [ManualGeneratorController::class, 'index'])->name('generator.manual.index');
     Route::post('generator/manual', [ManualGeneratorController::class, 'generate'])->name('generator.manual');
+    Route::post('generator/manual/suggest-tagline', [ManualGeneratorController::class, 'suggestTagline'])->name('generator.manual.suggest-tagline');
 
     Route::get('generator', [GeneratorController::class, 'index'])->name('generator.index');
     Route::post('generator', [GeneratorController::class, 'store'])->name('generator.store');

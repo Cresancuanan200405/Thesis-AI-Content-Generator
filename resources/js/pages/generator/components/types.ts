@@ -82,6 +82,23 @@ export interface BusinessItem {
     default_tagline_behavior?: string | null;
 }
 
+export type BusinessProfile = BusinessItem;
+
+export interface GeneratedDesign {
+    id?: number | string | null;
+    image_url: string;
+    generated_image_path?: string;
+    product_name?: string;
+    tagline?: string;
+    aspect_ratio?: string;
+    image_model?: string;
+    generation_meta?: Record<string, any>;
+    headline?: string;
+    prompt?: string;
+    isSaved?: boolean;
+    created_at?: string;
+}
+
 export interface GeneratedVisual {
     id: string;
     imageUrl: string;

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ResolvesGeneratorContext;
+use App\Http\Requests\SuggestTaglineRequest;
 use App\Models\Business;
 use App\Models\Campaign;
 use App\Models\Event;
@@ -13,6 +14,7 @@ use App\Services\NotificationService;
 use App\Services\OpenAIImageService;
 use App\Services\PhilippineHolidayService;
 use App\Services\TaglineNormalizationService;
+use App\Services\VisualPromptGeneratorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -221,6 +223,72 @@ class ManualGeneratorController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Visual generation failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Suggest an AI-generated marketing tagline tailored to the campaign and product context.
+     */
+    public function suggestTagline(
+        SuggestTaglineRequest $request,
+        VisualPromptGeneratorService $promptService
+    ): JsonResponse {
+        /** @var User $user */
+        $user = $request->user();
+
+        $budgetLimit = (float) config('services.openai.budget_limit', 10.00);
+        if ($user->hasReachedAiBudgetLimit($budgetLimit)) {
+            return response()->json([
+                'success' => false,
+                'quota_exceeded' => true,
+                'message' => 'You have reached your $'.number_format($budgetLimit, 2).' AI generation limit quota. Tagline generation is disabled.',
+            ], 403);
+        }
+
+        /** @var Campaign $campaign */
+        $campaign = $user->campaigns()->with(['event'])->whereKey($request->input('campaign_id'))->firstOrFail();
+        /** @var Business|null $business */
+        $business = $user->business()->first();
+
+        $catalogIds = $request->input('catalog_product_ids', []);
+        $catalogProducts = ! empty($catalogIds) && is_array($catalogIds)
+            ? Product::query()->whereIn('id', $catalogIds)->where('business_id', $business?->id)->get()
+            : collect();
+
+        if ($catalogProducts->isEmpty() && $campaign->product_id) {
+            $campaignProduct = Product::query()->where('id', $campaign->product_id)->where('business_id', $business?->id)->first();
+            if ($campaignProduct) {
+                $catalogProducts = collect([$campaignProduct]);
+            }
+        }
+
+        try {
+            $tagline = $promptService->generateTagline($user, $campaign, $business, [
+                'catalog_products' => $catalogProducts,
+                'custom_products' => $request->input('custom_products', []),
+                'product_name' => $request->input('product_name'),
+                'render_style' => $request->input('render_style'),
+                'visual_theme' => $request->input('visual_theme') ?: $request->input('content_style'),
+                'brand_tone' => $request->input('brand_tone'),
+                'user_instruction' => $request->input('user_instruction') ?: $request->input('scene_prompt') ?: $request->input('notes'),
+                'notes' => $request->input('notes'),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'tagline' => $tagline,
+                'message' => 'AI Tagline generated successfully.',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('AI Tagline suggestion failed: '.$e->getMessage(), [
+                'campaign_id' => $campaign->id,
+                'user_id' => $user->id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => "We couldn't generate a tagline right now. Please try again.",
             ], 500);
         }
     }
