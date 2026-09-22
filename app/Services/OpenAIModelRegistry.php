@@ -167,6 +167,14 @@ class OpenAIModelRegistry
     }
 
     /**
+     * Get the configured text model ID for visual prompt generation (GPT-5.6 Luna).
+     */
+    public function getTextModel(): string
+    {
+        return (string) config('services.openai.text_model', 'gpt-5.6-luna');
+    }
+
+    /**
      * Resolve the exact OpenAI API model string.
      */
     public function resolveApiModelId(string $modelId): string

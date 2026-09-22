@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\GeneratePromptRequest;
 use App\Http\Requests\GeneratorRequest as StoreGeneratorRequest;
 use App\Models\Business;
 use App\Models\Campaign;
@@ -11,126 +12,33 @@ use App\Models\GenerationRequest;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\MarketingPromptBuilder;
+use App\Services\ModularPromptOrchestrator;
 use App\Services\NotificationService;
 use App\Services\OpenAIImageService;
-use App\Services\PhilippineHolidayService;
 use App\Services\TaglineNormalizationService;
-use Illuminate\Database\Eloquent\Collection;
+use App\Services\VisualPromptGeneratorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Inertia\Inertia;
-use Inertia\Response;
 use RuntimeException;
 
 class GeneratorController extends Controller
 {
-    public function index(Request $request, PhilippineHolidayService $holidayService): Response|RedirectResponse
+    public function index(Request $request): RedirectResponse
     {
-        /** @var User|null $user */
-        $user = $request->user();
-        if (! $user) {
-            return redirect()->route('login');
-        }
-
         $campaignParam = $request->route('campaign');
         $campaignId = $campaignParam instanceof Campaign
             ? $campaignParam->id
             : ($campaignParam ?: ($request->input('campaign_id') ?: $request->input('campaign')));
 
-        if (! $campaignId) {
-            return redirect()->route('campaigns.index')
-                ->with('info', 'Please select or create a Campaign before generating AI marketing visuals.');
+        $params = $request->query();
+        if ($campaignId && ! isset($params['campaign_id'])) {
+            $params['campaign_id'] = (string) $campaignId;
         }
 
-        /** @var Campaign|null $campaign */
-        $campaign = $user->campaigns()->with(['product', 'event', 'business'])->whereKey($campaignId)->first();
-
-        if (! $campaign) {
-            return redirect()->route('campaigns.index')
-                ->with('error', 'The requested Campaign was not found or belongs to another business.');
-        }
-
-        /** @var Business|null $business */
-        $business = $user->business()->first();
-        /** @var Collection<int, Product> $products */
-        $products = $business?->products()->orderBy('name')->get() ?? collect();
-
-        // Sync holidays for current year and upcoming 2 years
-        foreach ([now()->year, now()->year + 1, now()->year + 2] as $year) {
-            try {
-                $holidayService->ensureYearSynced((int) $year);
-            } catch (\Exception $e) {
-                Log::error("Failed to sync holidays for year {$year}: {$e->getMessage()}");
-            }
-        }
-
-        $events = Event::query()
-            ->where(fn ($query) => $query->where('user_id', $user?->id)->orWhere('is_global', true))
-            ->orderBy('date')
-            ->get();
-
-        $campaigns = $user?->campaigns()->with(['event', 'product'])->orderByDesc('created_at')->get() ?? collect();
-
-        return Inertia::render('generator/index', [
-            'business' => $business ? [
-                'id' => $business->id,
-                'name' => $business->name,
-                'industry' => $business->industry,
-                'category' => $business->category,
-                'description' => $business->description,
-                'target_audience' => $business->target_audience,
-                'unique_selling_point' => $business->unique_selling_point,
-                'content_style' => $this->decodeJsonList($business->content_style),
-                'default_tagline_behavior' => $business->default_tagline_behavior,
-            ] : null,
-            'campaign' => $campaign ? [
-                'id' => $campaign->id,
-                'name' => $campaign->name,
-                'objective' => $campaign->objective,
-                'target_audience' => $campaign->target_audience,
-                'product_id' => $campaign->product_id,
-                'product_name' => $campaign->product?->name,
-                'event_id' => $campaign->event_id,
-                'event_name' => $campaign->event?->name,
-            ] : null,
-            'initial_campaign_id' => $campaign?->id ? (string) $campaign->id : ($request->input('campaign_id') ?: $request->input('campaign')),
-            'initial_event_id' => $request->input('event_id') ?: $request->input('event') ?: ($campaign?->event_id ? (string) $campaign->event_id : null),
-            'initial_product_name' => $request->input('product_name') ?: $request->input('product') ?: $campaign?->product?->name,
-            'campaigns' => $campaigns->map(fn (Campaign $c): array => [
-                'id' => $c->id,
-                'name' => $c->name,
-                'status' => $c->status,
-                'event_id' => $c->event_id,
-                'event_name' => $c->event?->name,
-                'product_id' => $c->product_id,
-                'product_name' => $c->product?->name,
-                'target_audience' => $c->target_audience,
-                'objective' => $c->objective,
-                'start_date' => $c->start_date?->format('Y-m-d'),
-                'end_date' => $c->end_date?->format('Y-m-d'),
-            ])->values()->all(),
-            'products' => $products->map(fn ($product): array => [
-                'id' => $product->id,
-                'name' => $product->name,
-                'description' => $product->description,
-                'price' => $product->price,
-                'image_path' => $product->image_path,
-                'image_url' => $product->image_path ? Storage::url($product->image_path) : null,
-            ])->values()->all(),
-            'events' => $events->map(fn (Event $event): array => [
-                'id' => $event->id,
-                'name' => $event->name,
-                'date' => $event->date->format('Y-m-d'),
-                'type' => $event->type,
-                'category' => $event->category ?? $event->type,
-                'is_long_weekend' => (bool) $event->is_long_weekend,
-                'long_weekend_details' => $event->long_weekend_details,
-                'proclamation_no' => $event->proclamation_no,
-            ])->values()->all(),
-        ]);
+        return redirect()->route('generator.automatic.index', $params);
     }
 
     public function store(StoreGeneratorRequest $request): RedirectResponse
@@ -206,6 +114,7 @@ class GeneratorController extends Controller
 
         try {
             $generatedImagePath = $openAIService->generate($prompt, [
+                'generation_mode' => $payload['generation_mode'] ?? 'manual',
                 // Step 1 — Product & Campaign
                 'product_name' => $payload['product_name'],
                 'product_description' => $product?->description,
@@ -295,6 +204,8 @@ class GeneratorController extends Controller
                     'aspect_ratio' => $payload['aspect_ratio'] ?? '1:1',
                     'business_name' => $businessName,
                     'generation_mode' => $referenceImagePath ? 'PRODUCT_REFERENCE' : 'CREATIVE_GENERATION',
+                    'creative_concept' => $payload['creative_concept'] ?? null,
+                    'visual_strategy' => $payload['visual_strategy'] ?? null,
                     'product_preserved' => (bool) ($openAIService->getLastGenerationMetadata()['product_preserved'] ?? (bool) $referenceImagePath),
                     'reference_image_used' => (bool) ($openAIService->getLastGenerationMetadata()['reference_image_used'] ?? (bool) $referenceImagePath),
                     'prompt_version' => 'marketing-pipeline-v1',
@@ -392,6 +303,7 @@ class GeneratorController extends Controller
             }
 
             $generatedImagePath = $openAIService->generate($prompt, [
+                'generation_mode' => $request->input('generation_mode', 'manual'),
                 'product_name' => (string) $request->input('product_name'),
                 'product_description' => $product?->description,
                 'product_category' => $business->category,
@@ -453,6 +365,328 @@ class GeneratorController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage() ?: 'Your visual creative could not be synthesized right now. Please try again.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate an AI-powered visual marketing prompt using GPT-5.6 Luna and OpenAI Responses API.
+     */
+    public function generatePrompt(
+        GeneratePromptRequest $request,
+        VisualPromptGeneratorService $promptService
+    ): JsonResponse {
+        /** @var User $user */
+        $user = $request->user();
+
+        $budgetLimit = (float) config('services.openai.budget_limit', 10.00);
+        if ($user->hasReachedAiBudgetLimit($budgetLimit)) {
+            return response()->json([
+                'success' => false,
+                'quota_exceeded' => true,
+                'message' => 'You have reached your $'.number_format($budgetLimit, 2).' AI generation limit quota. Prompt generation is disabled.',
+            ], 403);
+        }
+
+        /** @var Campaign $campaign */
+        $campaign = $user->campaigns()->with(['event'])->whereKey($request->input('campaign_id'))->firstOrFail();
+        /** @var Business|null $business */
+        $business = $user->business()->first();
+
+        // Authoritative catalog products from database belonging to this business
+        $catalogIds = $request->input('catalog_product_ids', []);
+        $catalogProducts = ! empty($catalogIds) && is_array($catalogIds)
+            ? Product::query()->whereIn('id', $catalogIds)->where('business_id', $business?->id)->get()
+            : collect();
+
+        // Fallback: if no catalog products explicitly passed, check if campaign has a linked product
+        if ($catalogProducts->isEmpty() && $campaign->product_id) {
+            $campaignProduct = Product::query()->where('id', $campaign->product_id)->where('business_id', $business?->id)->first();
+            if ($campaignProduct) {
+                $catalogProducts = collect([$campaignProduct]);
+            }
+        }
+
+        $generationMode = $request->input('generation_mode') === 'automatic' ? 'automatic' : 'manual';
+        $requireTagline = filter_var($request->input('require_tagline', false), FILTER_VALIDATE_BOOLEAN)
+            || $request->input('target') === 'tagline'
+            || $generationMode === 'automatic';
+
+        try {
+            $result = $promptService->generate($user, $campaign, $business, [
+                'generation_mode' => $generationMode,
+                'require_tagline' => $requireTagline,
+                'previous_concepts' => $request->input('previous_concepts', []),
+                'catalog_products' => $catalogProducts,
+                'custom_products' => $request->input('custom_products', []),
+                'user_instruction' => $request->input('user_instruction') ?: $request->input('image_prompt') ?: $request->input('notes'),
+                'render_style' => $request->input('render_style'),
+                'visual_theme' => $request->input('visual_theme') ?: $request->input('content_style'),
+                'brand_tone' => $request->input('brand_tone'),
+                'aspect_ratio' => $request->input('aspect_ratio', '1:1'),
+                'tagline' => $request->input('tagline'),
+                'include_business_name' => $request->input('include_business_name', true),
+                'has_reference_image' => (bool) $request->input('has_reference_image', false),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'tagline' => $result['tagline'] ?? null,
+                'visual_prompt' => $result['visual_prompt'],
+                'creative_concept' => $result['creative_concept'],
+                'visual_strategy' => $result['visual_strategy'],
+                'model' => $result['model'],
+                'usage' => $result['usage'],
+                'message' => 'Visual prompt generated successfully.',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Visual prompt generation failed: '.$e->getMessage(), [
+                'campaign_id' => $campaign->id,
+                'user_id' => $user->id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => "We couldn't generate the visual prompt right now. Please try again.",
+            ], 500);
+        }
+    }
+
+    /**
+     * One-action automatic generation: derives tagline, concept, strategy, and prompt with AI,
+     * and immediately invokes the downstream image generation pipeline in one continuous flow.
+     */
+    public function generateAutomatic(
+        Request $request,
+        VisualPromptGeneratorService $promptService,
+        OpenAIImageService $openAIService,
+        ModularPromptOrchestrator $promptOrchestrator
+    ): JsonResponse {
+        @set_time_limit(120);
+        @ini_set('max_execution_time', '120');
+
+        /** @var User|null $user */
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $budgetLimit = (float) config('services.openai.budget_limit', 10.00);
+        if ($user->hasReachedAiBudgetLimit($budgetLimit)) {
+            return response()->json([
+                'success' => false,
+                'quota_exceeded' => true,
+                'message' => 'You have reached your $'.number_format($budgetLimit, 2).' AI generation limit quota. Visual generation is disabled.',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'campaign_id' => ['required', 'exists:campaigns,id'],
+            'product_id' => ['nullable', 'exists:products,id'],
+            'catalog_product_ids' => ['nullable', 'array'],
+            'catalog_product_ids.*' => ['integer', 'exists:products,id'],
+            'custom_products' => ['nullable', 'array'],
+            'custom_products.*.name' => ['required', 'string', 'max:150'],
+            'custom_products.*.price' => ['nullable'],
+            'tagline' => ['nullable', 'string', 'max:255'],
+            'user_instruction' => ['nullable', 'string', 'max:4000'],
+            'image_prompt' => ['nullable', 'string', 'max:4000'],
+            'aspect_ratio' => ['nullable', 'string', 'max:20'],
+            'previous_concepts' => ['nullable', 'array'],
+            'previous_concepts.*' => ['string', 'max:500'],
+            'include_business_name' => ['nullable', 'boolean'],
+            'image_model' => ['nullable', 'string', 'max:50'],
+            'image_quality' => ['nullable', 'string', 'in:low,medium,high'],
+        ]);
+
+        /** @var Campaign|null $campaign */
+        $campaign = $user->campaigns()->with(['event', 'product'])->whereKey($validated['campaign_id'])->first();
+        if (! $campaign) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The selected campaign does not belong to your account.',
+            ], 422);
+        }
+
+        /** @var Business|null $business */
+        $business = $user->business()->first();
+        if (! $business) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Business profile is required before generating marketing visuals.',
+            ], 422);
+        }
+
+        // Resolve catalog product IDs and deduplicate by stable ID
+        $catalogProductIds = collect($validated['catalog_product_ids'] ?? [])
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($catalogProductIds) && ! empty($validated['product_id'])) {
+            $catalogProductIds = [(int) $validated['product_id']];
+        } elseif (empty($catalogProductIds) && $campaign->product_id) {
+            $catalogProductIds = [(int) $campaign->product_id];
+        }
+
+        // Fetch authoritative catalog products belonging to this business
+        $catalogProducts = empty($catalogProductIds)
+            ? collect()
+            : Product::query()
+                ->where('business_id', $business->id)
+                ->whereIn('id', $catalogProductIds)
+                ->get()
+                ->sortBy(function (Product $p) use ($catalogProductIds) {
+                    $pos = array_search($p->id, $catalogProductIds, true);
+
+                    return $pos === false ? 999 : $pos;
+                })
+                ->values();
+
+        if (! empty($validated['product_id']) && $catalogProducts->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'One or more selected products do not belong to your business.',
+            ], 422);
+        }
+
+        $aspectRatio = $validated['aspect_ratio'] ?? '1:1';
+        $imageModel = $validated['image_model'] ?? 'gpt-image-2';
+        $imageQuality = $validated['image_quality'] ?? 'medium';
+        $includeBusinessName = filter_var($validated['include_business_name'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $businessName = $includeBusinessName ? $business->name : null;
+
+        // Primary catalog product for reference preservation
+        $primaryProduct = $catalogProducts->first();
+        $event = $campaign->event;
+
+        $userTagline = ! empty($validated['tagline']) ? trim((string) $validated['tagline']) : null;
+        $userPrompt = ! empty($validated['user_instruction'])
+            ? trim((string) $validated['user_instruction'])
+            : (! empty($validated['image_prompt']) ? trim((string) $validated['image_prompt']) : null);
+
+        // Stage 1: Autonomous Creative Direction (Tagline, Concept, Strategy, Visual Prompt)
+        try {
+            $creativeResult = $promptService->generate($user, $campaign, $business, [
+                'generation_mode' => 'automatic',
+                'require_tagline' => true,
+                'tagline' => $userTagline,
+                'user_instruction' => $userPrompt,
+                'previous_concepts' => $validated['previous_concepts'] ?? [],
+                'catalog_products' => $catalogProducts,
+                'custom_products' => $validated['custom_products'] ?? [],
+                'aspect_ratio' => $aspectRatio,
+                'include_business_name' => $includeBusinessName,
+                'has_reference_image' => (bool) $primaryProduct?->image_path,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Automatic Creative Director generation failed: '.$e->getMessage(), [
+                'campaign_id' => $campaign->id,
+                'user_id' => $user->id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => "We couldn't generate the creative concept and tagline right now: ".$e->getMessage(),
+            ], 500);
+        }
+
+        $generatedTagline = $userTagline ?: ($creativeResult['tagline'] ?? null);
+        $creativeConcept = $creativeResult['creative_concept'] ?? null;
+        $visualStrategy = $creativeResult['visual_strategy'] ?? null;
+        $conceptScene = $userPrompt ?: $creativeResult['visual_prompt'];
+
+        // Stage 2: Unified Production Prompt Orchestration with ModularPromptOrchestrator
+        $referenceImagePath = $primaryProduct?->image_path;
+        $productImageUrl = $primaryProduct?->image_path ? Storage::url($primaryProduct->image_path) : null;
+
+        $orchestratedOptions = [
+            'generation_mode' => 'automatic',
+            'product_name' => $primaryProduct?->name ?? 'Featured Product',
+            'product_description' => $primaryProduct?->description,
+            'product_category' => $business->category,
+            'business_category' => $business->category,
+            'product_image_url' => $productImageUrl,
+            'campaign_name' => $campaign->name,
+            'campaign_objective' => $campaign->objective,
+            'event_name' => $event?->name,
+            'price' => $primaryProduct?->price,
+            'brand_tone' => [],
+            'visual_theme' => [],
+            'render_style' => 'Automatic Commercial Art Direction',
+            'tagline' => $generatedTagline,
+            'tagline_mode' => 'ai',
+            'aspect_ratio' => $aspectRatio,
+            'image_model' => $imageModel,
+            'image_quality' => $imageQuality,
+            'include_business_name' => $includeBusinessName,
+            'business_name' => $businessName,
+            'business_industry' => $business->industry,
+            'business_description' => $business->description,
+            'business_usp' => $business->unique_selling_point,
+            'business_content_style' => $business->content_style,
+            'business_marketing_prefs' => $business->marketing_preferences,
+            'reference_image_path' => $referenceImagePath,
+            'scene_prompt' => $conceptScene,
+            'user_prompt' => $conceptScene,
+            'notes' => null,
+        ];
+
+        $productionVisualPrompt = $promptOrchestrator->orchestrate($orchestratedOptions, $business);
+
+        // Stage 3: Immediate Downstream Image Generation
+        try {
+            $generatedImagePath = $openAIService->generate($productionVisualPrompt, $orchestratedOptions);
+
+            $blueprint = $openAIService->getLastReferenceBlueprint();
+            $genMeta = $openAIService->getLastGenerationMetadata();
+
+            $previewData = [
+                'image_url' => Storage::url($generatedImagePath),
+                'generated_image_path' => $generatedImagePath,
+                'prompt' => $productionVisualPrompt,
+                'visual_prompt' => $productionVisualPrompt,
+                'tagline' => $generatedTagline,
+                'creative_concept' => $creativeConcept,
+                'visual_strategy' => $visualStrategy,
+                'product_name' => $primaryProduct?->name ?? 'Featured Product',
+                'product_id' => $primaryProduct?->id,
+                'price' => $primaryProduct?->price,
+                'render_style' => 'Automatic Commercial Art Direction',
+                'aspect_ratio' => $aspectRatio,
+                'image_model' => $imageModel,
+                'image_quality' => $imageQuality,
+                'reference_blueprint' => $blueprint,
+                'generation_meta' => $genMeta,
+            ];
+
+            return response()->json(array_merge([
+                'success' => true,
+                'message' => 'Visual creative generated successfully.',
+                'preview' => $previewData,
+            ], $previewData));
+        } catch (\Throwable $e) {
+            Log::error('Automatic visual generation image step failed: '.$e->getMessage(), [
+                'campaign_id' => $campaign->id,
+                'user_id' => $user->id,
+            ]);
+
+            NotificationService::notifyAi(
+                $user,
+                'AI Generation Failed',
+                'Your visual creative could not be synthesized: '.($e->getMessage() ?: 'An unexpected error occurred during generation.'),
+                route('campaigns.generator', $campaign),
+                ['error' => $e->getMessage()]
+            );
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Image generation could not be completed. Your creative concept and prompt were preserved: '.$e->getMessage(),
+                'tagline' => $generatedTagline,
+                'creative_concept' => $creativeConcept,
+                'visual_strategy' => $visualStrategy,
+                'visual_prompt' => $productionVisualPrompt,
             ], 500);
         }
     }

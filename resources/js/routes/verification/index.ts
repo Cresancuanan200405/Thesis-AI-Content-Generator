@@ -1,6 +1,6 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
 /**
- * @see routes/web.php:33
+ * @see routes/web.php:35
  * @route '/email/verify'
  */
 export const notice = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -14,7 +14,7 @@ notice.definition = {
 } satisfies RouteDefinition<["get","head"]>
 
 /**
- * @see routes/web.php:33
+ * @see routes/web.php:35
  * @route '/email/verify'
  */
 notice.url = (options?: RouteQueryOptions) => {
@@ -22,7 +22,7 @@ notice.url = (options?: RouteQueryOptions) => {
 }
 
 /**
- * @see routes/web.php:33
+ * @see routes/web.php:35
  * @route '/email/verify'
  */
 notice.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -30,7 +30,7 @@ notice.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     method: 'get',
 })
 /**
- * @see routes/web.php:33
+ * @see routes/web.php:35
  * @route '/email/verify'
  */
 notice.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -39,7 +39,7 @@ notice.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
     /**
- * @see routes/web.php:33
+ * @see routes/web.php:35
  * @route '/email/verify'
  */
     const noticeForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -48,7 +48,7 @@ notice.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     })
 
             /**
- * @see routes/web.php:33
+ * @see routes/web.php:35
  * @route '/email/verify'
  */
         noticeForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -56,7 +56,7 @@ notice.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
             method: 'get',
         })
             /**
- * @see routes/web.php:33
+ * @see routes/web.php:35
  * @route '/email/verify'
  */
         noticeForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -166,7 +166,7 @@ verify.head = (args: { id: string | number, hash: string | number } | [id: strin
     
     verify.form = verifyForm
 /**
- * @see routes/web.php:85
+ * @see routes/web.php:87
  * @route '/email/verification-notification'
  */
 export const send = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -180,7 +180,7 @@ send.definition = {
 } satisfies RouteDefinition<["post"]>
 
 /**
- * @see routes/web.php:85
+ * @see routes/web.php:87
  * @route '/email/verification-notification'
  */
 send.url = (options?: RouteQueryOptions) => {
@@ -188,7 +188,7 @@ send.url = (options?: RouteQueryOptions) => {
 }
 
 /**
- * @see routes/web.php:85
+ * @see routes/web.php:87
  * @route '/email/verification-notification'
  */
 send.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -197,7 +197,7 @@ send.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 })
 
     /**
- * @see routes/web.php:85
+ * @see routes/web.php:87
  * @route '/email/verification-notification'
  */
     const sendForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -206,7 +206,7 @@ send.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     })
 
             /**
- * @see routes/web.php:85
+ * @see routes/web.php:87
  * @route '/email/verification-notification'
  */
         sendForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -216,7 +216,7 @@ send.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     
     send.form = sendForm
 /**
- * @see routes/web.php:51
+ * @see routes/web.php:53
  * @route '/email/verify-code'
  */
 export const code = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -230,7 +230,7 @@ code.definition = {
 } satisfies RouteDefinition<["post"]>
 
 /**
- * @see routes/web.php:51
+ * @see routes/web.php:53
  * @route '/email/verify-code'
  */
 code.url = (options?: RouteQueryOptions) => {
@@ -238,7 +238,7 @@ code.url = (options?: RouteQueryOptions) => {
 }
 
 /**
- * @see routes/web.php:51
+ * @see routes/web.php:53
  * @route '/email/verify-code'
  */
 code.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -247,7 +247,7 @@ code.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 })
 
     /**
- * @see routes/web.php:51
+ * @see routes/web.php:53
  * @route '/email/verify-code'
  */
     const codeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -256,7 +256,7 @@ code.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     })
 
             /**
- * @see routes/web.php:51
+ * @see routes/web.php:53
  * @route '/email/verify-code'
  */
         codeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

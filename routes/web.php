@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\SocialAuthController;
+use App\Http\Controllers\AutomaticGeneratorController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\DesignController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\GeneratorController;
+use App\Http\Controllers\ManualGeneratorController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProductController;
@@ -291,9 +293,15 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
             ],
         ]);
     })->name('dashboard');
+    Route::get('generator/automatic', [AutomaticGeneratorController::class, 'index'])->name('generator.automatic.index');
+    Route::post('generator/automatic', [AutomaticGeneratorController::class, 'generate'])->name('generator.automatic');
+    Route::get('generator/manual', [ManualGeneratorController::class, 'index'])->name('generator.manual.index');
+    Route::post('generator/manual', [ManualGeneratorController::class, 'generate'])->name('generator.manual');
+
     Route::get('generator', [GeneratorController::class, 'index'])->name('generator.index');
     Route::post('generator', [GeneratorController::class, 'store'])->name('generator.store');
-    Route::post('generator/preview', [GeneratorController::class, 'generatePreview'])->name('generator.preview');
+    Route::post('generator/preview', [ManualGeneratorController::class, 'generate'])->name('generator.preview');
+    Route::post('generator/prompt', [GeneratorController::class, 'generatePrompt'])->name('generator.prompt');
     Route::get('designs', [DesignController::class, 'index'])->name('designs.index');
     Route::post('designs', [DesignController::class, 'store'])->name('designs.store');
     Route::post('designs/bulk-delete', [DesignController::class, 'bulkDestroy'])->name('designs.bulk-delete');

@@ -78,7 +78,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     
     index.form = indexForm
 /**
- * @see routes/web.php:314
+ * @see routes/web.php:322
  * @route '/campaigns/create'
  */
 export const create = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -92,7 +92,7 @@ create.definition = {
 } satisfies RouteDefinition<["get","head"]>
 
 /**
- * @see routes/web.php:314
+ * @see routes/web.php:322
  * @route '/campaigns/create'
  */
 create.url = (options?: RouteQueryOptions) => {
@@ -100,7 +100,7 @@ create.url = (options?: RouteQueryOptions) => {
 }
 
 /**
- * @see routes/web.php:314
+ * @see routes/web.php:322
  * @route '/campaigns/create'
  */
 create.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -108,7 +108,7 @@ create.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     method: 'get',
 })
 /**
- * @see routes/web.php:314
+ * @see routes/web.php:322
  * @route '/campaigns/create'
  */
 create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -117,7 +117,7 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
     /**
- * @see routes/web.php:314
+ * @see routes/web.php:322
  * @route '/campaigns/create'
  */
     const createForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -126,7 +126,7 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     })
 
             /**
- * @see routes/web.php:314
+ * @see routes/web.php:322
  * @route '/campaigns/create'
  */
         createForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -134,7 +134,7 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
             method: 'get',
         })
             /**
- * @see routes/web.php:314
+ * @see routes/web.php:322
  * @route '/campaigns/create'
  */
         createForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -307,7 +307,7 @@ show.head = (args: { campaign: number | { id: number } } | [campaign: number | {
     show.form = showForm
 /**
 * @see \App\Http\Controllers\GeneratorController::generator
- * @see app/Http/Controllers/GeneratorController.php:30
+ * @see app/Http/Controllers/GeneratorController.php:29
  * @route '/campaigns/{campaign}/generator'
  */
 export const generator = (args: { campaign: string | number } | [campaign: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -322,7 +322,7 @@ generator.definition = {
 
 /**
 * @see \App\Http\Controllers\GeneratorController::generator
- * @see app/Http/Controllers/GeneratorController.php:30
+ * @see app/Http/Controllers/GeneratorController.php:29
  * @route '/campaigns/{campaign}/generator'
  */
 generator.url = (args: { campaign: string | number } | [campaign: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -350,7 +350,7 @@ generator.url = (args: { campaign: string | number } | [campaign: string | numbe
 
 /**
 * @see \App\Http\Controllers\GeneratorController::generator
- * @see app/Http/Controllers/GeneratorController.php:30
+ * @see app/Http/Controllers/GeneratorController.php:29
  * @route '/campaigns/{campaign}/generator'
  */
 generator.get = (args: { campaign: string | number } | [campaign: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -359,7 +359,7 @@ generator.get = (args: { campaign: string | number } | [campaign: string | numbe
 })
 /**
 * @see \App\Http\Controllers\GeneratorController::generator
- * @see app/Http/Controllers/GeneratorController.php:30
+ * @see app/Http/Controllers/GeneratorController.php:29
  * @route '/campaigns/{campaign}/generator'
  */
 generator.head = (args: { campaign: string | number } | [campaign: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -369,7 +369,7 @@ generator.head = (args: { campaign: string | number } | [campaign: string | numb
 
     /**
 * @see \App\Http\Controllers\GeneratorController::generator
- * @see app/Http/Controllers/GeneratorController.php:30
+ * @see app/Http/Controllers/GeneratorController.php:29
  * @route '/campaigns/{campaign}/generator'
  */
     const generatorForm = (args: { campaign: string | number } | [campaign: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -379,7 +379,7 @@ generator.head = (args: { campaign: string | number } | [campaign: string | numb
 
             /**
 * @see \App\Http\Controllers\GeneratorController::generator
- * @see app/Http/Controllers/GeneratorController.php:30
+ * @see app/Http/Controllers/GeneratorController.php:29
  * @route '/campaigns/{campaign}/generator'
  */
         generatorForm.get = (args: { campaign: string | number } | [campaign: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -388,7 +388,7 @@ generator.head = (args: { campaign: string | number } | [campaign: string | numb
         })
             /**
 * @see \App\Http\Controllers\GeneratorController::generator
- * @see app/Http/Controllers/GeneratorController.php:30
+ * @see app/Http/Controllers/GeneratorController.php:29
  * @route '/campaigns/{campaign}/generator'
  */
         generatorForm.head = (args: { campaign: string | number } | [campaign: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -483,7 +483,7 @@ attachDesigns.post = (args: { campaign: number | { id: number } } | [campaign: n
     attachDesigns.form = attachDesignsForm
 /**
 * @see \App\Http\Controllers\CampaignController::archive
- * @see app/Http/Controllers/CampaignController.php:447
+ * @see app/Http/Controllers/CampaignController.php:464
  * @route '/campaigns/{campaign}/archive'
  */
 export const archive = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -498,7 +498,7 @@ archive.definition = {
 
 /**
 * @see \App\Http\Controllers\CampaignController::archive
- * @see app/Http/Controllers/CampaignController.php:447
+ * @see app/Http/Controllers/CampaignController.php:464
  * @route '/campaigns/{campaign}/archive'
  */
 archive.url = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -531,7 +531,7 @@ archive.url = (args: { campaign: number | { id: number } } | [campaign: number |
 
 /**
 * @see \App\Http\Controllers\CampaignController::archive
- * @see app/Http/Controllers/CampaignController.php:447
+ * @see app/Http/Controllers/CampaignController.php:464
  * @route '/campaigns/{campaign}/archive'
  */
 archive.post = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -541,7 +541,7 @@ archive.post = (args: { campaign: number | { id: number } } | [campaign: number 
 
     /**
 * @see \App\Http\Controllers\CampaignController::archive
- * @see app/Http/Controllers/CampaignController.php:447
+ * @see app/Http/Controllers/CampaignController.php:464
  * @route '/campaigns/{campaign}/archive'
  */
     const archiveForm = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -551,7 +551,7 @@ archive.post = (args: { campaign: number | { id: number } } | [campaign: number 
 
             /**
 * @see \App\Http\Controllers\CampaignController::archive
- * @see app/Http/Controllers/CampaignController.php:447
+ * @see app/Http/Controllers/CampaignController.php:464
  * @route '/campaigns/{campaign}/archive'
  */
         archiveForm.post = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -562,7 +562,7 @@ archive.post = (args: { campaign: number | { id: number } } | [campaign: number 
     archive.form = archiveForm
 /**
 * @see \App\Http\Controllers\CampaignController::unarchive
- * @see app/Http/Controllers/CampaignController.php:463
+ * @see app/Http/Controllers/CampaignController.php:480
  * @route '/campaigns/{campaign}/unarchive'
  */
 export const unarchive = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -577,7 +577,7 @@ unarchive.definition = {
 
 /**
 * @see \App\Http\Controllers\CampaignController::unarchive
- * @see app/Http/Controllers/CampaignController.php:463
+ * @see app/Http/Controllers/CampaignController.php:480
  * @route '/campaigns/{campaign}/unarchive'
  */
 unarchive.url = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -610,7 +610,7 @@ unarchive.url = (args: { campaign: number | { id: number } } | [campaign: number
 
 /**
 * @see \App\Http\Controllers\CampaignController::unarchive
- * @see app/Http/Controllers/CampaignController.php:463
+ * @see app/Http/Controllers/CampaignController.php:480
  * @route '/campaigns/{campaign}/unarchive'
  */
 unarchive.post = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -620,7 +620,7 @@ unarchive.post = (args: { campaign: number | { id: number } } | [campaign: numbe
 
     /**
 * @see \App\Http\Controllers\CampaignController::unarchive
- * @see app/Http/Controllers/CampaignController.php:463
+ * @see app/Http/Controllers/CampaignController.php:480
  * @route '/campaigns/{campaign}/unarchive'
  */
     const unarchiveForm = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -630,7 +630,7 @@ unarchive.post = (args: { campaign: number | { id: number } } | [campaign: numbe
 
             /**
 * @see \App\Http\Controllers\CampaignController::unarchive
- * @see app/Http/Controllers/CampaignController.php:463
+ * @see app/Http/Controllers/CampaignController.php:480
  * @route '/campaigns/{campaign}/unarchive'
  */
         unarchiveForm.post = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -730,7 +730,7 @@ update.put = (args: { campaign: number | { id: number } } | [campaign: number | 
     update.form = updateForm
 /**
 * @see \App\Http\Controllers\CampaignController::destroy
- * @see app/Http/Controllers/CampaignController.php:435
+ * @see app/Http/Controllers/CampaignController.php:452
  * @route '/campaigns/{campaign}'
  */
 export const destroy = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -745,7 +745,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\CampaignController::destroy
- * @see app/Http/Controllers/CampaignController.php:435
+ * @see app/Http/Controllers/CampaignController.php:452
  * @route '/campaigns/{campaign}'
  */
 destroy.url = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -778,7 +778,7 @@ destroy.url = (args: { campaign: number | { id: number } } | [campaign: number |
 
 /**
 * @see \App\Http\Controllers\CampaignController::destroy
- * @see app/Http/Controllers/CampaignController.php:435
+ * @see app/Http/Controllers/CampaignController.php:452
  * @route '/campaigns/{campaign}'
  */
 destroy.delete = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -788,7 +788,7 @@ destroy.delete = (args: { campaign: number | { id: number } } | [campaign: numbe
 
     /**
 * @see \App\Http\Controllers\CampaignController::destroy
- * @see app/Http/Controllers/CampaignController.php:435
+ * @see app/Http/Controllers/CampaignController.php:452
  * @route '/campaigns/{campaign}'
  */
     const destroyForm = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -803,7 +803,7 @@ destroy.delete = (args: { campaign: number | { id: number } } | [campaign: numbe
 
             /**
 * @see \App\Http\Controllers\CampaignController::destroy
- * @see app/Http/Controllers/CampaignController.php:435
+ * @see app/Http/Controllers/CampaignController.php:452
  * @route '/campaigns/{campaign}'
  */
         destroyForm.delete = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

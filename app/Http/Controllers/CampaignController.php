@@ -400,16 +400,33 @@ class CampaignController extends Controller
         $existingStartDate = $campaign->getAttributeValue('start_date');
         $existingEndDate = $campaign->getAttributeValue('end_date');
 
+        $startDate = $request->has('start_date')
+            ? $request->input('start_date')
+            : ($existingStartDate instanceof CarbonInterface ? $existingStartDate->format('Y-m-d') : null);
+
+        $endDate = $request->has('end_date')
+            ? $request->input('end_date')
+            : ($existingEndDate instanceof CarbonInterface ? $existingEndDate->format('Y-m-d') : null);
+
+        $status = $campaign->status;
+        if ($status !== 'archived' && $startDate && $endDate) {
+            $today = now()->startOfDay();
+            $start = Carbon::parse($startDate)->startOfDay();
+            $end = Carbon::parse($endDate)->startOfDay();
+            if ($end->lt($today)) {
+                $status = 'completed';
+            } elseif ($start->gt($today)) {
+                $status = 'scheduled';
+            } else {
+                $status = 'active';
+            }
+        }
+
         $campaign->update([
-            'product_id' => $request->has('product_id') ? $request->input('product_id') : $campaign->product_id,
-            'event_id' => $request->has('event_id') ? $request->input('event_id') : $campaign->event_id,
             'name' => $request->input('name', $campaign->name),
-            'description' => $request->has('description') ? $request->input('description') : $campaign->description,
-            'objective' => $request->has('objective') ? $request->input('objective') : $campaign->objective,
-            'target_audience' => $request->has('target_audience') ? $request->input('target_audience') : $campaign->target_audience,
-            'start_date' => $request->has('start_date') ? $request->input('start_date') : ($existingStartDate instanceof CarbonInterface ? $existingStartDate->format('Y-m-d') : null),
-            'end_date' => $request->has('end_date') ? $request->input('end_date') : ($existingEndDate instanceof CarbonInterface ? $existingEndDate->format('Y-m-d') : null),
-            'status' => $request->input('status', $campaign->status),
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'status' => $status,
         ]);
 
         if ($request->wantsJson()) {

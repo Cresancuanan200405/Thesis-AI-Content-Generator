@@ -1,7 +1,117 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 /**
+* @see \App\Http\Controllers\AutomaticGeneratorController::automatic
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:45
+ * @route '/generator/automatic'
+ */
+export const automatic = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: automatic.url(options),
+    method: 'post',
+})
+
+automatic.definition = {
+    methods: ["post"],
+    url: '/generator/automatic',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\AutomaticGeneratorController::automatic
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:45
+ * @route '/generator/automatic'
+ */
+automatic.url = (options?: RouteQueryOptions) => {
+    return automatic.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\AutomaticGeneratorController::automatic
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:45
+ * @route '/generator/automatic'
+ */
+automatic.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: automatic.url(options),
+    method: 'post',
+})
+
+    /**
+* @see \App\Http\Controllers\AutomaticGeneratorController::automatic
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:45
+ * @route '/generator/automatic'
+ */
+    const automaticForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+        action: automatic.url(options),
+        method: 'post',
+    })
+
+            /**
+* @see \App\Http\Controllers\AutomaticGeneratorController::automatic
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:45
+ * @route '/generator/automatic'
+ */
+        automaticForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+            action: automatic.url(options),
+            method: 'post',
+        })
+    
+    automatic.form = automaticForm
+/**
+* @see \App\Http\Controllers\ManualGeneratorController::manual
+ * @see app/Http/Controllers/ManualGeneratorController.php:45
+ * @route '/generator/manual'
+ */
+export const manual = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: manual.url(options),
+    method: 'post',
+})
+
+manual.definition = {
+    methods: ["post"],
+    url: '/generator/manual',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\ManualGeneratorController::manual
+ * @see app/Http/Controllers/ManualGeneratorController.php:45
+ * @route '/generator/manual'
+ */
+manual.url = (options?: RouteQueryOptions) => {
+    return manual.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\ManualGeneratorController::manual
+ * @see app/Http/Controllers/ManualGeneratorController.php:45
+ * @route '/generator/manual'
+ */
+manual.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: manual.url(options),
+    method: 'post',
+})
+
+    /**
+* @see \App\Http\Controllers\ManualGeneratorController::manual
+ * @see app/Http/Controllers/ManualGeneratorController.php:45
+ * @route '/generator/manual'
+ */
+    const manualForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+        action: manual.url(options),
+        method: 'post',
+    })
+
+            /**
+* @see \App\Http\Controllers\ManualGeneratorController::manual
+ * @see app/Http/Controllers/ManualGeneratorController.php:45
+ * @route '/generator/manual'
+ */
+        manualForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+            action: manual.url(options),
+            method: 'post',
+        })
+    
+    manual.form = manualForm
+/**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:30
+ * @see app/Http/Controllers/GeneratorController.php:29
  * @route '/generator'
  */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +126,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:30
+ * @see app/Http/Controllers/GeneratorController.php:29
  * @route '/generator'
  */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +135,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:30
+ * @see app/Http/Controllers/GeneratorController.php:29
  * @route '/generator'
  */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -34,7 +144,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:30
+ * @see app/Http/Controllers/GeneratorController.php:29
  * @route '/generator'
  */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,7 +154,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:30
+ * @see app/Http/Controllers/GeneratorController.php:29
  * @route '/generator'
  */
     const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -54,7 +164,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:30
+ * @see app/Http/Controllers/GeneratorController.php:29
  * @route '/generator'
  */
         indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -63,7 +173,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:30
+ * @see app/Http/Controllers/GeneratorController.php:29
  * @route '/generator'
  */
         indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -79,7 +189,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     index.form = indexForm
 /**
 * @see \App\Http\Controllers\GeneratorController::store
- * @see app/Http/Controllers/GeneratorController.php:136
+ * @see app/Http/Controllers/GeneratorController.php:44
  * @route '/generator'
  */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -94,7 +204,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\GeneratorController::store
- * @see app/Http/Controllers/GeneratorController.php:136
+ * @see app/Http/Controllers/GeneratorController.php:44
  * @route '/generator'
  */
 store.url = (options?: RouteQueryOptions) => {
@@ -103,7 +213,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\GeneratorController::store
- * @see app/Http/Controllers/GeneratorController.php:136
+ * @see app/Http/Controllers/GeneratorController.php:44
  * @route '/generator'
  */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -113,7 +223,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\GeneratorController::store
- * @see app/Http/Controllers/GeneratorController.php:136
+ * @see app/Http/Controllers/GeneratorController.php:44
  * @route '/generator'
  */
     const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -123,7 +233,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\GeneratorController::store
- * @see app/Http/Controllers/GeneratorController.php:136
+ * @see app/Http/Controllers/GeneratorController.php:44
  * @route '/generator'
  */
         storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -133,8 +243,8 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     
     store.form = storeForm
 /**
-* @see \App\Http\Controllers\GeneratorController::preview
- * @see app/Http/Controllers/GeneratorController.php:316
+* @see \App\Http\Controllers\ManualGeneratorController::preview
+ * @see app/Http/Controllers/ManualGeneratorController.php:45
  * @route '/generator/preview'
  */
 export const preview = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -148,8 +258,8 @@ preview.definition = {
 } satisfies RouteDefinition<["post"]>
 
 /**
-* @see \App\Http\Controllers\GeneratorController::preview
- * @see app/Http/Controllers/GeneratorController.php:316
+* @see \App\Http\Controllers\ManualGeneratorController::preview
+ * @see app/Http/Controllers/ManualGeneratorController.php:45
  * @route '/generator/preview'
  */
 preview.url = (options?: RouteQueryOptions) => {
@@ -157,8 +267,8 @@ preview.url = (options?: RouteQueryOptions) => {
 }
 
 /**
-* @see \App\Http\Controllers\GeneratorController::preview
- * @see app/Http/Controllers/GeneratorController.php:316
+* @see \App\Http\Controllers\ManualGeneratorController::preview
+ * @see app/Http/Controllers/ManualGeneratorController.php:45
  * @route '/generator/preview'
  */
 preview.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -167,8 +277,8 @@ preview.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 })
 
     /**
-* @see \App\Http\Controllers\GeneratorController::preview
- * @see app/Http/Controllers/GeneratorController.php:316
+* @see \App\Http\Controllers\ManualGeneratorController::preview
+ * @see app/Http/Controllers/ManualGeneratorController.php:45
  * @route '/generator/preview'
  */
     const previewForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -177,8 +287,8 @@ preview.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     })
 
             /**
-* @see \App\Http\Controllers\GeneratorController::preview
- * @see app/Http/Controllers/GeneratorController.php:316
+* @see \App\Http\Controllers\ManualGeneratorController::preview
+ * @see app/Http/Controllers/ManualGeneratorController.php:45
  * @route '/generator/preview'
  */
         previewForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -187,10 +297,68 @@ preview.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
         })
     
     preview.form = previewForm
+/**
+* @see \App\Http\Controllers\GeneratorController::prompt
+ * @see app/Http/Controllers/GeneratorController.php:375
+ * @route '/generator/prompt'
+ */
+export const prompt = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: prompt.url(options),
+    method: 'post',
+})
+
+prompt.definition = {
+    methods: ["post"],
+    url: '/generator/prompt',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\GeneratorController::prompt
+ * @see app/Http/Controllers/GeneratorController.php:375
+ * @route '/generator/prompt'
+ */
+prompt.url = (options?: RouteQueryOptions) => {
+    return prompt.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\GeneratorController::prompt
+ * @see app/Http/Controllers/GeneratorController.php:375
+ * @route '/generator/prompt'
+ */
+prompt.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: prompt.url(options),
+    method: 'post',
+})
+
+    /**
+* @see \App\Http\Controllers\GeneratorController::prompt
+ * @see app/Http/Controllers/GeneratorController.php:375
+ * @route '/generator/prompt'
+ */
+    const promptForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+        action: prompt.url(options),
+        method: 'post',
+    })
+
+            /**
+* @see \App\Http\Controllers\GeneratorController::prompt
+ * @see app/Http/Controllers/GeneratorController.php:375
+ * @route '/generator/prompt'
+ */
+        promptForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+            action: prompt.url(options),
+            method: 'post',
+        })
+    
+    prompt.form = promptForm
 const generator = {
-    index: Object.assign(index, index),
+    automatic: Object.assign(automatic, automatic),
+manual: Object.assign(manual, manual),
+index: Object.assign(index, index),
 store: Object.assign(store, store),
 preview: Object.assign(preview, preview),
+prompt: Object.assign(prompt, prompt),
 }
 
 export default generator

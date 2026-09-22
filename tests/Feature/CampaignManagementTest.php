@@ -105,7 +105,7 @@ it('user cannot view another users campaign', function () {
     $this->actingAs($viewer)->get('/campaigns/'.$campaign->id)->assertForbidden();
 });
 
-it('user can update own campaign', function () {
+it('user can update own campaign name, start date, and end date', function () {
     $user = User::factory()->create(['onboarding_completed' => true]);
     $business = Business::factory()->create(['user_id' => $user->id]);
     $product = Product::factory()->create(['business_id' => $business->id]);
@@ -116,24 +116,99 @@ it('user can update own campaign', function () {
         'business_id' => $business->id,
         'product_id' => $product->id,
         'event_id' => $event->id,
+        'name' => 'Initial Campaign',
         'status' => 'draft',
+        'start_date' => now()->toDateString(),
+        'end_date' => now()->addDays(5)->toDateString(),
+    ]);
+
+    $newStart = now()->addDays(4)->toDateString();
+    $newEnd = now()->addDays(18)->toDateString();
+
+    $this->actingAs($user)
+        ->put('/campaigns/'.$campaign->id, [
+            'name' => 'Updated Campaign Name',
+            'start_date' => $newStart,
+            'end_date' => $newEnd,
+        ])
+        ->assertRedirect();
+
+    $fresh = $campaign->fresh();
+    expect($fresh->name)->toBe('Updated Campaign Name');
+    expect($fresh->start_date->toDateString())->toBe($newStart);
+    expect($fresh->end_date->toDateString())->toBe($newEnd);
+});
+
+it('rejects invalid date range where start date is after end date on campaign update', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'name' => 'Date Test Campaign',
     ]);
 
     $this->actingAs($user)
         ->put('/campaigns/'.$campaign->id, [
-            'name' => 'Updated Campaign',
-            'description' => 'Fresh strategy',
-            'product_id' => $product->id,
-            'event_id' => $event->id,
-            'objective' => 'Lift conversions',
-            'target_audience' => 'Returning buyers',
-            'start_date' => now()->addDays(4)->toDateString(),
-            'end_date' => now()->addDays(18)->toDateString(),
-            'status' => 'active',
+            'name' => 'Date Test Campaign',
+            'start_date' => now()->addDays(10)->toDateString(),
+            'end_date' => now()->addDays(5)->toDateString(),
         ])
-        ->assertRedirect('/campaigns');
+        ->assertSessionHasErrors('end_date');
+});
 
-    $this->assertDatabaseHas('campaigns', ['id' => $campaign->id, 'name' => 'Updated Campaign', 'status' => 'active']);
+it('does not allow manual status change through edit campaign update endpoint and keeps system-managed status', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+
+    // Future dates -> system-managed status is scheduled
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'status' => 'scheduled',
+        'start_date' => now()->addDays(5)->toDateString(),
+        'end_date' => now()->addDays(10)->toDateString(),
+    ]);
+
+    // Attempt to manually pass status => 'completed'
+    $this->actingAs($user)
+        ->put('/campaigns/'.$campaign->id, [
+            'name' => 'Scheduled Campaign',
+            'start_date' => now()->addDays(5)->toDateString(),
+            'end_date' => now()->addDays(10)->toDateString(),
+            'status' => 'completed',
+        ])
+        ->assertRedirect();
+
+    expect($campaign->fresh()->status)->toBe('scheduled');
+});
+
+it('does not allow modifying linked event through edit campaign update endpoint', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+
+    $event1 = Event::factory()->create(['user_id' => $user->id, 'name' => "Mother's Day Special"]);
+    $event2 = Event::factory()->create(['user_id' => $user->id, 'name' => 'Father Day Special']);
+
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event1->id,
+        'name' => "Mother's Day Campaign",
+    ]);
+
+    // Attempt to pass event_id of event2
+    $this->actingAs($user)
+        ->put('/campaigns/'.$campaign->id, [
+            'name' => "Renamed Mother's Day Campaign",
+            'event_id' => $event2->id,
+        ])
+        ->assertRedirect();
+
+    $fresh = $campaign->fresh();
+    expect($fresh->name)->toBe("Renamed Mother's Day Campaign");
+    expect($fresh->event_id)->toBe($event1->id);
 });
 
 it('user cannot update another users campaign', function () {
@@ -152,12 +227,8 @@ it('user cannot update another users campaign', function () {
 
     $this->actingAs($viewer)->put('/campaigns/'.$campaign->id, [
         'name' => 'Hijack',
-        'product_id' => $product->id,
-        'event_id' => $event->id,
-        'objective' => 'Bad',
         'start_date' => now()->toDateString(),
         'end_date' => now()->addDay()->toDateString(),
-        'status' => 'active',
     ])->assertForbidden();
 });
 

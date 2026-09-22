@@ -61,13 +61,16 @@ class ModularPromptOrchestrator
         }
 
         // ---------------------------------------------------------------------
-        // PRIORITY 2: USER SCENE / VISUAL DIRECTION
+        // PRIORITY 2: SCENE & VISUAL DIRECTION (AUTOMATIC VS MANUAL HIERARCHY)
         // ---------------------------------------------------------------------
+        $generationMode = ($options['generation_mode'] ?? 'manual') === 'automatic' ? 'automatic' : 'manual';
         $userScenePrompt = null;
         if (! empty($options['scene_prompt'])) {
             $userScenePrompt = trim((string) $options['scene_prompt']);
         } elseif (! empty($options['image_prompt'])) {
             $userScenePrompt = trim((string) $options['image_prompt']);
+        } elseif (! empty($options['prompt'])) {
+            $userScenePrompt = trim((string) $options['prompt']);
         } elseif (! empty($options['user_prompt'])) {
             $raw = trim((string) $options['user_prompt']);
             if (Str::contains($raw, 'PROMOTIONAL ADVERTISEMENT BRIEF:')) {
@@ -81,8 +84,24 @@ class ModularPromptOrchestrator
             $userScenePrompt = trim((string) $options['notes']);
         }
 
-        if (! empty($userScenePrompt) && ! Str::startsWith($userScenePrompt, 'PROMOTIONAL ADVERTISEMENT BRIEF:')) {
-            $modules[] = "USER SCENE / VISUAL DIRECTION:\n{$userScenePrompt}\n• PRIMARY SCENE INSTRUCTION: Fulfill this specific scene setting, props, environment, and visual atmosphere while keeping {$productName} as the focal centerpiece.";
+        if ($generationMode === 'automatic') {
+            $autoLines = [];
+            $autoLines[] = 'AUTOMATIC AI CREATIVE DIRECTION (Primary Campaign Concept & Visual Strategy):';
+            if (! empty($options['creative_concept'])) {
+                $autoLines[] = "• Creative Concept: {$options['creative_concept']}";
+            }
+            if (! empty($options['visual_strategy'])) {
+                $autoLines[] = "• Visual Strategy: {$options['visual_strategy']}";
+            }
+            if (! empty($userScenePrompt) && ! Str::startsWith($userScenePrompt, 'PROMOTIONAL ADVERTISEMENT BRIEF:')) {
+                $autoLines[] = "• AI Visual Scene: {$userScenePrompt}";
+            }
+            $autoLines[] = "• PRIMARY CREATIVE SCENE: Realize this campaign-specific creative direction conceived by the AI Creative Director, tailored to the campaign objective, linked event, and industry standards while keeping {$productName} as the undisputed hero.";
+            $modules[] = implode("\n", $autoLines);
+        } else {
+            if (! empty($userScenePrompt) && ! Str::startsWith($userScenePrompt, 'PROMOTIONAL ADVERTISEMENT BRIEF:')) {
+                $modules[] = "USER SCENE / VISUAL DIRECTION (MANUAL MODE):\n• PRIMARY USER SCENE DIRECTION: {$userScenePrompt}\n• PRIMARY SCENE INSTRUCTION: Fulfill this specific user scene setting, props, environment, and visual atmosphere with high authority while keeping {$productName} as the focal centerpiece. Do not replace with an autonomous AI concept.";
+            }
         }
 
         // ---------------------------------------------------------------------
@@ -154,7 +173,11 @@ class ModularPromptOrchestrator
         // ---------------------------------------------------------------------
         if (! empty($options['event_name'])) {
             $eventDirection = $this->resolveStructuredEventDirection($options['event_name'], $productName, $aspectRatio);
-            $modules[] = "EVENT DIRECTION:\n{$eventDirection}\n• Subordination rule: Event elements provide contextual atmosphere and holiday mood; they must complement {$productName} and must not erase the user's explicit scene prompt or product identity.";
+            if ($generationMode === 'automatic') {
+                $modules[] = "EVENT DIRECTION (CREATIVE DRIVER):\n{$eventDirection}\n• Creative driver rule: Event and campaign objective actively guide thematic storytelling, festive styling, lighting, and props around {$productName}.";
+            } else {
+                $modules[] = "EVENT DIRECTION (CONTEXTUAL):\n{$eventDirection}\n• Subordination rule: Event elements provide contextual atmosphere and holiday mood; they must complement {$productName} and must not erase the user's explicit scene prompt, content style, brand tone, or product identity.";
+            }
         }
 
         // ---------------------------------------------------------------------
@@ -214,7 +237,7 @@ class ModularPromptOrchestrator
         // ---------------------------------------------------------------------
         // PRIORITY 8: RENDER STYLE MODULE (EXACTLY ONE ACTIVE STYLE)
         // ---------------------------------------------------------------------
-        $renderStyle = $options['render_style'] ?? 'Studio Product Still';
+        $renderStyle = $options['render_style'] ?? $options['content_style'] ?? 'Studio Product Still';
         $renderStyleSpec = $this->resolveRenderStyleSpec($renderStyle);
         $modules[] = "RENDER STYLE:\n{$renderStyleSpec}";
 

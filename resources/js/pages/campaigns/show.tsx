@@ -251,20 +251,16 @@ export default function CampaignShowPage({
 
     const [editForm, setEditForm] = useState({
         name: campaign?.name || '',
-        status: campaign?.status || 'active',
         start_date: campaign?.start_date || '',
         end_date: campaign?.end_date || '',
-        event_id: campaign?.event_id ? String(campaign.event_id) : '',
     });
     const [editErrors, setEditErrors] = useState<Record<string, string>>({});
 
     const openEditModal = () => {
         setEditForm({
             name: campaign?.name || '',
-            status: campaign?.status || 'active',
             start_date: campaign?.start_date || '',
             end_date: campaign?.end_date || '',
-            event_id: campaign?.event_id ? String(campaign.event_id) : '',
         });
         setEditErrors({});
         setIsEditOpen(true);
@@ -277,8 +273,22 @@ export default function CampaignShowPage({
             return;
         }
 
+        const errors: Record<string, string> = {};
+
         if (!editForm.name.trim()) {
-            setEditErrors({ name: 'Campaign name is required.' });
+            errors.name = 'Campaign name is required.';
+        }
+
+        if (
+            editForm.start_date &&
+            editForm.end_date &&
+            editForm.start_date > editForm.end_date
+        ) {
+            errors.end_date = 'Start date must not be after end date.';
+        }
+
+        if (Object.keys(errors).length > 0) {
+            setEditErrors(errors);
 
             return;
         }
@@ -290,10 +300,8 @@ export default function CampaignShowPage({
             `/campaigns/${campaign.id}`,
             {
                 name: editForm.name.trim(),
-                status: editForm.status,
                 start_date: editForm.start_date || null,
                 end_date: editForm.end_date || null,
-                event_id: editForm.event_id ? Number(editForm.event_id) : null,
             },
             {
                 preserveScroll: true,
@@ -619,8 +627,8 @@ export default function CampaignShowPage({
                                             </Badge>
                                         </div>
 
-                                        <div className="flex items-center gap-1.5">
-                                            {available_designs.length > 0 && (
+                                        {available_designs.length > 0 && (
+                                            <div className="flex items-center gap-1.5">
                                                 <Button
                                                     type="button"
                                                     variant="outline"
@@ -637,21 +645,8 @@ export default function CampaignShowPage({
                                                         Add Existing
                                                     </span>
                                                 </Button>
-                                            )}
-
-                                            <Button
-                                                asChild
-                                                size="sm"
-                                                className="h-7 gap-1 px-2.5 text-xs shadow-xs"
-                                            >
-                                                <Link
-                                                    href={`/campaigns/${campaign.id}/generator${campaign.event_id ? `?event_id=${campaign.event_id}` : ''}${campaign.product_name ? `${campaign.event_id ? '&' : '?'}product_name=${encodeURIComponent(campaign.product_name)}` : ''}`}
-                                                >
-                                                    <Plus className="h-3.5 w-3.5" />
-                                                    Generate
-                                                </Link>
-                                            </Button>
-                                        </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </CardHeader>
 
@@ -815,21 +810,8 @@ export default function CampaignShowPage({
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-2 border-t border-border/50 pt-2">
-                                        <Button
-                                            asChild
-                                            size="sm"
-                                            variant="outline"
-                                            className="h-7 gap-1.5 text-xs shadow-none"
-                                        >
-                                            <Link
-                                                href={`/campaigns/${campaign.id}/generator${campaign.event_id ? `?event_id=${campaign.event_id}` : ''}${campaign.product_name ? `${campaign.event_id ? '&' : '?'}product_name=${encodeURIComponent(campaign.product_name)}` : ''}`}
-                                            >
-                                                <Sparkles className="h-3 w-3 text-primary" />
-                                                Generate Visual in AI Studio
-                                            </Link>
-                                        </Button>
-                                        {designs.length > 0 && (
+                                    {designs.length > 0 && (
+                                        <div className="flex flex-wrap items-center gap-2 border-t border-border/50 pt-2">
                                             <Button
                                                 type="button"
                                                 size="sm"
@@ -840,8 +822,8 @@ export default function CampaignShowPage({
                                                 <Download className="h-3 w-3" />
                                                 Download All Visuals
                                             </Button>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         </div>
@@ -1340,8 +1322,7 @@ export default function CampaignShowPage({
                                 Edit Campaign
                             </DialogTitle>
                             <DialogDescription>
-                                Update campaign name, status, and scheduled
-                                timeline.
+                                Update campaign name and timeline schedule.
                             </DialogDescription>
                         </DialogHeader>
 
@@ -1372,64 +1353,6 @@ export default function CampaignShowPage({
                                         {editErrors.name}
                                     </p>
                                 )}
-                            </div>
-
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="edit-camp-status">
-                                        Status
-                                    </Label>
-                                    <select
-                                        id="edit-camp-status"
-                                        value={editForm.status}
-                                        onChange={(e) =>
-                                            setEditForm((cur) => ({
-                                                ...cur,
-                                                status: e.target.value,
-                                            }))
-                                        }
-                                        disabled={isSaving}
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring/30"
-                                    >
-                                        <option value="active">Active</option>
-                                        <option value="scheduled">
-                                            Scheduled
-                                        </option>
-                                        <option value="completed">
-                                            Completed
-                                        </option>
-                                        <option value="archived">
-                                            Archived
-                                        </option>
-                                    </select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="edit-camp-event">
-                                        Linked Event (Optional)
-                                    </Label>
-                                    <select
-                                        id="edit-camp-event"
-                                        value={editForm.event_id}
-                                        onChange={(e) =>
-                                            setEditForm((cur) => ({
-                                                ...cur,
-                                                event_id: e.target.value,
-                                            }))
-                                        }
-                                        disabled={isSaving}
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring/30"
-                                    >
-                                        <option value="">
-                                            No linked event
-                                        </option>
-                                        {events.map((ev: any) => (
-                                            <option key={ev.id} value={ev.id}>
-                                                {ev.name} ({ev.date})
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
                             </div>
 
                             <div className="grid gap-4 sm:grid-cols-2">
@@ -1466,8 +1389,35 @@ export default function CampaignShowPage({
                                             }))
                                         }
                                         disabled={isSaving}
+                                        className={
+                                            editErrors.end_date
+                                                ? 'border-destructive'
+                                                : ''
+                                        }
                                     />
+                                    {editErrors.end_date && (
+                                        <p className="text-xs text-destructive">
+                                            {editErrors.end_date}
+                                        </p>
+                                    )}
                                 </div>
+                            </div>
+
+                            <div className="space-y-1.5 rounded-xl border border-border/70 bg-muted/30 p-3.5">
+                                <Label className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                                    Campaign Status
+                                </Label>
+                                <div className="flex items-center gap-2 pt-0.5">
+                                    <span
+                                        className={`h-2.5 w-2.5 rounded-full ${statusDot[status] ?? 'bg-emerald-500'}`}
+                                    />
+                                    <span className="text-sm font-semibold capitalize text-foreground">
+                                        {statusLabels[status] ?? status}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Managed automatically based on the campaign lifecycle.
+                                </p>
                             </div>
                         </div>
 

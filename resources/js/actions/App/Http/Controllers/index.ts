@@ -1,6 +1,8 @@
 import Auth from './Auth'
 import OnboardingController from './OnboardingController'
 import UserProfileController from './UserProfileController'
+import AutomaticGeneratorController from './AutomaticGeneratorController'
+import ManualGeneratorController from './ManualGeneratorController'
 import GeneratorController from './GeneratorController'
 import DesignController from './DesignController'
 import EventController from './EventController'
@@ -13,6 +15,8 @@ const Controllers = {
     Auth: Object.assign(Auth, Auth),
 OnboardingController: Object.assign(OnboardingController, OnboardingController),
 UserProfileController: Object.assign(UserProfileController, UserProfileController),
+AutomaticGeneratorController: Object.assign(AutomaticGeneratorController, AutomaticGeneratorController),
+ManualGeneratorController: Object.assign(ManualGeneratorController, ManualGeneratorController),
 GeneratorController: Object.assign(GeneratorController, GeneratorController),
 DesignController: Object.assign(DesignController, DesignController),
 EventController: Object.assign(EventController, EventController),

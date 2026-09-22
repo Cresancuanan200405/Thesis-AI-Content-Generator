@@ -286,18 +286,6 @@ export default function CampaignsPage({
             );
     }, [upcoming_opportunities, rawEvents]);
 
-    const handleCreateFromEvent = (evt: any) => {
-        setFormData({
-            name: `${evt.name} Campaign`,
-            event_id: String(evt.id),
-            start_date: evt.date || '',
-            end_date: evt.date || '',
-            status: 'active',
-        });
-        setFormErrors({});
-        setIsCreateOpen(true);
-    };
-
     /*
     |--------------------------------------------------------------------------
     | CREATE & EDIT DIALOG STATES
@@ -305,6 +293,7 @@ export default function CampaignsPage({
     */
 
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [isEventLocked, setIsEventLocked] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -316,6 +305,35 @@ export default function CampaignsPage({
         status: 'active',
     });
 
+    const handleCreateFromEvent = (evt: any) => {
+        setFormData({
+            name: `${evt.name} Campaign`,
+            event_id: String(evt.id),
+            start_date: evt.date || '',
+            end_date: evt.date || '',
+            status: 'active',
+        });
+        setFormErrors({});
+        setIsEventLocked(true);
+        setIsCreateOpen(true);
+    };
+
+    const handleOpenGeneralCreate = (open: boolean) => {
+        if (open) {
+            setFormData({
+                name: '',
+                event_id: '',
+                start_date: '',
+                end_date: '',
+                status: 'active',
+            });
+            setFormErrors({});
+            setIsEventLocked(false);
+        }
+
+        setIsCreateOpen(open);
+    };
+
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [editingCampaign, setEditingCampaign] = useState<any>(null);
     const [isSavingEdit, setIsSavingEdit] = useState(false);
@@ -325,7 +343,6 @@ export default function CampaignsPage({
     const [editFormData, setEditFormData] = useState({
         name: '',
         status: 'active',
-        event_id: '',
         start_date: '',
         end_date: '',
     });
@@ -373,6 +390,7 @@ export default function CampaignsPage({
                     end_date: evt?.date || '',
                     status: 'active',
                 });
+                setIsEventLocked(Boolean(eventId));
                 setIsCreateOpen(true);
             }
         }
@@ -438,23 +456,13 @@ export default function CampaignsPage({
     }, [events, eventSearchQuery, eventCategoryFilter, selectedYearTab]);
 
     const handleSelectEvent = (evt: any) => {
-        if (eventModalTarget === 'create') {
-            setFormData((current) => ({
-                ...current,
-                event_id: String(evt.id),
-                start_date: current.start_date || evt.date || '',
-                end_date: current.end_date || evt.date || '',
-                name: current.name || `${evt.name} Campaign`,
-            }));
-        } else {
-            setEditFormData((current) => ({
-                ...current,
-                event_id: String(evt.id),
-                start_date: current.start_date || evt.date || '',
-                end_date: current.end_date || evt.date || '',
-                name: current.name || `${evt.name} Campaign`,
-            }));
-        }
+        setFormData((current) => ({
+            ...current,
+            event_id: String(evt.id),
+            start_date: current.start_date || evt.date || '',
+            end_date: current.end_date || evt.date || '',
+            name: current.name || `${evt.name} Campaign`,
+        }));
 
         setIsEventModalOpen(false);
     };
@@ -471,24 +479,11 @@ export default function CampaignsPage({
         );
     }, [events, formData.event_id]);
 
-    const selectedEditEvent = useMemo(() => {
-        if (!editFormData.event_id) {
-            return null;
-        }
-
-        return (
-            events.find(
-                (e: any) => String(e.id) === String(editFormData.event_id),
-            ) || null
-        );
-    }, [events, editFormData.event_id]);
-
     const openEditDialog = (campaign: any) => {
         setEditingCampaign(campaign);
         setEditFormData({
             name: campaign.name || '',
             status: campaign.status || 'active',
-            event_id: campaign.event_id ? String(campaign.event_id) : '',
             start_date: campaign.start_date || '',
             end_date: campaign.end_date || '',
         });
@@ -504,9 +499,22 @@ export default function CampaignsPage({
         }
 
         const name = editFormData.name.trim();
+        const errors: Record<string, string> = {};
 
         if (!name) {
-            setEditFormErrors({ name: 'Campaign name is required.' });
+            errors.name = 'Campaign name is required.';
+        }
+
+        if (
+            editFormData.start_date &&
+            editFormData.end_date &&
+            editFormData.start_date > editFormData.end_date
+        ) {
+            errors.end_date = 'Start date must not be after end date.';
+        }
+
+        if (Object.keys(errors).length > 0) {
+            setEditFormErrors(errors);
 
             return;
         }
@@ -518,8 +526,6 @@ export default function CampaignsPage({
             `/campaigns/${editingCampaign.id}`,
             {
                 name,
-                status: editFormData.status,
-                event_id: editFormData.event_id || null,
                 start_date: editFormData.start_date || null,
                 end_date: editFormData.end_date || null,
             },
@@ -801,6 +807,7 @@ export default function CampaignsPage({
                 preserveScroll: true,
                 onSuccess: () => {
                     setIsCreateOpen(false);
+                    setIsEventLocked(false);
                     setFormData({
                         name: '',
                         event_id: '',
@@ -826,6 +833,7 @@ export default function CampaignsPage({
 
     const resetCreateForm = () => {
         setIsCreateOpen(false);
+        setIsEventLocked(false);
         setFormErrors({});
         setFormData({
             name: '',
@@ -914,7 +922,7 @@ export default function CampaignsPage({
                             handleArchiveCampaign={handleArchiveCampaign}
                             handleUnarchiveCampaign={handleUnarchiveCampaign}
                             setCampaignToDelete={setCampaignToDelete}
-                            setIsCreateOpen={setIsCreateOpen}
+                            setIsCreateOpen={handleOpenGeneralCreate}
                             currentPage={currentPage}
                             lastPage={lastPage}
                         />
@@ -926,7 +934,16 @@ export default function CampaignsPage({
                 CREATE CAMPAIGN MODAL (IMPROVED & PROFESSIONAL)
             ============================================================= */}
 
-            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <Dialog
+                open={isCreateOpen}
+                onOpenChange={(open) => {
+                    setIsCreateOpen(open);
+
+                    if (!open) {
+                        setIsEventLocked(false);
+                    }
+                }}
+            >
                 <DialogContent className="overflow-hidden rounded-3xl border-border bg-card p-0 shadow-2xl sm:max-w-lg">
                     <form onSubmit={handleCreateCampaign}>
                         <DialogHeader className="border-b border-border/80 bg-muted/20 p-6 pb-4">
@@ -979,7 +996,8 @@ export default function CampaignsPage({
                             <div className="space-y-1.5">
                                 <Label className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
                                     <Calendar className="h-3.5 w-3.5 text-primary" />
-                                    Marketing Event or Holiday (Optional)
+                                    Marketing Event or Holiday
+                                    {!isEventLocked && ' (Optional)'}
                                 </Label>
 
                                 {selectedCreateEvent ? (
@@ -1032,36 +1050,42 @@ export default function CampaignsPage({
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-1.5">
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => {
-                                                    setEventModalTarget(
-                                                        'create',
-                                                    );
-                                                    setIsEventModalOpen(true);
-                                                }}
-                                                className="h-7 px-2.5 text-xs shadow-none"
-                                            >
-                                                Change
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() =>
-                                                    setFormData((current) => ({
-                                                        ...current,
-                                                        event_id: '',
-                                                    }))
-                                                }
-                                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                                            >
-                                                <X className="h-3.5 w-3.5" />
-                                            </Button>
-                                        </div>
+                                        {!isEventLocked && (
+                                            <div className="flex items-center gap-1.5">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setEventModalTarget(
+                                                            'create',
+                                                        );
+                                                        setIsEventModalOpen(
+                                                            true,
+                                                        );
+                                                    }}
+                                                    className="h-7 px-2.5 text-xs shadow-none"
+                                                >
+                                                    Change
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() =>
+                                                        setFormData(
+                                                            (current) => ({
+                                                                ...current,
+                                                                event_id: '',
+                                                            }),
+                                                        )
+                                                    }
+                                                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                                >
+                                                    <X className="h-3.5 w-3.5" />
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <button
@@ -1227,131 +1251,6 @@ export default function CampaignsPage({
                                 )}
                             </div>
 
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-semibold text-foreground">
-                                    Campaign Status (System-Managed)
-                                </Label>
-                                <div className="flex items-center gap-2 pt-0.5">
-                                    <Badge
-                                        variant="outline"
-                                        className="text-xs font-semibold capitalize"
-                                    >
-                                        {editFormData.status || 'Active'}
-                                    </Badge>
-                                    <span className="text-[11px] text-muted-foreground">
-                                        Status is automatically determined by
-                                        timeline dates and archive state.
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Linked Holiday or Event */}
-                            <div className="space-y-1.5">
-                                <Label className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                                    <Calendar className="h-3.5 w-3.5 text-primary" />
-                                    Marketing Event or Holiday
-                                </Label>
-
-                                {selectedEditEvent ? (
-                                    <div className="flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/5 p-3.5">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-xs font-bold text-primary">
-                                                <CalendarDays className="h-4 w-4" />
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <p className="text-xs font-bold text-foreground">
-                                                        {selectedEditEvent.name}
-                                                    </p>
-                                                    <Badge
-                                                        variant="outline"
-                                                        className={`text-[9px] tracking-wider uppercase ${
-                                                            eventTypeStyles[
-                                                                selectedEditEvent.category ||
-                                                                    selectedEditEvent.type ||
-                                                                    'holiday'
-                                                            ]?.bg
-                                                        } ${
-                                                            eventTypeStyles[
-                                                                selectedEditEvent.category ||
-                                                                    selectedEditEvent.type ||
-                                                                    'holiday'
-                                                            ]?.text
-                                                        } ${
-                                                            eventTypeStyles[
-                                                                selectedEditEvent.category ||
-                                                                    selectedEditEvent.type ||
-                                                                    'holiday'
-                                                            ]?.border
-                                                        }`}
-                                                    >
-                                                        {eventTypeStyles[
-                                                            selectedEditEvent.category ||
-                                                                selectedEditEvent.type ||
-                                                                'holiday'
-                                                        ]?.label || 'Event'}
-                                                    </Badge>
-                                                </div>
-                                                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                                    {formatDate(
-                                                        selectedEditEvent.date,
-                                                    )}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-1.5">
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => {
-                                                    setEventModalTarget('edit');
-                                                    setIsEventModalOpen(true);
-                                                }}
-                                                className="h-7 px-2.5 text-xs shadow-none"
-                                            >
-                                                Change
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() =>
-                                                    setEditFormData(
-                                                        (current) => ({
-                                                            ...current,
-                                                            event_id: '',
-                                                        }),
-                                                    )
-                                                }
-                                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                                            >
-                                                <X className="h-3.5 w-3.5" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setEventModalTarget('edit');
-                                            setIsEventModalOpen(true);
-                                        }}
-                                        className="flex h-11 w-full items-center justify-between rounded-xl border border-dashed border-border bg-muted/20 px-4 text-xs font-medium text-muted-foreground transition-all hover:border-primary/50 hover:bg-primary/5 hover:text-foreground"
-                                    >
-                                        <span className="flex items-center gap-2">
-                                            <Calendar className="h-4 w-4 text-primary" />
-                                            Choose a retail event, season, or
-                                            holiday...
-                                        </span>
-                                        <span className="font-semibold text-primary">
-                                            Browse Events →
-                                        </span>
-                                    </button>
-                                )}
-                            </div>
-
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="space-y-1.5">
                                     <Label
@@ -1393,8 +1292,30 @@ export default function CampaignsPage({
                                             }))
                                         }
                                         disabled={isSavingEdit}
-                                        className="h-10 rounded-xl text-xs"
+                                        className={`h-10 rounded-xl text-xs ${editFormErrors.end_date ? 'border-destructive' : ''}`}
                                     />
+                                    {editFormErrors.end_date && (
+                                        <p className="text-[11px] font-medium text-destructive">
+                                            {editFormErrors.end_date}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5 rounded-xl border border-border/70 bg-muted/30 p-3.5">
+                                <Label className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                                    Campaign Status
+                                </Label>
+                                <div className="flex items-center gap-2 pt-0.5">
+                                    <Badge
+                                        variant="outline"
+                                        className="text-xs font-semibold capitalize"
+                                    >
+                                        {editFormData.status || 'Active'}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                        Managed automatically based on the campaign lifecycle.
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -1548,10 +1469,7 @@ export default function CampaignsPage({
                         ) : (
                             <div className="grid gap-2.5 sm:grid-cols-2 md:grid-cols-3">
                                 {filteredEvents.map((evt: any) => {
-                                    const currentTargetId =
-                                        eventModalTarget === 'create'
-                                            ? formData.event_id
-                                            : editFormData.event_id;
+                                    const currentTargetId = formData.event_id;
                                     const isSelected =
                                         String(evt.id) ===
                                         String(currentTargetId);
