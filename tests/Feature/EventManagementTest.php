@@ -66,7 +66,7 @@ it('user can create an event', function () {
             'end_date' => now()->addDays(9)->toDateString(),
             'type' => 'custom',
         ])
-        ->assertRedirect('/calendar');
+        ->assertRedirect(route('events.index'));
 
     $this->assertDatabaseHas('events', [
         'user_id' => $user->id,
@@ -74,6 +74,10 @@ it('user can create an event', function () {
         'type' => 'custom',
         'is_global' => false,
     ]);
+
+    $savedEvent = Event::query()->where('user_id', $user->id)->where('name', 'Summer Sale')->firstOrFail();
+    expect($savedEvent->date->toDateString())->toBe(now()->addDays(6)->toDateString())
+        ->and($savedEvent->end_date->toDateString())->toBe(now()->addDays(9)->toDateString());
 });
 
 it('user cannot create invalid event date ranges', function () {
@@ -148,7 +152,7 @@ it('user can update own event', function () {
             'end_date' => now()->addDays(9)->toDateString(),
             'type' => 'commercial',
         ])
-        ->assertRedirect('/calendar');
+        ->assertRedirect(route('events.index'));
 
     $this->assertDatabaseHas('events', [
         'id' => $event->id,
@@ -195,7 +199,7 @@ it('user can delete own event', function () {
 
     $this->actingAs($user)
         ->delete('/events/'.$event->id)
-        ->assertRedirect('/calendar');
+        ->assertRedirect(route('events.index'));
 
     $this->assertDatabaseMissing('events', ['id' => $event->id]);
 });
@@ -266,6 +270,7 @@ it('generator accepts a valid global event selection', function () {
     ]);
 
     $this->actingAs($user)
+        ->followingRedirects()
         ->get('/generator?campaign_id='.$campaign->id.'&event='.$event->id)
         ->assertOk();
 });
@@ -392,4 +397,129 @@ it('calendar filters missed events where user did not generate visuals', functio
     $missedEventData = $pageEvents->firstWhere('id', $pastMissedEvent->id);
     expect($missedEventData['is_missed'])->toBeTrue()
         ->and($missedEventData['has_design'])->toBeFalse();
+});
+
+it('user can create a multi-day custom event with date range', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    $this->actingAs($user)
+        ->post('/events', [
+            'name' => 'Mid-Year Flash Sale',
+            'description' => 'Multi-day discount campaign.',
+            'start_date' => now()->addDays(10)->toDateString(),
+            'end_date' => now()->addDays(14)->toDateString(),
+            'type' => 'commercial',
+        ])
+        ->assertRedirect(route('events.index'));
+
+    $this->assertDatabaseHas('events', [
+        'user_id' => $user->id,
+        'name' => 'Mid-Year Flash Sale',
+        'type' => 'commercial',
+    ]);
+
+    $savedEvent = Event::query()->where('user_id', $user->id)->where('name', 'Mid-Year Flash Sale')->firstOrFail();
+    expect($savedEvent->date->toDateString())->toBe(now()->addDays(10)->toDateString())
+        ->and($savedEvent->end_date->toDateString())->toBe(now()->addDays(14)->toDateString());
+});
+
+it('calendar payload includes start_date and end_date for rendering range indicators', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    $event = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Weeklong Promo',
+        'date' => now()->addDays(3)->toDateString(),
+        'end_date' => now()->addDays(8)->toDateString(),
+        'type' => 'custom',
+        'is_global' => false,
+    ]);
+
+    $response = $this->actingAs($user)
+        ->get('/calendar')
+        ->assertOk();
+
+    $events = collect($response->original->getData()['page']['props']['events']);
+    $matched = $events->firstWhere('id', $event->id);
+
+    expect($matched)->not->toBeNull()
+        ->and($matched['start_date'])->toBe($event->date->toDateString())
+        ->and($matched['end_date'])->toBe($event->end_date->toDateString());
+});
+
+it('guest cannot access event management', function () {
+    $this->get('/events')
+        ->assertRedirect('/login');
+});
+
+it('authenticated user can access event management', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    $this->actingAs($user)
+        ->get('/events')
+        ->assertOk();
+});
+
+it('protected global holiday cannot be deleted', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $holiday = Event::factory()->global()->create([
+        'name' => 'Independence Day',
+        'date' => '2026-06-12',
+        'type' => 'holiday',
+    ]);
+
+    $this->actingAs($user)
+        ->delete('/events/'.$holiday->id)
+        ->assertForbidden();
+
+    $this->assertDatabaseHas('events', ['id' => $holiday->id]);
+});
+
+it('cannot delete an event linked to active campaigns', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+
+    $event = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Event With Campaign',
+        'date' => now()->addDays(20)->toDateString(),
+        'type' => 'custom',
+    ]);
+
+    Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event->id,
+        'name' => 'Linked Campaign',
+    ]);
+
+    $response = $this->actingAs($user)
+        ->delete('/events/'.$event->id);
+
+    $response->assertSessionHas('error');
+    $this->assertDatabaseHas('events', ['id' => $event->id]);
+});
+
+it('creating a custom event does not automatically create a campaign', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    Business::factory()->create(['user_id' => $user->id]);
+
+    $initialCampaignCount = Campaign::count();
+
+    $this->actingAs($user)
+        ->post('/events', [
+            'name' => 'Sole Event Creation',
+            'description' => 'Just an event, no campaign.',
+            'start_date' => now()->addDays(5)->toDateString(),
+            'end_date' => now()->addDays(7)->toDateString(),
+            'type' => 'custom',
+        ])
+        ->assertRedirect(route('events.index'));
+
+    $this->assertDatabaseHas('events', [
+        'user_id' => $user->id,
+        'name' => 'Sole Event Creation',
+    ]);
+
+    expect(Campaign::count())->toBe($initialCampaignCount);
 });

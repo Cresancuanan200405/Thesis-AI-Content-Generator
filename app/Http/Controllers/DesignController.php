@@ -11,11 +11,12 @@ use App\Models\User;
 use App\Services\DesignRegenerationService;
 use App\Services\OpenAIImageService;
 use App\Services\TaglineNormalizationService;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
@@ -143,7 +144,7 @@ class DesignController extends Controller
                 'visual_theme' => $design->visual_theme ?? $design->content_style,
                 'brand_tone' => $design->brand_tone,
                 'render_style' => $design->generation_metadata['render_style'] ?? null,
-                'image_model' => $design->generation_metadata['model'] ?? 'gpt-image-1',
+                'image_model' => $design->generation_metadata['model'] ?? 'gpt-image-2',
                 'image_quality' => $design->generation_metadata['quality'] ?? 'medium',
                 'generation_metadata' => $design->generation_metadata,
                 'status' => $design->status,
@@ -257,9 +258,69 @@ class DesignController extends Controller
 
         $prompt = (string) ($request->input('prompt') ?? $request->input('image_prompt') ?? ('Marketing visual for '.$request->input('product_name')));
 
+        $catalogProductIds = collect($request->input('catalog_product_ids', []))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($catalogProductIds) && $request->filled('product_id')) {
+            $catalogProductIds = [(int) $request->input('product_id')];
+        }
+
+        $customProducts = $request->input('custom_products', []);
+        $referenceImagePaths = $request->input('reference_image_paths', []);
+        if (empty($referenceImagePaths) && $referenceImagePath) {
+            $referenceImagePaths = [$referenceImagePath];
+        }
+
+        $includePrices = $request->has('include_prices')
+            ? filter_var($request->input('include_prices'), FILTER_VALIDATE_BOOLEAN)
+            : true;
+
+        $incomingMeta = [];
+        if ($request->filled('generation_metadata')) {
+            $rawMeta = $request->input('generation_metadata');
+            if (is_string($rawMeta)) {
+                $decoded = json_decode($rawMeta, true);
+                if (is_array($decoded)) {
+                    $incomingMeta = $decoded;
+                }
+            } elseif (is_array($rawMeta)) {
+                $incomingMeta = $rawMeta;
+            }
+        }
+
         if ($request->filled('generated_image_path')) {
             $generatedImagePath = (string) $request->input('generated_image_path');
+
+            $existingDesign = $user->designs()->where('generated_image_path', $generatedImagePath)->first();
+            if ($existingDesign) {
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'design' => [
+                            'id' => $existingDesign->id,
+                            'product_name' => $existingDesign->product_name,
+                            'tagline' => $existingDesign->tagline,
+                            'status' => $existingDesign->status,
+                            'image_url' => $this->imageUrl($existingDesign),
+                            'show_url' => route('designs.show', $existingDesign),
+                        ],
+                        'message' => 'Design is already saved in My Designs.',
+                    ]);
+                }
+
+                return redirect()->route('designs.show', $existingDesign)->with('info', 'Design is already saved in My Designs.');
+            }
         } else {
+            $catalogProducts = empty($catalogProductIds)
+                ? collect()
+                : Product::query()
+                    ->where('business_id', $businessId)
+                    ->whereIn('id', $catalogProductIds)
+                    ->get();
+
             $generatedImagePath = $this->openAIImageService->generate($prompt, [
                 // Step 1 — Product & Campaign
                 'product_name' => (string) $request->input('product_name'),
@@ -269,7 +330,10 @@ class DesignController extends Controller
                 'campaign_name' => $campaign?->name,
                 'campaign_objective' => $campaign?->objective,
                 'event_name' => $event?->name,
-                'price' => $request->input('price'),
+                'price' => $includePrices ? $request->input('price') : null,
+                'include_prices' => $includePrices,
+                'catalog_products' => $catalogProducts,
+                'custom_products' => $customProducts,
 
                 // Step 2 — Style & Tone
                 'brand_tone' => $brandTone,
@@ -288,15 +352,78 @@ class DesignController extends Controller
                 'business_industry' => $business?->industry,
                 'business_description' => $business?->description,
                 'business_usp' => $business?->unique_selling_point,
+                'business_target_audience' => $business?->target_audience,
                 'business_content_style' => $business?->content_style,
                 'business_marketing_prefs' => $business?->marketing_preferences,
 
                 // Reference image (uploaded file or catalog product image)
                 'reference_image_path' => $referenceImagePath,
+                'reference_image_paths' => $referenceImagePaths,
                 'scene_prompt' => $request->input('image_prompt') ?: $request->input('prompt') ?: $request->input('scene_prompt'),
                 'user_prompt' => $request->input('image_prompt') ?: $request->input('prompt') ?: $request->input('scene_prompt'),
             ]);
         }
+
+        $creativeConcept = $request->input('creative_concept', $incomingMeta['creative_concept'] ?? null);
+        $visualStrategy = $request->input('visual_strategy', $incomingMeta['visual_strategy'] ?? null);
+        $designTreatment = $request->input('design_treatment', $incomingMeta['design_treatment'] ?? 'Auto');
+        $copyEmphasis = $request->input('copy_emphasis', $incomingMeta['copy_emphasis'] ?? 'Balanced');
+        $creativeFingerprint = $request->input('creative_fingerprint', $incomingMeta['creative_fingerprint'] ?? null);
+        $generationMode = $request->input('generation_mode', $incomingMeta['generation_mode'] ?? 'automatic');
+        $imageModel = $request->input('image_model', $incomingMeta['model'] ?? 'gpt-image-2');
+        $imageQuality = $request->input('image_quality', $incomingMeta['quality'] ?? 'medium');
+        $includeTagline = $request->has('include_tagline')
+            ? filter_var($request->input('include_tagline'), FILTER_VALIDATE_BOOLEAN)
+            : (! empty($normalizedTagline));
+
+        $scenePrompt = $request->input('scene_prompt') ?? $request->input('image_prompt') ?? ($incomingMeta['scene_prompt'] ?? null);
+        $userPrompt = $request->input('user_prompt') ?? $request->input('image_prompt') ?? ($incomingMeta['user_prompt'] ?? null);
+
+        $mergedMetadata = array_merge(
+            [
+                'source' => 'openai',
+                'model' => $imageModel,
+                'model_name' => 'GPT-Image-2',
+                'generation_method' => $referenceImagePath ? 'image_to_image_edit' : 'text_to_image',
+                'generation_mode' => $generationMode,
+                'prompt_version' => 'marketing-pipeline-v1',
+                'product_preserved' => (bool) $referenceImagePath,
+                'quality' => $imageQuality,
+                'render_style' => $request->input('render_style', 'Studio Product Still'),
+                'design_treatment' => $designTreatment,
+                'copy_emphasis' => $copyEmphasis,
+                'include_tagline' => $includeTagline,
+                'creative_concept' => $creativeConcept,
+                'visual_strategy' => $visualStrategy,
+                'creative_fingerprint' => $creativeFingerprint,
+                'business_name' => $businessName,
+                'aspect_ratio' => $aspectRatio,
+                'include_prices' => $includePrices,
+                'catalog_product_ids' => $catalogProductIds,
+                'custom_products' => $customProducts,
+                'reference_image_paths' => $referenceImagePaths,
+                'scene_prompt' => $scenePrompt,
+                'user_prompt' => $userPrompt,
+                'prompt' => $prompt,
+                'status' => 'completed',
+            ],
+            $incomingMeta,
+            $this->openAIImageService->getLastGenerationMetadata() ?: [],
+            [
+                'catalog_product_ids' => $catalogProductIds,
+                'custom_products' => $customProducts,
+                'reference_image_paths' => $referenceImagePaths,
+                'include_prices' => $includePrices,
+                'design_treatment' => $designTreatment,
+                'copy_emphasis' => $copyEmphasis,
+                'include_tagline' => $includeTagline,
+                'creative_fingerprint' => $creativeFingerprint,
+                'creative_concept' => $creativeConcept,
+                'visual_strategy' => $visualStrategy,
+                'generation_mode' => $generationMode,
+                'prompt' => $prompt,
+            ]
+        );
 
         $design = $user->designs()->create([
             'business_id' => $businessId,
@@ -312,23 +439,7 @@ class DesignController extends Controller
             'tagline_mode' => $request->input('tagline_mode', 'ai'),
             'reference_image_path' => $referenceImagePath,
             'generated_image_path' => $generatedImagePath,
-            'generation_metadata' => array_merge(
-                [
-                    'source' => 'openai',
-                    'model' => $request->input('image_model') ?: config('services.openai.image_model', 'gpt-image-2'),
-                    'model_name' => ($request->input('image_model') === 'gpt-image-2' || ! $request->input('image_model')) ? 'GPT-Image-2' : $request->input('image_model'),
-                    'generation_method' => $referenceImagePath ? 'image_to_image_edit' : 'text_to_image',
-                    'generation_mode' => 'PRODUCT_PRESERVING',
-                    'prompt_version' => 'marketing-pipeline-v1',
-                    'product_preserved' => (bool) $referenceImagePath,
-                    'quality' => $request->input('image_quality', 'medium'),
-                    'render_style' => $request->input('render_style', 'Studio Product Still'),
-                    'business_name' => $businessName,
-                    'aspect_ratio' => $aspectRatio,
-                    'status' => 'completed',
-                ],
-                $this->openAIImageService->getLastGenerationMetadata() ?: []
-            ),
+            'generation_metadata' => $mergedMetadata,
             'status' => 'completed',
         ]);
 
@@ -457,7 +568,7 @@ class DesignController extends Controller
         );
     }
 
-    public function regenerate(Request $request, Design $design): RedirectResponse
+    public function regenerate(Request $request, Design $design): RedirectResponse|JsonResponse
     {
         $this->authorize('regenerate', $design);
 
@@ -465,13 +576,69 @@ class DesignController extends Controller
         $user = $request->user();
         $budgetLimit = (float) config('services.openai.budget_limit', 10.00);
         if ($user && $user->hasReachedAiBudgetLimit($budgetLimit)) {
+            if ($request->expectsJson() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You have reached your $'.number_format($budgetLimit, 2).' AI generation limit quota. Visual regeneration is disabled.',
+                ], 403);
+            }
+
             return redirect()->route('designs.index')->with('error', 'You have reached your $'.number_format($budgetLimit, 2).' AI generation limit quota. Visual regeneration is disabled.');
         }
 
         try {
             $newDesign = $this->designRegenerationService->regenerate($design);
         } catch (RuntimeException $exception) {
+            $isMultiRefFailure = Str::contains($exception->getMessage(), 'Multiple product reference generation could not be completed');
+            $status = $isMultiRefFailure ? 422 : 500;
+            $metadata = $this->openAIImageService->getLastGenerationMetadata()
+                ?: $this->designRegenerationService->getLastGenerationMetadata()
+                ?: [];
+
+            if ($isMultiRefFailure) {
+                $attempted = $metadata['attempted_reference_count']
+                    ?? (count($design->generation_metadata['catalog_product_ids'] ?? []) ?: count($design->generation_metadata['reference_image_paths'] ?? []) ?: 2);
+                $metadata = array_merge([
+                    'generation_method' => 'multi_image_to_image_failed',
+                    'attempted_reference_count' => $attempted,
+                    'actual_reference_count' => 0,
+                    'fallback_reason' => $exception->getMessage(),
+                    'fallback_used' => false,
+                    'fallback_state' => 'multi_image_failed',
+                ], $metadata);
+            }
+
+            if ($request->expectsJson() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $exception->getMessage() ?: 'Unable to regenerate the design right now.',
+                    'generation_method' => $metadata['generation_method'] ?? 'failed',
+                    'attempted_reference_count' => $metadata['attempted_reference_count'] ?? 0,
+                    'actual_reference_count' => $metadata['actual_reference_count'] ?? 0,
+                    'fallback_reason' => $metadata['fallback_reason'] ?? $exception->getMessage(),
+                    'metadata' => $metadata,
+                ], $status);
+            }
+
             return redirect()->route('designs.index')->with('error', $exception->getMessage() ?: 'Unable to regenerate the design right now.');
+        }
+
+        if ($request->expectsJson() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Design regenerated successfully.',
+                'design' => $newDesign,
+                'preview' => [
+                    'image_url' => Storage::url($newDesign->generated_image_path),
+                    'generated_image_path' => $newDesign->generated_image_path,
+                    'product_name' => $newDesign->product_name,
+                    'tagline' => $newDesign->tagline,
+                    'price' => $newDesign->price,
+                    'prompt' => $newDesign->prompt,
+                    'aspect_ratio' => $newDesign->generation_metadata['aspect_ratio'] ?? '1:1',
+                    'generation_meta' => $newDesign->generation_metadata,
+                ],
+            ]);
         }
 
         return redirect()->route('designs.show', $newDesign)->with('success', 'Design regenerated successfully.');

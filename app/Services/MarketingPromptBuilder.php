@@ -27,9 +27,14 @@ class MarketingPromptBuilder
             }
         }
 
-        $price = ! empty($payload['price'])
-            ? $payload['price']
-            : ($product && $product->price > 0 ? '₱'.number_format((float) $product->price, 2, '.', ',') : null);
+        $includePrices = array_key_exists('include_prices', $payload) ? (bool) $payload['include_prices'] : true;
+
+        $price = null;
+        if ($includePrices) {
+            $price = ! empty($payload['price'])
+                ? $payload['price']
+                : ($product && $product->price > 0 ? '₱'.number_format((float) $product->price, 2, '.', ',') : null);
+        }
 
         $lines = [];
         $lines[] = 'PROMOTIONAL ADVERTISEMENT BRIEF:';
@@ -40,8 +45,30 @@ class MarketingPromptBuilder
             $lines[] = '• Description: '.$desc;
         }
 
-        if (! empty($price)) {
+        if ($includePrices && ! empty($price)) {
             $lines[] = '• Price: '.$price;
+        }
+
+        // Additional catalog products
+        if (! empty($payload['catalog_products'])) {
+            $secondaryProducts = collect($payload['catalog_products'])
+                ->filter(fn ($p) => ($p->id ?? null) !== ($product?->id))
+                ->values();
+
+            foreach ($secondaryProducts as $sec) {
+                $pName = $sec->name ?? ($sec['name'] ?? 'Product');
+                $pPrice = $includePrices && ! empty($sec->price ?? ($sec['price'] ?? null)) ? ' (₱'.number_format((float) ($sec->price ?? $sec['price']), 2).')' : '';
+                $lines[] = '• Co-Featured Product: '.$pName.$pPrice;
+            }
+        }
+
+        // Custom products
+        if (! empty($payload['custom_products']) && is_array($payload['custom_products'])) {
+            foreach ($payload['custom_products'] as $cp) {
+                $cpName = $cp['name'] ?? 'Custom Item';
+                $cpPrice = $includePrices && ! empty($cp['price']) ? ' (₱'.number_format((float) $cp['price'], 2).')' : '';
+                $lines[] = '• Custom Item: '.$cpName.$cpPrice;
+            }
         }
 
         if (! empty($payload['event_name'] ?? null)) {

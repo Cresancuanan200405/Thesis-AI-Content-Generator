@@ -12,6 +12,7 @@ use App\Policies\DesignPolicy;
 use App\Policies\EventPolicy;
 use App\Policies\ProductPolicy;
 use App\Services\NotificationService;
+use App\Services\OpenAIImageService;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -31,7 +32,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(OpenAIImageService::class);
     }
 
     /**

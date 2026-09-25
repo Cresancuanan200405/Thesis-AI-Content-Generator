@@ -20,8 +20,10 @@ class VisualPromptGeneratorService
     public function __construct(
         protected OpenAIModelRegistry $modelRegistry,
         protected ?IndustryCategoryArtDirectionService $artDirectionService = null,
+        protected ?MarketingDesignSystem $designSystem = null,
     ) {
         $this->artDirectionService = $artDirectionService ?? app(IndustryCategoryArtDirectionService::class);
+        $this->designSystem = $designSystem ?? app(MarketingDesignSystem::class);
     }
 
     /**
@@ -68,7 +70,13 @@ class VisualPromptGeneratorService
         $generationMode = ($options['generation_mode'] ?? null) === 'automatic' ? 'automatic' : 'manual';
         $isAutomatic = $generationMode === 'automatic';
 
-        $requiresAiTagline = $isAutomatic || ! empty($options['require_tagline']);
+        if (array_key_exists('include_tagline', $options)) {
+            $requiresAiTagline = filter_var($options['include_tagline'], FILTER_VALIDATE_BOOLEAN);
+        } elseif (array_key_exists('require_tagline', $options)) {
+            $requiresAiTagline = filter_var($options['require_tagline'], FILTER_VALIDATE_BOOLEAN);
+        } else {
+            $requiresAiTagline = $isAutomatic;
+        }
 
         // Retrieve previous creative concepts for campaign to avoid repetition
         $previousConcepts = $this->resolvePreviousConcepts($user, $campaign, $options['previous_concepts'] ?? []);
@@ -123,6 +131,54 @@ class VisualPromptGeneratorService
             ];
 
             $requiredFields = ['creative_concept', 'visual_strategy', 'visual_prompt'];
+        }
+
+        if ($isAutomatic) {
+            $designProperties = [
+                'design_treatment' => [
+                    'type' => 'string',
+                    'description' => 'Commercial design treatment from controlled registry: '.implode(', ', array_keys(MarketingDesignSystem::DESIGN_TREATMENTS)),
+                ],
+                'copy_emphasis' => [
+                    'type' => 'string',
+                    'description' => 'Commercial copy emphasis from controlled registry: '.implode(', ', array_keys(MarketingDesignSystem::COPY_EMPHASES)),
+                ],
+                'typography_layout' => [
+                    'type' => 'string',
+                    'description' => 'Typography layout hierarchy from controlled registry: '.implode(', ', array_keys(MarketingDesignSystem::TYPOGRAPHY_LAYOUTS)),
+                ],
+                'composition_type' => [
+                    'type' => 'string',
+                    'description' => 'Composition geometry from controlled registry: '.implode(', ', array_keys(MarketingDesignSystem::COMPOSITION_TYPES)),
+                ],
+                'camera_viewpoint' => [
+                    'type' => 'string',
+                    'description' => 'Camera perspective from controlled registry: '.implode(', ', array_keys(MarketingDesignSystem::CAMERA_VIEWPOINTS)),
+                ],
+                'lighting_profile' => [
+                    'type' => 'string',
+                    'description' => 'Lighting profile from controlled registry: '.implode(', ', array_keys(MarketingDesignSystem::LIGHTING_PROFILES)),
+                ],
+                'scene_family' => [
+                    'type' => 'string',
+                    'description' => 'Scene family from controlled registry: '.implode(', ', array_keys(MarketingDesignSystem::SCENE_FAMILIES)),
+                ],
+                'environment_family' => [
+                    'type' => 'string',
+                    'description' => 'Environment setting from controlled registry: '.implode(', ', array_keys(MarketingDesignSystem::ENVIRONMENT_FAMILIES)),
+                ],
+                'prop_profile' => [
+                    'type' => 'string',
+                    'description' => 'Prop arrangement from controlled registry: '.implode(', ', array_keys(MarketingDesignSystem::PROP_PROFILES)),
+                ],
+                'render_style' => [
+                    'type' => 'string',
+                    'description' => 'Commercial render style from controlled registry: '.implode(', ', MarketingDesignSystem::RENDER_STYLES),
+                ],
+            ];
+
+            $schemaProperties = array_merge($schemaProperties, $designProperties);
+            $requiredFields = array_merge($requiredFields, array_keys($designProperties));
         }
 
         $schema = [
@@ -188,17 +244,40 @@ class VisualPromptGeneratorService
             'total_tokens' => $usage['total_tokens'],
         ]);
 
-        $finalTagline = ! empty($result['tagline']) ? trim($result['tagline']) : (! empty($options['tagline']) ? trim($options['tagline']) : null);
+        $finalTagline = $requiresAiTagline
+            ? (! empty($result['tagline']) ? trim($result['tagline']) : (! empty($options['tagline']) ? trim($options['tagline']) : null))
+            : null;
 
         if ($requiresAiTagline && (empty($finalTagline) || ! is_string($finalTagline))) {
             throw new RuntimeException('AI Creative Director failed to generate a valid commercial tagline from campaign context.');
         }
+
+        $designTreatment = $this->designSystem->validateDesignTreatment($result['design_treatment'] ?? null);
+        $copyEmphasis = $this->designSystem->validateCopyEmphasis($result['copy_emphasis'] ?? null);
+        $typographyLayout = $this->designSystem->validateTypographyLayout($result['typography_layout'] ?? null);
+        $compositionType = $this->designSystem->validateCompositionType($result['composition_type'] ?? null);
+        $cameraViewpoint = $this->designSystem->validateCameraViewpoint($result['camera_viewpoint'] ?? null);
+        $lightingProfile = $this->designSystem->validateLightingProfile($result['lighting_profile'] ?? null);
+        $sceneFamily = $this->designSystem->validateSceneFamily($result['scene_family'] ?? null);
+        $environmentFamily = $this->designSystem->validateEnvironmentFamily($result['environment_family'] ?? null);
+        $propProfile = $this->designSystem->validatePropProfile($result['prop_profile'] ?? null);
+        $renderStyle = $this->designSystem->validateRenderStyle($result['render_style'] ?? ($options['render_style'] ?? null));
 
         return [
             'tagline' => $finalTagline,
             'visual_prompt' => $result['visual_prompt'],
             'creative_concept' => $result['creative_concept'],
             'visual_strategy' => $result['visual_strategy'],
+            'design_treatment' => $designTreatment,
+            'copy_emphasis' => $copyEmphasis,
+            'typography_layout' => $typographyLayout,
+            'composition_type' => $compositionType,
+            'camera_viewpoint' => $cameraViewpoint,
+            'lighting_profile' => $lightingProfile,
+            'scene_family' => $sceneFamily,
+            'environment_family' => $environmentFamily,
+            'prop_profile' => $propProfile,
+            'render_style' => $renderStyle,
             'model' => $model,
             'usage' => $usage,
             'duration_seconds' => $duration,
@@ -565,6 +644,57 @@ INSTRUCTIONS;
      */
     protected function buildSystemInstructions(bool $isAutomatic, bool $requiresAiTagline = false): string
     {
+        if ($isAutomatic && ! $requiresAiTagline) {
+            return <<<'INSTRUCTIONS'
+You are MarketPilot's AI Creative Director.
+
+Your job is to conceive a complete commercial campaign creative direction — creative concept, visual strategy, and production-ready visual marketing prompt — for downstream commercial image generation in one continuous creative flow.
+
+TAGLINE DIRECTIVE (DISABLED):
+Tagline generation is explicitly DISABLED for this visual. Do NOT generate, suggest, or invent a tagline. Do NOT include headline copy, promotional slogans, or visible tagline text anywhere in the visual prompt. Focus entirely on product presentation, authentic scene setting, commercial lighting, props, and composition.
+
+AUTOMATIC CREATIVE DECISION HIERARCHY (STRICT PRIORITY):
+1. CAMPAIGN OBJECTIVE: The marketing purpose (e.g., Product Promotion vs Brand Awareness vs Seasonal Sale vs Customer Retention vs Launch) is a PRIMARY creative driver that dictates the overarching advertising intent, emotional tone, and commercial urgency.
+2. LINKED EVENT / HOLIDAY: The linked campaign Event/Holiday is a GENUINE CREATIVE DRIVER, not just decorative text. Use the event to profoundly shape the creative concept, emotional framing, visual story, environment, props, lighting, composition, and marketing emphasis.
+3. INDUSTRY & SUBCATEGORY DOMAIN STANDARDS: Ground the staging in deterministic commercial knowledge (surfaces, textures, lighting standards, commercial environments, props, and industry conventions) while applying creative reasoning.
+4. BUSINESS POSITIONING & TARGET AUDIENCE: Tailor the creative direction to the specific business context, positioning (e.g., affordable neighborhood vs premium luxury), USP, and target audience.
+5. PRODUCT / SERVICE (AUTHORITATIVE): The selected product/service is authoritative. Ground the scene in its physical reality without hallucinating fake claims, invented prices, fake certifications, or unsupported discounts.
+6. CREATIVE CONCEPT: Formulate a genuine advertising idea and title (e.g., "The Gratitude Desk", "Morning Radiance Awakening"), not merely repeating the holiday name.
+7. VISUAL STRATEGY: Explain how the event, campaign objective, industry conventions, lighting, and composition visually express the concept.
+8. PRODUCTION VISUAL PROMPT: Formulate the complete, high-fidelity visual scene description for image generation.
+9. ASPECT RATIO & CANVAS: Adapt composition, spatial depth, and safe areas to the requested aspect ratio format.
+
+CREATIVE VARIATION & ANTI-REPETITION MANDATE:
+Every automatic generation must feel original and fresh. The Automatic Creative Director is instructed to produce substantially different creative concepts and uses prior campaign generations to reduce repetition. If previous creative concepts are provided, you MUST NOT repeat or superficially rephrase them. Formulate a noticeably fresh, distinct creative concept, visual story, scene setting, composition, lighting mood, or creative metaphor while preserving the business, campaign, product identity, and aspect ratio.
+
+Never invent or alter:
+- product names
+- catalog prices
+- campaign events
+- business facts
+- product physical identity
+
+Use the supplied information exactly.
+
+Respect MarketPilot's visual constraints:
+- PRESERVE PRODUCT IDENTITY: The supplied product image and identity are authoritative. Describe environmental staging, lighting, composition, and festive/promotional atmosphere around the product without reconstructing or altering the product itself.
+- STRICT LOGO RESTRICTION: Do NOT generate, invent, draw, or add any logo, emblem, brand mark, icon, watermark, cup logo, café emblem, crown, badge, fake certification mark, or social media badge anywhere in the artwork.
+- BUSINESS NAME AS TYPOGRAPHY ONLY: If business name is enabled, describe it strictly as readable, stylized commercial typography integrated into the design. Never describe it as a logo or inside an invented brand mark.
+- EXACT PRICE & COPY: If price is specified and enabled, treat exact characters, digits, and currency symbols as immutable. If disabled, do NOT render prices as text.
+- NO TAGLINE / HEADLINE COPY: Do NOT include or describe any tagline or marketing slogan text.
+- RESPECT CANVAS: Respect the requested aspect ratio (e.g. 1:1, 16:9, 9:16, 4:5). Adapt visual composition to the selected canvas format.
+- EVENT AS MAJOR DRIVER: The campaign event and objective actively direct the visual storytelling and festive environment appropriate to the industry. If no event is present, do not invent one.
+- COMPOSITION & SAFE AREA: Place hero products within clear, uncluttered safe zones with balanced visual hierarchy.
+
+Output Format:
+You must return a JSON object adhering to the schema with three keys:
+1. "creative_concept": A clear, evocative title and summary of the core creative idea (e.g., "Quiet Café Morning Appreciation").
+2. "visual_strategy": The rationale explaining how the event, industry conventions, lighting, and composition elevate the hero product.
+3. "visual_prompt": The complete, high-fidelity visual prompt for commercial image generation.
+Do not include commentary or Markdown formatting outside the JSON object.
+INSTRUCTIONS;
+        }
+
         if ($isAutomatic || $requiresAiTagline) {
             return <<<'INSTRUCTIONS'
 You are MarketPilot's AI Creative Director.
@@ -827,13 +957,32 @@ INSTRUCTIONS;
         if (! empty($options['aspect_ratio'])) {
             $creativeLines[] = '- Aspect Ratio: '.$options['aspect_ratio'];
         }
-        $requiresAiTagline = $isAutomatic || ! empty($options['require_tagline']);
+        if (array_key_exists('include_tagline', $options)) {
+            $requiresAiTagline = filter_var($options['include_tagline'], FILTER_VALIDATE_BOOLEAN);
+        } elseif (array_key_exists('require_tagline', $options)) {
+            $requiresAiTagline = filter_var($options['require_tagline'], FILTER_VALIDATE_BOOLEAN);
+        } else {
+            $requiresAiTagline = $isAutomatic;
+        }
+
         if (! empty($options['tagline'])) {
             $creativeLines[] = '- Tagline Copy: "'.$options['tagline'].'"';
         }
         if ($requiresAiTagline) {
             $creativeLines[] = '- Tagline Directive: AUTONOMOUS GENERATION (Formulate an original, commercially grounded, event-aware campaign tagline for this generation'.(! empty($options['tagline']) ? ' harmonizing with or elevating the seed copy' : '').')';
+        } else {
+            $creativeLines[] = '- Tagline Directive: DISABLED (Do NOT formulate, suggest, or include any tagline, headline, slogan, or visible promotional copy in this visual)';
         }
+
+        $includePrices = array_key_exists('include_prices', $options)
+            ? filter_var($options['include_prices'], FILTER_VALIDATE_BOOLEAN)
+            : true;
+        if ($includePrices) {
+            $creativeLines[] = '- Marketing Price Display: ENABLED (Authoritative product prices may appear as visible commercial typography)';
+        } else {
+            $creativeLines[] = '- Marketing Price Display: DISABLED (Do not render product/service prices as visible text. Exclude visible price typography from the visual)';
+        }
+
         $includeBiz = $options['include_business_name'] ?? true;
         $creativeLines[] = '- Business Name Display: '.($includeBiz ? 'Enabled as typography only' : 'Disabled');
         $creativeLines[] = '- Reference Product Image Available: '.(! empty($options['has_reference_image']) ? 'YES (Preserve exact product geometry & packaging)' : 'NO');
@@ -850,6 +999,11 @@ INSTRUCTIONS;
                 $historyLines[] = ($idx + 1).'. '.$concept;
             }
             $sections[] = implode("\n", $historyLines);
+        }
+
+        // 7b. Anti-Repetition Combination Guidance (Part 6)
+        if (! empty($options['recent_fingerprints']) && is_array($options['recent_fingerprints'])) {
+            $sections[] = $this->designSystem->formatAntiRepetitionGuidance($options['recent_fingerprints']);
         }
 
         // 8. User Creative Instruction (Natural language from the Studio user)
@@ -958,6 +1112,16 @@ INSTRUCTIONS;
             'creative_concept' => $concept,
             'visual_strategy' => $strategy,
             'visual_prompt' => Str::limit($prompt, 4000, ''),
+            'design_treatment' => isset($decoded['design_treatment']) && is_string($decoded['design_treatment']) ? trim($decoded['design_treatment']) : null,
+            'copy_emphasis' => isset($decoded['copy_emphasis']) && is_string($decoded['copy_emphasis']) ? trim($decoded['copy_emphasis']) : null,
+            'typography_layout' => isset($decoded['typography_layout']) && is_string($decoded['typography_layout']) ? trim($decoded['typography_layout']) : null,
+            'composition_type' => isset($decoded['composition_type']) && is_string($decoded['composition_type']) ? trim($decoded['composition_type']) : null,
+            'camera_viewpoint' => isset($decoded['camera_viewpoint']) && is_string($decoded['camera_viewpoint']) ? trim($decoded['camera_viewpoint']) : null,
+            'lighting_profile' => isset($decoded['lighting_profile']) && is_string($decoded['lighting_profile']) ? trim($decoded['lighting_profile']) : null,
+            'scene_family' => isset($decoded['scene_family']) && is_string($decoded['scene_family']) ? trim($decoded['scene_family']) : null,
+            'environment_family' => isset($decoded['environment_family']) && is_string($decoded['environment_family']) ? trim($decoded['environment_family']) : null,
+            'prop_profile' => isset($decoded['prop_profile']) && is_string($decoded['prop_profile']) ? trim($decoded['prop_profile']) : null,
+            'render_style' => isset($decoded['render_style']) && is_string($decoded['render_style']) ? trim($decoded['render_style']) : null,
         ];
     }
 

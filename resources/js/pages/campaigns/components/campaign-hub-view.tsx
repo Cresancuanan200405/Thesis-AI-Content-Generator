@@ -279,6 +279,17 @@ export function CampaignHubView({
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
+
+                    {/* Primary Create Campaign Button */}
+                    <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => setIsCreateOpen(true)}
+                        className="h-8 gap-1.5 rounded-xl px-3 text-xs font-semibold shadow-2xs"
+                    >
+                        <Plus className="h-3.5 w-3.5" />
+                        <span>Create Campaign</span>
+                    </Button>
                 </div>
             </div>
 

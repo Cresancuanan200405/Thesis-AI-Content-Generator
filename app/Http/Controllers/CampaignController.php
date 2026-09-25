@@ -336,6 +336,38 @@ class CampaignController extends Controller
         $startDate = $request->input('start_date') ?: now()->toDateString();
         $endDate = $request->input('end_date') ?: $startDate;
 
+        $eventId = (int) $request->input('event_id');
+
+        // Reuse existing campaign for this event if already present (Phase 6)
+        if ($eventId) {
+            $existingCampaign = $user->campaigns()
+                ->where('event_id', $eventId)
+                ->where('status', '!=', 'archived')
+                ->latest()
+                ->first();
+
+            if ($existingCampaign) {
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'already_exists' => true,
+                        'campaign' => [
+                            'id' => $existingCampaign->id,
+                            'name' => $existingCampaign->name,
+                            'status' => $existingCampaign->status,
+                            'start_date' => $existingCampaign->start_date?->format('Y-m-d'),
+                            'end_date' => $existingCampaign->end_date?->format('Y-m-d'),
+                            'show_url' => route('campaigns.show', $existingCampaign),
+                        ],
+                        'message' => "An existing campaign \"{$existingCampaign->name}\" was found for this event and opened.",
+                    ]);
+                }
+
+                return redirect()->route('campaigns.show', $existingCampaign)
+                    ->with('info', "An existing campaign \"{$existingCampaign->name}\" was found for this event.");
+            }
+        }
+
         $today = now()->startOfDay();
         $start = Carbon::parse($startDate)->startOfDay();
         $end = Carbon::parse($endDate)->startOfDay();
@@ -351,7 +383,7 @@ class CampaignController extends Controller
         $campaign = $user->campaigns()->create([
             'business_id' => $businessId,
             'product_id' => $request->input('product_id') ?: null,
-            'event_id' => $request->input('event_id') ?: null,
+            'event_id' => $eventId,
             'name' => $request->input('name'),
             'description' => $request->input('description') ?: null,
             'objective' => $request->input('objective') ?: ('Campaign for '.$request->input('name')),
@@ -388,6 +420,10 @@ class CampaignController extends Controller
                 ],
                 'message' => 'Campaign created successfully.',
             ]);
+        }
+
+        if ($request->input('redirect_to') === 'setup' || $request->boolean('redirect_to_setup')) {
+            return redirect()->route('campaigns.show', $campaign)->with('success', 'Campaign created successfully.');
         }
 
         return redirect()->route('campaigns.index')->with('success', 'Campaign created successfully.');

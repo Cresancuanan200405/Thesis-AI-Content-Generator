@@ -129,10 +129,11 @@ it('maintains OpenAI model registry with GPT-Image-2 as recommended default', fu
         ->and($default['product_preservation_capability'])->toBe('flagship_photorealistic');
 
     $models = $registry->getAllModels();
-    expect(count($models))->toBe(6);
+    expect(count($models))->toBe(1)
+        ->and(array_keys($models))->toBe(['gpt-image-2']);
 });
 
-it('enforces backend model capability policy distinguishing flagship from other models', function () {
+it('enforces backend model capability policy standardizing on GPT-Image-2', function () {
     $registry = new OpenAIModelRegistry;
 
     $flagshipPolicy = $registry->getModelPolicy('gpt-image-2');
@@ -142,21 +143,14 @@ it('enforces backend model capability policy distinguishing flagship from other 
         ->and($flagshipPolicy['supports_image_editing'])->toBeTrue()
         ->and($flagshipPolicy['recommended_generation_mode'])->toBe('PRODUCT_PRESERVING_FLAGSHIP');
 
-    $gpt1Policy = $registry->getModelPolicy('gpt-image-1');
-    expect($gpt1Policy['is_recommended'])->toBeFalse()
-        ->and($gpt1Policy['product_preservation_capability'])->toBe('standard_fidelity')
-        ->and($gpt1Policy['supports_image_input'])->toBeTrue()
-        ->and($gpt1Policy['supports_image_editing'])->toBeTrue()
-        ->and($gpt1Policy['recommended_generation_mode'])->toBe('PRODUCT_PRESERVING_ADAPTED');
-
-    $dalle3Policy = $registry->getModelPolicy('dall-e-3');
-    expect($dalle3Policy['is_recommended'])->toBeFalse()
-        ->and($dalle3Policy['product_preservation_capability'])->toBe('text_to_image_only')
-        ->and($dalle3Policy['supports_image_input'])->toBeFalse()
-        ->and($dalle3Policy['supports_image_editing'])->toBeFalse();
+    // Any query for legacy model resolves to gpt-image-2 policy
+    $legacyQueryPolicy = $registry->getModelPolicy('dall-e-3');
+    expect($legacyQueryPolicy['model_id'])->toBe('gpt-image-2')
+        ->and($legacyQueryPolicy['is_recommended'])->toBeTrue()
+        ->and($legacyQueryPolicy['supports_image_input'])->toBeTrue();
 });
 
-it('strengthens product preservation and suppresses AI typography for non-default models in ModularPromptOrchestrator', function () {
+it('enforces product preservation in ModularPromptOrchestrator for GPT-Image-2', function () {
     $orchestrator = new ModularPromptOrchestrator;
 
     $flagshipPrompt = $orchestrator->orchestrate([
@@ -165,36 +159,28 @@ it('strengthens product preservation and suppresses AI typography for non-defaul
         'image_model' => 'gpt-image-2',
     ]);
 
-    $adaptedPrompt = $orchestrator->orchestrate([
-        'product_name' => 'Caramel Machiato',
-        'reference_image_path' => 'products/images/test_product.jpg',
-        'image_model' => 'gpt-image-1',
-    ]);
-
-    // Both preserve 8-priority product-first architecture
     expect($flagshipPrompt)->toContain('PRIMARY PRODUCT IMAGE:')
         ->toContain('PRODUCT PRESERVATION:');
-
-    expect($adaptedPrompt)->toContain('PRIMARY PRODUCT IMAGE:')
-        ->toContain('PRODUCT PRESERVATION:')
-        ->toContain('STRICT PRESERVATION RULE: The input image is the immutable physical product.');
 });
 
-it('attaches catalog product binary for image-input models and sends selected model in OpenAIImageService', function () {
+it('attaches catalog product binary and always uses GPT-Image-2 in OpenAIImageService regardless of requested model', function () {
     Storage::fake();
     Storage::put('products/coffee.png', 'fake-binary-bytes');
 
     config()->set('services.openai.api_key', 'sk-test-secret-key');
 
+    $capturedEditsModel = null;
     Http::fake([
         'https://api.openai.com/v1/chat/completions' => Http::response([
             'choices' => [
                 ['message' => ['content' => json_encode(['composition' => 'hero product centered'])]],
             ],
         ], 200),
-        'https://api.openai.com/v1/images/edits' => function (Request $request) {
-            $hasImage = $request->isMultipart();
-            $body = $request->data();
+        'https://api.openai.com/v1/images/edits' => function (Request $request) use (&$capturedEditsModel) {
+            $body = (string) $request->body();
+            if (str_contains($body, 'name="model"') && str_contains($body, 'gpt-image-2')) {
+                $capturedEditsModel = 'gpt-image-2';
+            }
 
             return Http::response([
                 'data' => [
@@ -206,20 +192,21 @@ it('attaches catalog product binary for image-input models and sends selected mo
 
     $service = app(OpenAIImageService::class);
 
-    // Test with gpt-image-1
+    // Test with legacy request parameter attempting to override
     $result = $service->generate('Promotional prompt', [
         'product_name' => 'Caramel Machiato',
         'reference_image_path' => 'products/coffee.png',
-        'image_model' => 'gpt-image-1',
+        'image_model' => 'chatgpt-image-latest',
     ]);
 
     expect($result)->not->toBeEmpty();
+    expect($capturedEditsModel)->toBe('gpt-image-2');
 
     $metadata = $service->getLastGenerationMetadata();
     expect($metadata)->not->toBeNull()
-        ->and($metadata['model'])->toBe('gpt-image-1')
-        ->and($metadata['is_recommended'])->toBeFalse()
-        ->and($metadata['product_preservation_capability'])->toBe('standard_fidelity')
+        ->and($metadata['model'])->toBe('gpt-image-2')
+        ->and($metadata['is_recommended'])->toBeTrue()
+        ->and($metadata['product_preservation_capability'])->toBe('flagship_photorealistic')
         ->and($metadata['generation_method'])->toBe('image_to_image_edit')
         ->and($metadata['product_preserved'])->toBeTrue()
         ->and($metadata['supports_image_editing'])->toBeTrue();

@@ -24,7 +24,6 @@ import {
     CustomProductItem,
     EventItem,
     ImageQuality,
-    imageModelOptions,
     imageQualityOptions,
     ProductItem,
 } from './types';
@@ -45,10 +44,12 @@ interface StudioBriefSummaryProps {
     renderStyle?: string;
     contentStyle?: string[];
     brandTone?: string[];
-    imageModel: string;
+    imageModel?: string;
     imageQuality: ImageQuality;
     includeBusinessName: boolean;
     isAutomaticMode?: boolean;
+    includeTagline?: boolean;
+    includePrices?: boolean;
 }
 
 export function StudioBriefSummary({
@@ -71,6 +72,8 @@ export function StudioBriefSummary({
     imageQuality,
     includeBusinessName,
     isAutomaticMode = false,
+    includeTagline = true,
+    includePrices = true,
 }: StudioBriefSummaryProps) {
     const activeRatio = aspectRatio || '1:1';
     const activeRatioOption = aspectRatioOptions.find((o) => o.value === activeRatio);
@@ -112,7 +115,7 @@ export function StudioBriefSummary({
     }
 
     return (
-        <aside className="sticky top-11 z-20 flex h-[calc(100vh-2.75rem)] w-80 shrink-0 flex-col justify-between overflow-y-auto border-l border-border/80 bg-card/80 p-4 backdrop-blur-2xl transition-all duration-300 sm:top-12 sm:h-[calc(100vh-3rem)] lg:w-[330px] dark:bg-card/90">
+        <aside className="sticky top-11 z-20 flex h-[calc(100vh-2.75rem)] w-72 shrink-0 flex-col justify-between overflow-y-auto border-l border-border/80 bg-card/80 p-3.5 backdrop-blur-2xl transition-all duration-300 sm:top-12 sm:h-[calc(100vh-3rem)] sm:w-80 lg:w-[300px] xl:w-[320px] dark:bg-card/90">
             <div className="space-y-3.5">
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-border/60 pb-3">
@@ -228,11 +231,11 @@ export function StudioBriefSummary({
                                         {selectedCatalogProducts.map((p) => (
                                             <div
                                                 key={`catalog-featured-${p.id}`}
-                                                className="flex items-center justify-between text-[11px]"
+                                                className="flex items-start justify-between gap-2 text-[11px]"
                                             >
-                                                <span className="truncate">{p.name}</span>
+                                                <span className="break-words font-medium leading-tight">{p.name}</span>
                                                 {p.price && (
-                                                    <span className="font-bold text-emerald-500">
+                                                    <span className="shrink-0 font-bold text-emerald-500">
                                                         ₱{Number(p.price).toLocaleString()}
                                                     </span>
                                                 )}
@@ -243,13 +246,13 @@ export function StudioBriefSummary({
                                             .map((p) => (
                                                 <div
                                                     key={p.id}
-                                                    className="flex items-center justify-between text-[11px]"
+                                                    className="flex items-start justify-between gap-2 text-[11px]"
                                                 >
-                                                    <span className="truncate">
+                                                    <span className="break-words font-medium leading-tight">
                                                         {p.name} (Custom)
                                                     </span>
                                                     {p.price && (
-                                                        <span className="font-bold text-emerald-500">
+                                                        <span className="shrink-0 font-bold text-emerald-500">
                                                             ₱{Number(p.price).toLocaleString()}
                                                         </span>
                                                     )}
@@ -264,16 +267,32 @@ export function StudioBriefSummary({
                             </div>
                         </div>
 
-                        {tagline && (
-                            <div className="rounded-xl border border-primary/20 bg-primary/5 p-2.5">
-                                <div className="mb-0.5 text-[9px] font-bold tracking-wider text-primary uppercase">
-                                    Active Tagline
-                                </div>
-                                <div className="text-xs leading-snug font-medium text-foreground italic">
-                                    "{tagline}"
-                                </div>
+                        {/* Marketing Copy Summary */}
+                        <div className="space-y-1.5 rounded-xl border border-border/60 bg-muted/20 p-2.5 text-xs">
+                            <div className="text-[9px] font-bold tracking-wider text-muted-foreground uppercase">
+                                Marketing Copy
                             </div>
-                        )}
+                            <div className="flex items-center justify-between gap-1 text-[11px]">
+                                <span className="text-muted-foreground">Tagline:</span>
+                                {includeTagline ? (
+                                    <span className="max-w-[140px] truncate font-semibold text-primary" title={tagline || 'AI Auto'}>
+                                        {tagline ? `"${tagline}"` : 'AI Auto'}
+                                    </span>
+                                ) : (
+                                    <span className="font-medium text-muted-foreground">Disabled</span>
+                                )}
+                            </div>
+                            <div className="flex items-center justify-between gap-1 text-[11px]">
+                                <span className="text-muted-foreground">Prices:</span>
+                                {includePrices ? (
+                                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                        Visible
+                                    </span>
+                                ) : (
+                                    <span className="font-medium text-muted-foreground">Hidden</span>
+                                )}
+                            </div>
+                        </div>
 
                         {hasImageReference && (
                             <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-2 text-xs text-emerald-700 dark:text-emerald-400">
@@ -409,25 +428,23 @@ export function StudioBriefSummary({
                     <div className="space-y-1.5 text-xs">
                         {/* Model */}
                         <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
-                            <span className="text-[11px] text-muted-foreground">Model Tier</span>
-                            {(() => {
-                                const activeModel =
-                                    imageModelOptions.find((m) => m.value === imageModel) ||
-                                    imageModelOptions[1];
+                            <span className="text-[11px] text-muted-foreground">Image Engine</span>
+                            <div className="flex items-center gap-1 text-right">
+                                <span className="font-mono text-[11px] font-bold text-foreground">
+                                    GPT-Image-2
+                                </span>
+                                <span className="rounded bg-primary/10 px-1 text-[8px] font-bold text-primary">
+                                    ★
+                                </span>
+                            </div>
+                        </div>
 
-                                return (
-                                    <div className="flex items-center gap-1 text-right">
-                                        <span className="font-mono text-[11px] font-bold text-foreground">
-                                            {activeModel.label}
-                                        </span>
-                                        {activeModel.isRecommended && (
-                                            <span className="rounded bg-primary/10 px-1 text-[8px] font-bold text-primary">
-                                                ★
-                                            </span>
-                                        )}
-                                    </div>
-                                );
-                            })()}
+                        {/* Creative Reasoning Engine */}
+                        <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
+                            <span className="text-[11px] text-muted-foreground">Creative AI</span>
+                            <span className="font-mono text-[11px] font-semibold text-foreground">
+                                GPT-5.6 Luna
+                            </span>
                         </div>
 
                         {/* Quality & Cost */}
@@ -437,7 +454,7 @@ export function StudioBriefSummary({
                                 const activeQuality =
                                     imageQualityOptions.find((q) => q.value === imageQuality) ||
                                     imageQualityOptions[1];
-                                const cost = calculateGenerationCost(imageModel, imageQuality);
+                                const cost = calculateGenerationCost('gpt-image-2', imageQuality);
 
                                 return (
                                     <div className="flex items-center gap-1.5 text-right">

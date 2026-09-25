@@ -21,10 +21,24 @@ import {
    TYPES & CONSTANTS
 ========================================================================== */
 
-export type Step = 1 | 2 | 3;
+export type Step = 1 | 2 | 3 | 4;
 export type TaglineMode = 'manual' | 'ai' | 'none';
 export type GenerationState = 'idle' | 'generating' | 'ready' | 'error';
 export type ImageQuality = 'low' | 'medium' | 'high';
+
+export type DesignTreatment =
+    | 'Auto'
+    | 'Classic'
+    | 'Editorial'
+    | 'Bold Promo'
+    | 'Minimal'
+    | 'Premium';
+
+export type CopyEmphasis =
+    | 'Product-first'
+    | 'Tagline-first'
+    | 'Price-first'
+    | 'Balanced';
 
 export interface EventItem {
     id: number | string;
@@ -54,6 +68,7 @@ export interface CustomProductItem {
     id: string;
     name: string;
     price: string;
+    description?: string;
 }
 
 export interface CampaignItem {
@@ -66,6 +81,7 @@ export interface CampaignItem {
     product_name?: string | null;
     target_audience?: string | null;
     objective?: string | null;
+    description?: string | null;
     start_date?: string | null;
     end_date?: string | null;
 }
@@ -163,26 +179,6 @@ export const EXACT_MODEL_QUALITY_PRICING: Record<
     string,
     Record<ImageQuality, { usd: number; php: number; totalOn20: number }>
 > = {
-    'gpt-image-1-mini': {
-        low: { usd: 0.005, php: 0.29, totalOn20: 4000 },
-        medium: { usd: 0.011, php: 0.63, totalOn20: 1818 },
-        high: { usd: 0.036, php: 2.07, totalOn20: 555 },
-    },
-    'chatgpt-image-latest': {
-        low: { usd: 0.009, php: 0.52, totalOn20: 2222 },
-        medium: { usd: 0.034, php: 1.96, totalOn20: 588 },
-        high: { usd: 0.133, php: 7.65, totalOn20: 150 },
-    },
-    'gpt-image-1': {
-        low: { usd: 0.011, php: 0.63, totalOn20: 1818 },
-        medium: { usd: 0.042, php: 2.42, totalOn20: 476 },
-        high: { usd: 0.167, php: 9.6, totalOn20: 119 },
-    },
-    'gpt-image-1.5': {
-        low: { usd: 0.02, php: 1.15, totalOn20: 1000 },
-        medium: { usd: 0.04, php: 2.3, totalOn20: 500 },
-        high: { usd: 0.08, php: 4.6, totalOn20: 250 },
-    },
     'gpt-image-2': {
         low: { usd: 0.006, php: 0.35, totalOn20: 3333 },
         medium: { usd: 0.053, php: 3.05, totalOn20: 377 },
@@ -194,7 +190,7 @@ export const imageModelOptions: ImageModelOption[] = [
     {
         value: 'gpt-image-2',
         label: 'GPT-Image-2',
-        tag: 'Recommended',
+        tag: 'Standard',
         speed: 'Typical (~6-9s)',
         quality: 'Photorealistic Pro',
         price: '$0.053 / gen',
@@ -206,66 +202,6 @@ export const imageModelOptions: ImageModelOption[] = [
         badgeColor:
             'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
         isRecommended: true,
-    },
-    {
-        value: 'gpt-image-1.5',
-        label: 'GPT-Image-1.5',
-        tag: 'Previous',
-        speed: 'Typical (~5-7s)',
-        quality: 'High Detail',
-        price: '$0.040 / gen',
-        pricePhp: '~₱2.30',
-        description:
-            'Previous generation rendering for intricate textures, micro-details, and elegant depth.',
-        outcome:
-            'Studio reflections (glass, metal, fabric) and fine textured depth-of-field.',
-        badgeColor:
-            'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-    },
-    {
-        value: 'gpt-image-1',
-        label: 'GPT-Image-1',
-        tag: 'Previous',
-        speed: 'Typical (~4-6s)',
-        quality: 'Commercial Standard',
-        price: '$0.042 / gen',
-        pricePhp: '~₱2.42',
-        description:
-            'Previous commercial benchmark for product showcases, seasonal sales, and branded ads.',
-        outcome:
-            'Sharp product focal points, balanced commercial lighting, and brand colors.',
-        badgeColor:
-            'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-    },
-    {
-        value: 'gpt-image-1-mini',
-        label: 'GPT-Image-1 Mini',
-        tag: 'Previous / Fast',
-        speed: 'Fast (~2-4s)',
-        quality: 'Standard Crisp',
-        price: '$0.011 / gen',
-        pricePhp: '~₱0.63',
-        description:
-            'Fastest turnarounds and maximum budget efficiency (up to 4,000 images on $20).',
-        outcome:
-            'Lightweight, high-contrast promotional visuals with fast turnaround.',
-        badgeColor:
-            'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-    },
-    {
-        value: 'chatgpt-image-latest',
-        label: 'ChatGPT Image Latest',
-        tag: 'Previous',
-        speed: 'Adaptive (~4-7s)',
-        quality: 'Creative Fidelity',
-        price: '$0.034 / gen',
-        pricePhp: '~₱1.96',
-        description:
-            'Adaptive checkpoint tuned for narrative context, lifestyle backdrops, and creative storytelling.',
-        outcome:
-            'Contextual scene lighting, natural lifestyle framing, and creative compositions.',
-        badgeColor:
-            'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
     },
 ];
 
@@ -353,15 +289,15 @@ export const renderStyleOptions: RenderStyleOption[] = [
 ];
 
 export function calculateGenerationCost(
-    modelValue: string,
+    modelValue: string = 'gpt-image-2',
     qualityValue: ImageQuality = 'medium',
 ) {
     const modelKey = EXACT_MODEL_QUALITY_PRICING[modelValue]
         ? modelValue
-        : 'gpt-image-1';
+        : 'gpt-image-2';
     const entry =
-        EXACT_MODEL_QUALITY_PRICING[modelKey][qualityValue] ||
-        EXACT_MODEL_QUALITY_PRICING[modelKey].medium;
+        EXACT_MODEL_QUALITY_PRICING[modelKey]?.[qualityValue] ||
+        EXACT_MODEL_QUALITY_PRICING['gpt-image-2'].medium;
 
     return {
         usdValue: entry.usd,
@@ -464,6 +400,195 @@ export const brandToneDescriptions: Record<string, string> = {
     Modern: 'Contemporary, sleek, and trend-forward look.',
     Inspiring: 'Uplifting, ambitious, and motivating energy.',
 };
+
+export interface DesignTreatmentOption {
+    value: DesignTreatment;
+    label: string;
+    description: string;
+    badge: string;
+    badgeColor: string;
+}
+
+export interface CopyEmphasisOption {
+    value: CopyEmphasis;
+    label: string;
+    description: string;
+}
+
+export const designTreatmentOptions: DesignTreatmentOption[] = [
+    {
+        value: 'Auto',
+        label: 'Auto (Recommended)',
+        description: 'Intelligent selection aligned with category and campaign.',
+        badge: 'Smart Auto',
+        badgeColor: 'border-primary/30 bg-primary/10 text-primary',
+    },
+    {
+        value: 'Classic',
+        label: 'Classic Commercial',
+        description: 'Timeless advertising balance with structured layout.',
+        badge: 'Classic Print',
+        badgeColor: 'border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400',
+    },
+    {
+        value: 'Editorial',
+        label: 'Editorial',
+        description: 'High-fashion magazine layout with artistic whitespace.',
+        badge: 'Magazine Layout',
+        badgeColor: 'border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400',
+    },
+    {
+        value: 'Bold Promo',
+        label: 'Bold Promo',
+        description: 'High-energy commercial treatment for sales and offers.',
+        badge: 'High Conversion',
+        badgeColor: 'border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400',
+    },
+    {
+        value: 'Minimal',
+        label: 'Minimalist',
+        description: 'Expansive negative space and refined typography.',
+        badge: 'Clean Modern',
+        badgeColor: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+    },
+    {
+        value: 'Premium',
+        label: 'Luxury Premium',
+        description: 'Prestigious finish with sophisticated studio styling.',
+        badge: 'Prestige Finish',
+        badgeColor: 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400',
+    },
+];
+
+export const copyEmphasisOptions: CopyEmphasisOption[] = [
+    {
+        value: 'Balanced',
+        label: 'Balanced Commercial',
+        description: 'Equal visual harmony between product, headline, and details.',
+    },
+    {
+        value: 'Product-first',
+        label: 'Product-First',
+        description: 'Product craftsmanship and form take primary focus.',
+    },
+    {
+        value: 'Tagline-first',
+        label: 'Tagline-First',
+        description: 'Campaign headline leads the visual hierarchy.',
+    },
+    {
+        value: 'Price-first',
+        label: 'Price-First',
+        description: 'Promotional offer and pricing take prominent focus.',
+    },
+];
+
+export interface DesignSystemExport {
+    design_treatments: Record<string, string>;
+    copy_emphases: Record<string, string>;
+    typography_layouts: Record<string, string>;
+    composition_types: Record<string, string>;
+    camera_viewpoints: Record<string, string>;
+    lighting_profiles: Record<string, string>;
+    scene_families: Record<string, string>;
+    environment_families: Record<string, string>;
+    prop_profiles: Record<string, string>;
+    render_styles: string[];
+    brand_tones: string[];
+    visual_themes: string[];
+    aspect_ratios: string[];
+}
+
+export function deterministicShufflePresets(
+    current?: {
+        renderStyle?: string;
+        designTreatment?: DesignTreatment;
+        copyEmphasis?: CopyEmphasis;
+        aspectRatio?: string;
+        brandTone?: string[];
+        contentStyle?: string[];
+    },
+    designSystem?: Partial<DesignSystemExport>,
+    recentFingerprints?: Array<Record<string, any>>
+) {
+    // 1. Single-select Design Treatment (pick 1)
+    const rawTreatments: DesignTreatment[] = designSystem?.design_treatments
+        ? (Object.keys(designSystem.design_treatments).filter((t) => t !== 'Auto') as DesignTreatment[])
+        : ['Classic', 'Editorial', 'Bold Promo', 'Minimal', 'Premium'];
+
+    const recentTreatments = (recentFingerprints || []).map((f) => f.design_treatment).filter(Boolean);
+    const nonRecentTreatments = rawTreatments.filter((t) => !recentTreatments.includes(t));
+    const treatmentCandidates = nonRecentTreatments.length ? nonRecentTreatments : rawTreatments;
+    const filteredTreatments = treatmentCandidates.filter((t) => t !== current?.designTreatment);
+    const chosenTreatment = (filteredTreatments.length ? filteredTreatments : treatmentCandidates)[
+        Math.floor(Math.random() * (filteredTreatments.length || treatmentCandidates.length))
+    ];
+
+    // 2. Single-select Render Style (pick 1)
+    const rawStyles = designSystem?.render_styles ?? renderStyleOptions.map((s) => s.value);
+    const recentStyles = (recentFingerprints || []).map((f) => f.render_style).filter(Boolean);
+    const nonRecentStyles = rawStyles.filter((s) => !recentStyles.includes(s));
+    const styleCandidates = nonRecentStyles.length ? nonRecentStyles : rawStyles;
+    const filteredStyles = styleCandidates.filter((s) => s !== current?.renderStyle);
+    const chosenStyle = (filteredStyles.length ? filteredStyles : styleCandidates)[
+        Math.floor(Math.random() * (filteredStyles.length || styleCandidates.length))
+    ];
+
+    // 3. Single-select Copy Emphasis (pick 1)
+    const rawCopy: CopyEmphasis[] = designSystem?.copy_emphases
+        ? (Object.keys(designSystem.copy_emphases) as CopyEmphasis[])
+        : ['Balanced', 'Product-first', 'Tagline-first', 'Price-first'];
+    const filteredCopy = rawCopy.filter((c) => c !== current?.copyEmphasis);
+    const chosenCopy = (filteredCopy.length ? filteredCopy : rawCopy)[
+        Math.floor(Math.random() * (filteredCopy.length || rawCopy.length))
+    ];
+
+    // 4. Single-select Aspect Ratio (pick 1)
+    const rawAspect = designSystem?.aspect_ratios ?? aspectRatioOptions.map((a) => a.value);
+    const filteredAspect = rawAspect.filter((a) => a !== current?.aspectRatio);
+    const chosenAspect = (filteredAspect.length ? filteredAspect : rawAspect)[
+        Math.floor(Math.random() * (filteredAspect.length || rawAspect.length))
+    ];
+
+    // 5. Multi-select Brand Tone (strictly 3 distinct compatible values if available)
+    let availableTones = [...(designSystem?.brand_tones ?? toneOptions)];
+    if (chosenTreatment === 'Minimal') {
+        availableTones = availableTones.filter((t) => t !== 'Playful' && t !== 'Bold');
+    } else if (chosenTreatment === 'Premium') {
+        availableTones = availableTones.filter((t) => t !== 'Playful');
+    } else if (chosenTreatment === 'Bold Promo') {
+        availableTones = availableTones.filter((t) => t !== 'Minimal');
+    }
+    if (availableTones.length < 3) {
+        availableTones = [...(designSystem?.brand_tones ?? toneOptions)];
+    }
+    const targetToneCount = Math.min(3, availableTones.length);
+    const shuffledTones = [...availableTones].sort(() => 0.5 - Math.random()).slice(0, targetToneCount);
+
+    // 6. Multi-select Visual Theme (strictly 3 distinct compatible values if available)
+    let availableThemes = [...(designSystem?.visual_themes ?? contentStyleOptions)];
+    if (chosenTreatment === 'Minimal') {
+        availableThemes = availableThemes.filter((t) => t !== 'Social Media' && t !== 'Storytelling');
+    } else if (chosenTreatment === 'Premium') {
+        availableThemes = availableThemes.filter((t) => t !== 'Social Media');
+    } else if (chosenTreatment === 'Bold Promo') {
+        availableThemes = availableThemes.filter((t) => t !== 'Minimal');
+    }
+    if (availableThemes.length < 3) {
+        availableThemes = [...(designSystem?.visual_themes ?? contentStyleOptions)];
+    }
+    const targetThemeCount = Math.min(3, availableThemes.length);
+    const shuffledThemes = [...availableThemes].sort(() => 0.5 - Math.random()).slice(0, targetThemeCount);
+
+    return {
+        renderStyle: chosenStyle,
+        designTreatment: chosenTreatment,
+        copyEmphasis: chosenCopy,
+        aspectRatio: chosenAspect,
+        brandTone: shuffledTones,
+        contentStyle: shuffledThemes,
+    };
+}
 
 export const renderingStatusPhrases = [
     'Understanding your creative...',

@@ -7,6 +7,7 @@ import {
     Pencil,
     Plus,
     Search,
+    Sparkles,
     Trash2,
     X,
 } from 'lucide-react';
@@ -296,6 +297,9 @@ export default function CampaignsPage({
     const [isEventLocked, setIsEventLocked] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+    const [createSource, setCreateSource] = useState<
+        'holiday' | 'marketing' | 'custom'
+    >('holiday');
 
     const [formData, setFormData] = useState({
         name: '',
@@ -305,12 +309,38 @@ export default function CampaignsPage({
         status: 'active',
     });
 
+    const hasCustomEvents = useMemo(() => {
+        return events.some(
+            (e: any) => e.category === 'custom' || e.type === 'custom',
+        );
+    }, [events]);
+
     const handleCreateFromEvent = (evt: any) => {
+        if (evt.has_campaign && evt.campaign_id) {
+            toast.info(
+                `Opening existing campaign "${evt.campaign_name || evt.name}" for this event...`,
+            );
+            router.visit(`/campaigns/${evt.campaign_id}`);
+            return;
+        }
+
+        const isCommercial =
+            evt.category === 'commercial' ||
+            evt.type === 'commercial' ||
+            evt.type === 'sale';
+        const isCustom = evt.category === 'custom' || evt.type === 'custom';
+        const source = isCustom
+            ? 'custom'
+            : isCommercial
+              ? 'marketing'
+              : 'holiday';
+
+        setCreateSource(source);
         setFormData({
             name: `${evt.name} Campaign`,
             event_id: String(evt.id),
-            start_date: evt.date || '',
-            end_date: evt.date || '',
+            start_date: evt.start_date || evt.date || '',
+            end_date: evt.end_date || evt.date || '',
             status: 'active',
         });
         setFormErrors({});
@@ -318,8 +348,12 @@ export default function CampaignsPage({
         setIsCreateOpen(true);
     };
 
-    const handleOpenGeneralCreate = (open: boolean) => {
+    const handleOpenGeneralCreate = (
+        open: boolean,
+        initialSource: 'holiday' | 'marketing' | 'custom' = 'holiday',
+    ) => {
         if (open) {
+            setCreateSource(initialSource);
             setFormData({
                 name: '',
                 event_id: '',
@@ -378,7 +412,29 @@ export default function CampaignsPage({
                 const evt = events.find(
                     (e: any) => String(e.id) === String(eventId),
                 );
+
+                if (evt && evt.has_campaign && evt.campaign_id) {
+                    toast.info(
+                        `Opening existing campaign "${evt.campaign_name || evt.name}" for this event...`,
+                    );
+                    router.visit(`/campaigns/${evt.campaign_id}`);
+                    return;
+                }
+
                 const prodName = params.get('product_name') || '';
+                const isCommercial =
+                    evt?.category === 'commercial' ||
+                    evt?.type === 'commercial' ||
+                    evt?.type === 'sale';
+                const isCustom =
+                    evt?.category === 'custom' || evt?.type === 'custom';
+                const source = isCustom
+                    ? 'custom'
+                    : isCommercial
+                      ? 'marketing'
+                      : 'holiday';
+
+                setCreateSource(source);
                 setFormData({
                     name: evt
                         ? `${evt.name} Campaign`
@@ -386,8 +442,8 @@ export default function CampaignsPage({
                           ? `${prodName} Campaign`
                           : '',
                     event_id: eventId,
-                    start_date: evt?.date || '',
-                    end_date: evt?.date || '',
+                    start_date: evt?.start_date || evt?.date || '',
+                    end_date: evt?.end_date || evt?.date || '',
                     status: 'active',
                 });
                 setIsEventLocked(Boolean(eventId));
@@ -436,6 +492,12 @@ export default function CampaignsPage({
             const cat = evt.category || evt.type || 'holiday';
             const matchesCategory =
                 eventCategoryFilter === 'all' ||
+                (eventCategoryFilter === 'holiday' &&
+                    (cat === 'regular' ||
+                        cat === 'holiday' ||
+                        cat === 'special_non_working' ||
+                        cat === 'special_working' ||
+                        cat === 'islamic')) ||
                 (eventCategoryFilter === 'regular' &&
                     (cat === 'regular' || cat === 'holiday')) ||
                 (eventCategoryFilter === 'special_non_working' &&
@@ -456,12 +518,22 @@ export default function CampaignsPage({
     }, [events, eventSearchQuery, eventCategoryFilter, selectedYearTab]);
 
     const handleSelectEvent = (evt: any) => {
+        if (evt.has_campaign && evt.campaign_id) {
+            toast.info(
+                `Opening existing campaign "${evt.campaign_name || evt.name}" for this event.`,
+            );
+            setIsEventModalOpen(false);
+            setIsCreateOpen(false);
+            router.visit(`/campaigns/${evt.campaign_id}`);
+            return;
+        }
+
         setFormData((current) => ({
             ...current,
             event_id: String(evt.id),
-            start_date: current.start_date || evt.date || '',
-            end_date: current.end_date || evt.date || '',
-            name: current.name || `${evt.name} Campaign`,
+            start_date: evt.start_date || evt.date || current.start_date || '',
+            end_date: evt.end_date || evt.date || current.end_date || '',
+            name: `${evt.name} Campaign`,
         }));
 
         setIsEventModalOpen(false);
@@ -758,11 +830,33 @@ export default function CampaignsPage({
     const handleCreateCampaign = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        const errors: Record<string, string> = {};
-        const name = formData.name.trim();
+        // Prevent duplicate campaign creation if selected event already has a campaign (Phase 6)
+        if (
+            selectedCreateEvent?.has_campaign &&
+            selectedCreateEvent?.campaign_id
+        ) {
+            toast.info(
+                `Opening existing campaign "${selectedCreateEvent.campaign_name || selectedCreateEvent.name}"...`,
+            );
+            setIsCreateOpen(false);
+            router.visit(`/campaigns/${selectedCreateEvent.campaign_id}`);
+            return;
+        }
 
-        if (!name) {
+        const errors: Record<string, string> = {};
+        const campaignName = formData.name.trim();
+
+        if (!campaignName) {
             errors.name = 'Campaign name is required.';
+        }
+
+        if (!formData.event_id) {
+            errors.event_id =
+                createSource === 'holiday'
+                    ? 'Please select an existing Philippine holiday.'
+                    : createSource === 'marketing'
+                      ? 'Please select an existing marketing event.'
+                      : 'Please select an existing custom event.';
         }
 
         if (!formData.start_date) {
@@ -783,8 +877,7 @@ export default function CampaignsPage({
 
         if (Object.keys(errors).length > 0) {
             setFormErrors(errors);
-            toast.error('Please fill in all required campaign fields.');
-
+            toast.error('Please select an event and fill in all required fields.');
             return;
         }
 
@@ -794,28 +887,20 @@ export default function CampaignsPage({
         router.post(
             '/campaigns',
             {
-                name,
-                event_id: formData.event_id || null,
+                name: campaignName,
+                event_id: formData.event_id,
                 description: '',
-                objective: `Campaign for ${name}`,
+                objective: `Campaign for ${campaignName}`,
                 target_audience: '',
                 start_date: formData.start_date,
                 end_date: formData.end_date,
                 status: formData.status || 'active',
+                redirect_to: 'setup',
             },
             {
                 preserveScroll: true,
                 onSuccess: () => {
-                    setIsCreateOpen(false);
-                    setIsEventLocked(false);
-                    setFormData({
-                        name: '',
-                        event_id: '',
-                        start_date: '',
-                        end_date: '',
-                        status: 'active',
-                    });
-                    setFormErrors({});
+                    resetCreateForm();
                     toast.success('Campaign created successfully!');
                 },
                 onError: (errors) => {
@@ -834,6 +919,7 @@ export default function CampaignsPage({
     const resetCreateForm = () => {
         setIsCreateOpen(false);
         setIsEventLocked(false);
+        setCreateSource('holiday');
         setFormErrors({});
         setFormData({
             name: '',
@@ -882,14 +968,23 @@ export default function CampaignsPage({
                             </div>
                         </div>
 
-                        {/* Redesigned View Switcher replacing the header buttons */}
-                        <div className="self-start sm:self-auto">
+                        {/* Header Actions: Prominent View Switcher & Primary Create Campaign Button */}
+                        <div className="flex flex-wrap items-center gap-3 self-start sm:self-auto">
                             <CampaignsViewSwitcher
                                 activeView={activeView}
                                 onViewChange={handleViewChange}
                                 campaignCount={stats.total}
                                 upcomingCount={upcomingList.length}
                             />
+
+                            <Button
+                                type="button"
+                                onClick={() => handleOpenGeneralCreate(true, 'holiday')}
+                                className="gap-2 rounded-xl text-xs font-semibold shadow-xs"
+                            >
+                                <Plus className="h-4 w-4" />
+                                Create Campaign
+                            </Button>
                         </div>
                     </div>
 
@@ -934,19 +1029,22 @@ export default function CampaignsPage({
                 CREATE CAMPAIGN MODAL (IMPROVED & PROFESSIONAL)
             ============================================================= */}
 
+            {/* =============================================================
+                CREATE CAMPAIGN MODAL (MULTI-SOURCE: HOLIDAY / EVENT / CUSTOM / GENERAL)
+            ============================================================= */}
+
             <Dialog
                 open={isCreateOpen}
                 onOpenChange={(open) => {
                     setIsCreateOpen(open);
-
                     if (!open) {
                         setIsEventLocked(false);
                     }
                 }}
             >
-                <DialogContent className="overflow-hidden rounded-3xl border-border bg-card p-0 shadow-2xl sm:max-w-lg">
-                    <form onSubmit={handleCreateCampaign}>
-                        <DialogHeader className="border-b border-border/80 bg-muted/20 p-6 pb-4">
+                <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden rounded-3xl border-border bg-card p-0 shadow-2xl sm:max-w-lg">
+                    <form onSubmit={handleCreateCampaign} className="flex min-h-0 flex-1 flex-col">
+                        <DialogHeader className="shrink-0 border-b border-border/80 bg-muted/20 p-5 sm:p-6 pb-4">
                             <div className="flex items-center gap-2">
                                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
                                     <Plus className="h-4 w-4" />
@@ -957,12 +1055,467 @@ export default function CampaignsPage({
                             </div>
 
                             <DialogDescription className="mt-1 text-xs text-muted-foreground">
-                                Launch a new marketing campaign linked to
-                                holidays, seasonal sales, or product releases.
+                                Select an existing Philippine holiday, marketing
+                                event, or custom business event to launch your
+                                campaign.
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div className="space-y-5 p-6">
+                        {/* Creation Source Tabs */}
+                        <div className="shrink-0 border-b border-border/70 bg-muted/10 p-3">
+                            <div className="grid grid-cols-3 gap-1 rounded-2xl border border-border/80 bg-muted/30 p-1 text-xs">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (!isEventLocked) {
+                                            setCreateSource('holiday');
+                                            setFormErrors({});
+                                        }
+                                    }}
+                                    disabled={
+                                        isEventLocked &&
+                                        createSource !== 'holiday'
+                                    }
+                                    className={`flex items-center justify-center gap-1.5 rounded-xl px-1 py-1.5 font-semibold transition-all ${
+                                        createSource === 'holiday'
+                                            ? 'bg-card text-foreground shadow-2xs'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                >
+                                    <CalendarDays className="h-3.5 w-3.5 text-rose-500" />
+                                    <span className="truncate">Philippine Holiday</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (!isEventLocked) {
+                                            setCreateSource('marketing');
+                                            setFormErrors({});
+                                        }
+                                    }}
+                                    disabled={
+                                        isEventLocked &&
+                                        createSource !== 'marketing'
+                                    }
+                                    className={`flex items-center justify-center gap-1.5 rounded-xl px-1 py-1.5 font-semibold transition-all ${
+                                        createSource === 'marketing'
+                                            ? 'bg-card text-foreground shadow-2xs'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                >
+                                    <Calendar className="h-3.5 w-3.5 text-blue-500" />
+                                    <span className="truncate">Marketing Event</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (!isEventLocked) {
+                                            setCreateSource('custom');
+                                            setFormErrors({});
+                                        }
+                                    }}
+                                    disabled={
+                                        isEventLocked &&
+                                        createSource !== 'custom'
+                                    }
+                                    className={`flex items-center justify-center gap-1.5 rounded-xl px-1 py-1.5 font-semibold transition-all ${
+                                        createSource === 'custom'
+                                            ? 'bg-card text-foreground shadow-2xs'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                >
+                                    <Sparkles className="h-3.5 w-3.5 text-purple-500" />
+                                    <span className="truncate">Custom Event</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="min-h-0 flex-1 overflow-y-auto space-y-4 p-5 sm:p-6">
+                            {/* Source-specific context picker or inputs */}
+                            {createSource === 'holiday' ? (
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                                        <CalendarDays className="h-3.5 w-3.5 text-rose-500" />
+                                        Official Philippine Holiday *
+                                    </Label>
+
+                                    {selectedCreateEvent ? (
+                                        <div className="flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/5 p-3.5">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-xs font-bold text-primary">
+                                                    <CalendarDays className="h-4 w-4" />
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-xs font-bold text-foreground">
+                                                            {
+                                                                selectedCreateEvent.name
+                                                            }
+                                                        </p>
+                                                        <Badge
+                                                            variant="outline"
+                                                            className={`text-[9px] uppercase tracking-wider ${
+                                                                eventTypeStyles[
+                                                                    selectedCreateEvent.category ||
+                                                                        selectedCreateEvent.type ||
+                                                                        'holiday'
+                                                                ]?.bg
+                                                            } ${
+                                                                eventTypeStyles[
+                                                                    selectedCreateEvent.category ||
+                                                                        selectedCreateEvent.type ||
+                                                                        'holiday'
+                                                                ]?.text
+                                                            } ${
+                                                                eventTypeStyles[
+                                                                    selectedCreateEvent.category ||
+                                                                        selectedCreateEvent.type ||
+                                                                        'holiday'
+                                                                ]?.border
+                                                            }`}
+                                                        >
+                                                            {eventTypeStyles[
+                                                                selectedCreateEvent.category ||
+                                                                    selectedCreateEvent.type ||
+                                                                    'holiday'
+                                                            ]?.label ||
+                                                                'Holiday'}
+                                                        </Badge>
+                                                    </div>
+                                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                                        {formatDate(
+                                                            selectedCreateEvent.date,
+                                                        )}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {!isEventLocked && (
+                                                <div className="flex items-center gap-1.5">
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            setEventModalTarget(
+                                                                'create',
+                                                            );
+                                                            setEventCategoryFilter(
+                                                                'regular',
+                                                            );
+                                                            setIsEventModalOpen(
+                                                                true,
+                                                            );
+                                                        }}
+                                                        className="h-7 px-2.5 text-xs shadow-none"
+                                                    >
+                                                        Change
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() =>
+                                                            setFormData(
+                                                                (current) => ({
+                                                                    ...current,
+                                                                    event_id:
+                                                                        '',
+                                                                }),
+                                                            )
+                                                        }
+                                                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                                    >
+                                                        <X className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setEventModalTarget('create');
+                                                setEventCategoryFilter(
+                                                    'regular',
+                                                );
+                                                setIsEventModalOpen(true);
+                                            }}
+                                            className="flex h-11 w-full items-center justify-between rounded-xl border border-dashed border-border bg-muted/20 px-4 text-xs font-medium text-muted-foreground transition-all hover:border-primary/50 hover:bg-primary/5 hover:text-foreground"
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                <CalendarDays className="h-4 w-4 text-rose-500" />
+                                                Choose official Philippine
+                                                holiday...
+                                            </span>
+                                            <span className="font-semibold text-primary">
+                                                Select Holiday →
+                                            </span>
+                                        </button>
+                                    )}
+
+                                    {formErrors.event_id && (
+                                        <p className="text-[11px] font-medium text-destructive">
+                                            {formErrors.event_id}
+                                        </p>
+                                    )}
+                                </div>
+                            ) : createSource === 'marketing' ? (
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                                        <Calendar className="h-3.5 w-3.5 text-blue-500" />
+                                        Commercial / Marketing Event *
+                                    </Label>
+
+                                    {selectedCreateEvent ? (
+                                        <div className="flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/5 p-3.5">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-xs font-bold text-primary">
+                                                    <Calendar className="h-4 w-4" />
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-xs font-bold text-foreground">
+                                                            {
+                                                                selectedCreateEvent.name
+                                                            }
+                                                        </p>
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="border-blue-500/30 bg-blue-500/10 text-[9px] uppercase tracking-wider text-blue-600 dark:text-blue-400"
+                                                        >
+                                                            Commercial Event
+                                                        </Badge>
+                                                    </div>
+                                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                                        {formatDate(
+                                                            selectedCreateEvent.date,
+                                                        )}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {!isEventLocked && (
+                                                <div className="flex items-center gap-1.5">
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            setEventModalTarget(
+                                                                'create',
+                                                            );
+                                                            setEventCategoryFilter(
+                                                                'commercial',
+                                                            );
+                                                            setIsEventModalOpen(
+                                                                true,
+                                                            );
+                                                        }}
+                                                        className="h-7 px-2.5 text-xs shadow-none"
+                                                    >
+                                                        Change
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() =>
+                                                            setFormData(
+                                                                (current) => ({
+                                                                    ...current,
+                                                                    event_id:
+                                                                        '',
+                                                                }),
+                                                            )
+                                                        }
+                                                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                                    >
+                                                        <X className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setEventModalTarget('create');
+                                                setEventCategoryFilter(
+                                                    'commercial',
+                                                );
+                                                setIsEventModalOpen(true);
+                                            }}
+                                            className="flex h-11 w-full items-center justify-between rounded-xl border border-dashed border-border bg-muted/20 px-4 text-xs font-medium text-muted-foreground transition-all hover:border-primary/50 hover:bg-primary/5 hover:text-foreground"
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                <Calendar className="h-4 w-4 text-blue-500" />
+                                                Choose retail sale, payday flash
+                                                sale, double-digit event...
+                                            </span>
+                                            <span className="font-semibold text-primary">
+                                                Select Event →
+                                            </span>
+                                        </button>
+                                    )}
+
+                                    {formErrors.event_id && (
+                                        <p className="text-[11px] font-medium text-destructive">
+                                            {formErrors.event_id}
+                                        </p>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                                        <Sparkles className="h-3.5 w-3.5 text-purple-500" />
+                                        Custom Business Event *
+                                    </Label>
+
+                                    {selectedCreateEvent ? (
+                                        <div className="flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/5 p-3.5">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/10 text-xs font-bold text-purple-600 dark:text-purple-400">
+                                                    <Sparkles className="h-4 w-4" />
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-xs font-bold text-foreground">
+                                                            {selectedCreateEvent.name}
+                                                        </p>
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="border-purple-500/30 bg-purple-500/10 text-[9px] uppercase tracking-wider text-purple-600 dark:text-purple-400"
+                                                        >
+                                                            Custom Event
+                                                        </Badge>
+                                                    </div>
+                                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                                        {formatDate(selectedCreateEvent.date)}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {!isEventLocked && (
+                                                <div className="flex items-center gap-1.5">
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            setEventModalTarget('create');
+                                                            setEventCategoryFilter('custom');
+                                                            setIsEventModalOpen(true);
+                                                        }}
+                                                        className="h-7 px-2.5 text-xs shadow-none"
+                                                    >
+                                                        Change
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() =>
+                                                            setFormData((current) => ({
+                                                                ...current,
+                                                                event_id: '',
+                                                            }))
+                                                        }
+                                                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                                    >
+                                                        <X className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : hasCustomEvents ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setEventModalTarget('create');
+                                                setEventCategoryFilter('custom');
+                                                setIsEventModalOpen(true);
+                                            }}
+                                            className="flex h-11 w-full items-center justify-between rounded-xl border border-dashed border-border bg-muted/20 px-4 text-xs font-medium text-muted-foreground transition-all hover:border-primary/50 hover:bg-primary/5 hover:text-foreground"
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                <Sparkles className="h-4 w-4 text-purple-500" />
+                                                Choose from existing custom business events...
+                                            </span>
+                                            <span className="font-semibold text-primary">
+                                                Select Event →
+                                            </span>
+                                        </button>
+                                    ) : (
+                                        <div className="space-y-3 rounded-2xl border border-purple-500/20 bg-purple-500/5 p-4 text-center">
+                                            <Sparkles className="mx-auto h-6 w-6 text-purple-500 opacity-80" />
+                                            <div>
+                                                <p className="text-xs font-bold text-foreground">
+                                                    No Custom Events Found
+                                                </p>
+                                                <p className="mt-1 text-[11px] text-muted-foreground">
+                                                    Custom events must first be created in Event Management before launching a campaign for them.
+                                                </p>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setIsCreateOpen(false);
+                                                    router.visit('/events');
+                                                }}
+                                                className="gap-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold"
+                                            >
+                                                <Plus className="h-3.5 w-3.5" />
+                                                Create in Event Management
+                                            </Button>
+                                        </div>
+                                    )}
+
+                                    {formErrors.event_id && (
+                                        <p className="text-[11px] font-medium text-destructive">
+                                            {formErrors.event_id}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Existing Campaign Warning Banner (Phase 6 Deduplication) */}
+                            {selectedCreateEvent?.has_campaign &&
+                                selectedCreateEvent?.campaign_id && (
+                                    <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div>
+                                                <p className="font-bold">
+                                                    Campaign already exists!
+                                                </p>
+                                                <p className="text-[11px] opacity-90">
+                                                    An existing campaign "
+                                                    {selectedCreateEvent.campaign_name ||
+                                                        selectedCreateEvent.name}
+                                                    " is already active for this
+                                                    event.
+                                                </p>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setIsCreateOpen(false);
+                                                    router.visit(
+                                                        `/campaigns/${selectedCreateEvent.campaign_id}`,
+                                                    );
+                                                }}
+                                                className="shrink-0 text-xs font-semibold shadow-xs"
+                                            >
+                                                Open Campaign
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+
                             {/* Campaign Name */}
                             <div className="space-y-1.5">
                                 <Label
@@ -989,122 +1542,6 @@ export default function CampaignsPage({
                                     <p className="text-[11px] font-medium text-destructive">
                                         {formErrors.name}
                                     </p>
-                                )}
-                            </div>
-
-                            {/* Linked Holiday or Event (AI Studio-style Picker Trigger) */}
-                            <div className="space-y-1.5">
-                                <Label className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                                    <Calendar className="h-3.5 w-3.5 text-primary" />
-                                    Marketing Event or Holiday
-                                    {!isEventLocked && ' (Optional)'}
-                                </Label>
-
-                                {selectedCreateEvent ? (
-                                    <div className="flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/5 p-3.5">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-xs font-bold text-primary">
-                                                <CalendarDays className="h-4 w-4" />
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <p className="text-xs font-bold text-foreground">
-                                                        {
-                                                            selectedCreateEvent.name
-                                                        }
-                                                    </p>
-                                                    <Badge
-                                                        variant="outline"
-                                                        className={`text-[9px] tracking-wider uppercase ${
-                                                            eventTypeStyles[
-                                                                selectedCreateEvent.category ||
-                                                                    selectedCreateEvent.type ||
-                                                                    'holiday'
-                                                            ]?.bg
-                                                        } ${
-                                                            eventTypeStyles[
-                                                                selectedCreateEvent.category ||
-                                                                    selectedCreateEvent.type ||
-                                                                    'holiday'
-                                                            ]?.text
-                                                        } ${
-                                                            eventTypeStyles[
-                                                                selectedCreateEvent.category ||
-                                                                    selectedCreateEvent.type ||
-                                                                    'holiday'
-                                                            ]?.border
-                                                        }`}
-                                                    >
-                                                        {eventTypeStyles[
-                                                            selectedCreateEvent.category ||
-                                                                selectedCreateEvent.type ||
-                                                                'holiday'
-                                                        ]?.label || 'Event'}
-                                                    </Badge>
-                                                </div>
-                                                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                                    {formatDate(
-                                                        selectedCreateEvent.date,
-                                                    )}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {!isEventLocked && (
-                                            <div className="flex items-center gap-1.5">
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        setEventModalTarget(
-                                                            'create',
-                                                        );
-                                                        setIsEventModalOpen(
-                                                            true,
-                                                        );
-                                                    }}
-                                                    className="h-7 px-2.5 text-xs shadow-none"
-                                                >
-                                                    Change
-                                                </Button>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() =>
-                                                        setFormData(
-                                                            (current) => ({
-                                                                ...current,
-                                                                event_id: '',
-                                                            }),
-                                                        )
-                                                    }
-                                                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                                                >
-                                                    <X className="h-3.5 w-3.5" />
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setEventModalTarget('create');
-                                            setIsEventModalOpen(true);
-                                        }}
-                                        className="flex h-11 w-full items-center justify-between rounded-xl border border-dashed border-border bg-muted/20 px-4 text-xs font-medium text-muted-foreground transition-all hover:border-primary/50 hover:bg-primary/5 hover:text-foreground"
-                                    >
-                                        <span className="flex items-center gap-2">
-                                            <Calendar className="h-4 w-4 text-primary" />
-                                            Choose an event or leave empty for
-                                            general campaign...
-                                        </span>
-                                        <span className="font-semibold text-primary">
-                                            Browse Events →
-                                        </span>
-                                    </button>
                                 )}
                             </div>
 
@@ -1168,7 +1605,7 @@ export default function CampaignsPage({
                             </div>
                         </div>
 
-                        <DialogFooter className="border-t border-border/80 bg-muted/10 p-6 pt-3">
+                        <DialogFooter className="shrink-0 border-t border-border/80 bg-muted/10 p-4 sm:p-6 pt-3">
                             <Button
                                 type="button"
                                 variant="outline"
@@ -1179,23 +1616,43 @@ export default function CampaignsPage({
                                 Cancel
                             </Button>
 
-                            <Button
-                                type="submit"
-                                disabled={isSubmitting || !formData.name.trim()}
-                                className="gap-2 rounded-xl text-xs shadow-sm"
-                            >
-                                {isSubmitting ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        Creating...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Plus className="h-4 w-4" />
-                                        Create Campaign
-                                    </>
-                                )}
-                            </Button>
+                            {selectedCreateEvent?.has_campaign &&
+                            selectedCreateEvent?.campaign_id ? (
+                                <Button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsCreateOpen(false);
+                                        router.visit(
+                                            `/campaigns/${selectedCreateEvent.campaign_id}`,
+                                        );
+                                    }}
+                                    className="gap-2 rounded-xl text-xs shadow-sm"
+                                >
+                                    Open Existing Campaign
+                                </Button>
+                            ) : (
+                                <Button
+                                    type="submit"
+                                    disabled={
+                                        isSubmitting ||
+                                        !formData.name.trim() ||
+                                        !formData.event_id
+                                    }
+                                    className="gap-2 rounded-xl text-xs shadow-sm"
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Creating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Plus className="h-4 w-4" />
+                                            Create Campaign
+                                        </>
+                                    )}
+                                </Button>
+                            )}
                         </DialogFooter>
                     </form>
                 </DialogContent>

@@ -595,3 +595,326 @@ it('normalizes historical taglines with dangling symbols or terminal periods dur
     expect($newDesign->tagline)->toBe('Fresh, Hot & Delicious')
         ->and($capturedPrompt)->toContain('• TAGLINE: "Fresh, Hot & Delicious"');
 });
+
+it('can save automatic design with exact prompt and metadata', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+    $product = Product::factory()->create(['business_id' => $business->id, 'name' => 'Signature Blend']);
+    $event = Event::factory()->create(['user_id' => $user->id, 'name' => 'Weekend Special']);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'product_id' => $product->id,
+        'event_id' => $event->id,
+        'name' => 'Autumn Warmth',
+    ]);
+
+    Storage::fake('public');
+    $imagePath = 'designs/openai_auto_test_123.png';
+    Storage::disk('public')->put($imagePath, 'fake-rendered-png');
+
+    $productionPrompt = 'COMMERCIAL ADVERTISEMENT BRIEF — AUTOMATIC MODE: High-end cafe staging for Signature Blend with rich espresso crema.';
+
+    $response = $this->actingAs($user)
+        ->postJson('/designs', [
+            'product_name' => 'Signature Blend',
+            'prompt' => $productionPrompt,
+            'image_prompt' => $productionPrompt,
+            'campaign_id' => $campaign->id,
+            'event_id' => $event->id,
+            'product_id' => $product->id,
+            'catalog_product_ids' => [$product->id],
+            'custom_products' => [
+                ['name' => 'Artisan Biscotti', 'price' => '120.00', 'description' => 'Crisp almond biscotti'],
+            ],
+            'generated_image_path' => $imagePath,
+            'creative_concept' => 'Autumn cozy morning aesthetic',
+            'visual_strategy' => 'Overhead artisanal table setting',
+            'design_treatment' => 'Editorial Minimalist',
+            'copy_emphasis' => 'Headline Focused',
+            'render_style' => 'Studio Product Still',
+            'tagline' => 'Awaken Your Senses',
+            'include_tagline' => true,
+            'include_prices' => true,
+            'include_business_name' => true,
+            'business_name' => $business->name,
+            'aspect_ratio' => '1:1',
+            'generation_mode' => 'automatic',
+        ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'success' => true,
+            'message' => 'Design saved to My Designs.',
+        ]);
+
+    $saved = Design::query()->where('user_id', $user->id)->first();
+    expect($saved)->not->toBeNull()
+        ->and($saved->prompt)->toBe($productionPrompt)
+        ->and($saved->generated_image_path)->toBe($imagePath)
+        ->and($saved->generation_metadata['generation_mode'])->toBe('automatic')
+        ->and($saved->generation_metadata['creative_concept'])->toBe('Autumn cozy morning aesthetic')
+        ->and($saved->generation_metadata['custom_products'])->toHaveCount(1);
+});
+
+it('can save manual design with exact prompt and metadata', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+    $product = Product::factory()->create(['business_id' => $business->id, 'name' => 'Cold Brew Nitro']);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'product_id' => $product->id,
+        'name' => 'Summer Nitro Blast',
+    ]);
+
+    Storage::fake('public');
+    $imagePath = 'designs/openai_manual_test_456.png';
+    Storage::disk('public')->put($imagePath, 'fake-rendered-png');
+
+    $productionPrompt = 'DIRECTOR-COMPOSED PRODUCTION BRIEF — MANUAL MODE: Nitro cascade glass with frost droplets on black slate.';
+
+    $response = $this->actingAs($user)
+        ->postJson('/designs', [
+            'product_name' => 'Cold Brew Nitro',
+            'prompt' => $productionPrompt,
+            'image_prompt' => $productionPrompt,
+            'scene_prompt' => 'Nitro cascade glass with frost droplets',
+            'campaign_id' => $campaign->id,
+            'product_id' => $product->id,
+            'catalog_product_ids' => [$product->id],
+            'generated_image_path' => $imagePath,
+            'render_style' => 'Macro Commercial',
+            'brand_tone' => ['Bold', 'Punchy'],
+            'content_style' => ['Modern Minimalist'],
+            'design_treatment' => 'High Contrast Bold',
+            'copy_emphasis' => 'Balanced',
+            'include_tagline' => true,
+            'tagline' => 'Velvet Smooth Energy',
+            'tagline_mode' => 'custom',
+            'include_prices' => false,
+            'include_business_name' => true,
+            'business_name' => $business->name,
+            'aspect_ratio' => '9:16',
+            'generation_mode' => 'manual',
+        ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'success' => true,
+            'message' => 'Design saved to My Designs.',
+        ]);
+
+    $saved = Design::query()->where('user_id', $user->id)->first();
+    expect($saved)->not->toBeNull()
+        ->and($saved->prompt)->toBe($productionPrompt)
+        ->and($saved->generated_image_path)->toBe($imagePath)
+        ->and($saved->generation_metadata['generation_mode'])->toBe('manual')
+        ->and($saved->generation_metadata['aspect_ratio'])->toBe('9:16');
+});
+
+it('can save design with prompt exceeding 3000 characters up to 32000 characters without truncation', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'name' => 'Mega Prompt Campaign',
+    ]);
+
+    Storage::fake('public');
+    $imagePath = 'designs/openai_long_prompt.png';
+    Storage::disk('public')->put($imagePath, 'fake-image');
+
+    // Create a 6,500-character realistic structured prompt
+    $segment = 'VISUAL DIRECTIVE LAYER: Ensure immaculate depth of field, balanced volumetric illumination, crisp micro-contrast on product branding, and photorealistic ambient textures. ';
+    $longPrompt = trim(str_repeat($segment, 40)); // ~6,400 chars without trailing space
+    expect(strlen($longPrompt))->toBeGreaterThan(3000)
+        ->and(strlen($longPrompt))->toBeLessThan(32000);
+
+    $response = $this->actingAs($user)
+        ->postJson('/designs', [
+            'product_name' => 'Ultra Long Prompt Product',
+            'prompt' => $longPrompt,
+            'image_prompt' => $longPrompt,
+            'campaign_id' => $campaign->id,
+            'generated_image_path' => $imagePath,
+            'aspect_ratio' => '1:1',
+        ]);
+
+    $response->assertOk()
+        ->assertJson(['success' => true]);
+
+    $saved = Design::query()->where('user_id', $user->id)->latest('id')->first();
+    expect($saved)->not->toBeNull()
+        ->and(strlen($saved->prompt))->toBe(strlen($longPrompt))
+        ->and($saved->prompt)->toBe($longPrompt);
+});
+
+it('resolves the actual second validation error for image_prompt over 3000 characters', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'name' => 'Dual Long Prompt Campaign',
+    ]);
+
+    Storage::fake('public');
+    $imagePath = 'designs/openai_dual_long_prompt.png';
+    Storage::disk('public')->put($imagePath, 'fake-image');
+
+    $longPrompt = str_repeat('COMMERCIAL DETAIL: Hyper-detailed coffee bean macro with warm backlighting. ', 50); // ~3,800 chars
+
+    $response = $this->actingAs($user)
+        ->postJson('/designs', [
+            'product_name' => 'Dual Prompt Product',
+            'prompt' => $longPrompt,
+            'image_prompt' => $longPrompt,
+            'campaign_id' => $campaign->id,
+            'generated_image_path' => $imagePath,
+        ]);
+
+    $response->assertOk()
+        ->assertJson(['success' => true])
+        ->assertJsonMissingValidationErrors(['prompt', 'image_prompt']);
+});
+
+it('enforces generated_image_path storage security against traversal and arbitrary paths', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'name' => 'Security Campaign',
+    ]);
+
+    // 1. Path traversal attempt
+    $this->actingAs($user)
+        ->postJson('/designs', [
+            'product_name' => 'Traversal Attempt',
+            'campaign_id' => $campaign->id,
+            'generated_image_path' => '../../etc/passwd',
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['generated_image_path']);
+
+    // 2. Absolute root path attempt
+    $this->actingAs($user)
+        ->postJson('/designs', [
+            'product_name' => 'Root Path Attempt',
+            'campaign_id' => $campaign->id,
+            'generated_image_path' => '/var/www/secret.png',
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['generated_image_path']);
+
+    // 3. Unauthorized directory attempt
+    $this->actingAs($user)
+        ->postJson('/designs', [
+            'product_name' => 'Unauthorized Dir Attempt',
+            'campaign_id' => $campaign->id,
+            'generated_image_path' => 'private_uploads/secret.png',
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['generated_image_path']);
+
+    // 4. Non-existent file in designs/ directory
+    Storage::fake('public');
+    $this->actingAs($user)
+        ->postJson('/designs', [
+            'product_name' => 'Missing File Attempt',
+            'campaign_id' => $campaign->id,
+            'generated_image_path' => 'designs/does_not_exist_at_all.png',
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['generated_image_path']);
+});
+
+it('enforces catalog_product_ids ownership validation', function () {
+    $userA = User::factory()->create(['onboarding_completed' => true]);
+    $businessA = Business::factory()->create(['user_id' => $userA->id]);
+    $productA = Product::factory()->create(['business_id' => $businessA->id, 'name' => 'Product A']);
+    $campaignA = Campaign::factory()->create([
+        'user_id' => $userA->id,
+        'business_id' => $businessA->id,
+        'name' => 'Campaign A',
+    ]);
+
+    $userB = User::factory()->create(['onboarding_completed' => true]);
+    $businessB = Business::factory()->create(['user_id' => $userB->id]);
+    $foreignProduct = Product::factory()->create(['business_id' => $businessB->id, 'name' => 'Foreign Product']);
+
+    Storage::fake('public');
+    $imagePath = 'designs/owned_test.png';
+    Storage::disk('public')->put($imagePath, 'fake-image');
+
+    // Attempt to save design referencing another business's product ID
+    $this->actingAs($userA)
+        ->postJson('/designs', [
+            'product_name' => 'Product A',
+            'campaign_id' => $campaignA->id,
+            'product_id' => $productA->id,
+            'catalog_product_ids' => [$productA->id, $foreignProduct->id],
+            'generated_image_path' => $imagePath,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['catalog_product_ids']);
+});
+
+it('handles duplicate save requests safely without creating redundant records', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'name' => 'Deduplication Campaign',
+    ]);
+
+    Storage::fake('public');
+    $imagePath = 'designs/duplicate_check_123.png';
+    Storage::disk('public')->put($imagePath, 'fake-image');
+
+    $payload = [
+        'product_name' => 'Dedup Product',
+        'prompt' => 'Commercial prompt for dedup',
+        'campaign_id' => $campaign->id,
+        'generated_image_path' => $imagePath,
+    ];
+
+    // First save request
+    $response1 = $this->actingAs($user)->postJson('/designs', $payload);
+    $response1->assertOk()->assertJson(['success' => true, 'message' => 'Design saved to My Designs.']);
+
+    expect(Design::query()->where('user_id', $user->id)->count())->toBe(1);
+
+    // Immediate second save request with the same generated_image_path
+    $response2 = $this->actingAs($user)->postJson('/designs', $payload);
+    $response2->assertOk()->assertJson([
+        'success' => true,
+        'message' => 'Design is already saved in My Designs.',
+    ]);
+
+    expect(Design::query()->where('user_id', $user->id)->count())->toBe(1);
+});
+
+it('generated creative modal download menu contains exactly PNG and JPEG and excludes SVG', function () {
+    $modalContent = file_get_contents(resource_path('js/pages/generator/components/GeneratedCreativeModal.tsx'));
+
+    // Verify exactly PNG and JPEG are present in the download menu
+    expect($modalContent)->toContain("onDownload('png')")
+        ->and($modalContent)->toContain('Download PNG')
+        ->and($modalContent)->toContain("onDownload('jpeg')")
+        ->and($modalContent)->toContain('Download JPEG');
+
+    // Verify SVG is completely excluded from the modal download menu
+    expect($modalContent)->not->toContain("onDownload('svg')")
+        ->and($modalContent)->not->toContain('Download SVG');
+
+    // Also verify StudioModals FullscreenViewerModal and CreativeCanvas do not offer SVG download
+    $studioModals = file_get_contents(resource_path('js/pages/generator/components/StudioModals.tsx'));
+    expect($studioModals)->not->toContain("onDownload('svg')");
+
+    $creativeCanvas = file_get_contents(resource_path('js/pages/generator/components/CreativeCanvas.tsx'));
+    expect($creativeCanvas)->not->toContain("onDownload('svg')");
+});

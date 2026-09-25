@@ -39,7 +39,7 @@ return [
         'api_key' => env('OPENAI_API_KEY'),
         'admin_key' => env('OPENAI_ADMIN_KEY', env('OPENAI_API_KEY')),
         'organization' => env('OPENAI_ORGANIZATION'),
-        'image_model' => env('OPENAI_IMAGE_MODEL', 'dall-e-3'),
+        'image_model' => env('OPENAI_IMAGE_MODEL', 'gpt-image-2'),
         'text_model' => env('OPENAI_TEXT_MODEL', 'gpt-5.6-luna'),
         'chat_model' => env('OPENAI_CHAT_MODEL', 'gpt-4o-mini'),
         'size' => env('OPENAI_IMAGE_SIZE', '1024x1024'),

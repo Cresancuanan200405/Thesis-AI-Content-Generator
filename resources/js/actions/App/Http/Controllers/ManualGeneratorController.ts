@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\ManualGeneratorController::index
- * @see app/Http/Controllers/ManualGeneratorController.php:33
+ * @see app/Http/Controllers/ManualGeneratorController.php:36
  * @route '/generator/manual'
  */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\ManualGeneratorController::index
- * @see app/Http/Controllers/ManualGeneratorController.php:33
+ * @see app/Http/Controllers/ManualGeneratorController.php:36
  * @route '/generator/manual'
  */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\ManualGeneratorController::index
- * @see app/Http/Controllers/ManualGeneratorController.php:33
+ * @see app/Http/Controllers/ManualGeneratorController.php:36
  * @route '/generator/manual'
  */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -34,7 +34,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\ManualGeneratorController::index
- * @see app/Http/Controllers/ManualGeneratorController.php:33
+ * @see app/Http/Controllers/ManualGeneratorController.php:36
  * @route '/generator/manual'
  */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,7 +44,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\ManualGeneratorController::index
- * @see app/Http/Controllers/ManualGeneratorController.php:33
+ * @see app/Http/Controllers/ManualGeneratorController.php:36
  * @route '/generator/manual'
  */
     const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -54,7 +54,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\ManualGeneratorController::index
- * @see app/Http/Controllers/ManualGeneratorController.php:33
+ * @see app/Http/Controllers/ManualGeneratorController.php:36
  * @route '/generator/manual'
  */
         indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -63,7 +63,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\ManualGeneratorController::index
- * @see app/Http/Controllers/ManualGeneratorController.php:33
+ * @see app/Http/Controllers/ManualGeneratorController.php:36
  * @route '/generator/manual'
  */
         indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -79,7 +79,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     index.form = indexForm
 /**
 * @see \App\Http\Controllers\ManualGeneratorController::generate
- * @see app/Http/Controllers/ManualGeneratorController.php:47
+ * @see app/Http/Controllers/ManualGeneratorController.php:50
  * @route '/generator/manual'
  */
 const generate2e97c079c13eb4ef5da2461c196bb523 = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -94,7 +94,7 @@ generate2e97c079c13eb4ef5da2461c196bb523.definition = {
 
 /**
 * @see \App\Http\Controllers\ManualGeneratorController::generate
- * @see app/Http/Controllers/ManualGeneratorController.php:47
+ * @see app/Http/Controllers/ManualGeneratorController.php:50
  * @route '/generator/manual'
  */
 generate2e97c079c13eb4ef5da2461c196bb523.url = (options?: RouteQueryOptions) => {
@@ -103,7 +103,7 @@ generate2e97c079c13eb4ef5da2461c196bb523.url = (options?: RouteQueryOptions) => 
 
 /**
 * @see \App\Http\Controllers\ManualGeneratorController::generate
- * @see app/Http/Controllers/ManualGeneratorController.php:47
+ * @see app/Http/Controllers/ManualGeneratorController.php:50
  * @route '/generator/manual'
  */
 generate2e97c079c13eb4ef5da2461c196bb523.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -113,7 +113,7 @@ generate2e97c079c13eb4ef5da2461c196bb523.post = (options?: RouteQueryOptions): R
 
     /**
 * @see \App\Http\Controllers\ManualGeneratorController::generate
- * @see app/Http/Controllers/ManualGeneratorController.php:47
+ * @see app/Http/Controllers/ManualGeneratorController.php:50
  * @route '/generator/manual'
  */
     const generate2e97c079c13eb4ef5da2461c196bb523Form = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -123,7 +123,7 @@ generate2e97c079c13eb4ef5da2461c196bb523.post = (options?: RouteQueryOptions): R
 
             /**
 * @see \App\Http\Controllers\ManualGeneratorController::generate
- * @see app/Http/Controllers/ManualGeneratorController.php:47
+ * @see app/Http/Controllers/ManualGeneratorController.php:50
  * @route '/generator/manual'
  */
         generate2e97c079c13eb4ef5da2461c196bb523Form.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -134,7 +134,7 @@ generate2e97c079c13eb4ef5da2461c196bb523.post = (options?: RouteQueryOptions): R
     generate2e97c079c13eb4ef5da2461c196bb523.form = generate2e97c079c13eb4ef5da2461c196bb523Form
     /**
 * @see \App\Http\Controllers\ManualGeneratorController::generate
- * @see app/Http/Controllers/ManualGeneratorController.php:47
+ * @see app/Http/Controllers/ManualGeneratorController.php:50
  * @route '/generator/preview'
  */
 const generate679b11045a9e0949a399bcb3b85572cc = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -149,7 +149,7 @@ generate679b11045a9e0949a399bcb3b85572cc.definition = {
 
 /**
 * @see \App\Http\Controllers\ManualGeneratorController::generate
- * @see app/Http/Controllers/ManualGeneratorController.php:47
+ * @see app/Http/Controllers/ManualGeneratorController.php:50
  * @route '/generator/preview'
  */
 generate679b11045a9e0949a399bcb3b85572cc.url = (options?: RouteQueryOptions) => {
@@ -158,7 +158,7 @@ generate679b11045a9e0949a399bcb3b85572cc.url = (options?: RouteQueryOptions) => 
 
 /**
 * @see \App\Http\Controllers\ManualGeneratorController::generate
- * @see app/Http/Controllers/ManualGeneratorController.php:47
+ * @see app/Http/Controllers/ManualGeneratorController.php:50
  * @route '/generator/preview'
  */
 generate679b11045a9e0949a399bcb3b85572cc.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -168,7 +168,7 @@ generate679b11045a9e0949a399bcb3b85572cc.post = (options?: RouteQueryOptions): R
 
     /**
 * @see \App\Http\Controllers\ManualGeneratorController::generate
- * @see app/Http/Controllers/ManualGeneratorController.php:47
+ * @see app/Http/Controllers/ManualGeneratorController.php:50
  * @route '/generator/preview'
  */
     const generate679b11045a9e0949a399bcb3b85572ccForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -178,7 +178,7 @@ generate679b11045a9e0949a399bcb3b85572cc.post = (options?: RouteQueryOptions): R
 
             /**
 * @see \App\Http\Controllers\ManualGeneratorController::generate
- * @see app/Http/Controllers/ManualGeneratorController.php:47
+ * @see app/Http/Controllers/ManualGeneratorController.php:50
  * @route '/generator/preview'
  */
         generate679b11045a9e0949a399bcb3b85572ccForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -200,7 +200,7 @@ export const generate = {
 
 /**
 * @see \App\Http\Controllers\ManualGeneratorController::suggestTagline
- * @see app/Http/Controllers/ManualGeneratorController.php:233
+ * @see app/Http/Controllers/ManualGeneratorController.php:440
  * @route '/generator/manual/suggest-tagline'
  */
 export const suggestTagline = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -215,7 +215,7 @@ suggestTagline.definition = {
 
 /**
 * @see \App\Http\Controllers\ManualGeneratorController::suggestTagline
- * @see app/Http/Controllers/ManualGeneratorController.php:233
+ * @see app/Http/Controllers/ManualGeneratorController.php:440
  * @route '/generator/manual/suggest-tagline'
  */
 suggestTagline.url = (options?: RouteQueryOptions) => {
@@ -224,7 +224,7 @@ suggestTagline.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\ManualGeneratorController::suggestTagline
- * @see app/Http/Controllers/ManualGeneratorController.php:233
+ * @see app/Http/Controllers/ManualGeneratorController.php:440
  * @route '/generator/manual/suggest-tagline'
  */
 suggestTagline.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -234,7 +234,7 @@ suggestTagline.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => 
 
     /**
 * @see \App\Http\Controllers\ManualGeneratorController::suggestTagline
- * @see app/Http/Controllers/ManualGeneratorController.php:233
+ * @see app/Http/Controllers/ManualGeneratorController.php:440
  * @route '/generator/manual/suggest-tagline'
  */
     const suggestTaglineForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -244,7 +244,7 @@ suggestTagline.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => 
 
             /**
 * @see \App\Http\Controllers\ManualGeneratorController::suggestTagline
- * @see app/Http/Controllers/ManualGeneratorController.php:233
+ * @see app/Http/Controllers/ManualGeneratorController.php:440
  * @route '/generator/manual/suggest-tagline'
  */
         suggestTaglineForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

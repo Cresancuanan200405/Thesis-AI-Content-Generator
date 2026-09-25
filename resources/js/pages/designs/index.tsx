@@ -192,7 +192,7 @@ export default function DesignsPage({
         }
 
         params.set('render_style', renderStyle);
-        params.set('image_model', imageModel);
+        params.set('image_model', 'gpt-image-2');
         params.set('image_quality', quality);
         params.set('include_business_name', includeBusiness);
 
@@ -2061,7 +2061,7 @@ export default function DesignsPage({
                                 <Sparkles className="mr-1 inline h-2.5 w-2.5" />
                                 {previewDesign.generation_metadata?.model ||
                                     previewDesign.model ||
-                                    'gpt-image-1'}
+                                    'gpt-image-2'}
                             </Badge>
 
                             {previewDesign.campaign_name && (
@@ -2550,7 +2550,7 @@ export default function DesignsPage({
                                             {previewDesign.generation_metadata
                                                 ?.model ||
                                                 previewDesign.model ||
-                                                'gpt-image-1'}
+                                                'gpt-image-2'}
                                         </p>
                                         <span
                                             className={`py-0.2 rounded border px-1.5 text-[9px] font-bold uppercase ${

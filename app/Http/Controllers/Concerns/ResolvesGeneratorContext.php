@@ -7,6 +7,7 @@ use App\Models\Campaign;
 use App\Models\Event;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\MarketingDesignSystem;
 use App\Services\PhilippineHolidayService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -136,6 +137,8 @@ trait ResolvesGeneratorContext
                 'long_weekend_details' => $event->long_weekend_details,
                 'proclamation_no' => $event->proclamation_no,
             ])->values()->all(),
+            'design_system' => app(MarketingDesignSystem::class)->getExportableTaxonomies(),
+            'recent_fingerprints' => app(MarketingDesignSystem::class)->getRecentFingerprints($user, $business, 6),
         ];
     }
 

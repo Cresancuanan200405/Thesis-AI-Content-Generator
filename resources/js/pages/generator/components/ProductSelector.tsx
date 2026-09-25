@@ -5,10 +5,8 @@ import {
     Package,
     Plus,
     Search,
-    ShoppingBag,
     X,
 } from 'lucide-react';
-import { HelpTooltip } from '@/components/help-tooltip';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,50 +59,15 @@ export function ProductSelector({
     });
 
     return (
-        <div className="space-y-6">
-            <div className="space-y-4 rounded-3xl border border-border/80 bg-card/80 p-4.5 shadow-sm backdrop-blur-md transition-all sm:p-6">
-                {/* Section Header */}
-                <div className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 text-primary shadow-2xs">
-                            <ShoppingBag className="h-5 w-5" />
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h3 className="text-base font-bold tracking-tight text-foreground">
-                                    Products & Services
-                                </h3>
-                                <HelpTooltip text="Choose what you want to feature in this creative. You can select items from your Product Catalog or add custom products/services." />
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                Select catalog items or define custom offerings to feature in your visual creative.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        {totalSelectedCount > 0 ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-600 shadow-2xs dark:text-emerald-400">
-                                <Check className="h-3.5 w-3.5" />
-                                {totalSelectedCount}{' '}
-                                {totalSelectedCount === 1 ? 'item' : 'items'}{' '}
-                                selected
-                            </span>
-                        ) : (
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-600 shadow-2xs dark:text-amber-400">
-                                <span className="h-2 w-2 animate-pulse rounded-full bg-amber-500" />
-                                Required
-                            </span>
-                        )}
-                    </div>
-                </div>
-
+        <div className="space-y-3.5">
+            {/* Top Toolbar: Tab Switcher & Selection Status */}
+            <div className="flex flex-wrap items-center justify-between gap-2.5">
                 {/* Mode Segmented Tab Switcher (2 Tabs: Catalog & Custom) */}
-                <div className="grid grid-cols-2 gap-1.5 rounded-2xl border border-border/80 bg-muted/30 p-1 shadow-2xs">
+                <div className="inline-flex rounded-xl border border-border/80 bg-muted/30 p-1 shadow-2xs">
                     <button
                         type="button"
                         onClick={() => onSelectTab('catalog')}
-                        className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-all ${
+                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
                             productTab === 'catalog'
                                 ? 'border border-border/60 bg-background text-foreground shadow-xs'
                                 : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'
@@ -114,7 +77,7 @@ export function ProductSelector({
                         <span>Product Catalog</span>
                         <Badge
                             variant="secondary"
-                            className={`px-1.5 py-0 font-mono text-[10px] ${
+                            className={`ml-1 px-1.5 py-0 font-mono text-[10px] ${
                                 selectedCatalogProducts.length > 0
                                     ? 'bg-primary/15 text-primary font-bold'
                                     : ''
@@ -127,29 +90,49 @@ export function ProductSelector({
                     <button
                         type="button"
                         onClick={() => onSelectTab('custom')}
-                        className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-all ${
+                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
                             productTab === 'custom'
                                 ? 'border border-border/60 bg-background text-foreground shadow-xs'
                                 : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'
                         }`}
                     >
                         <Edit3 className="h-3.5 w-3.5 text-amber-500" />
-                        <span>Custom Item</span>
-                        {customProducts.length > 0 && (
-                            <Badge
-                                variant="secondary"
-                                className="bg-amber-500/15 px-1.5 py-0 font-mono text-[10px] font-bold text-amber-600 dark:text-amber-400"
-                            >
-                                {customProducts.length}
-                            </Badge>
-                        )}
+                        <span>Custom Items</span>
+                        <Badge
+                            variant="secondary"
+                            className={`ml-1 px-1.5 py-0 font-mono text-[10px] ${
+                                customProducts.length > 0
+                                    ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold'
+                                    : ''
+                            }`}
+                        >
+                            {customProducts.length}
+                        </Badge>
                     </button>
                 </div>
 
-                {/* TAB 1: PRODUCT CATALOG */}
-                {productTab === 'catalog' && (
-                    <div className="space-y-3.5 animate-in duration-200 fade-in">
-                        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+                {/* Selection Status Badge */}
+                <div className="flex items-center gap-2">
+                    {totalSelectedCount > 0 ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-600 shadow-2xs dark:text-emerald-400">
+                            <Check className="h-3.5 w-3.5" />
+                            {totalSelectedCount}{' '}
+                            {totalSelectedCount === 1 ? 'item' : 'items'}{' '}
+                            selected
+                        </span>
+                    ) : (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-600 shadow-2xs dark:text-amber-400">
+                            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />
+                            Select product to continue
+                        </span>
+                    )}
+                </div>
+            </div>
+
+            {/* TAB 1: PRODUCT CATALOG */}
+            {productTab === 'catalog' && (
+                <div className="space-y-3 animate-in duration-200 fade-in">
+                    <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
                             <div className="relative flex-1">
                                 <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                                 <Input
@@ -219,7 +202,7 @@ export function ProductSelector({
                                 No catalog items match "{inlineProductSearch}".
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4">
+                            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
                                 {displayedCatalog.map((prod: ProductItem) => {
                                     const isSelected = selectedCatalogProducts.some(
                                         (p) => String(p.id) === String(prod.id),
@@ -264,7 +247,7 @@ export function ProductSelector({
                                             {/* Info: Name & Price ONLY */}
                                             <div className="flex flex-1 flex-col justify-between p-2.5">
                                                 <p
-                                                    className="truncate text-xs font-bold text-foreground transition-colors group-hover:text-primary"
+                                                    className="break-words text-xs font-bold leading-snug text-foreground transition-colors group-hover:text-primary"
                                                     title={prod.name}
                                                 >
                                                     {prod.name}
@@ -407,6 +390,5 @@ export function ProductSelector({
                     </div>
                 )}
             </div>
-        </div>
-    );
-}
+        );
+    }

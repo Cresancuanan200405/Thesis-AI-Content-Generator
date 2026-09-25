@@ -15,6 +15,7 @@ use App\Services\MarketingPromptBuilder;
 use App\Services\ModularPromptOrchestrator;
 use App\Services\NotificationService;
 use App\Services\OpenAIImageService;
+use App\Services\OpenAIModelRegistry;
 use App\Services\TaglineNormalizationService;
 use App\Services\VisualPromptGeneratorService;
 use Illuminate\Http\JsonResponse;
@@ -32,6 +33,11 @@ class GeneratorController extends Controller
         $campaignId = $campaignParam instanceof Campaign
             ? $campaignParam->id
             : ($campaignParam ?: ($request->input('campaign_id') ?: $request->input('campaign')));
+
+        if (! $campaignId) {
+            return redirect()->route('campaigns.index')
+                ->with('info', 'Please select or create a Campaign before generating AI marketing visuals.');
+        }
 
         $params = $request->query();
         if ($campaignId && ! isset($params['campaign_id'])) {
@@ -135,7 +141,7 @@ class GeneratorController extends Controller
                 'tagline' => $payload['tagline'] ?? null,
                 'tagline_mode' => $payload['tagline_mode'] ?? 'ai',
                 'aspect_ratio' => $payload['aspect_ratio'] ?? '1:1',
-                'image_model' => $payload['image_model'] ?? 'gpt-image-2',
+                'image_model' => OpenAIModelRegistry::DEFAULT_IMAGE_MODEL,
 
                 // Onboarding / Business Context
                 'business_name' => $businessName,
@@ -198,7 +204,7 @@ class GeneratorController extends Controller
                 $openAIService->getLastGenerationMetadata() ?: [],
                 [
                     'source' => 'openai',
-                    'model' => $payload['image_model'] ?? 'gpt-image-2',
+                    'model' => OpenAIModelRegistry::DEFAULT_IMAGE_MODEL,
                     'quality' => $payload['image_quality'] ?? 'medium',
                     'render_style' => $payload['render_style'] ?? 'Studio Product Still',
                     'aspect_ratio' => $payload['aspect_ratio'] ?? '1:1',
@@ -319,7 +325,7 @@ class GeneratorController extends Controller
                 'tagline' => $normalizedTagline,
                 'tagline_mode' => $request->input('tagline_mode', 'ai'),
                 'aspect_ratio' => $request->input('aspect_ratio', '1:1'),
-                'image_model' => $request->input('image_model', 'gpt-image-2'),
+                'image_model' => OpenAIModelRegistry::DEFAULT_IMAGE_MODEL,
                 'business_name' => $businessName,
                 'business_industry' => $business->industry,
                 'business_description' => $business->description,
@@ -345,7 +351,7 @@ class GeneratorController extends Controller
                 'price' => $request->input('price'),
                 'render_style' => $request->input('render_style', 'Studio Product Still'),
                 'aspect_ratio' => $request->input('aspect_ratio', '1:1'),
-                'image_model' => $request->input('image_model', 'gpt-image-2'),
+                'image_model' => OpenAIModelRegistry::DEFAULT_IMAGE_MODEL,
                 'image_quality' => $request->input('image_quality', 'medium'),
                 'reference_blueprint' => $blueprint,
                 'generation_meta' => $genMeta,
@@ -552,7 +558,7 @@ class GeneratorController extends Controller
         }
 
         $aspectRatio = $validated['aspect_ratio'] ?? '1:1';
-        $imageModel = $validated['image_model'] ?? 'gpt-image-2';
+        $imageModel = OpenAIModelRegistry::DEFAULT_IMAGE_MODEL;
         $imageQuality = $validated['image_quality'] ?? 'medium';
         $includeBusinessName = filter_var($validated['include_business_name'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $businessName = $includeBusinessName ? $business->name : null;

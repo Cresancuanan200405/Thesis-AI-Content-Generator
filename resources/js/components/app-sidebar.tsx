@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import {
+    Calendar,
     CalendarDays,
     Images,
     LayoutDashboard,
@@ -37,6 +38,11 @@ const mainNavItems: NavItem[] = [
         title: 'Marketing Calendar',
         href: '/calendar',
         icon: CalendarDays,
+    },
+    {
+        title: 'Events',
+        href: '/events',
+        icon: Calendar,
     },
     {
         title: 'My Designs',

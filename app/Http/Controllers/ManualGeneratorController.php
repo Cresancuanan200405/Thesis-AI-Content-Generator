@@ -9,9 +9,11 @@ use App\Models\Campaign;
 use App\Models\Event;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\MarketingDesignSystem;
 use App\Services\MarketingPromptBuilder;
 use App\Services\NotificationService;
 use App\Services\OpenAIImageService;
+use App\Services\OpenAIModelRegistry;
 use App\Services\PhilippineHolidayService;
 use App\Services\TaglineNormalizationService;
 use App\Services\VisualPromptGeneratorService;
@@ -20,6 +22,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -44,8 +47,13 @@ class ManualGeneratorController extends Controller
     /**
      * Generate visual creative preview via Manual Creative Controls.
      */
-    public function generate(Request $request, OpenAIImageService $openAIService, MarketingPromptBuilder $promptBuilder): JsonResponse
-    {
+    public function generate(
+        Request $request,
+        OpenAIImageService $openAIService,
+        MarketingPromptBuilder $promptBuilder,
+        VisualPromptGeneratorService $promptService,
+        MarketingDesignSystem $designSystem
+    ): JsonResponse {
         @set_time_limit(120);
         @ini_set('max_execution_time', '120');
 
@@ -77,6 +85,16 @@ class ManualGeneratorController extends Controller
             'campaign_id' => ['required', 'exists:campaigns,id'],
             'product_name' => ['required', 'string', 'max:255'],
             'product_id' => ['nullable', 'exists:products,id'],
+            'catalog_product_ids' => ['nullable', 'array'],
+            'catalog_product_ids.*' => ['integer', 'exists:products,id'],
+            'custom_products' => ['nullable', 'array'],
+            'custom_products.*.name' => ['required_with:custom_products', 'string', 'max:150'],
+            'custom_products.*.price' => ['nullable'],
+            'custom_products.*.description' => ['nullable', 'string', 'max:500'],
+            'include_prices' => ['nullable', 'boolean'],
+            'include_tagline' => ['nullable', 'boolean'],
+            'design_treatment' => ['nullable', 'string', 'max:50'],
+            'copy_emphasis' => ['nullable', 'string', 'max:50'],
             'event_id' => ['nullable', 'exists:events,id'],
             'image_prompt' => ['nullable', 'string', 'max:4000'],
             'scene_prompt' => ['nullable', 'string', 'max:4000'],
@@ -93,6 +111,8 @@ class ManualGeneratorController extends Controller
             'business_name' => ['nullable', 'string', 'max:150'],
             'image_model' => ['nullable', 'string', 'max:50'],
             'image_quality' => ['nullable', 'string', 'in:low,medium,high'],
+            'is_variation' => ['nullable', 'boolean'],
+            'source_design_id' => ['nullable', 'integer'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'reference_image' => ['nullable', 'image', 'max:10240'],
         ]);
@@ -111,10 +131,37 @@ class ManualGeneratorController extends Controller
             $referenceImagePath = $request->file('reference_image')->store('generation-requests');
         }
 
+        // Resolve catalog product IDs and deduplicate by stable ID
+        $catalogProductIds = collect($validated['catalog_product_ids'] ?? [])
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($catalogProductIds) && ! empty($validated['product_id'])) {
+            $catalogProductIds = [(int) $validated['product_id']];
+        } elseif (empty($catalogProductIds) && $campaign->product_id) {
+            $catalogProductIds = [(int) $campaign->product_id];
+        }
+
+        $catalogProducts = empty($catalogProductIds)
+            ? collect()
+            : Product::query()
+                ->where('business_id', $business->id)
+                ->whereIn('id', $catalogProductIds)
+                ->get()
+                ->sortBy(function (Product $p) use ($catalogProductIds) {
+                    $pos = array_search($p->id, $catalogProductIds, true);
+
+                    return $pos === false ? 999 : $pos;
+                })
+                ->values();
+
         /** @var Product|null $product */
-        $product = ! empty($validated['product_id'])
-            ? Product::query()->where('business_id', $business->id)->where('id', $validated['product_id'])->first()
-            : $campaign->product;
+        $product = $catalogProducts->first()
+            ?: (! empty($validated['product_id'])
+                ? Product::query()->where('business_id', $business->id)->where('id', $validated['product_id'])->first()
+                : $campaign->product);
 
         /** @var Event|null $event */
         $event = ! empty($validated['event_id'])
@@ -125,6 +172,16 @@ class ManualGeneratorController extends Controller
             $referenceImagePath = $product->image_path;
         }
 
+        $referenceImagePaths = $catalogProducts
+            ->pluck('image_path')
+            ->filter()
+            ->values()
+            ->all();
+
+        if ($referenceImagePath && ! in_array($referenceImagePath, $referenceImagePaths, true)) {
+            array_unshift($referenceImagePaths, $referenceImagePath);
+        }
+
         $includeBusinessName = filter_var($validated['include_business_name'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $businessName = null;
         if ($includeBusinessName) {
@@ -133,13 +190,57 @@ class ManualGeneratorController extends Controller
                 : $business->name;
         }
 
+        $includePrices = filter_var($validated['include_prices'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
+        $includeTagline = array_key_exists('include_tagline', $validated)
+            ? filter_var($validated['include_tagline'], FILTER_VALIDATE_BOOLEAN)
+            : (($validated['tagline_mode'] ?? null) !== 'none');
+
+        $userSuppliedTagline = ! empty($validated['tagline']) ? trim((string) $validated['tagline']) : null;
+        $taglineMode = $validated['tagline_mode'] ?? ($includeTagline ? 'ai' : 'none');
+        $normalizedTagline = null;
+
+        if (! $includeTagline) {
+            $normalizedTagline = null;
+            $taglineMode = 'none';
+        } elseif ($userSuppliedTagline !== null && $userSuppliedTagline !== '') {
+            $normalizedTagline = TaglineNormalizationService::normalize($userSuppliedTagline);
+            $taglineMode = 'manual';
+        } else {
+            // Rule C: Include Tagline ON + empty tagline -> Manual generation obtains an AI-generated tagline
+            try {
+                $rawAiTagline = $promptService->generateTagline($user, $campaign, $business, [
+                    'catalog_products' => $catalogProducts,
+                    'custom_products' => $validated['custom_products'] ?? [],
+                    'product_name' => (string) $validated['product_name'],
+                    'render_style' => $validated['render_style'] ?? null,
+                    'brand_tone' => $validated['brand_tone'] ?? [],
+                    'visual_theme' => $validated['visual_theme'] ?? $validated['content_style'] ?? [],
+                ]);
+                $normalizedTagline = TaglineNormalizationService::normalize($rawAiTagline);
+                $taglineMode = 'ai';
+            } catch (\Throwable $e) {
+                Log::warning('Manual AI tagline fallback failed: '.$e->getMessage());
+                $normalizedTagline = null;
+            }
+        }
+
+        $designTreatment = $designSystem->validateDesignTreatment($validated['design_treatment'] ?? null);
+        $copyEmphasis = $designSystem->validateCopyEmphasis($validated['copy_emphasis'] ?? null);
+
         $productImageUrl = $product?->image_path ? Storage::url($product->image_path) : null;
-        $normalizedTagline = TaglineNormalizationService::normalize($validated['tagline'] ?? null);
 
         $previewPayload = $request->all();
         $previewPayload['tagline'] = $normalizedTagline;
+        $previewPayload['tagline_mode'] = $taglineMode;
+        $previewPayload['include_tagline'] = $includeTagline;
         $previewPayload['include_business_name'] = $includeBusinessName;
         $previewPayload['business_name'] = $businessName;
+        $previewPayload['include_prices'] = $includePrices;
+        $previewPayload['catalog_products'] = $catalogProducts;
+        $previewPayload['custom_products'] = $validated['custom_products'] ?? [];
+        $previewPayload['design_treatment'] = $designTreatment;
+        $previewPayload['copy_emphasis'] = $copyEmphasis;
 
         $prompt = (string) ($validated['image_prompt'] ?? $validated['scene_prompt'] ?? $validated['prompt'] ?? $promptBuilder->build($previewPayload, $business));
 
@@ -154,8 +255,77 @@ class ManualGeneratorController extends Controller
                 $visualTheme = explode(',', $visualTheme);
             }
 
+            $creativeFingerprint = $designSystem->buildFingerprint([
+                'creative_concept' => $validated['notes'] ?? $validated['scene_prompt'] ?? $validated['image_prompt'] ?? null,
+                'design_treatment' => $designTreatment,
+                'copy_emphasis' => $copyEmphasis,
+                'render_style' => $validated['render_style'] ?? 'Studio Product Still',
+                'visual_theme' => $visualTheme,
+                'brand_tone' => $brandTone,
+                'aspect_ratio' => $validated['aspect_ratio'] ?? '1:1',
+            ]);
+
+            $isVariation = filter_var($validated['is_variation'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+            // Build Complete Multi-Product Compositor Contract
+            $primaryProductContract = null;
+            if ($product) {
+                $primaryProductContract = [
+                    'name' => $product->name,
+                    'price' => $includePrices ? ($validated['price'] ?? $product->price) : null,
+                ];
+            } elseif (! empty($validated['product_name'])) {
+                $primaryProductContract = [
+                    'name' => (string) $validated['product_name'],
+                    'price' => $includePrices ? ($validated['price'] ?? null) : null,
+                ];
+            } else {
+                $primaryProductContract = [
+                    'name' => 'Featured Product',
+                    'price' => null,
+                ];
+            }
+
+            $coFeaturedProductsContract = [];
+            if ($catalogProducts->count() > 1) {
+                foreach ($catalogProducts->slice(1) as $cp) {
+                    $coFeaturedProductsContract[] = [
+                        'name' => $cp->name,
+                        'price' => $includePrices ? $cp->price : null,
+                    ];
+                }
+            }
+            foreach ($validated['custom_products'] ?? [] as $custom) {
+                $cName = is_array($custom) ? ($custom['name'] ?? null) : ($custom->name ?? null);
+                $cPrice = is_array($custom) ? ($custom['price'] ?? null) : ($custom->price ?? null);
+                if (! empty($cName)) {
+                    $coFeaturedProductsContract[] = [
+                        'name' => $cName,
+                        'price' => $includePrices ? $cPrice : null,
+                    ];
+                }
+            }
+
+            $pricesContract = [];
+            if ($includePrices) {
+                if ($primaryProductContract && ! empty($primaryProductContract['price'])) {
+                    $pricesContract[$primaryProductContract['name']] = $primaryProductContract['price'];
+                }
+                foreach ($coFeaturedProductsContract as $cfp) {
+                    if (! empty($cfp['price'])) {
+                        $pricesContract[$cfp['name']] = $cfp['price'];
+                    }
+                }
+            }
+
             $generatedImagePath = $openAIService->generate($prompt, [
                 'generation_mode' => 'manual',
+                'is_variation' => $isVariation,
+                'source_design_id' => $validated['source_design_id'] ?? null,
+                'business' => $business,
+                'primary_product' => $primaryProductContract,
+                'co_featured_products' => $coFeaturedProductsContract,
+                'prices' => $pricesContract,
                 'product_name' => (string) $validated['product_name'],
                 'product_description' => $product?->description,
                 'product_category' => $business->category,
@@ -164,44 +334,75 @@ class ManualGeneratorController extends Controller
                 'campaign_name' => $campaign->name,
                 'campaign_objective' => $campaign->objective,
                 'event_name' => $event?->name,
-                'price' => $validated['price'] ?? null,
+                'price' => $includePrices ? ($validated['price'] ?? $product?->price) : null,
+                'include_prices' => $includePrices,
+                'include_tagline' => $includeTagline,
+                'include_business_name' => $includeBusinessName,
+                'catalog_products' => $catalogProducts,
+                'custom_products' => $validated['custom_products'] ?? [],
                 'brand_tone' => $brandTone,
                 'visual_theme' => $visualTheme,
                 'render_style' => $validated['render_style'] ?? 'Studio Product Still',
+                'design_treatment' => $designTreatment,
+                'copy_emphasis' => $copyEmphasis,
                 'tagline' => $normalizedTagline,
-                'tagline_mode' => $validated['tagline_mode'] ?? 'ai',
+                'tagline_mode' => $taglineMode,
                 'aspect_ratio' => $validated['aspect_ratio'] ?? '1:1',
-                'image_model' => $validated['image_model'] ?? 'gpt-image-2',
+                'image_model' => OpenAIModelRegistry::DEFAULT_IMAGE_MODEL,
                 'business_name' => $businessName,
                 'business_industry' => $business->industry,
                 'business_description' => $business->description,
                 'business_usp' => $business->unique_selling_point,
+                'business_target_audience' => $business->target_audience,
                 'business_content_style' => $business->content_style,
                 'business_marketing_prefs' => $business->marketing_preferences,
                 'reference_image_path' => $referenceImagePath,
+                'reference_image_paths' => $referenceImagePaths,
                 'scene_prompt' => $validated['image_prompt'] ?? $validated['scene_prompt'] ?? $validated['prompt'] ?? $validated['notes'] ?? null,
                 'user_prompt' => $validated['image_prompt'] ?? $validated['scene_prompt'] ?? $validated['prompt'] ?? $validated['notes'] ?? null,
                 'notes' => $validated['notes'] ?? null,
             ]);
 
             $blueprint = $openAIService->getLastReferenceBlueprint();
-            $genMeta = $openAIService->getLastGenerationMetadata();
+            $genMeta = array_merge($openAIService->getLastGenerationMetadata() ?: [], [
+                'creative_fingerprint' => $creativeFingerprint,
+                'design_treatment' => $designTreatment,
+                'copy_emphasis' => $copyEmphasis,
+                'include_tagline' => $includeTagline,
+                'tagline_mode' => $taglineMode,
+            ]);
+
+            $actualPrompt = $genMeta['prompt'] ?? $prompt;
 
             $previewData = [
                 'image_url' => Storage::url($generatedImagePath),
                 'generated_image_path' => $generatedImagePath,
-                'prompt' => $prompt,
-                'visual_prompt' => $prompt,
+                'prompt' => $actualPrompt,
+                'visual_prompt' => $actualPrompt,
                 'product_name' => $validated['product_name'],
                 'product_id' => $product?->id,
+                'catalog_product_ids' => $catalogProducts->pluck('id')->all(),
+                'custom_products' => $validated['custom_products'] ?? [],
+                'reference_image_paths' => $referenceImagePaths,
                 'tagline' => $normalizedTagline,
-                'price' => $validated['price'] ?? null,
+                'tagline_mode' => $taglineMode,
+                'include_tagline' => $includeTagline,
+                'price' => $includePrices ? ($validated['price'] ?? $product?->price) : null,
+                'include_prices' => $includePrices,
                 'render_style' => $validated['render_style'] ?? 'Studio Product Still',
+                'design_treatment' => $designTreatment,
+                'copy_emphasis' => $copyEmphasis,
+                'creative_fingerprint' => $creativeFingerprint,
                 'aspect_ratio' => $validated['aspect_ratio'] ?? '1:1',
-                'image_model' => $validated['image_model'] ?? 'gpt-image-2',
+                'image_model' => OpenAIModelRegistry::DEFAULT_IMAGE_MODEL,
                 'image_quality' => $validated['image_quality'] ?? 'medium',
                 'reference_blueprint' => $blueprint,
                 'generation_meta' => $genMeta,
+                'source_design_id' => $validated['source_design_id'] ?? null,
+                'is_variation' => $isVariation,
+                'primary_product' => $primaryProductContract,
+                'co_featured_products' => $coFeaturedProductsContract,
+                'prices' => $pricesContract,
             ];
 
             return response()->json(array_merge([
@@ -220,10 +421,16 @@ class ManualGeneratorController extends Controller
                 ['error' => $e->getMessage()]
             );
 
+            $isMultiRefFailure = Str::contains($e->getMessage(), 'Multiple product reference generation could not be completed');
+            $status = $isMultiRefFailure ? 422 : 500;
+            $metadata = $openAIService->getLastGenerationMetadata() ?: [];
+
             return response()->json([
                 'success' => false,
                 'message' => 'Visual generation failed: '.$e->getMessage(),
-            ], 500);
+                'error' => $e->getMessage(),
+                'metadata' => $metadata,
+            ], $status);
         }
     }
 

@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:29
+ * @see app/Http/Controllers/GeneratorController.php:30
  * @route '/generator'
  */
 const index0ac3f17825ff0d98a55e27e88bab35b2 = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index0ac3f17825ff0d98a55e27e88bab35b2.definition = {
 
 /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:29
+ * @see app/Http/Controllers/GeneratorController.php:30
  * @route '/generator'
  */
 index0ac3f17825ff0d98a55e27e88bab35b2.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index0ac3f17825ff0d98a55e27e88bab35b2.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:29
+ * @see app/Http/Controllers/GeneratorController.php:30
  * @route '/generator'
  */
 index0ac3f17825ff0d98a55e27e88bab35b2.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -34,7 +34,7 @@ index0ac3f17825ff0d98a55e27e88bab35b2.get = (options?: RouteQueryOptions): Route
 })
 /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:29
+ * @see app/Http/Controllers/GeneratorController.php:30
  * @route '/generator'
  */
 index0ac3f17825ff0d98a55e27e88bab35b2.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,7 +44,7 @@ index0ac3f17825ff0d98a55e27e88bab35b2.head = (options?: RouteQueryOptions): Rout
 
     /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:29
+ * @see app/Http/Controllers/GeneratorController.php:30
  * @route '/generator'
  */
     const index0ac3f17825ff0d98a55e27e88bab35b2Form = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -54,7 +54,7 @@ index0ac3f17825ff0d98a55e27e88bab35b2.head = (options?: RouteQueryOptions): Rout
 
             /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:29
+ * @see app/Http/Controllers/GeneratorController.php:30
  * @route '/generator'
  */
         index0ac3f17825ff0d98a55e27e88bab35b2Form.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -63,7 +63,7 @@ index0ac3f17825ff0d98a55e27e88bab35b2.head = (options?: RouteQueryOptions): Rout
         })
             /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:29
+ * @see app/Http/Controllers/GeneratorController.php:30
  * @route '/generator'
  */
         index0ac3f17825ff0d98a55e27e88bab35b2Form.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -79,7 +79,7 @@ index0ac3f17825ff0d98a55e27e88bab35b2.head = (options?: RouteQueryOptions): Rout
     index0ac3f17825ff0d98a55e27e88bab35b2.form = index0ac3f17825ff0d98a55e27e88bab35b2Form
     /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:29
+ * @see app/Http/Controllers/GeneratorController.php:30
  * @route '/campaigns/{campaign}/generator'
  */
 const index5fcfe65ad2da5e65a33ffea2aaa0469f = (args: { campaign: string | number } | [campaign: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -94,7 +94,7 @@ index5fcfe65ad2da5e65a33ffea2aaa0469f.definition = {
 
 /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:29
+ * @see app/Http/Controllers/GeneratorController.php:30
  * @route '/campaigns/{campaign}/generator'
  */
 index5fcfe65ad2da5e65a33ffea2aaa0469f.url = (args: { campaign: string | number } | [campaign: string | number ] | string | number, options?: RouteQueryOptions) => {
@@ -122,7 +122,7 @@ index5fcfe65ad2da5e65a33ffea2aaa0469f.url = (args: { campaign: string | number }
 
 /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:29
+ * @see app/Http/Controllers/GeneratorController.php:30
  * @route '/campaigns/{campaign}/generator'
  */
 index5fcfe65ad2da5e65a33ffea2aaa0469f.get = (args: { campaign: string | number } | [campaign: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -131,7 +131,7 @@ index5fcfe65ad2da5e65a33ffea2aaa0469f.get = (args: { campaign: string | number }
 })
 /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:29
+ * @see app/Http/Controllers/GeneratorController.php:30
  * @route '/campaigns/{campaign}/generator'
  */
 index5fcfe65ad2da5e65a33ffea2aaa0469f.head = (args: { campaign: string | number } | [campaign: string | number ] | string | number, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -141,7 +141,7 @@ index5fcfe65ad2da5e65a33ffea2aaa0469f.head = (args: { campaign: string | number 
 
     /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:29
+ * @see app/Http/Controllers/GeneratorController.php:30
  * @route '/campaigns/{campaign}/generator'
  */
     const index5fcfe65ad2da5e65a33ffea2aaa0469fForm = (args: { campaign: string | number } | [campaign: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -151,7 +151,7 @@ index5fcfe65ad2da5e65a33ffea2aaa0469f.head = (args: { campaign: string | number 
 
             /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:29
+ * @see app/Http/Controllers/GeneratorController.php:30
  * @route '/campaigns/{campaign}/generator'
  */
         index5fcfe65ad2da5e65a33ffea2aaa0469fForm.get = (args: { campaign: string | number } | [campaign: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -160,7 +160,7 @@ index5fcfe65ad2da5e65a33ffea2aaa0469f.head = (args: { campaign: string | number 
         })
             /**
 * @see \App\Http\Controllers\GeneratorController::index
- * @see app/Http/Controllers/GeneratorController.php:29
+ * @see app/Http/Controllers/GeneratorController.php:30
  * @route '/campaigns/{campaign}/generator'
  */
         index5fcfe65ad2da5e65a33ffea2aaa0469fForm.head = (args: { campaign: string | number } | [campaign: string | number ] | string | number, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -187,7 +187,7 @@ export const index = {
 
 /**
 * @see \App\Http\Controllers\GeneratorController::store
- * @see app/Http/Controllers/GeneratorController.php:44
+ * @see app/Http/Controllers/GeneratorController.php:50
  * @route '/generator'
  */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -202,7 +202,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\GeneratorController::store
- * @see app/Http/Controllers/GeneratorController.php:44
+ * @see app/Http/Controllers/GeneratorController.php:50
  * @route '/generator'
  */
 store.url = (options?: RouteQueryOptions) => {
@@ -211,7 +211,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\GeneratorController::store
- * @see app/Http/Controllers/GeneratorController.php:44
+ * @see app/Http/Controllers/GeneratorController.php:50
  * @route '/generator'
  */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -221,7 +221,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\GeneratorController::store
- * @see app/Http/Controllers/GeneratorController.php:44
+ * @see app/Http/Controllers/GeneratorController.php:50
  * @route '/generator'
  */
     const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -231,7 +231,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\GeneratorController::store
- * @see app/Http/Controllers/GeneratorController.php:44
+ * @see app/Http/Controllers/GeneratorController.php:50
  * @route '/generator'
  */
         storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -242,7 +242,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     store.form = storeForm
 /**
 * @see \App\Http\Controllers\GeneratorController::generatePrompt
- * @see app/Http/Controllers/GeneratorController.php:375
+ * @see app/Http/Controllers/GeneratorController.php:381
  * @route '/generator/prompt'
  */
 export const generatePrompt = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -257,7 +257,7 @@ generatePrompt.definition = {
 
 /**
 * @see \App\Http\Controllers\GeneratorController::generatePrompt
- * @see app/Http/Controllers/GeneratorController.php:375
+ * @see app/Http/Controllers/GeneratorController.php:381
  * @route '/generator/prompt'
  */
 generatePrompt.url = (options?: RouteQueryOptions) => {
@@ -266,7 +266,7 @@ generatePrompt.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\GeneratorController::generatePrompt
- * @see app/Http/Controllers/GeneratorController.php:375
+ * @see app/Http/Controllers/GeneratorController.php:381
  * @route '/generator/prompt'
  */
 generatePrompt.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -276,7 +276,7 @@ generatePrompt.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => 
 
     /**
 * @see \App\Http\Controllers\GeneratorController::generatePrompt
- * @see app/Http/Controllers/GeneratorController.php:375
+ * @see app/Http/Controllers/GeneratorController.php:381
  * @route '/generator/prompt'
  */
     const generatePromptForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -286,7 +286,7 @@ generatePrompt.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => 
 
             /**
 * @see \App\Http\Controllers\GeneratorController::generatePrompt
- * @see app/Http/Controllers/GeneratorController.php:375
+ * @see app/Http/Controllers/GeneratorController.php:381
  * @route '/generator/prompt'
  */
         generatePromptForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

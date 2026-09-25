@@ -315,7 +315,7 @@ attachDesigns.post = (args: { campaign: number | { id: number } } | [campaign: n
     attachDesigns.form = attachDesignsForm
 /**
 * @see \App\Http\Controllers\CampaignController::archive
- * @see app/Http/Controllers/CampaignController.php:464
+ * @see app/Http/Controllers/CampaignController.php:500
  * @route '/campaigns/{campaign}/archive'
  */
 export const archive = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -330,7 +330,7 @@ archive.definition = {
 
 /**
 * @see \App\Http\Controllers\CampaignController::archive
- * @see app/Http/Controllers/CampaignController.php:464
+ * @see app/Http/Controllers/CampaignController.php:500
  * @route '/campaigns/{campaign}/archive'
  */
 archive.url = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -363,7 +363,7 @@ archive.url = (args: { campaign: number | { id: number } } | [campaign: number |
 
 /**
 * @see \App\Http\Controllers\CampaignController::archive
- * @see app/Http/Controllers/CampaignController.php:464
+ * @see app/Http/Controllers/CampaignController.php:500
  * @route '/campaigns/{campaign}/archive'
  */
 archive.post = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -373,7 +373,7 @@ archive.post = (args: { campaign: number | { id: number } } | [campaign: number 
 
     /**
 * @see \App\Http\Controllers\CampaignController::archive
- * @see app/Http/Controllers/CampaignController.php:464
+ * @see app/Http/Controllers/CampaignController.php:500
  * @route '/campaigns/{campaign}/archive'
  */
     const archiveForm = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -383,7 +383,7 @@ archive.post = (args: { campaign: number | { id: number } } | [campaign: number 
 
             /**
 * @see \App\Http\Controllers\CampaignController::archive
- * @see app/Http/Controllers/CampaignController.php:464
+ * @see app/Http/Controllers/CampaignController.php:500
  * @route '/campaigns/{campaign}/archive'
  */
         archiveForm.post = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -394,7 +394,7 @@ archive.post = (args: { campaign: number | { id: number } } | [campaign: number 
     archive.form = archiveForm
 /**
 * @see \App\Http\Controllers\CampaignController::unarchive
- * @see app/Http/Controllers/CampaignController.php:480
+ * @see app/Http/Controllers/CampaignController.php:516
  * @route '/campaigns/{campaign}/unarchive'
  */
 export const unarchive = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -409,7 +409,7 @@ unarchive.definition = {
 
 /**
 * @see \App\Http\Controllers\CampaignController::unarchive
- * @see app/Http/Controllers/CampaignController.php:480
+ * @see app/Http/Controllers/CampaignController.php:516
  * @route '/campaigns/{campaign}/unarchive'
  */
 unarchive.url = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -442,7 +442,7 @@ unarchive.url = (args: { campaign: number | { id: number } } | [campaign: number
 
 /**
 * @see \App\Http\Controllers\CampaignController::unarchive
- * @see app/Http/Controllers/CampaignController.php:480
+ * @see app/Http/Controllers/CampaignController.php:516
  * @route '/campaigns/{campaign}/unarchive'
  */
 unarchive.post = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -452,7 +452,7 @@ unarchive.post = (args: { campaign: number | { id: number } } | [campaign: numbe
 
     /**
 * @see \App\Http\Controllers\CampaignController::unarchive
- * @see app/Http/Controllers/CampaignController.php:480
+ * @see app/Http/Controllers/CampaignController.php:516
  * @route '/campaigns/{campaign}/unarchive'
  */
     const unarchiveForm = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -462,7 +462,7 @@ unarchive.post = (args: { campaign: number | { id: number } } | [campaign: numbe
 
             /**
 * @see \App\Http\Controllers\CampaignController::unarchive
- * @see app/Http/Controllers/CampaignController.php:480
+ * @see app/Http/Controllers/CampaignController.php:516
  * @route '/campaigns/{campaign}/unarchive'
  */
         unarchiveForm.post = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -473,7 +473,7 @@ unarchive.post = (args: { campaign: number | { id: number } } | [campaign: numbe
     unarchive.form = unarchiveForm
 /**
 * @see \App\Http\Controllers\CampaignController::update
- * @see app/Http/Controllers/CampaignController.php:396
+ * @see app/Http/Controllers/CampaignController.php:432
  * @route '/campaigns/{campaign}'
  */
 export const update = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -488,7 +488,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\CampaignController::update
- * @see app/Http/Controllers/CampaignController.php:396
+ * @see app/Http/Controllers/CampaignController.php:432
  * @route '/campaigns/{campaign}'
  */
 update.url = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -521,7 +521,7 @@ update.url = (args: { campaign: number | { id: number } } | [campaign: number | 
 
 /**
 * @see \App\Http\Controllers\CampaignController::update
- * @see app/Http/Controllers/CampaignController.php:396
+ * @see app/Http/Controllers/CampaignController.php:432
  * @route '/campaigns/{campaign}'
  */
 update.put = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -531,7 +531,7 @@ update.put = (args: { campaign: number | { id: number } } | [campaign: number | 
 
     /**
 * @see \App\Http\Controllers\CampaignController::update
- * @see app/Http/Controllers/CampaignController.php:396
+ * @see app/Http/Controllers/CampaignController.php:432
  * @route '/campaigns/{campaign}'
  */
     const updateForm = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -546,7 +546,7 @@ update.put = (args: { campaign: number | { id: number } } | [campaign: number | 
 
             /**
 * @see \App\Http\Controllers\CampaignController::update
- * @see app/Http/Controllers/CampaignController.php:396
+ * @see app/Http/Controllers/CampaignController.php:432
  * @route '/campaigns/{campaign}'
  */
         updateForm.put = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -562,7 +562,7 @@ update.put = (args: { campaign: number | { id: number } } | [campaign: number | 
     update.form = updateForm
 /**
 * @see \App\Http\Controllers\CampaignController::destroy
- * @see app/Http/Controllers/CampaignController.php:452
+ * @see app/Http/Controllers/CampaignController.php:488
  * @route '/campaigns/{campaign}'
  */
 export const destroy = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -577,7 +577,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\CampaignController::destroy
- * @see app/Http/Controllers/CampaignController.php:452
+ * @see app/Http/Controllers/CampaignController.php:488
  * @route '/campaigns/{campaign}'
  */
 destroy.url = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -610,7 +610,7 @@ destroy.url = (args: { campaign: number | { id: number } } | [campaign: number |
 
 /**
 * @see \App\Http\Controllers\CampaignController::destroy
- * @see app/Http/Controllers/CampaignController.php:452
+ * @see app/Http/Controllers/CampaignController.php:488
  * @route '/campaigns/{campaign}'
  */
 destroy.delete = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -620,7 +620,7 @@ destroy.delete = (args: { campaign: number | { id: number } } | [campaign: numbe
 
     /**
 * @see \App\Http\Controllers\CampaignController::destroy
- * @see app/Http/Controllers/CampaignController.php:452
+ * @see app/Http/Controllers/CampaignController.php:488
  * @route '/campaigns/{campaign}'
  */
     const destroyForm = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -635,7 +635,7 @@ destroy.delete = (args: { campaign: number | { id: number } } | [campaign: numbe
 
             /**
 * @see \App\Http\Controllers\CampaignController::destroy
- * @see app/Http/Controllers/CampaignController.php:452
+ * @see app/Http/Controllers/CampaignController.php:488
  * @route '/campaigns/{campaign}'
  */
         destroyForm.delete = (args: { campaign: number | { id: number } } | [campaign: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

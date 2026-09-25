@@ -79,7 +79,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     index.form = indexForm
 /**
 * @see \App\Http\Controllers\EventController::getYearEvents
- * @see app/Http/Controllers/EventController.php:155
+ * @see app/Http/Controllers/EventController.php:214
  * @route '/calendar/events-year'
  */
 export const getYearEvents = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -94,7 +94,7 @@ getYearEvents.definition = {
 
 /**
 * @see \App\Http\Controllers\EventController::getYearEvents
- * @see app/Http/Controllers/EventController.php:155
+ * @see app/Http/Controllers/EventController.php:214
  * @route '/calendar/events-year'
  */
 getYearEvents.url = (options?: RouteQueryOptions) => {
@@ -103,7 +103,7 @@ getYearEvents.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\EventController::getYearEvents
- * @see app/Http/Controllers/EventController.php:155
+ * @see app/Http/Controllers/EventController.php:214
  * @route '/calendar/events-year'
  */
 getYearEvents.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -112,7 +112,7 @@ getYearEvents.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\EventController::getYearEvents
- * @see app/Http/Controllers/EventController.php:155
+ * @see app/Http/Controllers/EventController.php:214
  * @route '/calendar/events-year'
  */
 getYearEvents.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -122,7 +122,7 @@ getYearEvents.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => (
 
     /**
 * @see \App\Http\Controllers\EventController::getYearEvents
- * @see app/Http/Controllers/EventController.php:155
+ * @see app/Http/Controllers/EventController.php:214
  * @route '/calendar/events-year'
  */
     const getYearEventsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -132,7 +132,7 @@ getYearEvents.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => (
 
             /**
 * @see \App\Http\Controllers\EventController::getYearEvents
- * @see app/Http/Controllers/EventController.php:155
+ * @see app/Http/Controllers/EventController.php:214
  * @route '/calendar/events-year'
  */
         getYearEventsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -141,7 +141,7 @@ getYearEvents.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => (
         })
             /**
 * @see \App\Http\Controllers\EventController::getYearEvents
- * @see app/Http/Controllers/EventController.php:155
+ * @see app/Http/Controllers/EventController.php:214
  * @route '/calendar/events-year'
  */
         getYearEventsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -156,8 +156,86 @@ getYearEvents.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => (
     
     getYearEvents.form = getYearEventsForm
 /**
+* @see \App\Http\Controllers\EventController::manage
+ * @see app/Http/Controllers/EventController.php:309
+ * @route '/events'
+ */
+export const manage = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: manage.url(options),
+    method: 'get',
+})
+
+manage.definition = {
+    methods: ["get","head"],
+    url: '/events',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\EventController::manage
+ * @see app/Http/Controllers/EventController.php:309
+ * @route '/events'
+ */
+manage.url = (options?: RouteQueryOptions) => {
+    return manage.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\EventController::manage
+ * @see app/Http/Controllers/EventController.php:309
+ * @route '/events'
+ */
+manage.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: manage.url(options),
+    method: 'get',
+})
+/**
+* @see \App\Http\Controllers\EventController::manage
+ * @see app/Http/Controllers/EventController.php:309
+ * @route '/events'
+ */
+manage.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: manage.url(options),
+    method: 'head',
+})
+
+    /**
+* @see \App\Http\Controllers\EventController::manage
+ * @see app/Http/Controllers/EventController.php:309
+ * @route '/events'
+ */
+    const manageForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        action: manage.url(options),
+        method: 'get',
+    })
+
+            /**
+* @see \App\Http\Controllers\EventController::manage
+ * @see app/Http/Controllers/EventController.php:309
+ * @route '/events'
+ */
+        manageForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: manage.url(options),
+            method: 'get',
+        })
+            /**
+* @see \App\Http\Controllers\EventController::manage
+ * @see app/Http/Controllers/EventController.php:309
+ * @route '/events'
+ */
+        manageForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: manage.url({
+                        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                            _method: 'HEAD',
+                            ...(options?.query ?? options?.mergeQuery ?? {}),
+                        }
+                    }),
+            method: 'get',
+        })
+    
+    manage.form = manageForm
+/**
 * @see \App\Http\Controllers\EventController::store
- * @see app/Http/Controllers/EventController.php:246
+ * @see app/Http/Controllers/EventController.php:380
  * @route '/events'
  */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -172,7 +250,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\EventController::store
- * @see app/Http/Controllers/EventController.php:246
+ * @see app/Http/Controllers/EventController.php:380
  * @route '/events'
  */
 store.url = (options?: RouteQueryOptions) => {
@@ -181,7 +259,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\EventController::store
- * @see app/Http/Controllers/EventController.php:246
+ * @see app/Http/Controllers/EventController.php:380
  * @route '/events'
  */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -191,7 +269,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\EventController::store
- * @see app/Http/Controllers/EventController.php:246
+ * @see app/Http/Controllers/EventController.php:380
  * @route '/events'
  */
     const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -201,7 +279,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\EventController::store
- * @see app/Http/Controllers/EventController.php:246
+ * @see app/Http/Controllers/EventController.php:380
  * @route '/events'
  */
         storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -212,7 +290,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     store.form = storeForm
 /**
 * @see \App\Http\Controllers\EventController::show
- * @see app/Http/Controllers/EventController.php:300
+ * @see app/Http/Controllers/EventController.php:440
  * @route '/events/{event}'
  */
 export const show = (args: { event: number | { id: number } } | [event: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -227,7 +305,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\EventController::show
- * @see app/Http/Controllers/EventController.php:300
+ * @see app/Http/Controllers/EventController.php:440
  * @route '/events/{event}'
  */
 show.url = (args: { event: number | { id: number } } | [event: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -260,7 +338,7 @@ show.url = (args: { event: number | { id: number } } | [event: number | { id: nu
 
 /**
 * @see \App\Http\Controllers\EventController::show
- * @see app/Http/Controllers/EventController.php:300
+ * @see app/Http/Controllers/EventController.php:440
  * @route '/events/{event}'
  */
 show.get = (args: { event: number | { id: number } } | [event: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -269,7 +347,7 @@ show.get = (args: { event: number | { id: number } } | [event: number | { id: nu
 })
 /**
 * @see \App\Http\Controllers\EventController::show
- * @see app/Http/Controllers/EventController.php:300
+ * @see app/Http/Controllers/EventController.php:440
  * @route '/events/{event}'
  */
 show.head = (args: { event: number | { id: number } } | [event: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -279,7 +357,7 @@ show.head = (args: { event: number | { id: number } } | [event: number | { id: n
 
     /**
 * @see \App\Http\Controllers\EventController::show
- * @see app/Http/Controllers/EventController.php:300
+ * @see app/Http/Controllers/EventController.php:440
  * @route '/events/{event}'
  */
     const showForm = (args: { event: number | { id: number } } | [event: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -289,7 +367,7 @@ show.head = (args: { event: number | { id: number } } | [event: number | { id: n
 
             /**
 * @see \App\Http\Controllers\EventController::show
- * @see app/Http/Controllers/EventController.php:300
+ * @see app/Http/Controllers/EventController.php:440
  * @route '/events/{event}'
  */
         showForm.get = (args: { event: number | { id: number } } | [event: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -298,7 +376,7 @@ show.head = (args: { event: number | { id: number } } | [event: number | { id: n
         })
             /**
 * @see \App\Http\Controllers\EventController::show
- * @see app/Http/Controllers/EventController.php:300
+ * @see app/Http/Controllers/EventController.php:440
  * @route '/events/{event}'
  */
         showForm.head = (args: { event: number | { id: number } } | [event: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -314,7 +392,7 @@ show.head = (args: { event: number | { id: number } } | [event: number | { id: n
     show.form = showForm
 /**
 * @see \App\Http\Controllers\EventController::update
- * @see app/Http/Controllers/EventController.php:322
+ * @see app/Http/Controllers/EventController.php:466
  * @route '/events/{event}'
  */
 export const update = (args: { event: number | { id: number } } | [event: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -329,7 +407,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\EventController::update
- * @see app/Http/Controllers/EventController.php:322
+ * @see app/Http/Controllers/EventController.php:466
  * @route '/events/{event}'
  */
 update.url = (args: { event: number | { id: number } } | [event: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -362,7 +440,7 @@ update.url = (args: { event: number | { id: number } } | [event: number | { id: 
 
 /**
 * @see \App\Http\Controllers\EventController::update
- * @see app/Http/Controllers/EventController.php:322
+ * @see app/Http/Controllers/EventController.php:466
  * @route '/events/{event}'
  */
 update.put = (args: { event: number | { id: number } } | [event: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -372,7 +450,7 @@ update.put = (args: { event: number | { id: number } } | [event: number | { id: 
 
     /**
 * @see \App\Http\Controllers\EventController::update
- * @see app/Http/Controllers/EventController.php:322
+ * @see app/Http/Controllers/EventController.php:466
  * @route '/events/{event}'
  */
     const updateForm = (args: { event: number | { id: number } } | [event: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -387,7 +465,7 @@ update.put = (args: { event: number | { id: number } } | [event: number | { id: 
 
             /**
 * @see \App\Http\Controllers\EventController::update
- * @see app/Http/Controllers/EventController.php:322
+ * @see app/Http/Controllers/EventController.php:466
  * @route '/events/{event}'
  */
         updateForm.put = (args: { event: number | { id: number } } | [event: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -403,7 +481,7 @@ update.put = (args: { event: number | { id: number } } | [event: number | { id: 
     update.form = updateForm
 /**
 * @see \App\Http\Controllers\EventController::destroy
- * @see app/Http/Controllers/EventController.php:338
+ * @see app/Http/Controllers/EventController.php:489
  * @route '/events/{event}'
  */
 export const destroy = (args: { event: number | { id: number } } | [event: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -418,7 +496,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\EventController::destroy
- * @see app/Http/Controllers/EventController.php:338
+ * @see app/Http/Controllers/EventController.php:489
  * @route '/events/{event}'
  */
 destroy.url = (args: { event: number | { id: number } } | [event: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -451,7 +529,7 @@ destroy.url = (args: { event: number | { id: number } } | [event: number | { id:
 
 /**
 * @see \App\Http\Controllers\EventController::destroy
- * @see app/Http/Controllers/EventController.php:338
+ * @see app/Http/Controllers/EventController.php:489
  * @route '/events/{event}'
  */
 destroy.delete = (args: { event: number | { id: number } } | [event: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -461,7 +539,7 @@ destroy.delete = (args: { event: number | { id: number } } | [event: number | { 
 
     /**
 * @see \App\Http\Controllers\EventController::destroy
- * @see app/Http/Controllers/EventController.php:338
+ * @see app/Http/Controllers/EventController.php:489
  * @route '/events/{event}'
  */
     const destroyForm = (args: { event: number | { id: number } } | [event: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -476,7 +554,7 @@ destroy.delete = (args: { event: number | { id: number } } | [event: number | { 
 
             /**
 * @see \App\Http\Controllers\EventController::destroy
- * @see app/Http/Controllers/EventController.php:338
+ * @see app/Http/Controllers/EventController.php:489
  * @route '/events/{event}'
  */
         destroyForm.delete = (args: { event: number | { id: number } } | [event: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -490,6 +568,6 @@ destroy.delete = (args: { event: number | { id: number } } | [event: number | { 
         })
     
     destroy.form = destroyForm
-const EventController = { index, getYearEvents, store, show, update, destroy }
+const EventController = { index, getYearEvents, manage, store, show, update, destroy }
 
 export default EventController

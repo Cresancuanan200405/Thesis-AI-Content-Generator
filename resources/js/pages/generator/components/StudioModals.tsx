@@ -26,6 +26,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { GeneratedDesign, ProductItem } from './types';
+export { GeneratedCreativeModal } from './GeneratedCreativeModal';
+export type { GeneratedCreativeModalProps } from './GeneratedCreativeModal';
 
 interface CatalogBrowserModalProps {
     isOpen: boolean;
@@ -119,7 +121,10 @@ export function CatalogBrowserModal({
                                             )}
                                         </div>
                                         <div className="p-3">
-                                            <p className="truncate text-xs font-bold text-foreground">
+                                            <p
+                                                className="break-words text-xs font-bold leading-snug text-foreground"
+                                                title={prod.name}
+                                            >
                                                 {prod.name}
                                             </p>
                                             <div className="mt-0.5 flex items-center justify-between">
@@ -170,7 +175,7 @@ interface FullscreenViewerModalProps {
     productName: string;
     aspectRatio: string;
     savedDesign: GeneratedDesign | null;
-    onDownload: (format: 'png' | 'jpeg' | 'svg') => void;
+    onDownload: (format: 'png' | 'jpeg') => void;
 }
 
 export function FullscreenViewerModal({
@@ -273,13 +278,6 @@ export function FullscreenViewerModal({
                             >
                                 <Download className="h-3.5 w-3.5 text-blue-400" />
                                 JPEG (Web-Optimized)
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                onClick={() => onDownload('svg')}
-                                className="cursor-pointer gap-2 text-xs font-medium text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
-                            >
-                                <Download className="h-3.5 w-3.5 text-emerald-400" />
-                                SVG (Vector Embed)
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

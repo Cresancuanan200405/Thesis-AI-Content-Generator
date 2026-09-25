@@ -339,26 +339,28 @@ class PhilippineHolidayService
         // Key e-commerce and retail sale mega days
         // ---------------------------------------------------------------------
 
+        $bfFriday = (new Carbon("fourth thursday of november {$year}"))->addDay();
         $commercialEvents = [
-            ['name' => '1.1 New Year Kickoff Mega Sale', 'date' => "{$year}-01-01", 'desc' => 'First mega double-digit shopping campaign of the year.'],
-            ['name' => "Valentine's Day & 2.2 Flash Sale", 'date' => "{$year}-02-14", 'desc' => 'High-conversion romance, gifting, dining, and luxury retail season.'],
-            ['name' => '3.3 Mega Summer Shopping Festival', 'date' => "{$year}-03-03", 'desc' => 'Beginning of Philippine summer season sales & vacation apparel.'],
-            ['name' => '4.4 Summer Kickoff Sale', 'date' => "{$year}-04-04", 'desc' => 'Peak hot summer sale and travel gear promos.'],
-            ['name' => "Mother's Day & 5.5 Mid-Year Kickoff", 'date' => $this->getNthDayOfMonth($year, 5, Carbon::SUNDAY, 2), 'desc' => "Nationwide family dining, luxury gifts, and Mother's Day retail rush."],
-            ['name' => "Father's Day & 6.6 Mid-Year Mega Sale", 'date' => $this->getNthDayOfMonth($year, 6, Carbon::SUNDAY, 3), 'desc' => "Father's Day gifting & giant mid-year clearance campaigns."],
-            ['name' => '7.7 Great Mid-Year Sale', 'date' => "{$year}-07-07", 'desc' => 'High-volume mid-year retail discount day.'],
-            ['name' => '8.8 Great August Sale', 'date' => "{$year}-08-08", 'desc' => 'Pre-Ber months shopping warmup.'],
-            ['name' => '9.9 Super Shopping Day (Ber Months Kickoff)', 'date' => "{$year}-09-09", 'desc' => 'Official start of Philippine 4-month long Christmas shopping season (Ber months). Top sales spike of Q3.'],
-            ['name' => '10.10 Perfect 10 Shopping Festival', 'date' => "{$year}-10-10", 'desc' => 'Major double-digit sale in the heart of Q4 retail rush.'],
-            ['name' => "11.11 Single's Day Mega Sale", 'date' => "{$year}-11-11", 'desc' => 'The largest single e-commerce shopping festival day in Southeast Asia and the Philippines.'],
-            ['name' => 'Black Friday & Cyber Weekend', 'date' => (new Carbon("fourth thursday of november {$year}"))->addDay()->toDateString(), 'desc' => 'Tech, gadgets, fashion, and global mega discount weekend.'],
-            ['name' => '12.12 Grand Year-End Holiday Sale', 'date' => "{$year}-12-12", 'desc' => 'The grand finale of Christmas gifting, last-minute sales, and holiday shopping.'],
+            ['name' => '1.1 New Year Kickoff Mega Sale', 'date' => "{$year}-01-01", 'end_date' => "{$year}-01-02", 'desc' => 'First mega double-digit shopping campaign of the year.'],
+            ['name' => "Valentine's Day & 2.2 Flash Sale", 'date' => "{$year}-02-14", 'end_date' => "{$year}-02-15", 'desc' => 'High-conversion romance, gifting, dining, and luxury retail season.'],
+            ['name' => '3.3 Mega Summer Shopping Festival', 'date' => "{$year}-03-03", 'end_date' => "{$year}-03-05", 'desc' => 'Beginning of Philippine summer season sales & vacation apparel.'],
+            ['name' => '4.4 Summer Kickoff Sale', 'date' => "{$year}-04-04", 'end_date' => "{$year}-04-06", 'desc' => 'Peak hot summer sale and travel gear promos.'],
+            ['name' => "Mother's Day & 5.5 Mid-Year Kickoff", 'date' => $this->getNthDayOfMonth($year, 5, Carbon::SUNDAY, 2), 'end_date' => $this->getNthDayOfMonth($year, 5, Carbon::SUNDAY, 2), 'desc' => "Nationwide family dining, luxury gifts, and Mother's Day retail rush."],
+            ['name' => "Father's Day & 6.6 Mid-Year Mega Sale", 'date' => $this->getNthDayOfMonth($year, 6, Carbon::SUNDAY, 3), 'end_date' => $this->getNthDayOfMonth($year, 6, Carbon::SUNDAY, 3), 'desc' => "Father's Day gifting & giant mid-year clearance campaigns."],
+            ['name' => '7.7 Great Mid-Year Sale', 'date' => "{$year}-07-07", 'end_date' => "{$year}-07-09", 'desc' => 'High-volume mid-year retail discount day.'],
+            ['name' => '8.8 Great August Sale', 'date' => "{$year}-08-08", 'end_date' => "{$year}-08-10", 'desc' => 'Pre-Ber months shopping warmup.'],
+            ['name' => '9.9 Super Shopping Day (Ber Months Kickoff)', 'date' => "{$year}-09-09", 'end_date' => "{$year}-09-11", 'desc' => 'Official start of Philippine 4-month long Christmas shopping season (Ber months). Top sales spike of Q3.'],
+            ['name' => '10.10 Perfect 10 Shopping Festival', 'date' => "{$year}-10-10", 'end_date' => "{$year}-10-12", 'desc' => 'Major double-digit sale in the heart of Q4 retail rush.'],
+            ['name' => "11.11 Single's Day Mega Sale", 'date' => "{$year}-11-11", 'end_date' => "{$year}-11-13", 'desc' => 'The largest single e-commerce shopping festival day in Southeast Asia and the Philippines.'],
+            ['name' => 'Black Friday & Cyber Weekend', 'date' => $bfFriday->toDateString(), 'end_date' => $bfFriday->copy()->addDays(3)->toDateString(), 'desc' => 'Tech, gadgets, fashion, and global mega discount weekend spanning Friday through Cyber Monday.'],
+            ['name' => '12.12 Grand Year-End Holiday Sale', 'date' => "{$year}-12-12", 'end_date' => "{$year}-12-14", 'desc' => 'The grand finale of Christmas gifting, last-minute sales, and holiday shopping.'],
         ];
 
         foreach ($commercialEvents as $comm) {
             $holidays[] = [
                 'name' => $comm['name'],
                 'date' => $comm['date'],
+                'end_date' => $comm['end_date'] ?? $comm['date'],
                 'type' => 'commercial',
                 'category' => 'commercial',
                 'description' => $comm['desc'],
@@ -388,7 +390,8 @@ class PhilippineHolidayService
         ?string $proclamationNo = null,
         bool $isLongWeekend = false,
         ?string $longWeekendDetails = null,
-        ?string $shiftedFrom = null
+        ?string $shiftedFrom = null,
+        ?string $endDate = null
     ): array {
         $dt = Carbon::parse($date);
         $dayOfWeek = $dt->dayOfWeek; // 0 = Sunday, 1 = Monday, 5 = Friday, 6 = Saturday
@@ -398,6 +401,7 @@ class PhilippineHolidayService
             if ($dayOfWeek === Carbon::FRIDAY) {
                 $isLongWeekend = true;
                 $longWeekendDetails = "3-Day Long Weekend (Friday - Sunday, {$dt->format('M j')} - {$dt->copy()->addDays(2)->format('M j')})";
+                $endDate = $endDate ?? $dt->copy()->addDays(2)->toDateString();
             } elseif ($dayOfWeek === Carbon::MONDAY) {
                 $isLongWeekend = true;
                 $longWeekendDetails = "3-Day Long Weekend (Saturday - Monday, {$dt->copy()->subDays(2)->format('M j')} - {$dt->format('M j')})";
@@ -407,6 +411,7 @@ class PhilippineHolidayService
         return [
             'name' => $name,
             'date' => $date,
+            'end_date' => $endDate ?? $date,
             'type' => $type,
             'category' => $category,
             'description' => $description,
@@ -443,6 +448,7 @@ class PhilippineHolidayService
             if ($existing) {
                 $existing->update([
                     'name' => $holiday['name'],
+                    'end_date' => $holiday['end_date'] ?? $existing->end_date ?? $holiday['date'],
                     'type' => $holiday['type'],
                     'category' => $holiday['category'],
                     'description' => $holiday['description'],

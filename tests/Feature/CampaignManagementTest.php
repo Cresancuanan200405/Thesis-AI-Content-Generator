@@ -394,7 +394,7 @@ it('generator can preselect campaign context', function () {
         'target_audience' => 'New customers',
     ]);
 
-    $this->actingAs($user)->get('/generator?campaign='.$campaign->id)->assertOk();
+    $this->actingAs($user)->followingRedirects()->get('/generator?campaign='.$campaign->id)->assertOk();
 });
 
 it('restricts campaigns events to account creation or finalization year and excludes prior or future years', function () {
@@ -648,4 +648,254 @@ it('falls back to opportunities for invalid view param', function () {
         $page->component('campaigns/index')
             ->where('view', 'opportunities');
     });
+});
+
+it('can create a holiday-driven campaign attaching an official global holiday', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    Business::factory()->create(['user_id' => $user->id]);
+
+    $holiday = Event::factory()->global()->create([
+        'name' => 'Independence Day',
+        'type' => 'holiday',
+        'category' => 'regular',
+        'date' => now()->addDays(20)->toDateString(),
+        'end_date' => now()->addDays(20)->toDateString(),
+    ]);
+
+    $response = $this->actingAs($user)->post('/campaigns', [
+        'name' => 'Independence Day Promo',
+        'event_id' => $holiday->id,
+        'start_date' => $holiday->date->toDateString(),
+        'end_date' => $holiday->end_date->toDateString(),
+        'redirect_to' => 'setup',
+    ]);
+
+    $campaign = Campaign::query()->where('user_id', $user->id)->where('event_id', $holiday->id)->first();
+    expect($campaign)->not->toBeNull()
+        ->and($campaign->name)->toBe('Independence Day Promo')
+        ->and($campaign->event_id)->toBe($holiday->id);
+
+    $response->assertRedirect(route('campaigns.show', $campaign));
+});
+
+it('creates campaign using an existing custom event created in event management', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    Business::factory()->create(['user_id' => $user->id]);
+
+    $startDate = now()->addDays(15)->toDateString();
+    $endDate = now()->addDays(20)->toDateString();
+
+    // 1. Custom event is created in Event Management first
+    $customEvent = $user->events()->create([
+        'name' => 'Grand Re-Opening',
+        'description' => 'Celebration week with major discounts.',
+        'date' => $startDate,
+        'end_date' => $endDate,
+        'type' => 'custom',
+        'is_global' => false,
+    ]);
+
+    // 2. Campaign is created consuming the existing custom event
+    $response = $this->actingAs($user)->post('/campaigns', [
+        'name' => 'Grand Re-Opening Campaign',
+        'event_id' => $customEvent->id,
+        'start_date' => $startDate,
+        'end_date' => $endDate,
+        'redirect_to' => 'setup',
+    ]);
+
+    // Verify campaign was created with event_id pointing to the existing custom event
+    $campaign = Campaign::query()->where('user_id', $user->id)->where('event_id', $customEvent->id)->first();
+    expect($campaign)->not->toBeNull()
+        ->and($campaign->name)->toBe('Grand Re-Opening Campaign')
+        ->and($campaign->event_id)->toBe($customEvent->id)
+        ->and($campaign->start_date->toDateString())->toBe($startDate)
+        ->and($campaign->end_date->toDateString())->toBe($endDate);
+
+    $response->assertRedirect(route('campaigns.show', $campaign));
+
+    // Verify the custom event displays on the Marketing Calendar with the linked campaign
+    $calendarResponse = $this->actingAs($user)->get('/calendar');
+    $calendarResponse->assertOk();
+    $calendarEvents = collect($calendarResponse->original->getData()['page']['props']['events']);
+    $matchedCalendarEvent = $calendarEvents->firstWhere('id', $customEvent->id);
+    expect($matchedCalendarEvent)->not->toBeNull()
+        ->and($matchedCalendarEvent['has_campaign'])->toBeTrue()
+        ->and($matchedCalendarEvent['campaign_id'])->toBe($campaign->id);
+});
+
+it('reuses and opens existing campaign when user chooses an event with an existing campaign', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+
+    $event = Event::factory()->global()->create([
+        'name' => '11.11 Mega Sale',
+        'type' => 'commercial',
+        'date' => now()->addDays(30)->toDateString(),
+    ]);
+
+    $existingCampaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event->id,
+        'name' => '11.11 Mega Sale Campaign',
+        'status' => 'active',
+    ]);
+
+    // User attempts to create another campaign for the same event
+    $response = $this->actingAs($user)->post('/campaigns', [
+        'name' => 'Duplicate 11.11 Campaign',
+        'event_id' => $event->id,
+        'start_date' => $event->date->toDateString(),
+        'end_date' => $event->date->toDateString(),
+    ]);
+
+    // Instead of creating a duplicate, redirects to existing campaign
+    $response->assertRedirect(route('campaigns.show', $existingCampaign));
+    expect(Campaign::query()->where('user_id', $user->id)->where('event_id', $event->id)->count())->toBe(1);
+});
+
+it('rejects campaign creation without an existing event', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    Business::factory()->create(['user_id' => $user->id]);
+
+    $response = $this->actingAs($user)->post('/campaigns', [
+        'name' => 'Eventless Campaign',
+        'event_id' => null,
+        'start_date' => now()->addDays(5)->toDateString(),
+        'end_date' => now()->addDays(10)->toDateString(),
+        'status' => 'active',
+    ]);
+
+    $response->assertSessionHasErrors(['event_id']);
+    $this->assertDatabaseMissing('campaigns', ['name' => 'Eventless Campaign']);
+});
+
+it('allows campaign creation with an existing global Philippine holiday', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    Business::factory()->create(['user_id' => $user->id]);
+
+    $holiday = Event::factory()->create([
+        'user_id' => null,
+        'is_global' => true,
+        'name' => 'Christmas Day',
+        'type' => 'holiday',
+        'date' => '2026-12-25',
+    ]);
+
+    $response = $this->actingAs($user)->post('/campaigns', [
+        'name' => 'Christmas Day Campaign',
+        'event_id' => $holiday->id,
+        'start_date' => '2026-12-20',
+        'end_date' => '2026-12-25',
+    ]);
+
+    $response->assertRedirect('/campaigns');
+    $this->assertDatabaseHas('campaigns', [
+        'user_id' => $user->id,
+        'event_id' => $holiday->id,
+        'name' => 'Christmas Day Campaign',
+    ]);
+});
+
+it('allows campaign creation with an existing marketing event', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    Business::factory()->create(['user_id' => $user->id]);
+
+    $marketingEvent = Event::factory()->create([
+        'user_id' => $user->id,
+        'is_global' => false,
+        'name' => '11.11 Mega Sale',
+        'type' => 'commercial',
+        'date' => '2026-11-11',
+    ]);
+
+    $response = $this->actingAs($user)->post('/campaigns', [
+        'name' => '11.11 Mega Sale Campaign',
+        'event_id' => $marketingEvent->id,
+        'start_date' => '2026-11-10',
+        'end_date' => '2026-11-12',
+    ]);
+
+    $response->assertRedirect('/campaigns');
+    $this->assertDatabaseHas('campaigns', [
+        'user_id' => $user->id,
+        'event_id' => $marketingEvent->id,
+        'name' => '11.11 Mega Sale Campaign',
+    ]);
+});
+
+it('allows campaign creation with an existing user-owned custom event', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    Business::factory()->create(['user_id' => $user->id]);
+
+    $customEvent = Event::factory()->create([
+        'user_id' => $user->id,
+        'is_global' => false,
+        'name' => 'Shop Anniversary',
+        'type' => 'custom',
+        'date' => '2026-10-10',
+        'end_date' => '2026-10-15',
+    ]);
+
+    $response = $this->actingAs($user)->post('/campaigns', [
+        'name' => 'Shop Anniversary Campaign',
+        'event_id' => $customEvent->id,
+        'start_date' => '2026-10-10',
+        'end_date' => '2026-10-15',
+    ]);
+
+    $response->assertRedirect('/campaigns');
+    $this->assertDatabaseHas('campaigns', [
+        'user_id' => $user->id,
+        'event_id' => $customEvent->id,
+        'name' => 'Shop Anniversary Campaign',
+    ]);
+});
+
+it('does not create any new event record during campaign creation', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    Business::factory()->create(['user_id' => $user->id]);
+
+    $existingEvent = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Pre-existing Event',
+        'type' => 'custom',
+        'date' => '2026-11-01',
+    ]);
+
+    $initialEventCount = Event::count();
+
+    $response = $this->actingAs($user)->post('/campaigns', [
+        'name' => 'Campaign From Existing Event',
+        'event_id' => $existingEvent->id,
+        'start_date' => '2026-11-01',
+        'end_date' => '2026-11-01',
+    ]);
+
+    $response->assertRedirect('/campaigns');
+    expect(Event::count())->toBe($initialEventCount);
+});
+
+it('rejects cross-tenant event IDs when creating a campaign', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    Business::factory()->create(['user_id' => $user->id]);
+
+    $otherUser = User::factory()->create();
+    $privateEvent = Event::factory()->create([
+        'user_id' => $otherUser->id,
+        'is_global' => false,
+        'name' => 'Secret Private Sale',
+        'date' => now()->addDays(10)->toDateString(),
+    ]);
+
+    $response = $this->actingAs($user)->post('/campaigns', [
+        'name' => 'Hacked Campaign',
+        'event_id' => $privateEvent->id,
+        'start_date' => now()->addDays(10)->toDateString(),
+        'end_date' => now()->addDays(10)->toDateString(),
+    ]);
+
+    $response->assertSessionHasErrors(['event_id']);
+    $this->assertDatabaseMissing('campaigns', ['name' => 'Hacked Campaign']);
 });

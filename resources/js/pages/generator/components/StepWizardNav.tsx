@@ -16,15 +16,21 @@ interface StepWizardNavProps {
     onSelectStep: (step: Step) => void;
 }
 
+/**
+ * Simplified, ultra-low-profile Segmented Progress Bar for AI Marketing Studio steps.
+ * Minimizes vertical height to prevent unnecessary scrolling.
+ */
 export function StepWizardNav({
     currentStep,
     steps,
     onSelectStep,
 }: StepWizardNavProps) {
+    const gridColsClass = steps.length === 4 ? 'grid-cols-4' : 'grid-cols-3';
+
     return (
-        <div className="flex items-center rounded-xl border border-border/80 bg-card/80 p-1 shadow-xs">
-            {steps.map(
-                ({ step, title, isCompleted, isAccessible }) => {
+        <nav aria-label="Generation Steps" className="w-full">
+            <div className={`grid ${gridColsClass} gap-2 sm:gap-3`}>
+                {steps.map(({ step, title, isCompleted, isAccessible }) => {
                     const isActive = currentStep === step;
 
                     return (
@@ -32,47 +38,55 @@ export function StepWizardNav({
                             key={step}
                             type="button"
                             disabled={!isAccessible}
-                            onClick={() => {
-                                if (isAccessible) {
-                                    onSelectStep(step);
-                                }
-                            }}
-                            className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-left transition-all duration-200 ${
-                                isActive
-                                    ? 'bg-primary text-primary-foreground shadow-xs'
-                                    : isCompleted
-                                      ? 'text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400'
-                                      : isAccessible
-                                        ? 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'
-                                        : 'cursor-not-allowed opacity-40'
+                            onClick={() => isAccessible && onSelectStep(step)}
+                            className={`group flex min-w-0 flex-1 flex-col gap-1 text-left transition-all ${
+                                isAccessible ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'
                             }`}
                         >
-                            {/* Step Number / Check */}
-                            <span
-                                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
-                                    isActive
-                                        ? 'bg-white/20'
-                                        : isCompleted
-                                          ? 'bg-emerald-500/20'
-                                          : 'bg-muted/60'
-                                }`}
-                            >
-                                {isCompleted ? (
-                                    <Check className="h-2.5 w-2.5" />
-                                ) : (
-                                    step
-                                )}
-                            </span>
+                            {/* Sleek Segment Line */}
+                            <div className="relative h-1 w-full overflow-hidden rounded-full bg-muted/60 transition-colors">
+                                <div
+                                    className={`h-full rounded-full transition-all duration-300 ${
+                                        isActive
+                                            ? 'w-full bg-primary'
+                                            : isCompleted
+                                              ? 'w-full bg-primary/75'
+                                              : 'w-0'
+                                    }`}
+                                />
+                            </div>
 
-                            {/* Step Label */}
-                            <span className="truncate text-xs font-semibold">
-                                <span className="hidden sm:inline">{title}</span>
-                                <span className="sm:hidden">{step}</span>
-                            </span>
+                            {/* Minimal Step Label */}
+                            <div className="flex min-w-0 items-center gap-1 px-0.5">
+                                {isCompleted ? (
+                                    <Check className="h-2.5 w-2.5 shrink-0 stroke-[3] text-primary" />
+                                ) : (
+                                    <span
+                                        className={`font-mono text-[10px] shrink-0 ${
+                                            isActive
+                                                ? 'font-bold text-primary'
+                                                : 'text-muted-foreground'
+                                        }`}
+                                    >
+                                        {step}.
+                                    </span>
+                                )}
+                                <span
+                                    className={`truncate text-xs transition-colors ${
+                                        isActive
+                                            ? 'font-bold text-foreground'
+                                            : isCompleted
+                                              ? 'font-medium text-foreground/80 group-hover:text-foreground'
+                                              : 'font-medium text-muted-foreground'
+                                    }`}
+                                >
+                                    {title}
+                                </span>
+                            </div>
                         </button>
                     );
-                },
-            )}
-        </div>
+                })}
+            </div>
+        </nav>
     );
 }

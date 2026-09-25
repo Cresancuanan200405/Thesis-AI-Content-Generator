@@ -364,7 +364,7 @@ export function EventsHolidays({
                                                     }
                                                     className="h-7 gap-1 border-rose-500/30 text-xs font-semibold text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
                                                 >
-                                                    Create Campaign Anyway
+                                                    Create Campaign
                                                 </Button>
                                             </>
                                         ) : evt.is_past ? (
@@ -381,7 +381,7 @@ export function EventsHolidays({
                                                     }
                                                     className="h-7 text-xs font-semibold"
                                                 >
-                                                    Create Campaign Anyway
+                                                    Create Campaign
                                                 </Button>
                                             </>
                                         ) : (

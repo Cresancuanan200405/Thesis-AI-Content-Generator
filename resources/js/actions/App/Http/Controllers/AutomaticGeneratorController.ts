@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\AutomaticGeneratorController::index
- * @see app/Http/Controllers/AutomaticGeneratorController.php:30
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:32
  * @route '/generator/automatic'
  */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\AutomaticGeneratorController::index
- * @see app/Http/Controllers/AutomaticGeneratorController.php:30
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:32
  * @route '/generator/automatic'
  */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AutomaticGeneratorController::index
- * @see app/Http/Controllers/AutomaticGeneratorController.php:30
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:32
  * @route '/generator/automatic'
  */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -34,7 +34,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\AutomaticGeneratorController::index
- * @see app/Http/Controllers/AutomaticGeneratorController.php:30
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:32
  * @route '/generator/automatic'
  */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,7 +44,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\AutomaticGeneratorController::index
- * @see app/Http/Controllers/AutomaticGeneratorController.php:30
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:32
  * @route '/generator/automatic'
  */
     const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -54,7 +54,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\AutomaticGeneratorController::index
- * @see app/Http/Controllers/AutomaticGeneratorController.php:30
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:32
  * @route '/generator/automatic'
  */
         indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -63,7 +63,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\AutomaticGeneratorController::index
- * @see app/Http/Controllers/AutomaticGeneratorController.php:30
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:32
  * @route '/generator/automatic'
  */
         indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -79,7 +79,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     index.form = indexForm
 /**
 * @see \App\Http\Controllers\AutomaticGeneratorController::generate
- * @see app/Http/Controllers/AutomaticGeneratorController.php:45
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:47
  * @route '/generator/automatic'
  */
 export const generate = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -94,7 +94,7 @@ generate.definition = {
 
 /**
 * @see \App\Http\Controllers\AutomaticGeneratorController::generate
- * @see app/Http/Controllers/AutomaticGeneratorController.php:45
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:47
  * @route '/generator/automatic'
  */
 generate.url = (options?: RouteQueryOptions) => {
@@ -103,7 +103,7 @@ generate.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AutomaticGeneratorController::generate
- * @see app/Http/Controllers/AutomaticGeneratorController.php:45
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:47
  * @route '/generator/automatic'
  */
 generate.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -113,7 +113,7 @@ generate.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\AutomaticGeneratorController::generate
- * @see app/Http/Controllers/AutomaticGeneratorController.php:45
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:47
  * @route '/generator/automatic'
  */
     const generateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -123,7 +123,7 @@ generate.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\AutomaticGeneratorController::generate
- * @see app/Http/Controllers/AutomaticGeneratorController.php:45
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:47
  * @route '/generator/automatic'
  */
         generateForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

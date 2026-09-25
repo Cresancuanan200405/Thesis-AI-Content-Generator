@@ -34,12 +34,14 @@ interface CreativeCanvasProps {
     isSavedToDesigns: boolean;
     isSavingDesign: boolean;
     onSaveToDesigns: () => void;
-    onDownload: (format: 'png' | 'jpeg' | 'svg') => void;
+    onDownload: (format: 'png' | 'jpeg') => void;
     onOpenFullscreen: () => void;
     onEditParameters: () => void;
     onRegenerate: () => void;
     creativeConcept?: string;
     visualStrategy?: string;
+    designTreatment?: string;
+    copyEmphasis?: string;
     hasReferenceImage?: boolean;
 }
 
@@ -60,6 +62,8 @@ export function CreativeCanvas({
     onRegenerate,
     creativeConcept,
     visualStrategy,
+    designTreatment,
+    copyEmphasis,
     hasReferenceImage = false,
 }: CreativeCanvasProps) {
     const [isTechDetailsExpanded, setIsTechDetailsExpanded] = useState(false);
@@ -109,7 +113,7 @@ export function CreativeCanvas({
                                     className="border-primary/30 bg-primary/10 font-mono text-[10px] font-bold text-primary"
                                 >
                                     <Sparkles className="mr-1 inline h-2.5 w-2.5" />
-                                    {imageModel || 'gpt-image-1'}
+                                    {imageModel || 'gpt-image-2'}
                                 </Badge>
                                 <Badge
                                     variant="outline"
@@ -213,8 +217,32 @@ export function CreativeCanvas({
                     </div>
 
                     {/* Generated Creative Concept & Tagline in Ready View */}
-                    {(tagline || creativeConcept) && (
+                    {(tagline || creativeConcept || designTreatment || copyEmphasis) && (
                         <div className="space-y-2.5 rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-2xs">
+                            {(designTreatment || copyEmphasis) && (
+                                <div className="flex flex-wrap items-center gap-2 border-b border-primary/15 pb-2">
+                                    {designTreatment && (
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                                                Treatment:
+                                            </span>
+                                            <Badge variant="outline" className="border-primary/30 bg-primary/10 text-[10px] font-semibold text-primary">
+                                                {designTreatment}
+                                            </Badge>
+                                        </div>
+                                    )}
+                                    {copyEmphasis && (
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                                                Emphasis:
+                                            </span>
+                                            <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-[10px] font-semibold text-blue-600 dark:text-blue-400">
+                                                {copyEmphasis}
+                                            </Badge>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             {tagline && (
                                 <div>
                                     <span className="text-[10px] font-bold tracking-wider text-primary uppercase">
@@ -226,7 +254,7 @@ export function CreativeCanvas({
                                 </div>
                             )}
                             {creativeConcept && (
-                                <div className={tagline ? 'border-t border-primary/15 pt-2' : ''}>
+                                <div className={tagline || designTreatment ? 'border-t border-primary/15 pt-2' : ''}>
                                     <span className="text-[10px] font-bold tracking-wider text-primary uppercase">
                                         Creative Concept
                                     </span>
@@ -296,13 +324,6 @@ export function CreativeCanvas({
                                         <Download className="h-3.5 w-3.5 text-blue-500" />
                                         JPEG (Web-Optimized)
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() => onDownload('svg')}
-                                        className="cursor-pointer gap-2 text-xs font-medium"
-                                    >
-                                        <Download className="h-3.5 w-3.5 text-emerald-500" />
-                                        SVG (Vector Embed)
-                                    </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
@@ -364,7 +385,7 @@ export function CreativeCanvas({
                                                 Model
                                             </p>
                                             <p className="mt-0.5 font-semibold text-foreground">
-                                                {imageModel || 'GPT-Image'}
+                                                {imageModel || 'GPT-Image-2'}
                                             </p>
                                         </div>
                                         <div className="rounded-xl border border-border/60 bg-muted/20 p-2.5">

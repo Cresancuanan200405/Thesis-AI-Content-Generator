@@ -32,6 +32,7 @@ class Event extends Model
         'name',
         'description',
         'date',
+        'end_date',
         'type',
         'category',
         'is_long_weekend',
@@ -45,6 +46,7 @@ class Event extends Model
 
     protected $casts = [
         'date' => 'date',
+        'end_date' => 'date',
         'shifted_from_date' => 'date',
         'is_long_weekend' => 'boolean',
         'is_global' => 'boolean',

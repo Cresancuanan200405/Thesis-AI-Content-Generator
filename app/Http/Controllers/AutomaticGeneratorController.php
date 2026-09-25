@@ -7,9 +7,11 @@ use App\Models\Business;
 use App\Models\Campaign;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\MarketingDesignSystem;
 use App\Services\ModularPromptOrchestrator;
 use App\Services\NotificationService;
 use App\Services\OpenAIImageService;
+use App\Services\OpenAIModelRegistry;
 use App\Services\PhilippineHolidayService;
 use App\Services\VisualPromptGeneratorService;
 use Illuminate\Http\JsonResponse;
@@ -46,7 +48,8 @@ class AutomaticGeneratorController extends Controller
         Request $request,
         VisualPromptGeneratorService $promptService,
         OpenAIImageService $openAIService,
-        ModularPromptOrchestrator $promptOrchestrator
+        ModularPromptOrchestrator $promptOrchestrator,
+        MarketingDesignSystem $designSystem
     ): JsonResponse {
         @set_time_limit(120);
         @ini_set('max_execution_time', '120');
@@ -74,6 +77,9 @@ class AutomaticGeneratorController extends Controller
             'custom_products' => ['nullable', 'array'],
             'custom_products.*.name' => ['required', 'string', 'max:150'],
             'custom_products.*.price' => ['nullable'],
+            'custom_products.*.description' => ['nullable', 'string', 'max:500'],
+            'include_tagline' => ['nullable', 'boolean'],
+            'include_prices' => ['nullable', 'boolean'],
             'tagline' => ['nullable', 'string', 'max:255'],
             'user_instruction' => ['nullable', 'string', 'max:4000'],
             'image_prompt' => ['nullable', 'string', 'max:4000'],
@@ -83,6 +89,13 @@ class AutomaticGeneratorController extends Controller
             'include_business_name' => ['nullable', 'boolean'],
             'image_model' => ['nullable', 'string', 'max:50'],
             'image_quality' => ['nullable', 'string', 'in:low,medium,high'],
+            'is_variation' => ['nullable', 'boolean'],
+            'source_design_id' => ['nullable', 'integer'],
+            'design_treatment' => ['nullable', 'string', 'max:50'],
+            'copy_emphasis' => ['nullable', 'string', 'max:50'],
+            'render_style' => ['nullable', 'string', 'max:100'],
+            'creative_concept' => ['nullable', 'string', 'max:500'],
+            'visual_strategy' => ['nullable', 'string', 'max:500'],
         ]);
 
         /** @var Campaign|null $campaign */
@@ -138,28 +151,36 @@ class AutomaticGeneratorController extends Controller
         }
 
         $aspectRatio = $validated['aspect_ratio'] ?? '1:1';
-        $imageModel = $validated['image_model'] ?? 'gpt-image-2';
+        $imageModel = OpenAIModelRegistry::DEFAULT_IMAGE_MODEL;
         $imageQuality = $validated['image_quality'] ?? 'medium';
         $includeBusinessName = filter_var($validated['include_business_name'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $businessName = $includeBusinessName ? $business->name : null;
+        $includeTagline = filter_var($validated['include_tagline'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $includePrices = filter_var($validated['include_prices'] ?? true, FILTER_VALIDATE_BOOLEAN);
 
         // Primary catalog product for reference preservation
         $primaryProduct = $catalogProducts->first();
         $event = $campaign->event;
 
-        $userTagline = ! empty($validated['tagline']) ? trim((string) $validated['tagline']) : null;
+        $userTagline = $includeTagline && ! empty($validated['tagline']) ? trim((string) $validated['tagline']) : null;
         $userPrompt = ! empty($validated['user_instruction'])
             ? trim((string) $validated['user_instruction'])
             : (! empty($validated['image_prompt']) ? trim((string) $validated['image_prompt']) : null);
 
-        // Stage 1: Autonomous Creative Direction (Tagline, Concept, Strategy, Visual Prompt)
+        // Retrieve recent creative fingerprints for anti-repetition guidance
+        $recentFingerprints = $designSystem->getRecentFingerprints($user, $business, 6);
+
+        // Stage 1: Autonomous Creative Direction (Tagline, Concept, Strategy, Visual Prompt, Design System)
         try {
             $creativeResult = $promptService->generate($user, $campaign, $business, [
                 'generation_mode' => 'automatic',
-                'require_tagline' => true,
+                'require_tagline' => $includeTagline,
+                'include_tagline' => $includeTagline,
+                'include_prices' => $includePrices,
                 'tagline' => $userTagline,
                 'user_instruction' => $userPrompt,
                 'previous_concepts' => $validated['previous_concepts'] ?? [],
+                'recent_fingerprints' => $recentFingerprints,
                 'catalog_products' => $catalogProducts,
                 'custom_products' => $validated['custom_products'] ?? [],
                 'aspect_ratio' => $aspectRatio,
@@ -178,17 +199,195 @@ class AutomaticGeneratorController extends Controller
             ], 500);
         }
 
-        $generatedTagline = $userTagline ?: ($creativeResult['tagline'] ?? null);
-        $creativeConcept = $creativeResult['creative_concept'] ?? null;
-        $visualStrategy = $creativeResult['visual_strategy'] ?? null;
+        $isVariation = filter_var($validated['is_variation'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        $generatedTagline = $includeTagline
+            ? ($userTagline ?: ($creativeResult['tagline'] ?? null))
+            : null;
+        $creativeConcept = ($isVariation && ! empty($validated['creative_concept']))
+            ? $validated['creative_concept']
+            : ($creativeResult['creative_concept'] ?? null);
+        $visualStrategy = ($isVariation && ! empty($validated['visual_strategy']))
+            ? $validated['visual_strategy']
+            : ($creativeResult['visual_strategy'] ?? null);
         $conceptScene = $userPrompt ?: $creativeResult['visual_prompt'];
+
+        $designTreatment = ($isVariation && ! empty($validated['design_treatment']))
+            ? $validated['design_treatment']
+            : ($creativeResult['design_treatment'] ?? 'Auto');
+        $copyEmphasis = ($isVariation && ! empty($validated['copy_emphasis']))
+            ? $validated['copy_emphasis']
+            : ($creativeResult['copy_emphasis'] ?? 'Balanced');
+        $typographyLayout = $creativeResult['typography_layout'] ?? null;
+        $compositionType = $creativeResult['composition_type'] ?? null;
+        $cameraViewpoint = $creativeResult['camera_viewpoint'] ?? null;
+        $lightingProfile = $creativeResult['lighting_profile'] ?? null;
+        $sceneFamily = $creativeResult['scene_family'] ?? null;
+        $environmentFamily = $creativeResult['environment_family'] ?? null;
+        $propProfile = $creativeResult['prop_profile'] ?? null;
+        $renderStyle = ($isVariation && ! empty($validated['render_style']))
+            ? $validated['render_style']
+            : ($creativeResult['render_style'] ?? 'Automatic Commercial Art Direction');
+
+        $context = [
+            'industry' => $business->industry,
+            'category' => $business->category,
+            'aspect_ratio' => $aspectRatio,
+            'product' => $primaryProduct?->name,
+            'campaign' => $campaign->name,
+            'event' => $event?->name,
+        ];
+
+        $attemptedCandidates = [];
+        $rejectedCandidates = [];
+        $currentCandidate = [
+            'scene_family' => $sceneFamily,
+            'environment_family' => $environmentFamily,
+            'composition_type' => $compositionType,
+            'camera_viewpoint' => $cameraViewpoint,
+            'lighting_profile' => $lightingProfile,
+            'prop_profile' => $propProfile,
+        ];
+        $attemptedCandidates[] = $currentCandidate;
+
+        $diversityEvaluation = $designSystem->evaluateVisualCoreDiversity($currentCandidate, $recentFingerprints);
+        $retryCount = 0;
+        $maxRetries = 2;
+        $isDerived = false;
+
+        // Bounded retry semantics: The retry count is bounded at two attempts;
+        // generation proceeds only after an accepted candidate is obtained, otherwise the request fails explicitly.
+        while (! $diversityEvaluation['is_allowed'] && $retryCount < $maxRetries) {
+            $retryCount++;
+            $rejectedCandidates[] = [
+                'candidate' => $currentCandidate,
+                'evaluation' => $diversityEvaluation,
+                'retry_attempt' => $retryCount,
+            ];
+            Log::info("Automatic Creative Director proposal prohibited ({$diversityEvaluation['max_match_count']}/6 match). Regenerating/deriving candidate. Attempt: {$retryCount}");
+
+            $fingerprintsToAvoid = array_merge($recentFingerprints, $attemptedCandidates);
+            $currentCandidate = $designSystem->deriveDiverseVisualCore($currentCandidate, $fingerprintsToAvoid, $context);
+            $attemptedCandidates[] = $currentCandidate;
+            $diversityEvaluation = $designSystem->evaluateVisualCoreDiversity($currentCandidate, $recentFingerprints);
+            $isDerived = true;
+        }
+
+        // Explicit Controlled Generation Failure Path
+        if (! $diversityEvaluation['is_allowed']) {
+            $rejectedCandidates[] = [
+                'candidate' => $currentCandidate,
+                'evaluation' => $diversityEvaluation,
+                'retry_attempt' => $retryCount,
+            ];
+            Log::warning("Automatic Creative Director failed to produce an acceptable candidate after {$retryCount} retries. Generation rejected.");
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to generate a sufficiently diverse creative concept within retry limits. The proposed visual staging was too similar to recent campaigns. Please adjust campaign settings or try again.',
+                'generation_metadata' => [
+                    'visual_core_diversity' => [
+                        'attempted_candidates' => $attemptedCandidates,
+                        'rejected_candidates' => $rejectedCandidates,
+                        'final_accepted_candidate' => null,
+                        'similarity_metrics' => $diversityEvaluation,
+                        'diversity_result' => $diversityEvaluation,
+                        'retry_count' => $retryCount,
+                        'retry_limit' => $maxRetries,
+                        'final_coherence_state' => 'prohibited_exhaustion',
+                    ],
+                ],
+            ], 422);
+        }
+
+        // Apply final accepted candidate
+        $sceneFamily = $currentCandidate['scene_family'];
+        $environmentFamily = $currentCandidate['environment_family'];
+        $compositionType = $currentCandidate['composition_type'];
+        $cameraViewpoint = $currentCandidate['camera_viewpoint'];
+        $lightingProfile = $currentCandidate['lighting_profile'];
+        $propProfile = $currentCandidate['prop_profile'];
+
+        // If candidate was derived, rebuild coherent creative concept, visual strategy, and scene direction
+        // to guarantee no contradiction between structured visual core and textual direction.
+        if ($isDerived) {
+            $coherentDirection = $designSystem->buildCoherentCreativeDirection(
+                $currentCandidate,
+                $primaryProduct?->name ?? 'Featured Product',
+                $business->industry,
+                $business->category,
+                $event?->name
+            );
+
+            $creativeConcept = $coherentDirection['creative_concept'];
+            $visualStrategy = $coherentDirection['visual_strategy'];
+            $conceptScene = $coherentDirection['scene_prompt'];
+        }
 
         // Stage 2: Unified Production Prompt Orchestration with ModularPromptOrchestrator
         $referenceImagePath = $primaryProduct?->image_path;
+        $referenceImagePaths = $catalogProducts
+            ->pluck('image_path')
+            ->filter()
+            ->values()
+            ->all();
         $productImageUrl = $primaryProduct?->image_path ? Storage::url($primaryProduct->image_path) : null;
+
+        // Build Complete Multi-Product Compositor Contract
+        $primaryProductContract = null;
+        if ($primaryProduct) {
+            $primaryProductContract = [
+                'name' => $primaryProduct->name,
+                'price' => $includePrices ? $primaryProduct->price : null,
+            ];
+        } else {
+            $primaryProductContract = [
+                'name' => 'Featured Product',
+                'price' => null,
+            ];
+        }
+
+        $coFeaturedProductsContract = [];
+        if ($catalogProducts->count() > 1) {
+            foreach ($catalogProducts->slice(1) as $cp) {
+                $coFeaturedProductsContract[] = [
+                    'name' => $cp->name,
+                    'price' => $includePrices ? $cp->price : null,
+                ];
+            }
+        }
+        foreach ($validated['custom_products'] ?? [] as $custom) {
+            $cName = is_array($custom) ? ($custom['name'] ?? null) : ($custom->name ?? null);
+            $cPrice = is_array($custom) ? ($custom['price'] ?? null) : ($custom->price ?? null);
+            if (! empty($cName)) {
+                $coFeaturedProductsContract[] = [
+                    'name' => $cName,
+                    'price' => $includePrices ? $cPrice : null,
+                ];
+            }
+        }
+
+        $pricesContract = [];
+        if ($includePrices) {
+            if ($primaryProductContract && ! empty($primaryProductContract['price'])) {
+                $pricesContract[$primaryProductContract['name']] = $primaryProductContract['price'];
+            }
+            foreach ($coFeaturedProductsContract as $cfp) {
+                if (! empty($cfp['price'])) {
+                    $pricesContract[$cfp['name']] = $cfp['price'];
+                }
+            }
+        }
 
         $orchestratedOptions = [
             'generation_mode' => 'automatic',
+            'is_variation' => $isVariation,
+            'source_design_id' => $validated['source_design_id'] ?? null,
+            'deterministic_compositing' => true,
+            'business' => $business,
+            'primary_product' => $primaryProductContract,
+            'co_featured_products' => $coFeaturedProductsContract,
+            'prices' => $pricesContract,
             'product_name' => $primaryProduct?->name ?? 'Featured Product',
             'product_description' => $primaryProduct?->description,
             'product_category' => $business->category,
@@ -197,12 +396,27 @@ class AutomaticGeneratorController extends Controller
             'campaign_name' => $campaign->name,
             'campaign_objective' => $campaign->objective,
             'event_name' => $event?->name,
-            'price' => $primaryProduct?->price,
+            'price' => $includePrices ? $primaryProduct?->price : null,
+            'include_prices' => $includePrices,
+            'catalog_products' => $catalogProducts,
+            'custom_products' => $validated['custom_products'] ?? [],
             'brand_tone' => [],
             'visual_theme' => [],
-            'render_style' => 'Automatic Commercial Art Direction',
+            'render_style' => $renderStyle,
+            'design_treatment' => $designTreatment,
+            'copy_emphasis' => $copyEmphasis,
+            'typography_layout' => $typographyLayout,
+            'creative_concept' => $creativeConcept,
+            'visual_strategy' => $visualStrategy,
+            'composition_type' => $compositionType,
+            'camera_viewpoint' => $cameraViewpoint,
+            'lighting_profile' => $lightingProfile,
+            'scene_family' => $sceneFamily,
+            'environment_family' => $environmentFamily,
+            'prop_profile' => $propProfile,
             'tagline' => $generatedTagline,
-            'tagline_mode' => 'ai',
+            'include_tagline' => $includeTagline,
+            'tagline_mode' => $includeTagline ? 'ai' : 'none',
             'aspect_ratio' => $aspectRatio,
             'image_model' => $imageModel,
             'image_quality' => $imageQuality,
@@ -211,9 +425,11 @@ class AutomaticGeneratorController extends Controller
             'business_industry' => $business->industry,
             'business_description' => $business->description,
             'business_usp' => $business->unique_selling_point,
+            'business_target_audience' => $business->target_audience,
             'business_content_style' => $business->content_style,
             'business_marketing_prefs' => $business->marketing_preferences,
             'reference_image_path' => $referenceImagePath,
+            'reference_image_paths' => $referenceImagePaths,
             'scene_prompt' => $conceptScene,
             'user_prompt' => $conceptScene,
             'notes' => null,
@@ -221,12 +437,48 @@ class AutomaticGeneratorController extends Controller
 
         $productionVisualPrompt = $promptOrchestrator->orchestrate($orchestratedOptions, $business);
 
+        $creativeFingerprint = $designSystem->buildFingerprint([
+            'creative_concept' => $creativeConcept,
+            'scene_family' => $sceneFamily,
+            'environment_family' => $environmentFamily,
+            'composition_type' => $compositionType,
+            'camera_viewpoint' => $cameraViewpoint,
+            'lighting_profile' => $lightingProfile,
+            'prop_profile' => $propProfile,
+            'typography_layout' => $typographyLayout,
+            'copy_emphasis' => $copyEmphasis,
+            'design_treatment' => $designTreatment,
+            'render_style' => $renderStyle,
+            'aspect_ratio' => $aspectRatio,
+        ]);
+
         // Stage 3: Immediate Downstream Image Generation
         try {
             $generatedImagePath = $openAIService->generate($productionVisualPrompt, $orchestratedOptions);
 
             $blueprint = $openAIService->getLastReferenceBlueprint();
-            $genMeta = $openAIService->getLastGenerationMetadata();
+            $genMeta = array_merge($openAIService->getLastGenerationMetadata() ?: [], [
+                'creative_fingerprint' => $creativeFingerprint,
+                'design_treatment' => $designTreatment,
+                'copy_emphasis' => $copyEmphasis,
+                'typography_layout' => $typographyLayout,
+                'composition_type' => $compositionType,
+                'camera_viewpoint' => $cameraViewpoint,
+                'lighting_profile' => $lightingProfile,
+                'scene_family' => $sceneFamily,
+                'environment_family' => $environmentFamily,
+                'prop_profile' => $propProfile,
+                'visual_core_diversity' => [
+                    'attempted_candidates' => $attemptedCandidates,
+                    'rejected_candidates' => $rejectedCandidates,
+                    'final_accepted_candidate' => $currentCandidate,
+                    'similarity_metrics' => $diversityEvaluation,
+                    'diversity_result' => $diversityEvaluation,
+                    'retry_count' => $retryCount,
+                    'retry_limit' => $maxRetries,
+                    'final_coherence_state' => $isDerived ? 'derived_coherent' : 'original_accepted',
+                ],
+            ]);
 
             $previewData = [
                 'image_url' => Storage::url($generatedImagePath),
@@ -236,20 +488,46 @@ class AutomaticGeneratorController extends Controller
                 'tagline' => $generatedTagline,
                 'creative_concept' => $creativeConcept,
                 'visual_strategy' => $visualStrategy,
+                'design_treatment' => $designTreatment,
+                'copy_emphasis' => $copyEmphasis,
+                'creative_fingerprint' => $creativeFingerprint,
+                'scene_family' => $sceneFamily,
+                'environment_family' => $environmentFamily,
+                'prop_profile' => $propProfile,
                 'product_name' => $primaryProduct?->name ?? 'Featured Product',
                 'product_id' => $primaryProduct?->id,
-                'price' => $primaryProduct?->price,
-                'render_style' => 'Automatic Commercial Art Direction',
+                'catalog_product_ids' => $catalogProducts->pluck('id')->all(),
+                'custom_products' => $validated['custom_products'] ?? [],
+                'reference_image_paths' => $referenceImagePaths,
+                'price' => $includePrices ? $primaryProduct?->price : null,
+                'include_prices' => $includePrices,
+                'include_tagline' => $includeTagline,
+                'render_style' => $renderStyle,
                 'aspect_ratio' => $aspectRatio,
                 'image_model' => $imageModel,
                 'image_quality' => $imageQuality,
                 'reference_blueprint' => $blueprint,
                 'generation_meta' => $genMeta,
+                'source_design_id' => $validated['source_design_id'] ?? null,
+                'is_variation' => $isVariation,
+                'primary_product' => $primaryProductContract,
+                'co_featured_products' => $coFeaturedProductsContract,
+                'prices' => $pricesContract,
             ];
 
             return response()->json(array_merge([
                 'success' => true,
-                'message' => 'Visual creative generated successfully.',
+                'message' => 'Visual creative generated automatically.',
+                'tagline' => $generatedTagline,
+                'creative_concept' => $creativeConcept,
+                'visual_strategy' => $visualStrategy,
+                'design_treatment' => $designTreatment,
+                'copy_emphasis' => $copyEmphasis,
+                'creative_fingerprint' => $creativeFingerprint,
+                'visual_prompt' => $productionVisualPrompt,
+                'prompt' => $productionVisualPrompt,
+                'include_tagline' => $includeTagline,
+                'include_prices' => $includePrices,
                 'preview' => $previewData,
             ], $previewData));
         } catch (\Throwable $e) {

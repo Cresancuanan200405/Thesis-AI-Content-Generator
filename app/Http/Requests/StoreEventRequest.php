@@ -54,4 +54,12 @@ class StoreEventRequest extends FormRequest
     {
         return $this->input('type', 'custom');
     }
+
+    /**
+     * Get the end date field, defaulting to the start date if not specified.
+     */
+    public function getEndDate(): string
+    {
+        return $this->input('end_date') ?? $this->getDate();
+    }
 }
