@@ -3,13 +3,8 @@ import {
     Check,
     ImagePlus,
     Loader2,
-    Sparkles,
-    Tag,
     Trash2,
     Upload,
-    X,
-    ZoomIn,
-    ZoomOut,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -73,7 +68,6 @@ async function processImageForUpload(file: File): Promise<File> {
 
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // Use PNG for pngs with transparency or webp for others
                 const isPng = file.type === 'image/png';
                 const outputType = isPng ? 'image/png' : 'image/jpeg';
 
@@ -113,8 +107,8 @@ async function processImageForUpload(file: File): Promise<File> {
 export default function ProductForm({
     product,
     mode = 'create',
-    submitLabel = 'Save Product',
-    cancelUrl: _cancelUrl = '/products',
+    submitLabel = 'Add Product',
+    cancelUrl = '/products',
 }: ProductFormProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(
@@ -125,14 +119,9 @@ export default function ProductForm({
     const [isDragging, setIsDragging] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Lightbox / Full Image View State
-    const [isViewingImage, setIsViewingImage] = useState(false);
-    const [isZoomed, setIsZoomed] = useState(false);
-    const [zoomOrigin, setZoomOrigin] = useState({ x: 50, y: 50 });
-
     const { data, setData, errors } = useForm({
         name: product?.name ?? '',
-        price: product?.price ?? '',
+        price: product?.price ? String(product.price) : '',
     });
 
     const handleFile = async (file: File) => {
@@ -200,12 +189,39 @@ export default function ProductForm({
         }
     };
 
+    const handleCancel = () => {
+        if (cancelUrl) {
+            router.visit(cancelUrl);
+        } else {
+            router.visit('/products');
+        }
+    };
+
+    // Validation rules:
+    // - a valid product image exists
+    // - product name is non-empty
+    // - price is valid
+    const hasImage = Boolean(selectedFile || imagePreview);
+    const hasName = data.name.trim().length > 0;
+    const parsedPrice = parseFloat(data.price);
+    const hasValidPrice =
+        data.price.trim() !== '' &&
+        !isNaN(parsedPrice) &&
+        parsedPrice >= 0;
+
+    const isFormValid = hasImage && hasName && hasValidPrice;
+
     const submit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+
+        if (!isFormValid || isSubmitting) {
+            return;
+        }
+
         setIsSubmitting(true);
 
         const payload: Record<string, any> = {
-            name: data.name || '',
+            name: data.name.trim(),
             price: data.price ? String(data.price) : '',
         };
 
@@ -242,11 +258,11 @@ export default function ProductForm({
             preserveScroll: true,
             forceFormData: true,
             onSuccess: () => {
-                toast.success('Product created successfully!');
+                toast.success('Product added successfully!');
             },
             onError: (errs) => {
                 const message =
-                    Object.values(errs)[0] || 'Failed to create product.';
+                    Object.values(errs)[0] || 'Failed to add product.';
                 toast.error(message);
             },
             onFinish: () => {
@@ -256,75 +272,61 @@ export default function ProductForm({
     };
 
     return (
-        <>
-            <form onSubmit={submit} className="mx-auto max-w-4xl space-y-6">
-                <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-12">
-                    {/* PHOTO UPLOAD CARD (LEFT / 5 COLS) */}
-                    <Card className="overflow-hidden rounded-3xl border-border bg-card shadow-xs md:col-span-5">
-                        <CardContent className="space-y-4 p-5 sm:p-6">
-                            <div className="flex items-center justify-between">
-                                <Label className="text-xs font-bold tracking-wider text-foreground uppercase">
-                                    Product Visual
-                                </Label>
-                                {imagePreview && (
-                                    <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                        Photo Added
-                                    </span>
-                                )}
-                            </div>
+        <div className="mx-auto w-full max-w-xl">
+            <Card className="overflow-hidden rounded-3xl border-border bg-card shadow-sm">
+                {/* Header */}
+                <div className="border-b border-border/60 p-6 sm:p-7">
+                    <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+                        {mode === 'edit' ? 'Edit Product' : 'Add Product'}
+                    </h1>
+                    <p className="mt-1.5 text-xs text-muted-foreground sm:text-sm">
+                        {mode === 'edit'
+                            ? 'Update your catalog product details and marketing visual.'
+                            : 'Add a product to your catalog so MarketPilot can use it in marketing designs.'}
+                    </p>
+                </div>
 
+                <form onSubmit={submit}>
+                    <CardContent className="space-y-6 p-6 sm:p-7">
+                        {/* SECTION 1 — PRODUCT IMAGE */}
+                        <div className="space-y-2">
                             <input
                                 ref={fileInputRef}
                                 type="file"
-                                accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                                accept="image/png,image/jpeg,image/jpg,image/webp"
                                 className="hidden"
                                 onChange={handleFileChange}
                             />
 
                             {imagePreview ? (
                                 <div className="space-y-3">
-                                    <div
-                                        onClick={() => setIsViewingImage(true)}
-                                        role="button"
-                                        tabIndex={0}
-                                        onKeyDown={(e) => {
-                                            if (
-                                                e.key === 'Enter' ||
-                                                e.key === ' '
-                                            ) {
-                                                setIsViewingImage(true);
-                                            }
-                                        }}
-                                        className="group relative aspect-square w-full cursor-pointer overflow-hidden rounded-2xl border border-border bg-muted/20 shadow-xs focus:ring-2 focus:ring-primary/30 focus:outline-none"
-                                        title="Click image to view full size"
-                                    >
+                                    <div className="relative flex aspect-4/3 w-full items-center justify-center overflow-hidden rounded-2xl border border-border/70 bg-muted/20 p-4 transition-all sm:aspect-16/10">
                                         <img
                                             src={imagePreview}
                                             alt="Product preview"
-                                            className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+                                            className="max-h-full w-auto max-w-full rounded-xl object-contain drop-shadow-xs"
                                         />
                                     </div>
 
-                                    {/* Action Buttons Below Image */}
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center justify-between">
                                         <Button
                                             type="button"
-                                            size="sm"
                                             variant="outline"
+                                            size="sm"
                                             onClick={() =>
                                                 fileInputRef.current?.click()
                                             }
-                                            className="h-8 flex-1 gap-1.5 rounded-xl text-xs font-semibold shadow-none"
+                                            className="h-8.5 gap-1.5 rounded-xl text-xs font-semibold shadow-2xs"
                                         >
                                             <Upload className="h-3.5 w-3.5" />
-                                            Change Photo
+                                            Change image
                                         </Button>
                                         <Button
                                             type="button"
+                                            variant="ghost"
                                             size="sm"
-                                            variant="destructive"
                                             onClick={handleRemoveImage}
-                                            className="h-8 gap-1.5 rounded-xl px-3 text-xs font-semibold shadow-none"
+                                            className="h-8.5 gap-1.5 rounded-xl text-xs font-semibold text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                                         >
                                             <Trash2 className="h-3.5 w-3.5" />
                                             Remove
@@ -339,236 +341,158 @@ export default function ProductForm({
                                     onDrop={handleDrop}
                                     onDragOver={handleDragOver}
                                     onDragLeave={handleDragLeave}
-                                    className={`group flex aspect-square w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-all ${
-                                        isDragging
-                                            ? 'scale-[0.99] border-primary bg-primary/10'
-                                            : 'border-border/80 bg-muted/15 hover:border-primary/50 hover:bg-primary/5'
-                                    }`}
+                                    className={`group flex aspect-4/3 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-all duration-200 sm:aspect-16/10 ${isDragging
+                                        ? 'scale-[0.99] border-primary bg-primary/10'
+                                        : 'border-border/80 bg-muted/15 hover:border-primary/50 hover:bg-primary/5'
+                                        }`}
                                 >
-                                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-2xs transition-transform group-hover:scale-110">
-                                        <ImagePlus className="h-7 w-7" />
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-2xs transition-transform duration-200 group-hover:scale-105">
+                                        <ImagePlus className="h-6 w-6" />
                                     </div>
-                                    <p className="mt-3 text-xs font-bold text-foreground">
-                                        Click or Drag & Drop Photo
+                                    <p className="mt-3 text-sm font-bold text-foreground">
+                                        Upload Product Image
                                     </p>
-                                    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                                        PNG, JPG, WebP, or SVG
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                        Drag & drop or click to upload
                                     </p>
+                                    <span className="mt-3.5 rounded-full bg-muted/80 px-2.5 py-0.5 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                                        PNG, JPG, WEBP
+                                    </span>
                                 </div>
                             )}
 
-                            <div className="space-y-1 rounded-xl border border-border/60 bg-muted/20 p-3 text-[11px] leading-relaxed text-muted-foreground">
-                                <p className="flex items-center gap-1.5 font-semibold text-foreground">
-                                    <Sparkles className="h-3 w-3 text-primary" />
-                                    AI Studio Integration
+                            {(errors as Record<string, string | undefined>).image && (
+                                <p className="text-xs font-medium text-destructive">
+                                    {(errors as Record<string, string | undefined>).image}
                                 </p>
-                                <p>
-                                    This photo will be available in AI Studio
-                                    when generating marketing creatives.
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* DETAILS CARD (RIGHT / 7 COLS) */}
-                    <div className="space-y-6 md:col-span-7">
-                        <Card className="rounded-3xl border-border bg-card shadow-xs">
-                            <CardContent className="space-y-5 p-5 sm:p-6">
-                                {/* PRODUCT NAME */}
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <Label
-                                            htmlFor="product-name"
-                                            className="text-xs font-bold tracking-wider text-foreground uppercase"
-                                        >
-                                            Product Name
-                                        </Label>
-                                        <span className="text-[11px] text-muted-foreground">
-                                            Optional
-                                        </span>
-                                    </div>
-                                    <div className="relative">
-                                        <Tag className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                        <Input
-                                            id="product-name"
-                                            value={data.name}
-                                            onChange={(event) =>
-                                                setData(
-                                                    'name',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            placeholder="e.g. Signature Lavender Scented Candle"
-                                            className={`h-11 rounded-xl border-input bg-background pl-10 text-sm font-medium focus-visible:ring-primary/30 ${
-                                                errors.name
-                                                    ? 'border-destructive ring-destructive/20'
-                                                    : ''
-                                            }`}
-                                        />
-                                    </div>
-                                    {errors.name && (
-                                        <p className="mt-1 text-xs font-medium text-destructive">
-                                            {errors.name}
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* PRICE */}
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <Label
-                                            htmlFor="product-price"
-                                            className="text-xs font-bold tracking-wider text-foreground uppercase"
-                                        >
-                                            Price (₱ PHP)
-                                        </Label>
-                                        <span className="text-[11px] text-muted-foreground">
-                                            Optional
-                                        </span>
-                                    </div>
-                                    <div className="relative">
-                                        <span className="absolute top-1/2 left-3.5 -translate-y-1/2 text-sm font-bold text-muted-foreground select-none">
-                                            ₱
-                                        </span>
-                                        <Input
-                                            id="product-price"
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            value={data.price}
-                                            onChange={(event) =>
-                                                setData(
-                                                    'price',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            placeholder="0.00"
-                                            className={`h-11 rounded-xl border-input bg-background pl-9 text-sm font-medium focus-visible:ring-primary/30 ${
-                                                errors.price
-                                                    ? 'border-destructive ring-destructive/20'
-                                                    : ''
-                                            }`}
-                                        />
-                                    </div>
-                                    {errors.price ? (
-                                        <p className="mt-1 text-xs font-medium text-destructive">
-                                            {errors.price}
-                                        </p>
-                                    ) : (
-                                        <p className="text-[11px] text-muted-foreground">
-                                            Optional retail price displayed on
-                                            generated product designs.
-                                        </p>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* ACTION BUTTON */}
-                        <div className="flex items-center justify-end pt-2">
-                            <Button
-                                type="submit"
-                                disabled={isSubmitting}
-                                className="h-11 w-full gap-2 rounded-xl px-8 text-sm font-bold shadow-sm sm:w-auto"
-                            >
-                                {isSubmitting ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        <span>Saving Product...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Check className="h-4 w-4 stroke-[2.5]" />
-                                        <span>{submitLabel}</span>
-                                    </>
-                                )}
-                            </Button>
+                            )}
                         </div>
-                    </div>
-                </div>
-            </form>
 
-            {/* FULLSCREEN IMAGE VIEWER MODAL ON CLICK */}
-            {isViewingImage && imagePreview && (
-                <div className="fixed inset-0 z-[150] flex animate-in flex-col items-center justify-center bg-black/95 p-4 text-white backdrop-blur-2xl duration-200 select-none fade-in">
-                    {/* Top Control Bar */}
-                    <div className="absolute top-4 right-4 z-[160] flex items-center gap-2">
-                        <button
+                        {/* SECTION 2 — PRODUCT NAME */}
+                        <div className="space-y-1.5">
+                            <Label
+                                htmlFor="product-name"
+                                className="text-xs font-bold tracking-wider text-foreground uppercase"
+                            >
+                                Product Name <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                                id="product-name"
+                                value={data.name}
+                                onChange={(event) =>
+                                    setData('name', event.target.value)
+                                }
+                                placeholder="Enter product name"
+                                className={`h-11 rounded-xl border-input bg-background px-3.5 text-sm font-medium focus-visible:ring-primary/30 ${errors.name
+                                    ? 'border-destructive ring-destructive/20'
+                                    : ''
+                                    }`}
+                                required
+                            />
+                            {errors.name && (
+                                <p className="text-xs font-medium text-destructive">
+                                    {errors.name}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* SECTION 3 — PRICE */}
+                        <div className="space-y-1.5">
+                            <Label
+                                htmlFor="product-price"
+                                className="text-xs font-bold tracking-wider text-foreground uppercase"
+                            >
+                                Price <span className="text-destructive">*</span>
+                            </Label>
+                            <div className="relative">
+                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                                    <span className="text-sm font-bold text-muted-foreground select-none">
+                                        ₱
+                                    </span>
+                                </div>
+                                <Input
+                                    id="product-price"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={data.price}
+                                    onChange={(event) =>
+                                        setData('price', event.target.value)
+                                    }
+                                    placeholder="00.00"
+                                    className={`h-11 rounded-xl border-input bg-background pl-8 pr-28 text-sm font-medium focus-visible:ring-primary/30 ${errors.price
+                                        ? 'border-destructive ring-destructive/20'
+                                        : ''
+                                        }`}
+                                    required
+                                />
+                                {data.price &&
+                                    !isNaN(Number(data.price)) &&
+                                    Number(data.price) >= 0 && (
+                                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                            <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-foreground/80">
+                                                ₱
+                                                {Number(
+                                                    data.price,
+                                                ).toLocaleString('en-PH', {
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 2,
+                                                })}
+                                            </span>
+                                        </div>
+                                    )}
+                            </div>
+                            {errors.price ? (
+                                <p className="text-xs font-medium text-destructive">
+                                    {errors.price}
+                                </p>
+                            ) : (
+                                <p className="text-[11px] text-muted-foreground">
+
+                                </p>
+                            )}
+                        </div>
+                    </CardContent>
+
+                    {/* FOOTER */}
+                    <div className="flex items-center justify-end gap-3 border-t border-border/60 bg-muted/10 px-6 py-4 sm:px-7">
+                        <Button
                             type="button"
-                            onClick={() => setIsZoomed(!isZoomed)}
-                            className="flex cursor-pointer items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md transition-all hover:bg-white/20"
+                            variant="ghost"
+                            onClick={handleCancel}
+                            disabled={isSubmitting}
+                            className="h-10 rounded-xl px-4 text-xs font-semibold text-muted-foreground hover:text-foreground"
                         >
-                            {isZoomed ? (
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={!isFormValid || isSubmitting}
+                            className="h-10 gap-2 rounded-xl px-6 text-xs font-bold shadow-xs disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {isSubmitting ? (
                                 <>
-                                    <ZoomOut className="h-3.5 w-3.5 text-primary" />
-                                    <span>Zoom Out</span>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <span>
+                                        {mode === 'edit'
+                                            ? 'Saving...'
+                                            : 'Adding Product...'}
+                                    </span>
                                 </>
                             ) : (
                                 <>
-                                    <ZoomIn className="h-3.5 w-3.5" />
-                                    <span>Zoom In</span>
+                                    <Check className="h-4 w-4 stroke-[2.5]" />
+                                    <span>
+                                        {mode === 'edit'
+                                            ? submitLabel || 'Save Changes'
+                                            : 'Add Product'}
+                                    </span>
                                 </>
                             )}
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setIsViewingImage(false);
-                                setIsZoomed(false);
-                            }}
-                            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md transition-all hover:bg-white/30"
-                            title="Close"
-                        >
-                            <X className="h-5 w-5" />
-                        </button>
+                        </Button>
                     </div>
-
-                    {/* Image View Canvas */}
-                    <div className="relative flex max-h-[85vh] max-w-[90vw] items-center justify-center overflow-hidden">
-                        <img
-                            src={imagePreview}
-                            alt="Full product preview"
-                            onClick={(e) => {
-                                if (!isZoomed) {
-                                    const rect =
-                                        e.currentTarget.getBoundingClientRect();
-                                    const offsetX = e.clientX - rect.left;
-                                    const offsetY = e.clientY - rect.top;
-                                    const xPercent = Math.max(
-                                        0,
-                                        Math.min(
-                                            100,
-                                            (offsetX / rect.width) * 100,
-                                        ),
-                                    );
-                                    const yPercent = Math.max(
-                                        0,
-                                        Math.min(
-                                            100,
-                                            (offsetY / rect.height) * 100,
-                                        ),
-                                    );
-                                    setZoomOrigin({ x: xPercent, y: yPercent });
-                                    setIsZoomed(true);
-                                } else {
-                                    setIsZoomed(false);
-                                }
-                            }}
-                            style={{
-                                transformOrigin: isZoomed
-                                    ? `${zoomOrigin.x}% ${zoomOrigin.y}%`
-                                    : 'center center',
-                            }}
-                            className={`max-h-[82vh] max-w-[88vw] cursor-pointer rounded-2xl object-contain drop-shadow-2xl transition-transform duration-300 ease-out ${
-                                isZoomed
-                                    ? 'scale-[1.75] cursor-zoom-out'
-                                    : 'scale-100 cursor-zoom-in'
-                            }`}
-                        />
-                    </div>
-                </div>
-            )}
-        </>
+                </form>
+            </Card>
+        </div>
     );
 }

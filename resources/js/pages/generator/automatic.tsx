@@ -1,30 +1,25 @@
 import { Head } from '@inertiajs/react';
 import {
     AlertTriangle,
-    BadgePercent,
     Loader2,
-    Sparkles,
-    Tag,
+    SlidersHorizontal,
     Wand2,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import { HelpTooltip } from '@/components/help-tooltip';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { downloadVisualAsFormat } from '@/lib/download';
+import { useSetBreadcrumbs } from '@/context/breadcrumb-context';
 
-import { AspectRatioSelector } from './components/AspectRatioSelector';
-import { BusinessNameSection } from './components/BusinessNameSection';
 import { CreativeCanvas } from './components/CreativeCanvas';
 import { ProductSelector } from './components/ProductSelector';
 import { StudioBriefSummary } from './components/StudioBriefSummary';
 import { StudioHeader } from './components/StudioHeader';
 import {
+    AutomaticSettingsModal,
     CatalogBrowserModal,
     GeneratedCreativeModal,
 } from './components/StudioModals';
@@ -55,6 +50,8 @@ interface AutomaticGeneratorProps {
     initialEvent?: EventItem | null;
     design_system?: Partial<DesignSystemExport>;
     recent_fingerprints?: Array<Record<string, any>>;
+    initial_draft?: any;
+    origin?: string;
 }
 
 export default function AutomaticGenerator({
@@ -67,10 +64,13 @@ export default function AutomaticGenerator({
     totalSpent = 0,
     isQuotaExceeded = false,
     initialProduct = null,
+    initial_draft = null,
+    origin = undefined,
 }: AutomaticGeneratorProps) {
     // -------------------------------------------------------------------------
     // AUTONOMOUS AUTOMATIC STATE (User controls WHAT to promote, MarketPilot controls HOW)
     // -------------------------------------------------------------------------
+    const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [selectedCatalogProducts, setSelectedCatalogProducts] = useState<
         ProductItem[]
     >(initialProduct ? [initialProduct] : []);
@@ -82,6 +82,13 @@ export default function AutomaticGenerator({
     // Marketing Copy Toggles (Part 5 & Part 6)
     const [includeTagline, setIncludeTagline] = useState<boolean>(true);
     const [includePrices, setIncludePrices] = useState<boolean>(true);
+    const [showEventText, setShowEventText] = useState<boolean>(
+        Boolean(selectedEvent?.id || selectedEvent?.name),
+    );
+
+    useEffect(() => {
+        setShowEventText(Boolean(selectedEvent?.id || selectedEvent?.name));
+    }, [selectedEvent?.id, selectedEvent?.name]);
 
     // Canvas Dimensions & Identity
     const [aspectRatio, setAspectRatio] = useState('1:1');
@@ -113,11 +120,96 @@ export default function AutomaticGenerator({
     const [savedDesign, setSavedDesign] = useState<GeneratedDesign | null>(null);
     const [isSavedToDesigns, setIsSavedToDesigns] = useState(false);
     const [isSavingDesign, setIsSavingDesign] = useState(false);
+    const [isSavedAsDraft, setIsSavedAsDraft] = useState(false);
+    const [isSavingDraft, setIsSavingDraft] = useState(false);
 
-    // UI Viewports & Modals
-    const [isSummaryCollapsed, setIsSummaryCollapsed] = useState(false);
+    // UI Viewports & Modals (Collapsed by default to eliminate duplication with active wizard)
+    const [isSummaryCollapsed, setIsSummaryCollapsed] = useState(true);
     const [isPreviewFullViewOpen, setIsPreviewFullViewOpen] = useState(false);
     const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
+
+    // Restore draft state when opened
+    useEffect(() => {
+        if (!initial_draft) return;
+
+        const meta = initial_draft.generation_metadata || {};
+        if (initial_draft.tagline) {
+            setTagline(initial_draft.tagline);
+            setIncludeTagline(true);
+        }
+        if (meta.creative_concept) setCreativeConcept(meta.creative_concept);
+        if (meta.visual_strategy) setVisualStrategy(meta.visual_strategy);
+        if (meta.design_treatment) setDesignTreatment(meta.design_treatment);
+        if (meta.copy_emphasis) setCopyEmphasis(meta.copy_emphasis);
+        if (initial_draft.prompt) setGeneratedPromptText(initial_draft.prompt);
+        if (meta.aspect_ratio || initial_draft.aspect_ratio) {
+            setAspectRatio(meta.aspect_ratio || initial_draft.aspect_ratio);
+        }
+        if (typeof meta.show_event_text === 'boolean') {
+            setShowEventText(meta.show_event_text);
+        }
+
+        if (Array.isArray(meta.custom_products) && meta.custom_products.length > 0) {
+            setCustomProducts(meta.custom_products.map((cp: any, idx: number) => ({
+                id: `cp_${idx}_${Date.now()}`,
+                name: cp.name || '',
+                price: cp.price || '',
+                description: cp.description || '',
+            })));
+        }
+
+        const draftIsDraft = initial_draft.status === 'draft';
+        setIsSavedAsDraft(draftIsDraft);
+        setIsSavedToDesigns(!draftIsDraft);
+
+        setSavedDesign({
+            id: initial_draft.id,
+            image_url: initial_draft.image_url,
+            generated_image_path: initial_draft.generated_image_path,
+            product_name: initial_draft.product_name,
+            tagline: initial_draft.tagline || '',
+            aspect_ratio: meta.aspect_ratio || initial_draft.aspect_ratio || '1:1',
+            image_model: meta.model || 'gpt-image-2',
+            prompt: initial_draft.prompt,
+            generation_meta: meta,
+            status: initial_draft.status,
+        });
+
+        setGenerationState('ready');
+
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('open_modal') === '1' || params.get('view_creative') === '1' || params.get('view_modal') === '1') {
+                setIsPreviewFullViewOpen(true);
+            }
+        }
+    }, [initial_draft]);
+
+    // Breadcrumbs Navigation (Campaigns / Designs -> Generator -> Image Modal)
+    const breadcrumbs = useMemo(() => {
+        const generatorHref = campaign?.id
+            ? `/generator/automatic?campaign_id=${campaign.id}`
+            : '/generator/automatic';
+
+        const rootCrumb = origin === 'designs'
+            ? { title: 'My Designs', href: '/designs' }
+            : { title: 'Campaigns', href: '/campaigns' };
+
+        if (generationState === 'ready') {
+            return [
+                rootCrumb,
+                { title: 'Generator', href: generatorHref },
+                { title: 'Image Modal', href: '#' },
+            ];
+        }
+
+        return [
+            rootCrumb,
+            { title: 'Generator', href: generatorHref },
+        ];
+    }, [campaign?.id, generationState, origin]);
+
+    useSetBreadcrumbs(breadcrumbs);
 
     // -------------------------------------------------------------------------
     // DERIVED VALIDATIONS & PRODUCT DEDUPLICATION
@@ -204,6 +296,11 @@ export default function AutomaticGenerator({
         setCustomProducts((prev) => prev.filter((item) => item.id !== id));
     };
 
+    const handleClearAllProducts = () => {
+        setSelectedCatalogProducts([]);
+        setCustomProducts([]);
+    };
+
     // -------------------------------------------------------------------------
     // TRUE AUTONOMOUS GENERATION (POST /generator/automatic)
     // -------------------------------------------------------------------------
@@ -273,6 +370,7 @@ export default function AutomaticGenerator({
                     custom_products: customItems,
                     include_tagline: includeTagline,
                     include_prices: includePrices,
+                    show_event_text: selectedEvent ? showEventText : false,
                     aspect_ratio: aspectRatio || '1:1',
                     image_model: 'gpt-image-2',
                     image_quality: imageQuality || 'medium',
@@ -344,6 +442,7 @@ export default function AutomaticGenerator({
                     prompt: productionPrompt,
                     creative_concept: data.creative_concept,
                     visual_strategy: data.visual_strategy,
+                    show_event_text: selectedEvent ? showEventText : false,
                 },
             });
 
@@ -362,10 +461,131 @@ export default function AutomaticGenerator({
     };
 
     // -------------------------------------------------------------------------
-    // SAVE DESIGN & DOWNLOAD
+    // SAVE AS DRAFT, FINALIZE DESIGN & DOWNLOAD
     // -------------------------------------------------------------------------
+    const handleSaveAsDraft = async () => {
+        if (isSavedAsDraft && savedDesign?.id) {
+            toast.info('Creative is already saved as a draft.');
+            return;
+        }
+
+        setIsSavingDraft(true);
+        setSaveErrorMessage(null);
+        try {
+            const formData = new FormData();
+            formData.append('status', 'draft');
+            if (savedDesign?.id) {
+                formData.append('design_id', String(savedDesign.id));
+            }
+            formData.append('product_name', effectiveProductName);
+            const exactPrompt = savedDesign?.prompt || savedDesign?.generation_meta?.prompt || generatedPromptText || visualStrategy || '';
+            formData.append('image_prompt', exactPrompt);
+            formData.append('prompt', exactPrompt);
+
+            if (savedDesign?.generated_image_path) {
+                formData.append(
+                    'generated_image_path',
+                    savedDesign.generated_image_path,
+                );
+            }
+            if (effectivePrice && includePrices) {
+                formData.append('price', effectivePrice.replace(/[^0-9.]/g, ''));
+            }
+            if (selectedEvent?.id) {
+                formData.append('event_id', String(selectedEvent.id));
+            }
+            if (uniqueSelectedCatalogProducts[0]?.id) {
+                formData.append(
+                    'product_id',
+                    String(uniqueSelectedCatalogProducts[0].id),
+                );
+            }
+            uniqueSelectedCatalogProducts.forEach((p) => {
+                formData.append('catalog_product_ids[]', String(p.id));
+            });
+            customProducts.forEach((cp, idx) => {
+                formData.append(`custom_products[${idx}][name]`, cp.name);
+                if (cp.price) formData.append(`custom_products[${idx}][price]`, cp.price);
+                if (cp.description) formData.append(`custom_products[${idx}][description]`, cp.description);
+            });
+            formData.append('include_prices', includePrices ? '1' : '0');
+            formData.append('include_tagline', includeTagline ? '1' : '0');
+            if (campaign?.id) {
+                formData.append('campaign_id', String(campaign.id));
+            }
+            formData.append('aspect_ratio', aspectRatio);
+            formData.append('image_model', 'gpt-image-2');
+            formData.append('image_quality', imageQuality);
+            formData.append('tagline_mode', includeTagline ? 'ai' : 'none');
+            if (includeTagline && tagline.trim()) {
+                formData.append('tagline', tagline.trim());
+            }
+            formData.append('include_business_name', includeBusinessName ? '1' : '0');
+            if (includeBusinessName && business?.name) {
+                formData.append('business_name', business.name);
+            }
+            if (creativeConcept) {
+                formData.append('creative_concept', creativeConcept);
+            }
+            if (visualStrategy) {
+                formData.append('visual_strategy', visualStrategy);
+            }
+            if (designTreatment) {
+                formData.append('design_treatment', designTreatment);
+            }
+            if (copyEmphasis) {
+                formData.append('copy_emphasis', copyEmphasis);
+            }
+            formData.append('generation_mode', 'automatic');
+            if (savedDesign?.generation_meta) {
+                formData.append('generation_metadata', JSON.stringify(savedDesign.generation_meta));
+            }
+
+            const response = await fetch('/designs', {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN':
+                        document.querySelector<HTMLMetaElement>(
+                            'meta[name="csrf-token"]',
+                        )?.content || '',
+                },
+                body: formData,
+            });
+
+            const data = await response.json();
+            if (response.ok && data.success) {
+                setIsSavedAsDraft(true);
+                setIsSavedToDesigns(false);
+                setSaveErrorMessage(null);
+                if (data.design) {
+                    setSavedDesign((prev) => (prev ? { ...prev, id: data.design.id, status: 'draft' } : prev));
+                    if (typeof window !== 'undefined' && data.design.id) {
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('draft_id', String(data.design.id));
+                        window.history.replaceState({}, '', url.toString());
+                    }
+                }
+                toast.success(data.message || 'Draft saved');
+            } else {
+                const errorMsg = data.errors
+                    ? Object.values(data.errors).flat().join('\n')
+                    : (data.message || 'Failed to save draft.');
+                setSaveErrorMessage(errorMsg);
+                toast.error(errorMsg);
+            }
+        } catch {
+            const netErr = 'Network error saving draft. Please check your connection and try again.';
+            setSaveErrorMessage(netErr);
+            toast.error(netErr);
+        } finally {
+            setIsSavingDraft(false);
+        }
+    };
+
     const handleSaveToDesigns = async () => {
-        if (isSavedToDesigns && savedDesign?.id) {
+        if (isSavedToDesigns && savedDesign?.id && savedDesign?.status !== 'draft') {
             toast.info('Design is already saved in My Designs.');
             return;
         }
@@ -374,6 +594,10 @@ export default function AutomaticGenerator({
         setSaveErrorMessage(null);
         try {
             const formData = new FormData();
+            formData.append('status', 'final');
+            if (savedDesign?.id) {
+                formData.append('design_id', String(savedDesign.id));
+            }
             formData.append('product_name', effectiveProductName);
             const exactPrompt = savedDesign?.prompt || savedDesign?.generation_meta?.prompt || generatedPromptText || visualStrategy || '';
             formData.append('image_prompt', exactPrompt);
@@ -454,9 +678,15 @@ export default function AutomaticGenerator({
             const data = await response.json();
             if (response.ok && data.success) {
                 setIsSavedToDesigns(true);
+                setIsSavedAsDraft(false);
                 setSaveErrorMessage(null);
                 if (data.design) {
-                    setSavedDesign((prev) => (prev ? { ...prev, id: data.design.id } : prev));
+                    setSavedDesign((prev) => (prev ? { ...prev, id: data.design.id, status: 'final' } : prev));
+                    if (typeof window !== 'undefined' && data.design.id) {
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('draft_id', String(data.design.id));
+                        window.history.replaceState({}, '', url.toString());
+                    }
                 }
                 toast.success(data.message || 'Saved to My Designs!');
             } else {
@@ -510,12 +740,14 @@ export default function AutomaticGenerator({
                         }`}
                 >
                     {/* Header */}
-                    <StudioHeader
-                        activeMode="automatic"
-                        activeCampaign={campaign}
-                        campaigns={campaigns}
-                        generationState={generationState}
-                    />
+                    {generationState !== 'ready' && (
+                        <StudioHeader
+                            activeMode="automatic"
+                            activeCampaign={campaign}
+                            campaigns={campaigns}
+                            generationState={generationState}
+                        />
+                    )}
 
                     {/* GENERATION STATE SWITCHING */}
                     {generationState === 'generating' ? (
@@ -549,8 +781,16 @@ export default function AutomaticGenerator({
                             isSavedToDesigns={isSavedToDesigns}
                             isSavingDesign={isSavingDesign}
                             onSaveToDesigns={handleSaveToDesigns}
+                            isSavedAsDraft={isSavedAsDraft}
+                            isSavingDraft={isSavingDraft}
+                            onSaveAsDraft={handleSaveAsDraft}
                             onDownload={handleDownload}
                             onOpenFullscreen={() => setIsPreviewFullViewOpen(true)}
+                            onViewGeneratedCreative={() => setIsPreviewFullViewOpen(true)}
+                            designId={savedDesign?.id}
+                            origin={origin}
+                            campaignId={campaign?.id}
+                            campaignName={campaign?.name}
                             onEditParameters={() => setGenerationState('idle')}
                             onRegenerate={() => handleGenerateAutomatic({ is_variation: true })}
                             creativeConcept={creativeConcept}
@@ -558,6 +798,8 @@ export default function AutomaticGenerator({
                             designTreatment={designTreatment}
                             copyEmphasis={copyEmphasis}
                             hasReferenceImage={uniqueSelectedCatalogProducts.length > 0}
+                            eventName={selectedEvent?.name}
+                            showEventText={showEventText}
                         />
                     ) : (
                         /* AUTONOMOUS CREATIVE STUDIO FORM */
@@ -583,152 +825,92 @@ export default function AutomaticGenerator({
                                         </p>
                                     </div>
                                 </div>
-                            )}
-
-                            {/* Main Autonomous Studio Card */}
+                            )}                            {/* Main Autonomous Studio Card */}
                             <Card className="overflow-hidden rounded-2xl border-border bg-card shadow-sm gap-0 py-0">
                                 <CardHeader className="border-b bg-muted/10 px-4 py-3 sm:px-5">
-                                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                                        <div>
-                                            <h2 className="text-sm font-bold tracking-tight text-foreground uppercase">
-                                                Automatic Mode — AI Creative Director
-                                            </h2>
-                                            <p className="text-[11px] text-muted-foreground mt-0.5">
-                                                You choose what to promote; MarketPilot autonomously decides how to promote it.
-                                            </p>
-                                        </div>
-                                        <Badge
-                                            variant="outline"
-                                            className="self-start sm:self-auto border-primary/30 bg-primary/10 text-[10px] font-bold text-primary"
-                                        >
-                                            <Sparkles className="mr-1 h-3 w-3" />
-                                            Autonomous Workflow
-                                        </Badge>
+                                    <div>
+                                        <h2 className="text-sm font-bold tracking-tight text-foreground">
+                                            Autonomous Creative Studio
+                                        </h2>
+                                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                                            Select what to promote and let AI autonomously direct the visual concept, typography, and styling.
+                                        </p>
                                     </div>
                                 </CardHeader>
 
                                 <CardContent className="space-y-4 p-3 sm:p-4">
-                                    {/* STEP 1: WHAT TO PROMOTE */}
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-1.5 px-0.5">
-                                            <Label className="text-xs font-bold text-foreground uppercase tracking-wider">
-                                                Step 1: What to Promote
-                                            </Label>
-                                            <HelpTooltip text="Select catalog products or add custom offerings to feature. Multiple items are supported." />
-                                        </div>
-                                        <ProductSelector
-                                            products={products}
-                                            selectedCatalogProducts={uniqueSelectedCatalogProducts}
-                                            onToggleCatalogProduct={handleToggleCatalogProduct}
-                                            customProducts={customProducts}
-                                            onAddCustomProduct={handleAddCustomProduct}
-                                            onUpdateCustomProduct={handleUpdateCustomProduct}
-                                            onRemoveCustomProduct={handleRemoveCustomProduct}
-                                            productTab={productTab}
-                                            onSelectTab={setProductTab}
-                                            inlineProductSearch={inlineProductSearch}
-                                            onSearchChange={setInlineProductSearch}
-                                            onOpenBrowseModal={() => setIsProductModalOpen(true)}
-                                        />
-                                    </div>
+                                    {/* Product Selection Section */}
+                                    <ProductSelector
+                                        products={products}
+                                        selectedCatalogProducts={uniqueSelectedCatalogProducts}
+                                        onToggleCatalogProduct={handleToggleCatalogProduct}
+                                        customProducts={customProducts}
+                                        onAddCustomProduct={handleAddCustomProduct}
+                                        onUpdateCustomProduct={handleUpdateCustomProduct}
+                                        onRemoveCustomProduct={handleRemoveCustomProduct}
+                                        productTab={productTab}
+                                        onSelectTab={setProductTab}
+                                        inlineProductSearch={inlineProductSearch}
+                                        onSearchChange={setInlineProductSearch}
+                                        onOpenBrowseModal={() => setIsProductModalOpen(true)}
+                                        onClearAllSelections={handleClearAllProducts}
+                                    />
 
-                                    {/* STEP 2: MARKETING CONTENT CONTROLS */}
-                                    <div className="space-y-2 rounded-xl border border-border/80 bg-card/60 p-3 shadow-xs">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-1.5">
-                                                <Tag className="h-4 w-4 text-primary" />
-                                                <Label className="text-xs font-bold text-foreground">
-                                                    Step 2: Marketing Content (Toggles Only)
-                                                </Label>
-                                                <HelpTooltip text="AI Creative Director autonomously crafts the visual concept, design treatment, typography layout, and original headline tagline. No manual copy entry needed." />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid gap-2.5 sm:grid-cols-2 pt-1">
-                                            {/* Include Tagline Toggle */}
-                                            <div className="flex items-center justify-between rounded-xl border border-border/70 bg-background/60 px-3.5 py-2.5 shadow-2xs transition-colors hover:border-border">
-                                                <div className="flex items-center gap-2.5">
-                                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                                        <Sparkles className="h-3.5 w-3.5" />
-                                                    </div>
-                                                    <div>
-                                                        <Label
-                                                            htmlFor="auto_include_tagline"
-                                                            className="cursor-pointer text-xs font-semibold text-foreground"
-                                                        >
-                                                            Include Tagline
-                                                        </Label>
-                                                        <p className="text-[10px] text-muted-foreground">
-                                                            AI generates an event-aware headline
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <Checkbox
-                                                    id="auto_include_tagline"
-                                                    checked={includeTagline}
-                                                    onCheckedChange={(checked) => setIncludeTagline(Boolean(checked))}
-                                                    className="h-5 w-5 cursor-pointer rounded-md"
-                                                />
-                                            </div>
-
-                                            {/* Include Prices Toggle */}
-                                            <div className="flex items-center justify-between rounded-xl border border-border/70 bg-background/60 px-3.5 py-2.5 shadow-2xs transition-colors hover:border-border">
-                                                <div className="flex items-center gap-2.5">
-                                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                                                        <BadgePercent className="h-3.5 w-3.5" />
-                                                    </div>
-                                                    <div>
-                                                        <Label
-                                                            htmlFor="auto_include_prices"
-                                                            className="cursor-pointer text-xs font-semibold text-foreground"
-                                                        >
-                                                            Include Prices
-                                                        </Label>
-                                                        <p className="text-[10px] text-muted-foreground">
-                                                            Render authoritative product pricing
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <Checkbox
-                                                    id="auto_include_prices"
-                                                    checked={includePrices}
-                                                    onCheckedChange={(checked) => setIncludePrices(Boolean(checked))}
-                                                    className="h-5 w-5 cursor-pointer rounded-md"
-                                                />
-                                            </div>
+                                    {/* Quick Settings Indicator Bar without Pill Badges */}
+                                    <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-border/70 bg-muted/20 p-2.5 sm:px-3.5">
+                                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs">
+                                            <span className="font-semibold text-muted-foreground">
+                                                Studio Settings:
+                                            </span>
+                                            <span className="text-muted-foreground">
+                                                Aspect: <span className="font-semibold text-foreground">{aspectRatio}</span>
+                                            </span>
+                                            <span className="text-border">•</span>
+                                            <span className="text-muted-foreground">
+                                                Tagline: <span className={includeTagline ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}>{includeTagline ? 'On' : 'Off'}</span>
+                                            </span>
+                                            <span className="text-border">•</span>
+                                            <span className="text-muted-foreground">
+                                                Price: <span className={includePrices ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}>{includePrices ? 'On' : 'Off'}</span>
+                                            </span>
+                                            <span className="text-border">•</span>
+                                            <span className="text-muted-foreground">
+                                                Brand: <span className={includeBusinessName ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}>{includeBusinessName ? 'On' : 'Off'}</span>
+                                            </span>
+                                            {selectedEvent && (
+                                                <>
+                                                    <span className="text-border">•</span>
+                                                    <span className="text-muted-foreground">
+                                                        Event Text: <span className={showEventText ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}>{showEventText ? 'On' : 'Off'}</span>
+                                                    </span>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
 
-                                    {/* STEP 3: FORMAT & GENERATE */}
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-1.5 px-0.5">
-                                            <Label className="text-xs font-bold text-foreground uppercase tracking-wider">
-                                                Step 3: Format & Generate
-                                            </Label>
-                                        </div>
-                                        <BusinessNameSection
-                                            includeBusinessName={includeBusinessName}
-                                            onToggleIncludeBusinessName={setIncludeBusinessName}
-                                            businessName={business?.name}
-                                        />
+                                    {/* Action Bar */}
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 border-t border-border/70 pt-3">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="lg"
+                                            onClick={() => setIsSettingsModalOpen(true)}
+                                            className="gap-2 text-xs font-semibold cursor-pointer h-10 px-4 rounded-xl border-border bg-background shadow-xs hover:bg-muted/60"
+                                        >
+                                            <SlidersHorizontal className="h-4 w-4 text-primary" />
+                                            <span>Studio Settings</span>
+                                        </Button>
 
-                                        <AspectRatioSelector
-                                            value={aspectRatio}
-                                            onChange={setAspectRatio}
-                                        />
-                                    </div>
-
-                                    {/* GENERATE ACTION BAR */}
-                                    <div className="mt-4 flex flex-col items-center justify-end gap-3 border-t border-border/70 pt-3 sm:flex-row">
                                         <Button
                                             type="button"
                                             size="lg"
                                             onClick={() => handleGenerateAutomatic()}
                                             disabled={!canGenerateAutomatic || isAutoGenerating}
-                                            className={`w-full sm:w-auto min-w-[240px] gap-2 text-xs font-bold shadow-md ${isQuotaExceeded
+                                            className={`min-w-[220px] gap-2 text-xs font-bold shadow-md cursor-pointer rounded-xl h-10 ${
+                                                isQuotaExceeded
                                                     ? 'border border-destructive/30 bg-destructive/15 text-destructive hover:bg-destructive/20'
                                                     : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                                                }`}
+                                            }`}
                                         >
                                             {isQuotaExceeded ? (
                                                 <>
@@ -775,11 +957,36 @@ export default function AutomaticGenerator({
                         isAutomaticMode={true}
                         includeTagline={includeTagline}
                         includePrices={includePrices}
+                        showEventText={showEventText}
+                        creativeConcept={creativeConcept}
+                        visualStrategy={visualStrategy}
+                        designTreatment={designTreatment}
+                        copyEmphasis={copyEmphasis}
                     />
                 )}
             </div>
 
             {/* MODALS */}
+            <AutomaticSettingsModal
+                isOpen={isSettingsModalOpen}
+                onOpenChange={setIsSettingsModalOpen}
+                aspectRatio={aspectRatio}
+                onAspectRatioChange={setAspectRatio}
+                selectedEvent={selectedEvent}
+                showEventText={showEventText}
+                onToggleEventText={setShowEventText}
+                includeTagline={includeTagline}
+                onToggleTagline={setIncludeTagline}
+                includePrices={includePrices}
+                onTogglePrices={setIncludePrices}
+                includeBusinessName={includeBusinessName}
+                onToggleBusinessName={(val) => {
+                    setIncludeBusinessName(val);
+                    localStorage.setItem('ai_studio_include_business_name', String(val));
+                }}
+                businessName={business?.name}
+            />
+
             <CatalogBrowserModal
                 isOpen={isProductModalOpen}
                 onOpenChange={setIsProductModalOpen}
@@ -800,6 +1007,9 @@ export default function AutomaticGenerator({
                 isSavedToDesigns={isSavedToDesigns}
                 isSavingDesign={isSavingDesign}
                 onSaveToDesigns={handleSaveToDesigns}
+                isSavedAsDraft={isSavedAsDraft}
+                isSavingDraft={isSavingDraft}
+                onSaveAsDraft={handleSaveAsDraft}
                 onDownload={handleDownload}
                 onRegenerate={() => {
                     setIsPreviewFullViewOpen(false);
@@ -827,6 +1037,8 @@ export default function AutomaticGenerator({
                 imageModel={imageModel}
                 hasReferenceImage={uniqueSelectedCatalogProducts.length > 0}
                 creativeFingerprint={savedDesign?.generation_meta?.creative_fingerprint}
+                showEventText={showEventText}
+                origin={origin}
             />
         </>
     );

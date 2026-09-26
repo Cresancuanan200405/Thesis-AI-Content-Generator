@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Campaign;
+use App\Models\Design;
 use App\Models\Event;
 use App\Models\Product;
 use Illuminate\Contracts\Validation\Validator;
@@ -31,6 +32,18 @@ class StoreDesignRequest extends FormRequest
             'product_id' => $this->filled('product_id') ? (int) $this->input('product_id') : null,
             'campaign_id' => $this->filled('campaign_id') ? (int) $this->input('campaign_id') : null,
         ];
+
+        if ($this->filled('design_id')) {
+            $existing = Design::find($this->input('design_id'));
+            if ($existing) {
+                if (! $this->filled('campaign_id') && $existing->campaign_id) {
+                    $merges['campaign_id'] = $existing->campaign_id;
+                }
+                if (! $this->filled('product_name') && $existing->product_name) {
+                    $merges['product_name'] = $existing->product_name;
+                }
+            }
+        }
 
         if ($this->has('include_prices')) {
             $merges['include_prices'] = filter_var($this->input('include_prices'), FILTER_VALIDATE_BOOLEAN);
@@ -115,6 +128,8 @@ class StoreDesignRequest extends FormRequest
             'creative_fingerprint' => ['nullable', 'string', 'max:100'],
             'generation_mode' => ['nullable', 'string', 'max:50'],
             'generation_metadata' => ['nullable'],
+            'status' => ['nullable', 'string', 'in:draft,final,completed'],
+            'design_id' => ['nullable', 'integer', 'exists:designs,id'],
         ];
     }
 
@@ -164,6 +179,14 @@ class StoreDesignRequest extends FormRequest
 
                 if (! $campaign || $campaign->user_id !== $user->id) {
                     $validator->errors()->add('campaign_id', 'The selected campaign does not belong to your account.');
+                }
+            }
+
+            if ($this->filled('design_id')) {
+                $design = Design::query()->whereKey($this->input('design_id'))->first();
+
+                if (! $design || $design->user_id !== $user->id) {
+                    $validator->errors()->add('design_id', 'The specified design does not belong to your account.');
                 }
             }
 

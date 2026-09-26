@@ -39,7 +39,7 @@ export function BusinessNameSection({
                     onToggleIncludeBusinessName(val);
                     localStorage.setItem('ai_studio_include_business_name', String(val));
                 }}
-                className="h-5 w-5 cursor-pointer rounded-md"
+                className="h-5 w-5 cursor-pointer rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
             />
         </div>
     );

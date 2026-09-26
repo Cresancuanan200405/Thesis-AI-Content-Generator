@@ -3,9 +3,6 @@ import {
     Calendar,
     Check,
     ChevronDown,
-    ChevronLeft,
-    ChevronRight,
-    ChevronUp,
     Download,
     Edit3,
     LayoutGrid,
@@ -17,10 +14,8 @@ import {
     Tag,
     Trash2,
     X,
-    ZoomIn,
-    ZoomOut,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { AppPagination } from '@/components/ui/app-pagination';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +37,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { downloadVisualAsFormat } from '@/lib/download';
+import { UnifiedImageViewer } from '@/components/image-viewer';
 
 export default function ProductsIndexPage({
     products = [],
@@ -68,8 +64,6 @@ export default function ProductsIndexPage({
     };
 
     const [previewProduct, setPreviewProduct] = useState<any>(null);
-    const [isZoomed, setIsZoomed] = useState(false);
-    const [zoomOrigin, setZoomOrigin] = useState({ x: 50, y: 50 });
     const [productToDelete, setProductToDelete] = useState<any>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
@@ -96,42 +90,9 @@ export default function ProductsIndexPage({
         }
     };
 
-    // Fullscreen viewer scroll status
-    const [isScrolledToDetails, setIsScrolledToDetails] = useState(false);
-
     const currentPreviewIndex = previewProduct
         ? productList.findIndex((p: any) => p.id === previewProduct.id)
         : -1;
-    const hasPrevProduct = currentPreviewIndex > 0;
-    const hasNextProduct =
-        currentPreviewIndex !== -1 &&
-        currentPreviewIndex < productList.length - 1;
-
-    const handlePrevProduct = (e?: React.MouseEvent) => {
-        if (e) {
-            e.stopPropagation();
-        }
-
-        if (hasPrevProduct) {
-            setPreviewProduct(productList[currentPreviewIndex - 1]);
-            setIsZoomed(false);
-            setZoomOrigin({ x: 50, y: 50 });
-            setIsScrolledToDetails(false);
-        }
-    };
-
-    const handleNextProduct = (e?: React.MouseEvent) => {
-        if (e) {
-            e.stopPropagation();
-        }
-
-        if (hasNextProduct) {
-            setPreviewProduct(productList[currentPreviewIndex + 1]);
-            setIsZoomed(false);
-            setZoomOrigin({ x: 50, y: 50 });
-            setIsScrolledToDetails(false);
-        }
-    };
 
     const updateSearch = (value: string) => {
         router.get(
@@ -146,29 +107,6 @@ export default function ProductsIndexPage({
 
     const handleOpenProductPreview = (product: any) => {
         setPreviewProduct(product);
-        setIsZoomed(false);
-        setZoomOrigin({ x: 50, y: 50 });
-        setIsScrolledToDetails(false);
-    };
-
-    const handleToggleScrollDetails = () => {
-        if (!isScrolledToDetails) {
-            const el = document.getElementById('product-modal-details');
-
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth' });
-                setIsScrolledToDetails(true);
-            }
-        } else {
-            const container = document.getElementById(
-                'product-modal-container',
-            );
-
-            if (container) {
-                container.scrollTo({ top: 0, behavior: 'smooth' });
-                setIsScrolledToDetails(false);
-            }
-        }
     };
 
     // Single Delete
@@ -215,56 +153,6 @@ export default function ProductsIndexPage({
         document.body.removeChild(link);
         toast.success(`Downloading visual for ${product.name}!`);
     };
-
-    useEffect(() => {
-        if (previewProduct) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
-    }, [previewProduct]);
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (!previewProduct) {
-                return;
-            }
-
-            if (e.key === 'Escape') {
-                setPreviewProduct(null);
-                setIsZoomed(false);
-                setIsScrolledToDetails(false);
-            } else if (e.key === 'ArrowLeft') {
-                if (hasPrevProduct) {
-                    setPreviewProduct(productList[currentPreviewIndex - 1]);
-                    setIsZoomed(false);
-                    setZoomOrigin({ x: 50, y: 50 });
-                    setIsScrolledToDetails(false);
-                }
-            } else if (e.key === 'ArrowRight') {
-                if (hasNextProduct) {
-                    setPreviewProduct(productList[currentPreviewIndex + 1]);
-                    setIsZoomed(false);
-                    setZoomOrigin({ x: 50, y: 50 });
-                    setIsScrolledToDetails(false);
-                }
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [
-        previewProduct,
-        currentPreviewIndex,
-        hasPrevProduct,
-        hasNextProduct,
-        productList,
-    ]);
 
     return (
         <>
@@ -747,364 +635,32 @@ export default function ProductsIndexPage({
             </div>
 
             {/* =============================================================
-                FULL SCREEN PRODUCT PREVIEW MODAL
+                UNIFIED PRODUCT IMAGE VIEWER
             ============================================================= */}
-            {previewProduct && (
-                <div
-                    id="product-modal-container"
-                    onScroll={(e) => {
-                        const target = e.currentTarget;
-
-                        if (target.scrollTop > 150) {
-                            setIsScrolledToDetails(true);
-                        } else {
-                            setIsScrolledToDetails(false);
-                        }
-                    }}
-                    className="dark fixed inset-0 z-[150] animate-in overflow-x-hidden overflow-y-auto scroll-smooth bg-black/95 text-white backdrop-blur-2xl duration-200 select-none fade-in"
-                >
-                    {/* Top Floating Control Bar (Sticky) */}
-                    <div className="sticky top-0 z-[160] flex w-full items-center justify-between border-b border-white/10 bg-gradient-to-b from-black/95 via-black/85 to-transparent px-5 py-3.5 backdrop-blur-md sm:px-8">
-                        <div className="flex items-center gap-3">
-                            <h2 className="max-w-[200px] truncate text-sm font-semibold text-white sm:max-w-md sm:text-base">
-                                {previewProduct.name}
-                            </h2>
-                            <Badge
-                                variant="outline"
-                                className="hidden border-white/20 bg-white/5 text-[10px] text-white/90 sm:inline-flex"
-                            >
-                                Product {currentPreviewIndex + 1} of{' '}
-                                {productList.length}
-                            </Badge>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            {/* Zoom Status Hint */}
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (!isZoomed) {
-                                        setZoomOrigin({ x: 50, y: 50 });
-                                        setIsZoomed(true);
-                                    } else {
-                                        setIsZoomed(false);
-                                    }
-                                }}
-                                className="hidden cursor-pointer items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80 backdrop-blur-md transition-all hover:bg-white/20 hover:text-white sm:flex"
-                                title="Click image or button to zoom"
-                            >
-                                {isZoomed ? (
-                                    <>
-                                        <ZoomOut className="h-3.5 w-3.5 text-primary" />
-                                        <span>Zoomed (175%)</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <ZoomIn className="h-3.5 w-3.5" />
-                                        <span>Click to Zoom</span>
-                                    </>
-                                )}
-                            </button>
-
-                            {/* Download Dropdown */}
-                            {previewProduct.image_url && (
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <button
-                                            type="button"
-                                            className="flex h-9 cursor-pointer items-center gap-1.5 rounded-full bg-white/10 px-3 text-xs font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20"
-                                            title="Download Image"
-                                        >
-                                            <Download className="h-4 w-4" />
-                                            Download
-                                            <ChevronDown className="h-3 w-3 opacity-70" />
-                                        </button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent
-                                        align="end"
-                                        className="z-[180] w-48 rounded-xl border-white/20 bg-black/90 p-1.5 text-white shadow-xl backdrop-blur-xl"
-                                    >
-                                        <DropdownMenuItem
-                                            onClick={() =>
-                                                downloadVisualAsFormat(
-                                                    previewProduct.image_url,
-                                                    previewProduct.name,
-                                                    'png',
-                                                )
-                                            }
-                                            className="cursor-pointer gap-2 text-xs font-medium text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
-                                        >
-                                            <Download className="h-3.5 w-3.5 text-primary" />
-                                            PNG (High Quality)
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                            onClick={() =>
-                                                downloadVisualAsFormat(
-                                                    previewProduct.image_url,
-                                                    previewProduct.name,
-                                                    'jpeg',
-                                                )
-                                            }
-                                            className="cursor-pointer gap-2 text-xs font-medium text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
-                                        >
-                                            <Download className="h-3.5 w-3.5 text-blue-400" />
-                                            JPEG (Web-Optimized)
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            )}
-
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setPreviewProduct(null);
-                                    setIsZoomed(false);
-                                    setIsScrolledToDetails(false);
-                                }}
-                                className="ml-1 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md transition-all hover:bg-white/30"
-                                title="Close (Esc)"
-                            >
-                                <X className="h-5 w-5" />
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Floating Previous Image Button (Left) */}
-                    {hasPrevProduct && (
-                        <button
-                            type="button"
-                            onClick={handlePrevProduct}
-                            className="fixed top-1/2 left-3 z-[170] flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/60 text-white/85 shadow-2xl backdrop-blur-md transition-all duration-200 hover:scale-110 hover:border-white/40 hover:bg-black/90 hover:text-white active:scale-95 sm:left-6 sm:h-13 sm:w-13"
-                            title="Previous product (←)"
-                            aria-label="Previous product"
-                        >
-                            <ChevronLeft className="h-6 w-6 sm:h-7 sm:w-7" />
-                        </button>
-                    )}
-
-                    {/* Floating Next Image Button (Right) */}
-                    {hasNextProduct && (
-                        <button
-                            type="button"
-                            onClick={handleNextProduct}
-                            className="fixed top-1/2 right-3 z-[170] flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/60 text-white/85 shadow-2xl backdrop-blur-md transition-all duration-200 hover:scale-110 hover:border-white/40 hover:bg-black/90 hover:text-white active:scale-95 sm:right-6 sm:h-13 sm:w-13"
-                            title="Next product (→)"
-                            aria-label="Next product"
-                        >
-                            <ChevronRight className="h-6 w-6 sm:h-7 sm:w-7" />
-                        </button>
-                    )}
-
-                    {/* Section 1: Main Full View Image Canvas */}
-                    <div
-                        id="product-modal-canvas"
-                        className="group/canvas relative flex min-h-[calc(100vh-4.5rem)] w-full flex-col items-center justify-center px-4 pt-4 pb-20 sm:px-8 sm:pt-6 sm:pb-24"
-                    >
-                        {/* Ambient Glow */}
-                        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
-                            <div className="h-[450px] w-[450px] rounded-full bg-gradient-to-tr from-primary/20 via-blue-500/10 to-transparent opacity-40 blur-3xl" />
-                        </div>
-
-                        {/* Subtle Black Gradient Overlay at the Very Bottom of Dark Backdrop */}
-                        <div className="pointer-events-none absolute right-0 bottom-0 left-0 z-10 h-28 bg-gradient-to-t from-black via-black/80 to-transparent" />
-
-                        {previewProduct.image_url ? (
-                            <img
-                                src={previewProduct.image_url}
-                                alt={previewProduct.name}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-
-                                    if (!isZoomed) {
-                                        const rect =
-                                            e.currentTarget.getBoundingClientRect();
-                                        const offsetX = e.clientX - rect.left;
-                                        const offsetY = e.clientY - rect.top;
-                                        const xPercent = Math.max(
-                                            0,
-                                            Math.min(
-                                                100,
-                                                (offsetX / rect.width) * 100,
-                                            ),
-                                        );
-                                        const yPercent = Math.max(
-                                            0,
-                                            Math.min(
-                                                100,
-                                                (offsetY / rect.height) * 100,
-                                            ),
-                                        );
-                                        setZoomOrigin({
-                                            x: xPercent,
-                                            y: yPercent,
-                                        });
-                                        setIsZoomed(true);
-                                    } else {
-                                        setIsZoomed(false);
-                                    }
-                                }}
-                                style={{
-                                    transformOrigin: isZoomed
-                                        ? `${zoomOrigin.x}% ${zoomOrigin.y}%`
-                                        : 'center center',
-                                }}
-                                className={`z-20 block max-h-[calc(100vh-12rem)] max-w-[86vw] cursor-pointer rounded-2xl object-contain drop-shadow-2xl transition-transform duration-300 ease-out select-none ${
-                                    isZoomed
-                                        ? 'scale-[1.75] cursor-zoom-out'
-                                        : 'scale-100 cursor-zoom-in'
-                                }`}
-                            />
-                        ) : (
-                            <div className="z-20 flex flex-col items-center justify-center text-white/50">
-                                <Tag className="h-16 w-16 opacity-40" />
-                                <p className="mt-2 text-sm font-medium">
-                                    No visual image uploaded for this product
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Static Scroll Indicator Button (Dark circular navigation arrow layered over the black gradient zone, clear of the image) */}
-                        <button
-                            type="button"
-                            onClick={handleToggleScrollDetails}
-                            className="group/scroll absolute bottom-4 left-1/2 z-30 flex h-10 w-10 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/80 text-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.6)] backdrop-blur-xl transition-all duration-300 hover:scale-110 hover:border-primary/60 hover:bg-black hover:text-white hover:shadow-[0_0_20px_rgba(var(--primary),0.5)] active:scale-95"
-                            title={
-                                isScrolledToDetails
-                                    ? 'Scroll up to image'
-                                    : 'Scroll down for details'
-                            }
-                            aria-label={
-                                isScrolledToDetails
-                                    ? 'Scroll up to image'
-                                    : 'Scroll down for details'
-                            }
-                        >
-                            {isScrolledToDetails ? (
-                                <ChevronUp className="h-5 w-5 transition-transform duration-300 group-hover/scroll:text-primary" />
-                            ) : (
-                                <ChevronDown className="h-5 w-5 transition-transform duration-300 group-hover/scroll:text-primary" />
-                            )}
-                        </button>
-                    </div>
-
-                    {/* Section 2: Recreated, Classy Details & Functions Section */}
-                    <div
-                        id="product-modal-details"
-                        className="relative z-30 w-full border-t border-border/80 bg-card/98 px-4 pt-8 pb-16 text-foreground backdrop-blur-3xl sm:px-8"
-                    >
-                        <div className="mx-auto max-w-3xl space-y-6">
-                            <div className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <div className="inline-flex items-center gap-2 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold tracking-wider text-primary-foreground uppercase shadow-md shadow-primary/20">
-                                        <Sparkles className="h-3.5 w-3.5" />
-                                        Product Details
-                                    </div>
-                                    <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-                                        {previewProduct.name}
-                                    </h3>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        asChild
-                                        size="sm"
-                                        className="h-9 cursor-pointer gap-2 bg-primary px-4 text-xs font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:scale-105 hover:bg-primary/90"
-                                    >
-                                        <Link
-                                            href={`/generator?product_id=${previewProduct.id}&product_name=${encodeURIComponent(previewProduct.name)}&price=${encodeURIComponent(previewProduct.price || '')}`}
-                                        >
-                                            <Sparkles className="h-4 w-4" />
-                                            Generate AI Visuals
-                                        </Link>
-                                    </Button>
-
-                                    <Button
-                                        asChild
-                                        variant="outline"
-                                        size="sm"
-                                        className="h-9 cursor-pointer gap-1.5 border-border bg-card px-4 text-xs font-semibold text-foreground transition-all hover:bg-muted"
-                                    >
-                                        <Link
-                                            href={
-                                                previewProduct.edit_url ||
-                                                `/products/${previewProduct.id}/edit`
-                                            }
-                                        >
-                                            <Edit3 className="h-3.5 w-3.5" />
-                                            Edit Product
-                                        </Link>
-                                    </Button>
-                                </div>
-                            </div>
-
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                <div className="group rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all hover:-translate-y-0.5 hover:border-primary/40 sm:p-5">
-                                    <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                                        <Tag className="h-3.5 w-3.5 text-primary" />
-                                        Retail Price
-                                    </div>
-                                    <p className="mt-2 text-lg font-extrabold text-emerald-600 dark:text-emerald-400">
-                                        {previewProduct.price
-                                            ? `₱${Number(previewProduct.price).toLocaleString()}`
-                                            : 'Price not set'}
-                                    </p>
-                                </div>
-
-                                <div className="group rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all hover:-translate-y-0.5 hover:border-primary/40 sm:p-5">
-                                    <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                                        <Calendar className="h-3.5 w-3.5 text-primary" />
-                                        Added to Catalog
-                                    </div>
-                                    <p className="mt-2 truncate text-base font-bold text-foreground">
-                                        {previewProduct.created_at ||
-                                            'Catalog Product'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {previewProduct.image_url && (
-                                <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
-                                    <span className="mr-1 text-xs font-bold text-muted-foreground">
-                                        Download:
-                                    </span>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() =>
-                                            downloadVisualAsFormat(
-                                                previewProduct.image_url,
-                                                previewProduct.name,
-                                                'png',
-                                            )
-                                        }
-                                        className="cursor-pointer gap-1.5 border-border bg-card text-xs font-semibold text-foreground shadow-none transition-all hover:bg-muted"
-                                    >
-                                        <Download className="h-3.5 w-3.5 text-primary" />
-                                        PNG
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() =>
-                                            downloadVisualAsFormat(
-                                                previewProduct.image_url,
-                                                previewProduct.name,
-                                                'jpeg',
-                                            )
-                                        }
-                                        className="cursor-pointer gap-1.5 border-border bg-card text-xs font-semibold text-foreground shadow-none transition-all hover:bg-muted"
-                                    >
-                                        <Download className="h-3.5 w-3.5 text-blue-500" />
-                                        JPEG
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
+            <UnifiedImageViewer
+                isOpen={!!previewProduct}
+                onClose={() => setPreviewProduct(null)}
+                items={productList}
+                currentIndex={currentPreviewIndex}
+                onNavigate={(newIndex) => {
+                    if (newIndex >= 0 && newIndex < productList.length) {
+                        setPreviewProduct(productList[newIndex]);
+                    }
+                }}
+                context="product"
+                onDownload={(product, format) => {
+                    if (product.image_url) {
+                        downloadVisualAsFormat(
+                            product.image_url,
+                            product.name,
+                            format,
+                        );
+                    }
+                }}
+                onDelete={(product) => {
+                    setProductToDelete(product);
+                }}
+            />
 
             {/* =============================================================
                 DELETE PRODUCT CONFIRMATION MODAL

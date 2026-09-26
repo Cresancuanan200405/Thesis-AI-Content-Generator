@@ -418,6 +418,15 @@ class GeneratorController extends Controller
             || $request->input('target') === 'tagline'
             || $generationMode === 'automatic';
 
+        $eventId = $request->input('event_id');
+        $event = ! empty($eventId)
+            ? Event::query()->where('id', $eventId)->first()
+            : $campaign->event;
+
+        $showEventText = $request->has('show_event_text')
+            ? filter_var($request->input('show_event_text'), FILTER_VALIDATE_BOOLEAN)
+            : ($event !== null);
+
         try {
             $result = $promptService->generate($user, $campaign, $business, [
                 'generation_mode' => $generationMode,
@@ -427,12 +436,19 @@ class GeneratorController extends Controller
                 'custom_products' => $request->input('custom_products', []),
                 'user_instruction' => $request->input('user_instruction') ?: $request->input('image_prompt') ?: $request->input('notes'),
                 'render_style' => $request->input('render_style'),
+                'design_treatment' => $request->input('design_treatment'),
+                'copy_emphasis' => $request->input('copy_emphasis'),
                 'visual_theme' => $request->input('visual_theme') ?: $request->input('content_style'),
                 'brand_tone' => $request->input('brand_tone'),
                 'aspect_ratio' => $request->input('aspect_ratio', '1:1'),
                 'tagline' => $request->input('tagline'),
+                'include_tagline' => $request->has('include_tagline') ? filter_var($request->input('include_tagline'), FILTER_VALIDATE_BOOLEAN) : null,
+                'include_prices' => $request->has('include_prices') ? filter_var($request->input('include_prices'), FILTER_VALIDATE_BOOLEAN) : null,
                 'include_business_name' => $request->input('include_business_name', true),
                 'has_reference_image' => (bool) $request->input('has_reference_image', false),
+                'event_id' => $event?->id,
+                'event' => $event,
+                'show_event_text' => $showEventText,
             ]);
 
             return response()->json([

@@ -361,43 +361,25 @@ test('multi-image reference handling attaches all valid reference images to open
         ->and($meta['reference_image_paths'])->toBe(['products/latte.png', 'products/muffin.png']);
 });
 
-test('multi-image reference falls back to primary image edit if multi-image edit is rejected', function () {
+test('multi-image reference handling does not silently downgrade when multi-image edit is rejected', function () {
     Storage::disk('public')->put('products/latte.png', 'binary-latte-data');
     Storage::disk('public')->put('products/muffin.png', 'binary-muffin-data');
 
-    $attemptCount = 0;
-
     Http::fake([
-        'https://api.openai.com/v1/images/edits' => function ($request) use (&$attemptCount) {
-            $attemptCount++;
-            if ($attemptCount === 1) {
-                // First attempt (multi-image) fails with 400
-                return Http::response(['error' => ['message' => 'Multiple images not supported']], 400);
-            }
-
-            // Second attempt (single primary image) succeeds
-            return Http::response([
-                'data' => [
-                    ['b64_json' => base64_encode('fake-single-edited-image')],
-                ],
-            ], 200);
+        'https://api.openai.com/v1/images/edits' => function ($request) {
+            return Http::response(['error' => ['message' => 'Multiple images not supported']], 400);
         },
     ]);
 
     $service = app(OpenAIImageService::class);
-    $path = $service->generate('Composite visual of Iced Latte and Blueberry Muffin', [
+
+    expect(fn () => $service->generate('Composite visual of Iced Latte and Blueberry Muffin', [
         'reference_image_paths' => [
             'products/latte.png',
             'products/muffin.png',
         ],
         'aspect_ratio' => '1:1',
-    ]);
-
-    expect($path)->not()->toBeEmpty();
-    expect($attemptCount)->toBe(2);
-    $meta = $service->getLastGenerationMetadata();
-    expect($meta['generation_method'])->toBe('image_to_image_edit')
-        ->and($meta['product_preserved'])->toBeTrue();
+    ]))->toThrow(RuntimeException::class, 'Multiple product reference generation could not be completed');
 });
 
 /*

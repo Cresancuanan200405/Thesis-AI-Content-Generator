@@ -71,8 +71,11 @@ function resolvePrimaryBreadcrumbs(
         ];
     }
 
-    if (pathname === '/generator') {
-        return [{ title: 'AI Studio', href: '/generator' }];
+    if (pathname === '/generator' || pathname.startsWith('/generator/')) {
+        return [
+            { title: 'Campaigns', href: '/campaigns' },
+            { title: 'Generator', href: pathname },
+        ];
     }
 
     if (pathname === '/products') {

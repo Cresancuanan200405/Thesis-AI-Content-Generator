@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\DesignFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,6 +37,12 @@ class Design extends Model
 {
     /** @use HasFactory<DesignFactory> */
     use HasFactory, SoftDeletes;
+
+    public const STATUS_DRAFT = 'draft';
+
+    public const STATUS_FINAL = 'final';
+
+    public const STATUS_COMPLETED = 'completed';
 
     protected $fillable = [
         'user_id',
@@ -101,5 +108,33 @@ class Design extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function isDraft(): bool
+    {
+        return $this->status === self::STATUS_DRAFT;
+    }
+
+    public function isFinal(): bool
+    {
+        return in_array($this->status, [self::STATUS_FINAL, self::STATUS_COMPLETED], true);
+    }
+
+    /**
+     * @param  Builder<Design>  $query
+     * @return Builder<Design>
+     */
+    public function scopeDraft($query)
+    {
+        return $query->where('status', self::STATUS_DRAFT);
+    }
+
+    /**
+     * @param  Builder<Design>  $query
+     * @return Builder<Design>
+     */
+    public function scopeFinal($query)
+    {
+        return $query->whereIn('status', [self::STATUS_FINAL, self::STATUS_COMPLETED]);
     }
 }

@@ -91,6 +91,7 @@ class AutomaticGeneratorController extends Controller
             'image_quality' => ['nullable', 'string', 'in:low,medium,high'],
             'is_variation' => ['nullable', 'boolean'],
             'source_design_id' => ['nullable', 'integer'],
+            'show_event_text' => ['nullable', 'boolean'],
             'design_treatment' => ['nullable', 'string', 'max:50'],
             'copy_emphasis' => ['nullable', 'string', 'max:50'],
             'render_style' => ['nullable', 'string', 'max:100'],
@@ -137,7 +138,8 @@ class AutomaticGeneratorController extends Controller
                 ->whereIn('id', $catalogProductIds)
                 ->get()
                 ->sortBy(function (Product $p) use ($catalogProductIds) {
-                    $pos = array_search($p->id, $catalogProductIds, true);
+                    $strIds = array_map('strval', $catalogProductIds);
+                    $pos = array_search((string) $p->id, $strIds, true);
 
                     return $pos === false ? 999 : $pos;
                 })
@@ -161,6 +163,9 @@ class AutomaticGeneratorController extends Controller
         // Primary catalog product for reference preservation
         $primaryProduct = $catalogProducts->first();
         $event = $campaign->event;
+        $showEventText = array_key_exists('show_event_text', $validated)
+            ? filter_var($validated['show_event_text'], FILTER_VALIDATE_BOOLEAN)
+            : ($event !== null);
 
         $userTagline = $includeTagline && ! empty($validated['tagline']) ? trim((string) $validated['tagline']) : null;
         $userPrompt = ! empty($validated['user_instruction'])
@@ -177,6 +182,8 @@ class AutomaticGeneratorController extends Controller
                 'require_tagline' => $includeTagline,
                 'include_tagline' => $includeTagline,
                 'include_prices' => $includePrices,
+                'show_event_text' => $showEventText,
+                'event' => $event,
                 'tagline' => $userTagline,
                 'user_instruction' => $userPrompt,
                 'previous_concepts' => $validated['previous_concepts'] ?? [],
@@ -218,13 +225,48 @@ class AutomaticGeneratorController extends Controller
         $copyEmphasis = ($isVariation && ! empty($validated['copy_emphasis']))
             ? $validated['copy_emphasis']
             : ($creativeResult['copy_emphasis'] ?? 'Balanced');
-        $typographyLayout = $creativeResult['typography_layout'] ?? null;
+        $typographyLayout = $creativeResult['copy_layout'] ?? $creativeResult['typography_layout'] ?? null;
+        $copyLayout = $typographyLayout;
+        $productNameStyle = $creativeResult['product_name_style'] ?? null;
+        $priceStyle = $creativeResult['price_style'] ?? null;
+        $taglineStyle = $creativeResult['tagline_style'] ?? null;
+        $textDepthMode = $creativeResult['text_depth_mode'] ?? null;
         $compositionType = $creativeResult['composition_type'] ?? null;
         $cameraViewpoint = $creativeResult['camera_viewpoint'] ?? null;
         $lightingProfile = $creativeResult['lighting_profile'] ?? null;
         $sceneFamily = $creativeResult['scene_family'] ?? null;
         $environmentFamily = $creativeResult['environment_family'] ?? null;
         $propProfile = $creativeResult['prop_profile'] ?? null;
+        $visualWorldArchetype = $creativeResult['visual_world_archetype'] ?? null;
+        $backgroundStyle = $creativeResult['background_style'] ?? null;
+        $productArrangement = $creativeResult['product_arrangement'] ?? null;
+        $visualTheme = $creativeResult['visual_theme'] ?? null;
+        $brandTone = $creativeResult['brand_tone'] ?? null;
+
+        $totalProductCount = $catalogProducts->count() + count($validated['custom_products'] ?? []);
+        if ($totalProductCount > 1) {
+            $productArrangement = MarketingDesignSystem::validateProductArrangement($productArrangement);
+        } else {
+            $productArrangement = $productArrangement ? MarketingDesignSystem::validateProductArrangement($productArrangement) : null;
+        }
+
+        $backgroundStyle = MarketingDesignSystem::validateBackgroundStyle($backgroundStyle);
+
+        $visualWorldArchetype = $designSystem->validateVisualArchetype($visualWorldArchetype) ?? 'PREMIUM_STUDIO';
+
+        if (empty($visualTheme)) {
+            $visualTheme = $event ? 'Seasonal' : ($designTreatment === 'Editorial' ? 'Editorial' : 'Product-focused');
+        }
+
+        if (empty($brandTone)) {
+            $brandTone = match ($designTreatment) {
+                'Luxury' => 'Luxury',
+                'Bold' => 'Bold',
+                'Minimal' => 'Minimal',
+                default => 'Professional',
+            };
+        }
+
         $renderStyle = ($isVariation && ! empty($validated['render_style']))
             ? $validated['render_style']
             : ($creativeResult['render_style'] ?? 'Automatic Commercial Art Direction');
@@ -247,6 +289,14 @@ class AutomaticGeneratorController extends Controller
             'camera_viewpoint' => $cameraViewpoint,
             'lighting_profile' => $lightingProfile,
             'prop_profile' => $propProfile,
+            'copy_layout' => $copyLayout,
+            'product_name_style' => $productNameStyle,
+            'price_style' => $priceStyle,
+            'tagline_style' => $taglineStyle,
+            'text_depth_mode' => $textDepthMode,
+            'visual_world_archetype' => $visualWorldArchetype,
+            'background_style' => $backgroundStyle,
+            'product_arrangement' => $productArrangement,
         ];
         $attemptedCandidates[] = $currentCandidate;
 
@@ -307,6 +357,15 @@ class AutomaticGeneratorController extends Controller
         $cameraViewpoint = $currentCandidate['camera_viewpoint'];
         $lightingProfile = $currentCandidate['lighting_profile'];
         $propProfile = $currentCandidate['prop_profile'];
+        $copyLayout = $currentCandidate['copy_layout'] ?? $copyLayout;
+        $typographyLayout = $copyLayout;
+        $productNameStyle = $currentCandidate['product_name_style'] ?? $productNameStyle;
+        $priceStyle = $currentCandidate['price_style'] ?? $priceStyle;
+        $taglineStyle = $currentCandidate['tagline_style'] ?? $taglineStyle;
+        $textDepthMode = $currentCandidate['text_depth_mode'] ?? $textDepthMode;
+        $visualWorldArchetype = $currentCandidate['visual_world_archetype'] ?? $visualWorldArchetype;
+        $backgroundStyle = $currentCandidate['background_style'] ?? $backgroundStyle;
+        $productArrangement = $currentCandidate['product_arrangement'] ?? $productArrangement;
 
         // If candidate was derived, rebuild coherent creative concept, visual strategy, and scene direction
         // to guarantee no contradiction between structured visual core and textual direction.
@@ -367,14 +426,33 @@ class AutomaticGeneratorController extends Controller
             }
         }
 
+        $totalProductCount = $catalogProducts->count() + count($validated['custom_products'] ?? []);
+        $isMultiProduct = $totalProductCount > 1;
+
         $pricesContract = [];
         if ($includePrices) {
             if ($primaryProductContract && ! empty($primaryProductContract['price'])) {
                 $pricesContract[$primaryProductContract['name']] = $primaryProductContract['price'];
+                if ($primaryProduct) {
+                    $pricesContract[(string) $primaryProduct->id] = $primaryProductContract['price'];
+                }
             }
-            foreach ($coFeaturedProductsContract as $cfp) {
-                if (! empty($cfp['price'])) {
-                    $pricesContract[$cfp['name']] = $cfp['price'];
+            if ($catalogProducts->count() > 1) {
+                foreach ($catalogProducts->slice(1)->values() as $idx => $cp) {
+                    $cPrice = $coFeaturedProductsContract[$idx]['price'] ?? null;
+                    if (! empty($cPrice)) {
+                        $pricesContract[$cp->name] = $cPrice;
+                        $pricesContract[(string) $cp->id] = $cPrice;
+                    }
+                }
+            }
+            foreach ($validated['custom_products'] ?? [] as $cIdx => $custom) {
+                $cName = is_array($custom) ? ($custom['name'] ?? null) : ($custom->name ?? null);
+                $customOffset = ($catalogProducts ? max(0, $catalogProducts->count() - 1) : 0) + $cIdx;
+                $cPrice = $coFeaturedProductsContract[$customOffset]['price'] ?? null;
+                if (! empty($cName) && ! empty($cPrice)) {
+                    $pricesContract[$cName] = $cPrice;
+                    $pricesContract["custom_{$cIdx}"] = $cPrice;
                 }
             }
         }
@@ -387,7 +465,7 @@ class AutomaticGeneratorController extends Controller
             'business' => $business,
             'primary_product' => $primaryProductContract,
             'co_featured_products' => $coFeaturedProductsContract,
-            'prices' => $pricesContract,
+            'prices' => $isMultiProduct ? $pricesContract : null,
             'product_name' => $primaryProduct?->name ?? 'Featured Product',
             'product_description' => $primaryProduct?->description,
             'product_category' => $business->category,
@@ -396,16 +474,25 @@ class AutomaticGeneratorController extends Controller
             'campaign_name' => $campaign->name,
             'campaign_objective' => $campaign->objective,
             'event_name' => $event?->name,
-            'price' => $includePrices ? $primaryProduct?->price : null,
+            'show_event_text' => $showEventText,
+            'price' => ($isMultiProduct || ! $includePrices) ? null : $primaryProduct?->price,
             'include_prices' => $includePrices,
             'catalog_products' => $catalogProducts,
             'custom_products' => $validated['custom_products'] ?? [],
-            'brand_tone' => [],
-            'visual_theme' => [],
+            'brand_tone' => array_filter([$brandTone]),
+            'visual_theme' => array_filter([$visualTheme]),
+            'visual_world_archetype' => $visualWorldArchetype,
+            'background_style' => $backgroundStyle,
+            'product_arrangement' => $productArrangement,
             'render_style' => $renderStyle,
             'design_treatment' => $designTreatment,
             'copy_emphasis' => $copyEmphasis,
             'typography_layout' => $typographyLayout,
+            'copy_layout' => $copyLayout,
+            'product_name_style' => $productNameStyle,
+            'price_style' => $priceStyle,
+            'tagline_style' => $taglineStyle,
+            'text_depth_mode' => $textDepthMode,
             'creative_concept' => $creativeConcept,
             'visual_strategy' => $visualStrategy,
             'composition_type' => $compositionType,
@@ -446,10 +533,20 @@ class AutomaticGeneratorController extends Controller
             'lighting_profile' => $lightingProfile,
             'prop_profile' => $propProfile,
             'typography_layout' => $typographyLayout,
+            'copy_layout' => $copyLayout,
+            'product_name_style' => $productNameStyle,
+            'price_style' => $priceStyle,
+            'tagline_style' => $taglineStyle,
+            'text_depth_mode' => $textDepthMode,
             'copy_emphasis' => $copyEmphasis,
             'design_treatment' => $designTreatment,
             'render_style' => $renderStyle,
             'aspect_ratio' => $aspectRatio,
+            'visual_world_archetype' => $visualWorldArchetype,
+            'background_style' => $backgroundStyle,
+            'product_arrangement' => $productArrangement,
+            'visual_theme' => $visualTheme,
+            'brand_tone' => $brandTone,
         ]);
 
         // Stage 3: Immediate Downstream Image Generation
@@ -462,12 +559,23 @@ class AutomaticGeneratorController extends Controller
                 'design_treatment' => $designTreatment,
                 'copy_emphasis' => $copyEmphasis,
                 'typography_layout' => $typographyLayout,
+                'copy_layout' => $copyLayout,
+                'product_name_style' => $productNameStyle,
+                'price_style' => $priceStyle,
+                'tagline_style' => $taglineStyle,
+                'text_depth_mode' => $textDepthMode,
                 'composition_type' => $compositionType,
                 'camera_viewpoint' => $cameraViewpoint,
                 'lighting_profile' => $lightingProfile,
                 'scene_family' => $sceneFamily,
                 'environment_family' => $environmentFamily,
                 'prop_profile' => $propProfile,
+                'visual_world_archetype' => $visualWorldArchetype,
+                'background_style' => $backgroundStyle,
+                'product_arrangement' => $productArrangement,
+                'visual_theme' => $visualTheme,
+                'brand_tone' => $brandTone,
+                'show_event_text' => $showEventText,
                 'visual_core_diversity' => [
                     'attempted_candidates' => $attemptedCandidates,
                     'rejected_candidates' => $rejectedCandidates,
@@ -490,10 +598,22 @@ class AutomaticGeneratorController extends Controller
                 'visual_strategy' => $visualStrategy,
                 'design_treatment' => $designTreatment,
                 'copy_emphasis' => $copyEmphasis,
+                'typography_layout' => $typographyLayout,
+                'copy_layout' => $copyLayout,
+                'product_name_style' => $productNameStyle,
+                'price_style' => $priceStyle,
+                'tagline_style' => $taglineStyle,
+                'text_depth_mode' => $textDepthMode,
                 'creative_fingerprint' => $creativeFingerprint,
                 'scene_family' => $sceneFamily,
                 'environment_family' => $environmentFamily,
                 'prop_profile' => $propProfile,
+                'visual_world_archetype' => $visualWorldArchetype,
+                'background_style' => $backgroundStyle,
+                'product_arrangement' => $productArrangement,
+                'visual_theme' => $visualTheme,
+                'brand_tone' => $brandTone,
+                'show_event_text' => $showEventText,
                 'product_name' => $primaryProduct?->name ?? 'Featured Product',
                 'product_id' => $primaryProduct?->id,
                 'catalog_product_ids' => $catalogProducts->pluck('id')->all(),

@@ -26,7 +26,7 @@ export function StudioHeader({
 
     return (
         <>
-            {generationState !== 'generating' && (
+            {generationState !== 'generating' && generationState !== 'ready' && (
                 <div className="sticky top-11 z-20 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border/80 bg-card/95 p-2 px-3 shadow-xs backdrop-blur-md transition-all sm:top-12 sm:gap-3">
                     <div className="flex min-w-0 flex-1 items-center gap-2">
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -40,15 +40,15 @@ export function StudioHeader({
                                 {activeCampaign && (
                                     <Link
                                         href={`/campaigns/${activeCampaign.id}`}
-                                        className="inline-flex max-w-[140px] sm:max-w-[200px] items-center gap-1 truncate rounded-lg border border-primary/25 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary transition-colors hover:border-primary/40 hover:bg-primary/15"
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary transition-colors hover:border-primary/40 hover:bg-primary/15 whitespace-normal break-words"
                                         title={`Active Campaign: ${activeCampaign.name}`}
                                     >
-                                        <Layers className="h-3 w-3 shrink-0 text-primary" />
-                                        <span className="truncate">{activeCampaign.name}</span>
+                                        <Layers className="h-3.5 w-3.5 shrink-0 text-primary" />
+                                        <span>{activeCampaign.name}</span>
                                     </Link>
                                 )}
                             </div>
-                            <p className="truncate text-xs text-muted-foreground">
+                            <p className="text-xs text-muted-foreground whitespace-normal break-words">
                                 {activeCampaign
                                     ? `Generating marketing visuals for "${activeCampaign.name}"`
                                     : 'Create campaign-ready marketing visuals tailored to holidays and product launches.'}

@@ -2,6 +2,7 @@ import {
     Building2,
     CalendarDays,
     Camera,
+    Check,
     Compass,
     Cpu,
     ImageIcon,
@@ -9,22 +10,19 @@ import {
     Package,
     PanelRightClose,
     PanelRightOpen,
+    PenTool,
     ShieldCheck,
     Sparkles,
-    Tag,
-    Wand2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     aspectRatioOptions,
     BusinessProfile,
-    calculateGenerationCost,
     CampaignItem,
     CustomProductItem,
     EventItem,
     ImageQuality,
-    imageQualityOptions,
     ProductItem,
 } from './types';
 
@@ -44,12 +42,18 @@ interface StudioBriefSummaryProps {
     renderStyle?: string;
     contentStyle?: string[];
     brandTone?: string[];
+    designTreatment?: string;
+    copyEmphasis?: string;
+    scenePrompt?: string;
+    creativeConcept?: string;
+    visualStrategy?: string;
     imageModel?: string;
-    imageQuality: ImageQuality;
-    includeBusinessName: boolean;
+    imageQuality?: ImageQuality;
+    includeBusinessName?: boolean;
     isAutomaticMode?: boolean;
     includeTagline?: boolean;
     includePrices?: boolean;
+    showEventText?: boolean;
 }
 
 export function StudioBriefSummary({
@@ -65,18 +69,26 @@ export function StudioBriefSummary({
     activeCampaign,
     business,
     selectedEvent,
+    showEventText,
     renderStyle,
     contentStyle = [],
     brandTone = [],
-    imageModel,
-    imageQuality,
-    includeBusinessName,
+    designTreatment,
+    copyEmphasis,
+    scenePrompt,
+    creativeConcept,
+    imageModel = 'GPT-Image-2',
+    imageQuality = 'medium',
+    includeBusinessName = true,
     isAutomaticMode = false,
     includeTagline = true,
     includePrices = true,
 }: StudioBriefSummaryProps) {
     const activeRatio = aspectRatio || '1:1';
     const activeRatioOption = aspectRatioOptions.find((o) => o.value === activeRatio);
+    const hasProducts = totalSelectedCount > 0;
+    const hasPromptOrConcept = isAutomaticMode ? true : Boolean(scenePrompt && scenePrompt.trim().length > 0);
+    const isReady = hasProducts && hasPromptOrConcept;
 
     if (isCollapsed) {
         return (
@@ -101,13 +113,19 @@ export function StudioBriefSummary({
                         <span className="rotate-180 text-[10px] font-bold tracking-widest text-muted-foreground uppercase transition-colors [writing-mode:vertical-rl] group-hover:text-foreground">
                             Brief Summary
                         </span>
-                        <span className="rotate-180 rounded border border-primary/30 bg-primary/5 px-1 py-0.5 font-mono text-[9px] font-bold text-primary [writing-mode:vertical-rl]">
-                            {activeRatio}
+                        <span
+                            className={`rotate-180 rounded border px-1 py-0.5 font-mono text-[9px] font-bold [writing-mode:vertical-rl] ${
+                                isReady
+                                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                    : 'border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400'
+                            }`}
+                        >
+                            {isReady ? 'READY' : 'INCOMPLETE'}
                         </span>
                     </div>
                 </div>
 
-                <div className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors group-hover:text-foreground">
+                <div className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors group-hover:text-foreground">
                     <Sparkles className="h-3.5 w-3.5" />
                 </div>
             </aside>
@@ -120,19 +138,29 @@ export function StudioBriefSummary({
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-border/60 pb-3">
                     <div className="flex items-center gap-2.5">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 text-primary shadow-2xs ring-1 ring-primary/20">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary shadow-2xs border border-primary/20">
                             <Sparkles className="h-3.5 w-3.5" />
                         </div>
                         <div>
-                            <div className="flex items-center gap-1.5">
-                                <span className="text-xs font-bold tracking-tight text-foreground">
-                                    Brief Summary
-                                </span>
-                                <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                    <span className="h-1 w-1 animate-pulse rounded-full bg-emerald-500" />
-                                    Live
-                                </span>
-                            </div>
+                            <span className="text-xs font-bold tracking-tight text-foreground block">
+                                Studio Brief Summary
+                            </span>
+                            <span
+                                className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.2 font-mono text-[9px] font-semibold ${
+                                    isReady
+                                        ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                        : 'border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400'
+                                }`}
+                            >
+                                {isReady ? (
+                                    <>
+                                        <Check className="h-2.5 w-2.5 stroke-[3]" />
+                                        Ready to Generate
+                                    </>
+                                ) : (
+                                    'Incomplete Required Fields'
+                                )}
+                            </span>
                         </div>
                     </div>
                     <Button
@@ -147,353 +175,277 @@ export function StudioBriefSummary({
                     </Button>
                 </div>
 
-                {/* Section 1: Canvas & Aspect Ratio Preview */}
-                <div className="group relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-b from-primary/5 via-card/60 to-background/80 p-3 shadow-2xs transition-all hover:border-primary/30">
-                    <div className="mb-2 flex items-center justify-between text-xs">
-                        <span className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-foreground uppercase">
+                {/* Section 1: Canvas Proportions & Engine */}
+                <div className="space-y-2 rounded-2xl border border-border/70 bg-card/60 p-3 shadow-2xs">
+                    <div className="flex items-center justify-between text-[11px] font-bold tracking-wide text-foreground uppercase">
+                        <span className="flex items-center gap-1.5">
                             <Layers className="h-3.5 w-3.5 text-primary" />
-                            Canvas & Ratio
+                            Canvas & Engine
                         </span>
-                        <Badge
-                            variant="outline"
-                            className="border-primary/30 bg-primary/10 font-mono text-[10px] font-bold text-primary shadow-2xs"
-                        >
+                        <span className="flex items-center gap-1 rounded border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.2 font-mono text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
                             {activeRatio}
-                        </Badge>
+                        </span>
                     </div>
 
-                    {/* Dynamic Proportional Aspect Preview */}
-                    <div className="flex min-h-[130px] items-center justify-center overflow-hidden rounded-xl border border-border/50 bg-background/70 p-2.5 shadow-inner">
+                    {/* Proportional visual box preview */}
+                    <div className="flex min-h-[90px] items-center justify-center overflow-hidden rounded-xl border border-border/50 bg-background/70 p-2 shadow-inner">
                         <div
-                            className={`relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-primary/60 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent shadow-sm transition-all duration-300 ${
+                            className={`relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-primary/60 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent transition-all ${
                                 activeRatio === '9:16'
-                                    ? 'h-[125px] w-[70px]'
+                                    ? 'h-[80px] w-[45px]'
                                     : activeRatio === '16:9'
-                                      ? 'h-[75px] w-[134px]'
+                                      ? 'h-[45px] w-[80px]'
                                       : activeRatio === '4:5'
-                                        ? 'h-[115px] w-[92px]'
-                                        : activeRatio === '4:3'
-                                          ? 'h-[90px] w-[120px]'
-                                          : 'h-[100px] w-[100px]'
+                                        ? 'h-[75px] w-[60px]'
+                                        : 'h-[65px] w-[65px]'
                             }`}
                         >
-                            <div className="flex flex-col items-center justify-center gap-0.5 p-1 text-center">
-                                <span className="font-mono text-xs font-black tracking-tight text-primary">
-                                    {activeRatio}
-                                </span>
-                                <span className="font-mono text-[9px] font-semibold text-muted-foreground">
-                                    {activeRatioOption?.badge || '1024 × 1024'}
-                                </span>
-                            </div>
+                            <span className="font-mono text-[10px] font-bold text-primary">{activeRatio}</span>
                         </div>
                     </div>
 
-                    <div className="mt-2 flex items-center justify-between border-t border-border/40 pt-2 text-[11px]">
-                        <span className="max-w-[170px] truncate font-medium text-foreground">
-                            {activeRatioOption?.label || activeRatio}
-                        </span>
-                        <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                            <ShieldCheck className="h-3 w-3" />
-                            Safe Area
-                        </span>
+                    <div className="space-y-1 pt-1 text-[11px]">
+                        <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1">
+                            <span className="text-muted-foreground">Dimensions:</span>
+                            <span className="font-mono text-foreground">{activeRatioOption?.badge || '1024 × 1024'}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 text-[11px]">
+                            <span className="text-muted-foreground">Image Engine:</span>
+                            <span className="font-mono font-semibold text-foreground">{imageModel}</span>
+                        </div>
                     </div>
                 </div>
 
-                {/* Section 2: Hero Product & Copy */}
-                <div className="space-y-2.5 rounded-2xl border border-border/70 bg-card/60 p-3 shadow-2xs">
+                {/* Section 2: Promoting Offering */}
+                <div className="space-y-2 rounded-2xl border border-border/70 bg-card/60 p-3 shadow-2xs">
                     <div className="flex items-center justify-between text-[11px] font-bold tracking-wide text-foreground uppercase">
                         <span className="flex items-center gap-1.5">
                             <Package className="h-3.5 w-3.5 text-primary" />
-                            Hero Product & Copy
+                            Promoting Offering
                         </span>
-                        {price && (
-                            <span className="rounded-md border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                                ₱{Number(price).toLocaleString()}
-                            </span>
-                        )}
+                        <span
+                            className={`flex items-center gap-1 rounded border px-1.5 py-0.2 font-mono text-[9px] font-bold ${
+                                hasProducts
+                                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                    : 'border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400'
+                            }`}
+                        >
+                            {hasProducts ? (
+                                <>
+                                    <Check className="h-2.5 w-2.5 stroke-[3]" />
+                                    {totalSelectedCount} Selected
+                                </>
+                            ) : (
+                                'Required'
+                            )}
+                        </span>
                     </div>
 
                     <div className="space-y-1.5 text-xs">
-                        <div className="rounded-xl border border-border/50 bg-background/60 p-2.5">
-                            <div className="mb-1 flex items-center justify-between">
-                                <span className="text-[9px] font-bold tracking-wider text-muted-foreground uppercase">
-                                    Featured Products & Services
-                                </span>
-                                {totalSelectedCount > 0 && (
-                                    <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
-                                        ({totalSelectedCount})
-                                    </span>
-                                )}
-                            </div>
-                            <div className="text-xs font-semibold text-foreground">
-                                {totalSelectedCount > 0 ? (
-                                    <div className="space-y-1">
-                                        {selectedCatalogProducts.map((p) => (
-                                            <div
-                                                key={`catalog-featured-${p.id}`}
-                                                className="flex items-start justify-between gap-2 text-[11px]"
-                                            >
-                                                <span className="break-words font-medium leading-tight">{p.name}</span>
-                                                {p.price && (
-                                                    <span className="shrink-0 font-bold text-emerald-500">
-                                                        ₱{Number(p.price).toLocaleString()}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        ))}
-                                        {customProducts
-                                            .filter((p) => p.name.trim())
-                                            .map((p) => (
-                                                <div
-                                                    key={p.id}
-                                                    className="flex items-start justify-between gap-2 text-[11px]"
-                                                >
-                                                    <span className="break-words font-medium leading-tight">
-                                                        {p.name} (Custom)
-                                                    </span>
-                                                    {p.price && (
-                                                        <span className="shrink-0 font-bold text-emerald-500">
-                                                            ₱{Number(p.price).toLocaleString()}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            ))}
+                        {hasProducts ? (
+                            <div className="space-y-1 rounded-xl border border-border/50 bg-background/60 p-2.5">
+                                {selectedCatalogProducts.map((p) => (
+                                    <div
+                                        key={`catalog-${p.id}`}
+                                        className="flex items-start justify-between gap-2 text-[11px]"
+                                    >
+                                        <span className="font-medium text-foreground break-words leading-tight">
+                                            {p.name}
+                                        </span>
+                                        {p.price && (
+                                            <span className="shrink-0 font-semibold text-foreground">
+                                                ₱{Number(p.price).toLocaleString()}
+                                            </span>
+                                        )}
                                     </div>
-                                ) : (
-                                    <span className="text-muted-foreground italic">
-                                        No products or services specified
-                                    </span>
-                                )}
+                                ))}
+                                {customProducts
+                                    .filter((p) => p.name.trim())
+                                    .map((p) => (
+                                        <div
+                                            key={p.id}
+                                            className="flex items-start justify-between gap-2 text-[11px]"
+                                        >
+                                            <span className="font-medium text-foreground break-words leading-tight">
+                                                {p.name} (Custom)
+                                            </span>
+                                            {p.price && (
+                                                <span className="shrink-0 font-semibold text-foreground">
+                                                    ₱{Number(p.price).toLocaleString()}
+                                                </span>
+                                            )}
+                                        </div>
+                                    ))}
                             </div>
-                        </div>
-
-                        {/* Marketing Copy Summary */}
-                        <div className="space-y-1.5 rounded-xl border border-border/60 bg-muted/20 p-2.5 text-xs">
-                            <div className="text-[9px] font-bold tracking-wider text-muted-foreground uppercase">
-                                Marketing Copy
+                        ) : (
+                            <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-2.5 text-[11px] text-red-600 dark:text-red-400">
+                                No products selected. Please select or add at least 1 product.
                             </div>
-                            <div className="flex items-center justify-between gap-1 text-[11px]">
-                                <span className="text-muted-foreground">Tagline:</span>
-                                {includeTagline ? (
-                                    <span className="max-w-[140px] truncate font-semibold text-primary" title={tagline || 'AI Auto'}>
-                                        {tagline ? `"${tagline}"` : 'AI Auto'}
-                                    </span>
-                                ) : (
-                                    <span className="font-medium text-muted-foreground">Disabled</span>
-                                )}
-                            </div>
-                            <div className="flex items-center justify-between gap-1 text-[11px]">
-                                <span className="text-muted-foreground">Prices:</span>
-                                {includePrices ? (
-                                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                                        Visible
-                                    </span>
-                                ) : (
-                                    <span className="font-medium text-muted-foreground">Hidden</span>
-                                )}
-                            </div>
-                        </div>
+                        )}
 
                         {hasImageReference && (
-                            <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-2 text-xs text-emerald-700 dark:text-emerald-400">
-                                <ImageIcon className="h-3.5 w-3.5 shrink-0" />
-                                <span className="truncate text-[11px] font-medium">
-                                    Product Image Reference Active
-                                </span>
+                            <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 p-2 text-[10px] text-muted-foreground">
+                                <ImageIcon className="h-3.5 w-3.5 text-primary shrink-0" />
+                                <span>Authoritative Catalog Product Imagery Referenced</span>
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* Section 3: Art Direction & Staging */}
-                <div className="space-y-2 rounded-2xl border border-border/70 bg-card/60 p-3 shadow-2xs">
-                    <span className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-foreground uppercase">
-                        <Camera className="h-3.5 w-3.5 text-primary" />
-                        Art Direction & Staging
-                    </span>
+                {/* Section 3: Campaign & Event Context */}
+                {(activeCampaign || selectedEvent) && (
+                    <div className="space-y-2 rounded-2xl border border-border/70 bg-card/60 p-3 shadow-2xs">
+                        <span className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-foreground uppercase">
+                            <Compass className="h-3.5 w-3.5 text-primary" />
+                            Campaign & Event
+                        </span>
 
-                    <div className="space-y-1.5 text-xs">
-                        {/* Campaign */}
-                        {activeCampaign?.name && (
-                            <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
-                                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                                    <Compass className="h-3 w-3" />
-                                    Campaign
-                                </span>
-                                <span
-                                    className="max-w-[150px] truncate text-right text-[11px] font-medium text-foreground"
-                                    title={activeCampaign.name}
-                                >
-                                    {activeCampaign.name}
-                                </span>
-                            </div>
-                        )}
-
-                        {/* Industry */}
-                        <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
-                            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                                <Building2 className="h-3 w-3" />
-                                Industry
-                            </span>
-                            <span className="max-w-[150px] truncate text-right text-[11px] font-medium text-foreground">
-                                {business?.industry || 'Commercial'}
-                            </span>
-                        </div>
-
-                        {/* Category / Subcategory */}
-                        {(business?.category || (business as any)?.subcategory) && (
-                            <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
-                                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                                    <Tag className="h-3 w-3" />
-                                    Category
-                                </span>
-                                <span className="max-w-[150px] truncate text-right text-[11px] font-medium text-foreground">
-                                    {business?.category || (business as any)?.subcategory}
-                                </span>
-                            </div>
-                        )}
-
-                        {/* Event / Holiday */}
-                        <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
-                            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                                <CalendarDays className="h-3 w-3" />
-                                Holiday / Event
-                            </span>
-                            <div className="text-right">
-                                <div className="max-w-[150px] truncate text-[11px] font-medium text-foreground">
-                                    {selectedEvent?.name || 'Standard Season'}
+                        <div className="space-y-1 text-xs">
+                            {activeCampaign && (
+                                <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1 text-[11px]">
+                                    <span className="text-muted-foreground">Campaign:</span>
+                                    <span className="font-semibold text-foreground text-right truncate max-w-[170px]" title={activeCampaign.name}>
+                                        {activeCampaign.name}
+                                    </span>
                                 </div>
-                                {(selectedEvent?.date || selectedEvent?.event_date) && (
-                                    <div className="text-[9px] text-muted-foreground">
-                                        {selectedEvent.date || selectedEvent.event_date}
+                            )}
+                            {selectedEvent && (
+                                <>
+                                    <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1 text-[11px]">
+                                        <span className="text-muted-foreground">Event / Holiday:</span>
+                                        <span className="font-semibold text-foreground text-right truncate max-w-[170px]" title={selectedEvent.name}>
+                                            {selectedEvent.name}
+                                        </span>
                                     </div>
-                                )}
-                            </div>
+                                    <div className="flex items-center justify-between gap-2 text-[11px]">
+                                        <span className="text-muted-foreground">Event Text:</span>
+                                        <span
+                                            className={`font-semibold ${
+                                                showEventText
+                                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                                    : 'text-muted-foreground'
+                                            }`}
+                                        >
+                                            {showEventText ? 'Typography Allowed' : 'Visual Atmosphere Only'}
+                                        </span>
+                                    </div>
+                                </>
+                            )}
                         </div>
+                    </div>
+                )}
 
-                        {/* Render Style */}
-                        <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
-                            <span className="text-[11px] text-muted-foreground">
-                                Render Style
+                {/* Section 4: Creative Direction & Presets */}
+                <div className="space-y-2 rounded-2xl border border-border/70 bg-card/60 p-3 shadow-2xs">
+                    <div className="flex items-center justify-between text-[11px] font-bold tracking-wide text-foreground uppercase">
+                        <span className="flex items-center gap-1.5">
+                            <Camera className="h-3.5 w-3.5 text-primary" />
+                            Creative Direction
+                        </span>
+                        <span
+                            className={`flex items-center gap-1 rounded border px-1.5 py-0.2 font-mono text-[9px] font-bold ${
+                                hasPromptOrConcept
+                                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                    : 'border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400'
+                            }`}
+                        >
+                            {hasPromptOrConcept ? (
+                                <>
+                                    <Check className="h-2.5 w-2.5 stroke-[3]" />
+                                    Configured
+                                </>
+                            ) : (
+                                'Prompt Required'
+                            )}
+                        </span>
+                    </div>
+
+                    <div className="space-y-1.5 text-xs">
+                        {/* Scene Prompt or Concept */}
+                        <div className="rounded-xl border border-border/50 bg-background/60 p-2.5 space-y-1">
+                            <span className="text-[9px] font-bold tracking-wider text-muted-foreground uppercase">
+                                {isAutomaticMode ? 'Autonomous Visual Strategy' : 'Visual Scene Prompt'}
                             </span>
-                            <Badge
-                                variant="outline"
-                                className="border-primary/30 bg-primary/10 text-[10px] font-bold text-primary"
-                            >
+                            <p className="text-[11px] leading-relaxed text-foreground">
                                 {isAutomaticMode
-                                    ? 'Automatic (AI Creative Director)'
-                                    : renderStyle || 'Studio Product Still'}
-                            </Badge>
+                                    ? creativeConcept || 'AI Creative Director will autonomously invent composition, backdrop, and staging.'
+                                    : scenePrompt && scenePrompt.trim()
+                                      ? `"${scenePrompt.trim()}"`
+                                      : <span className="text-red-500 italic">No visual prompt entered yet.</span>}
+                            </p>
                         </div>
 
-                        {/* Themes & Tones (Manual mode only) */}
-                        {!isAutomaticMode && (contentStyle.length > 0 || brandTone.length > 0) && (
-                            <div className="space-y-1 pt-1">
-                                {contentStyle.length > 0 && (
-                                    <div className="flex flex-wrap gap-1">
-                                        {contentStyle.map((style) => (
-                                            <span
-                                                key={style}
-                                                className="rounded-md border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary"
-                                            >
-                                                {style}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-                                {brandTone.length > 0 && (
-                                    <div className="flex flex-wrap gap-1">
-                                        {brandTone.map((tone) => (
-                                            <span
-                                                key={tone}
-                                                className="rounded-md border border-border/70 bg-muted/40 px-1.5 py-0.5 text-[9px] font-medium text-foreground"
-                                            >
-                                                {tone}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
+                        {/* Presets Table */}
+                        <div className="space-y-1 pt-1 text-[11px]">
+                            {designTreatment && (
+                                <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1">
+                                    <span className="text-muted-foreground">Treatment:</span>
+                                    <span className="font-semibold text-foreground text-right">{designTreatment}</span>
+                                </div>
+                            )}
+                            {copyEmphasis && (
+                                <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1">
+                                    <span className="text-muted-foreground">Emphasis:</span>
+                                    <span className="font-semibold text-foreground text-right">{copyEmphasis}</span>
+                                </div>
+                            )}
+                            <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1">
+                                <span className="text-muted-foreground">Render Style:</span>
+                                <span className="font-semibold text-foreground text-right">
+                                    {isAutomaticMode ? 'Autonomous Dynamic' : renderStyle || 'Studio Product Still'}
+                                </span>
                             </div>
-                        )}
+                            {contentStyle.length > 0 && (
+                                <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1">
+                                    <span className="text-muted-foreground">Themes:</span>
+                                    <span className="font-medium text-foreground text-right truncate max-w-[170px]" title={contentStyle.join(', ')}>
+                                        {contentStyle.join(', ')}
+                                    </span>
+                                </div>
+                            )}
+                            {brandTone.length > 0 && (
+                                <div className="flex items-center justify-between gap-2 text-[11px]">
+                                    <span className="text-muted-foreground">Brand Tone:</span>
+                                    <span className="font-medium text-foreground text-right truncate max-w-[170px]" title={brandTone.join(', ')}>
+                                        {brandTone.join(', ')}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                {/* Section 4: AI Engine & Identity */}
+                {/* Section 5: Marketing Copy Settings */}
                 <div className="space-y-2 rounded-2xl border border-border/70 bg-card/60 p-3 shadow-2xs">
                     <span className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-foreground uppercase">
-                        <Cpu className="h-3.5 w-3.5 text-primary" />
-                        AI Engine & Identity
+                        <PenTool className="h-3.5 w-3.5 text-primary" />
+                        Marketing Copy
                     </span>
 
-                    <div className="space-y-1.5 text-xs">
-                        {/* Model */}
-                        <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
-                            <span className="text-[11px] text-muted-foreground">Image Engine</span>
-                            <div className="flex items-center gap-1 text-right">
-                                <span className="font-mono text-[11px] font-bold text-foreground">
-                                    GPT-Image-2
-                                </span>
-                                <span className="rounded bg-primary/10 px-1 text-[8px] font-bold text-primary">
-                                    ★
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Creative Reasoning Engine */}
-                        <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
-                            <span className="text-[11px] text-muted-foreground">Creative AI</span>
-                            <span className="font-mono text-[11px] font-semibold text-foreground">
-                                GPT-5.6 Luna
-                            </span>
-                        </div>
-
-                        {/* Quality & Cost */}
-                        <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5">
-                            <span className="text-[11px] text-muted-foreground">Quality / Est.</span>
-                            {(() => {
-                                const activeQuality =
-                                    imageQualityOptions.find((q) => q.value === imageQuality) ||
-                                    imageQualityOptions[1];
-                                const cost = calculateGenerationCost('gpt-image-2', imageQuality);
-
-                                return (
-                                    <div className="flex items-center gap-1.5 text-right">
-                                        <span className="text-[11px] font-semibold text-foreground">
-                                            {activeQuality.label}
-                                        </span>
-                                        <span className="rounded border border-emerald-500/30 bg-emerald-500/10 px-1.5 font-mono text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
-                                            {cost.usd}
-                                        </span>
-                                    </div>
-                                );
-                            })()}
-                        </div>
-
-                        {/* Business Branding */}
-                        <div className="flex items-center justify-between gap-2">
-                            <span className="text-[11px] text-muted-foreground">Branding</span>
-                            <Badge
-                                variant={includeBusinessName ? 'default' : 'outline'}
-                                className={`text-[9px] font-semibold ${
-                                    includeBusinessName
-                                        ? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                                        : ''
+                    <div className="space-y-1 text-xs">
+                        <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1 text-[11px]">
+                            <span className="text-muted-foreground">Tagline Headline:</span>
+                            <span
+                                className={`font-semibold text-right truncate max-w-[170px] ${
+                                    includeTagline ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'
                                 }`}
                             >
-                                {includeBusinessName
-                                    ? business?.name || 'Included'
-                                    : 'Disabled'}
-                            </Badge>
+                                {includeTagline ? (tagline && tagline.trim() ? `"${tagline.trim()}"` : 'AI Auto Generated') : 'OFF (Excluded)'}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1 text-[11px]">
+                            <span className="text-muted-foreground">Product Prices:</span>
+                            <span className={`font-semibold ${includePrices ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
+                                {includePrices ? 'ON (Included)' : 'OFF (Excluded)'}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 text-[11px]">
+                            <span className="text-muted-foreground">Business Name:</span>
+                            <span className={`font-semibold ${includeBusinessName ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
+                                {includeBusinessName ? `ON (${business?.name || 'Included'})` : 'OFF (Excluded)'}
+                            </span>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            {/* Sticky footer info */}
-            <div className="border-t border-border/50 pt-3 text-center">
-                <div className="flex items-center justify-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-                    <Wand2 className="h-3 w-3 text-primary" />
-                    <span>MarketPilot Creative Engine</span>
                 </div>
             </div>
         </aside>

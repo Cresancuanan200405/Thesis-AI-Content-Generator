@@ -267,19 +267,83 @@ class CampaignController extends Controller
                 'event_name' => $campaign->event?->name,
                 'start_date' => $startDate instanceof CarbonInterface ? $startDate->format('Y-m-d') : null,
                 'end_date' => $endDate instanceof CarbonInterface ? $endDate->format('Y-m-d') : null,
-                'designs' => $campaign->designs->map(fn (Design $design): array => [
-                    'id' => $design->id,
-                    'product_name' => $design->product_name,
-                    'tagline' => $design->tagline,
-                    'prompt' => $design->prompt,
-                    'price' => $design->price,
-                    'content_style' => $design->content_style,
-                    'brand_tone' => $design->brand_tone,
-                    'status' => $design->status,
-                    'is_favorite' => (bool) $design->is_favorite,
-                    'image_url' => $design->generated_image_path ? Storage::url($design->generated_image_path) : null,
-                    'download_url' => route('designs.download', $design),
-                ])->values()->all(),
+                'designs' => $campaign->designs()->latest()->get()->map(function (Design $design) use ($campaign): array {
+                    $isManual = ($design->generation_metadata['mode'] ?? null) === 'manual';
+                    $route = $isManual ? 'generator.manual.index' : 'generator.automatic.index';
+
+                    return [
+                        'id' => $design->id,
+                        'product_name' => $design->product_name,
+                        'tagline' => $design->tagline,
+                        'prompt' => $design->prompt,
+                        'price' => $design->price,
+                        'content_style' => $design->content_style,
+                        'brand_tone' => $design->brand_tone,
+                        'status' => $design->status,
+                        'is_draft' => $design->isDraft(),
+                        'is_favorite' => (bool) $design->is_favorite,
+                        'image_url' => $design->generated_image_path ? Storage::url($design->generated_image_path) : null,
+                        'download_url' => route('designs.download', $design),
+                        'generator_url' => route($route, array_filter([
+                            'campaign_id' => $campaign->id,
+                            'draft_id' => $design->id,
+                            'origin' => 'campaign',
+                        ])),
+                    ];
+                })->values()->all(),
+                'drafts' => $campaign->designs()->where('status', Design::STATUS_DRAFT)->latest()->get()->map(function (Design $design) use ($campaign): array {
+                    $isManual = ($design->generation_metadata['mode'] ?? null) === 'manual';
+                    $route = $isManual ? 'generator.manual.index' : 'generator.automatic.index';
+
+                    return [
+                        'id' => $design->id,
+                        'product_name' => $design->product_name,
+                        'tagline' => $design->tagline,
+                        'prompt' => $design->prompt,
+                        'price' => $design->price,
+                        'content_style' => $design->content_style,
+                        'brand_tone' => $design->brand_tone,
+                        'status' => $design->status,
+                        'is_draft' => true,
+                        'is_favorite' => (bool) $design->is_favorite,
+                        'image_url' => $design->generated_image_path ? Storage::url($design->generated_image_path) : null,
+                        'download_url' => route('designs.download', $design),
+                        'generator_url' => route($route, array_filter([
+                            'campaign_id' => $campaign->id,
+                            'draft_id' => $design->id,
+                            'origin' => 'campaign',
+                        ])),
+                    ];
+                })->values()->all(),
+                'final_designs' => $campaign->designs()->whereIn('status', [Design::STATUS_FINAL, Design::STATUS_COMPLETED])->latest()->get()->map(function (Design $design) use ($campaign): array {
+                    $isManual = ($design->generation_metadata['mode'] ?? null) === 'manual';
+                    $route = $isManual ? 'generator.manual.index' : 'generator.automatic.index';
+
+                    return [
+                        'id' => $design->id,
+                        'product_name' => $design->product_name,
+                        'tagline' => $design->tagline,
+                        'prompt' => $design->prompt,
+                        'price' => $design->price,
+                        'content_style' => $design->content_style,
+                        'brand_tone' => $design->brand_tone,
+                        'status' => $design->status,
+                        'is_draft' => false,
+                        'is_favorite' => (bool) $design->is_favorite,
+                        'image_url' => $design->generated_image_path ? Storage::url($design->generated_image_path) : null,
+                        'download_url' => route('designs.download', $design),
+                        'generator_url' => route($route, array_filter([
+                            'campaign_id' => $campaign->id,
+                            'draft_id' => $design->id,
+                            'origin' => 'campaign',
+                        ])),
+                    ];
+                })->values()->all(),
+                'creative_counts' => [
+                    'drafts' => $campaign->designs()->where('status', Design::STATUS_DRAFT)->count(),
+                    'final' => $campaign->designs()->whereIn('status', [Design::STATUS_FINAL, Design::STATUS_COMPLETED])->count(),
+                    'total' => $campaign->designs()->count(),
+                ],
                 'generator_url' => route('campaigns.generator', $campaign),
             ],
         ]);

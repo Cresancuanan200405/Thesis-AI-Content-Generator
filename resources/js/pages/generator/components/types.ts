@@ -113,6 +113,9 @@ export interface GeneratedDesign {
     prompt?: string;
     isSaved?: boolean;
     created_at?: string;
+    status?: string;
+    is_draft?: boolean;
+    generator_url?: string;
 }
 
 export interface GeneratedVisual {
@@ -216,7 +219,7 @@ export const imageQualityOptions: ImageQualityOption[] = [
         costExplanation:
             'Reduced render passes for rapid brainstorming and low-cost concept drafts.',
         badgeColor:
-            'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+            'border-border/80 bg-muted/50 text-muted-foreground',
     },
     {
         value: 'medium',
@@ -228,7 +231,7 @@ export const imageQualityOptions: ImageQualityOption[] = [
         costExplanation:
             'Optimal balance of commercial polish, detail clarity, and cost.',
         badgeColor:
-            'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+            'border-primary/30 bg-primary/10 text-primary',
         isStandard: true,
     },
     {
@@ -241,7 +244,7 @@ export const imageQualityOptions: ImageQualityOption[] = [
         costExplanation:
             'Enhanced multi-pass synthesis for flagship campaigns and print assets.',
         badgeColor:
-            'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+            'border-border/80 bg-muted/50 text-muted-foreground',
     },
 ];
 
@@ -254,7 +257,7 @@ export const renderStyleOptions: RenderStyleOption[] = [
             'Forces sharp product focus, clean solid or textured backdrops, and balanced high-end commercial studio lighting.',
         badge: 'Studio Focus',
         badgeColor:
-            'border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400',
+            'border-border/80 bg-muted/50 text-muted-foreground',
     },
     {
         value: 'Cinematic Marketing',
@@ -264,7 +267,7 @@ export const renderStyleOptions: RenderStyleOption[] = [
             'Adds dynamic volumetric lighting, shallow depth of field, rich shadows, and a premium editorial look.',
         badge: 'Volumetric Depth',
         badgeColor:
-            'border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400',
+            'border-border/80 bg-muted/50 text-muted-foreground',
     },
     {
         value: 'Lifestyle Capture',
@@ -274,7 +277,7 @@ export const renderStyleOptions: RenderStyleOption[] = [
             'Simulates realistic environmental context and natural lighting as if captured on location by a professional photographer.',
         badge: 'Natural Context',
         badgeColor:
-            'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+            'border-border/80 bg-muted/50 text-muted-foreground',
     },
     {
         value: 'Minimalist Graphic Vec',
@@ -284,7 +287,7 @@ export const renderStyleOptions: RenderStyleOption[] = [
             'Simplifies elements into modern flat illustrations, stark high-contrast layouts, and clean vector geometries.',
         badge: 'Flat Vector',
         badgeColor:
-            'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400',
+            'border-border/80 bg-muted/50 text-muted-foreground',
     },
 ];
 
@@ -421,42 +424,42 @@ export const designTreatmentOptions: DesignTreatmentOption[] = [
         label: 'Auto (Recommended)',
         description: 'Intelligent selection aligned with category and campaign.',
         badge: 'Smart Auto',
-        badgeColor: 'border-primary/30 bg-primary/10 text-primary',
+        badgeColor: 'border-border/80 bg-muted/50 text-muted-foreground',
     },
     {
         value: 'Classic',
         label: 'Classic Commercial',
         description: 'Timeless advertising balance with structured layout.',
         badge: 'Classic Print',
-        badgeColor: 'border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400',
+        badgeColor: 'border-border/80 bg-muted/50 text-muted-foreground',
     },
     {
         value: 'Editorial',
         label: 'Editorial',
         description: 'High-fashion magazine layout with artistic whitespace.',
         badge: 'Magazine Layout',
-        badgeColor: 'border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400',
+        badgeColor: 'border-border/80 bg-muted/50 text-muted-foreground',
     },
     {
         value: 'Bold Promo',
         label: 'Bold Promo',
         description: 'High-energy commercial treatment for sales and offers.',
         badge: 'High Conversion',
-        badgeColor: 'border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400',
+        badgeColor: 'border-border/80 bg-muted/50 text-muted-foreground',
     },
     {
         value: 'Minimal',
         label: 'Minimalist',
         description: 'Expansive negative space and refined typography.',
         badge: 'Clean Modern',
-        badgeColor: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+        badgeColor: 'border-border/80 bg-muted/50 text-muted-foreground',
     },
     {
         value: 'Premium',
         label: 'Luxury Premium',
         description: 'Prestigious finish with sophisticated studio styling.',
         badge: 'Prestige Finish',
-        badgeColor: 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400',
+        badgeColor: 'border-border/80 bg-muted/50 text-muted-foreground',
     },
 ];
 
@@ -487,12 +490,18 @@ export interface DesignSystemExport {
     design_treatments: Record<string, string>;
     copy_emphases: Record<string, string>;
     typography_layouts: Record<string, string>;
+    copy_layouts?: Record<string, string>;
+    product_name_styles?: Record<string, string>;
+    price_styles?: Record<string, string>;
+    tagline_styles?: Record<string, string>;
+    text_depth_modes?: Record<string, string>;
     composition_types: Record<string, string>;
     camera_viewpoints: Record<string, string>;
     lighting_profiles: Record<string, string>;
     scene_families: Record<string, string>;
     environment_families: Record<string, string>;
     prop_profiles: Record<string, string>;
+    visual_world_archetypes?: Record<string, any>;
     render_styles: string[];
     brand_tones: string[];
     visual_themes: string[];

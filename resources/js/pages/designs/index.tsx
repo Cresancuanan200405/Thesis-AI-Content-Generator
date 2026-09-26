@@ -9,8 +9,8 @@ import {
     ChevronRight,
     ChevronUp,
     Download,
+    Eye,
     FolderPlus,
-    Filter,
     Heart,
     ImageIcon,
     LayoutGrid,
@@ -25,11 +25,10 @@ import {
     Tag,
     Trash2,
     X,
-    ZoomIn,
-    ZoomOut,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { UnifiedImageViewer } from '@/components/image-viewer';
 import { AppPagination } from '@/components/ui/app-pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -76,6 +75,7 @@ export default function DesignsPage({
     events = [],
     products = [],
     campaigns = [],
+    status_counts = {},
     filters = {},
     pagination = {},
 }: any) {
@@ -88,6 +88,42 @@ export default function DesignsPage({
     const currentPage = pagination.current_page ?? 1;
 
     const lastPage = pagination.last_page ?? 1;
+
+    /*
+    |--------------------------------------------------------------------------
+    | DRAFT FINALIZATION & STATUS FILTER
+    |--------------------------------------------------------------------------
+    */
+    const [isFinalizing, setIsFinalizing] = useState(false);
+
+    const handleFinalize = (designId: number) => {
+        setIsFinalizing(true);
+        router.post(
+            `/designs/${designId}/finalize`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success('Design finalized successfully.');
+                    setPreviewDesign((prev: any) =>
+                        prev && prev.id === designId
+                            ? { ...prev, status: 'final', is_draft: false }
+                            : prev,
+                    );
+                },
+                onError: () => {
+                    toast.error('Failed to finalize design.');
+                },
+                onFinish: () => {
+                    setIsFinalizing(false);
+                },
+            },
+        );
+    };
+
+    const handleStatusFilterChange = (status: 'all' | 'draft' | 'final') => {
+        updateFilters({ status: status === 'all' ? '' : status });
+    };
 
     /*
     |--------------------------------------------------------------------------
@@ -130,6 +166,10 @@ export default function DesignsPage({
     const getEditStudioUrl = (design: any) => {
         if (!design) {
             return '/generator';
+        }
+
+        if (design.generator_url) {
+            return design.generator_url;
         }
 
         const meta = design.generation_metadata || {};
@@ -425,119 +465,19 @@ export default function DesignsPage({
 
     /*
     |--------------------------------------------------------------------------
-    | FULL-SCREEN IMAGE PREVIEW STATE & ESCAPE KEY LISTENER
+    | IMAGE PREVIEW STATE (UNIFIED IMAGE VIEWER)
     |--------------------------------------------------------------------------
     */
 
     const [previewDesign, setPreviewDesign] = useState<any>(null);
-    const [isZoomed, setIsZoomed] = useState(false);
-    const [zoomOrigin, setZoomOrigin] = useState({ x: 50, y: 50 });
-    const [isScrolledToDetails, setIsScrolledToDetails] = useState(false);
 
     const currentPreviewIndex = previewDesign
         ? designList.findIndex((d: any) => d.id === previewDesign.id)
         : -1;
-    const hasPrevDesign = currentPreviewIndex > 0;
-    const hasNextDesign =
-        currentPreviewIndex !== -1 &&
-        currentPreviewIndex < designList.length - 1;
-
-    const goToPrevDesign = (e?: React.MouseEvent) => {
-        if (e) {
-            e.stopPropagation();
-        }
-
-        if (hasPrevDesign) {
-            setPreviewDesign(designList[currentPreviewIndex - 1]);
-            setIsZoomed(false);
-            setZoomOrigin({ x: 50, y: 50 });
-            setIsScrolledToDetails(false);
-        }
-    };
-
-    const goToNextDesign = (e?: React.MouseEvent) => {
-        if (e) {
-            e.stopPropagation();
-        }
-
-        if (hasNextDesign) {
-            setPreviewDesign(designList[currentPreviewIndex + 1]);
-            setIsZoomed(false);
-            setZoomOrigin({ x: 50, y: 50 });
-            setIsScrolledToDetails(false);
-        }
-    };
-
-    const handleToggleScrollDetails = () => {
-        if (!isScrolledToDetails) {
-            const el = document.getElementById('design-modal-details');
-
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth' });
-                setIsScrolledToDetails(true);
-            }
-        } else {
-            const container = document.getElementById('design-modal-container');
-
-            if (container) {
-                container.scrollTo({ top: 0, behavior: 'smooth' });
-                setIsScrolledToDetails(false);
-            }
-        }
-    };
 
     const openPreview = (design: any) => {
         setPreviewDesign(design);
-        setIsZoomed(false);
-        setZoomOrigin({ x: 50, y: 50 });
     };
-
-    useEffect(() => {
-        if (previewDesign) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
-    }, [previewDesign]);
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (!previewDesign) {
-                return;
-            }
-
-            if (e.key === 'Escape') {
-                setPreviewDesign(null);
-                setIsZoomed(false);
-            } else if (e.key === 'ArrowLeft') {
-                const idx = designList.findIndex(
-                    (d: any) => d.id === previewDesign.id,
-                );
-
-                if (idx > 0) {
-                    setPreviewDesign(designList[idx - 1]);
-                    setIsZoomed(false);
-                }
-            } else if (e.key === 'ArrowRight') {
-                const idx = designList.findIndex(
-                    (d: any) => d.id === previewDesign.id,
-                );
-
-                if (idx !== -1 && idx < designList.length - 1) {
-                    setPreviewDesign(designList[idx + 1]);
-                    setIsZoomed(false);
-                }
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [previewDesign, designList]);
 
     /*
     |--------------------------------------------------------------------------
@@ -755,7 +695,8 @@ export default function DesignsPage({
         filters.campaign_id ||
         filters.event_id ||
         (filters.period && filters.period !== 'all') ||
-        filters.favorites,
+        filters.favorites ||
+        (filters.status && filters.status !== 'all'),
     );
 
     const buildPageUrl = (page: number) => {
@@ -767,6 +708,10 @@ export default function DesignsPage({
 
         if (filters.category) {
             queryParams.set('category', filters.category);
+        }
+
+        if (filters.status && filters.status !== 'all') {
+            queryParams.set('status', filters.status);
         }
 
         if (filters.product_id) {
@@ -879,228 +824,47 @@ export default function DesignsPage({
 
                             {/* Filter Controls Row */}
                             <div className="flex flex-wrap items-center gap-2">
-                                {/* Classification Filter Dropdown */}
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className={`h-9 min-w-36 justify-between gap-2 text-xs shadow-none ${
-                                                selectedCategoryList.length > 0
-                                                    ? 'border-primary/50 bg-primary/10 font-semibold text-primary'
-                                                    : 'text-muted-foreground'
+                                {/* Status Filter Dropdown (All / Drafts / Final) */}
+                                <div className="w-32 shrink-0 sm:w-36">
+                                    <Select
+                                        value={
+                                            filters.status === 'draft' || filters.status === 'drafts'
+                                                ? 'draft'
+                                                : filters.status === 'final' || filters.status === 'finals'
+                                                  ? 'final'
+                                                  : 'all'
+                                        }
+                                        onValueChange={(val) =>
+                                            handleStatusFilterChange(val as 'all' | 'draft' | 'final')
+                                        }
+                                    >
+                                        <SelectTrigger
+                                            className={`h-9 w-full gap-1.5 text-xs shadow-none ${
+                                                filters.status === 'draft' || filters.status === 'drafts'
+                                                    ? 'border-amber-500/50 bg-amber-500/10 font-semibold text-amber-700 dark:text-amber-400'
+                                                    : filters.status === 'final' || filters.status === 'finals'
+                                                      ? 'border-emerald-500/50 bg-emerald-500/10 font-semibold text-emerald-700 dark:text-emerald-400'
+                                                      : ''
                                             }`}
                                         >
-                                            <div className="flex items-center gap-1.5 truncate">
-                                                <Filter className="h-3.5 w-3.5 shrink-0" />
-                                                <span className="truncate">
-                                                    {selectedCategoryList.length ===
-                                                    0
-                                                        ? 'Filter'
-                                                        : selectedCategoryList.length ===
-                                                            1
-                                                          ? selectedCategoryList[0] ===
-                                                            'has_campaign'
-                                                              ? 'Campaign Visuals'
-                                                              : selectedCategoryList[0] ===
-                                                                  'no_campaign'
-                                                                ? 'Standalone'
-                                                                : selectedCategoryList[0] ===
-                                                                    'events_only'
-                                                                  ? 'Event Visuals'
-                                                                  : campaigns.find(
-                                                                        (
-                                                                            c: any,
-                                                                        ) =>
-                                                                            `campaign:${c.id}` ===
-                                                                            selectedCategoryList[0],
-                                                                    )?.name ||
-                                                                    events.find(
-                                                                        (
-                                                                            e: any,
-                                                                        ) =>
-                                                                            `event:${e.id}` ===
-                                                                            selectedCategoryList[0],
-                                                                    )?.name ||
-                                                                    products.find(
-                                                                        (
-                                                                            p: any,
-                                                                        ) =>
-                                                                            `product:${p.id}` ===
-                                                                            selectedCategoryList[0],
-                                                                    )?.name ||
-                                                                    '1 Filter'
-                                                          : `${selectedCategoryList.length} Filters`}
-                                                </span>
-                                            </div>
-                                            {selectedCategoryList.length > 0 ? (
-                                                <Badge
-                                                    variant="default"
-                                                    className="h-4.5 shrink-0 rounded-full px-1.5 text-[10px] font-bold"
-                                                >
-                                                    {
-                                                        selectedCategoryList.length
-                                                    }
-                                                </Badge>
-                                            ) : (
-                                                <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
-                                            )}
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent
-                                        align="start"
-                                        className="max-h-80 w-64 overflow-y-auto rounded-2xl p-1.5 shadow-xl"
-                                    >
-                                        <DropdownMenuLabel className="px-2 py-1 text-[10px] font-extrabold tracking-wider text-muted-foreground uppercase">
-                                            Quick Filters
-                                        </DropdownMenuLabel>
-                                        <DropdownMenuCheckboxItem
-                                            checked={selectedCategoryList.includes(
-                                                'has_campaign',
-                                            )}
-                                            onCheckedChange={() =>
-                                                toggleCategoryFilter(
-                                                    'has_campaign',
-                                                )
-                                            }
-                                            className="cursor-pointer rounded-xl py-1.5 text-xs font-medium"
-                                        >
-                                            <Layers className="mr-1.5 h-3.5 w-3.5 text-primary" />
-                                            Campaign Visuals
-                                        </DropdownMenuCheckboxItem>
-                                        <DropdownMenuCheckboxItem
-                                            checked={selectedCategoryList.includes(
-                                                'events_only',
-                                            )}
-                                            onCheckedChange={() =>
-                                                toggleCategoryFilter(
-                                                    'events_only',
-                                                )
-                                            }
-                                            className="cursor-pointer rounded-xl py-1.5 text-xs font-medium"
-                                        >
-                                            <CalendarDays className="mr-1.5 h-3.5 w-3.5 text-emerald-500" />
-                                            Event & Holiday Visuals
-                                        </DropdownMenuCheckboxItem>
-                                        <DropdownMenuCheckboxItem
-                                            checked={selectedCategoryList.includes(
-                                                'no_campaign',
-                                            )}
-                                            onCheckedChange={() =>
-                                                toggleCategoryFilter(
-                                                    'no_campaign',
-                                                )
-                                            }
-                                            className="cursor-pointer rounded-xl py-1.5 text-xs font-medium"
-                                        >
-                                            <Sparkles className="mr-1.5 h-3.5 w-3.5 text-amber-500" />
-                                            Standalone Visuals
-                                        </DropdownMenuCheckboxItem>
-
-                                        {campaigns.length > 0 && (
-                                            <>
-                                                <DropdownMenuSeparator className="my-1" />
-                                                <DropdownMenuLabel className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-extrabold tracking-wider text-primary uppercase">
-                                                    <Layers className="h-3 w-3" />{' '}
-                                                    By Campaign
-                                                </DropdownMenuLabel>
-                                                {campaigns.map(
-                                                    (campaign: any) => (
-                                                        <DropdownMenuCheckboxItem
-                                                            key={`camp-${campaign.id}`}
-                                                            checked={selectedCategoryList.includes(
-                                                                `campaign:${campaign.id}`,
-                                                            )}
-                                                            onCheckedChange={() =>
-                                                                toggleCategoryFilter(
-                                                                    `campaign:${campaign.id}`,
-                                                                )
-                                                            }
-                                                            className="cursor-pointer rounded-xl py-1.5 text-xs"
-                                                        >
-                                                            <span className="truncate">
-                                                                {campaign.name}
-                                                            </span>
-                                                        </DropdownMenuCheckboxItem>
-                                                    ),
-                                                )}
-                                            </>
-                                        )}
-
-                                        {events.length > 0 && (
-                                            <>
-                                                <DropdownMenuSeparator className="my-1" />
-                                                <DropdownMenuLabel className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-extrabold tracking-wider text-emerald-500 uppercase">
-                                                    <CalendarDays className="h-3 w-3" />{' '}
-                                                    By Event
-                                                </DropdownMenuLabel>
-                                                {events.map((event: any) => (
-                                                    <DropdownMenuCheckboxItem
-                                                        key={`evt-${event.id}`}
-                                                        checked={selectedCategoryList.includes(
-                                                            `event:${event.id}`,
-                                                        )}
-                                                        onCheckedChange={() =>
-                                                            toggleCategoryFilter(
-                                                                `event:${event.id}`,
-                                                            )
-                                                        }
-                                                        className="cursor-pointer rounded-xl py-1.5 text-xs"
-                                                    >
-                                                        <span className="truncate">
-                                                            {event.name}
-                                                        </span>
-                                                    </DropdownMenuCheckboxItem>
-                                                ))}
-                                            </>
-                                        )}
-
-                                        {products.length > 0 && (
-                                            <>
-                                                <DropdownMenuSeparator className="my-1" />
-                                                <DropdownMenuLabel className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-extrabold tracking-wider text-blue-500 uppercase">
-                                                    <Tag className="h-3 w-3" />{' '}
-                                                    By Product
-                                                </DropdownMenuLabel>
-                                                {products.map((prod: any) => (
-                                                    <DropdownMenuCheckboxItem
-                                                        key={`prod-${prod.id}`}
-                                                        checked={selectedCategoryList.includes(
-                                                            `product:${prod.id}`,
-                                                        )}
-                                                        onCheckedChange={() =>
-                                                            toggleCategoryFilter(
-                                                                `product:${prod.id}`,
-                                                            )
-                                                        }
-                                                        className="cursor-pointer rounded-xl py-1.5 text-xs"
-                                                    >
-                                                        <span className="truncate">
-                                                            {prod.name}
-                                                        </span>
-                                                    </DropdownMenuCheckboxItem>
-                                                ))}
-                                            </>
-                                        )}
-
-                                        {selectedCategoryList.length > 0 && (
-                                            <>
-                                                <DropdownMenuSeparator className="my-1" />
-                                                <DropdownMenuItem
-                                                    onClick={
-                                                        clearCategoryFilters
-                                                    }
-                                                    className="cursor-pointer justify-center rounded-xl py-1.5 text-xs font-semibold text-destructive hover:bg-destructive/10"
-                                                >
-                                                    Clear All Filters
-                                                </DropdownMenuItem>
-                                            </>
-                                        )}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                            <SelectValue placeholder="All Status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">
+                                                All ({status_counts?.all ?? designList.length})
+                                            </SelectItem>
+                                            <SelectItem value="draft">
+                                                Drafts ({status_counts?.drafts ?? 0})
+                                            </SelectItem>
+                                            <SelectItem value="final">
+                                                Final ({status_counts?.final ?? 0})
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
 
                                 {/* Time Period */}
-                                <div className="w-28 shrink-0">
+                                <div className="w-36 shrink-0 sm:w-40">
                                     <Select
                                         value={filters.period || 'all'}
                                         onValueChange={(value) =>
@@ -1112,7 +876,13 @@ export default function DesignsPage({
                                             })
                                         }
                                     >
-                                        <SelectTrigger className="h-9 gap-1.5 text-xs shadow-none">
+                                        <SelectTrigger
+                                            className={`h-9 w-full min-w-0 gap-1.5 text-xs shadow-none ${
+                                                filters.period && filters.period !== 'all'
+                                                    ? 'border-primary/50 bg-primary/10 font-semibold text-primary'
+                                                    : ''
+                                            }`}
+                                        >
                                             <Calendar className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                                             <SelectValue placeholder="All Time" />
                                         </SelectTrigger>
@@ -1158,14 +928,14 @@ export default function DesignsPage({
                                             : 'Show favorites'
                                     }
                                     aria-label="Filter by favorites"
-                                    className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl p-0 shadow-none transition-all ${
+                                    className={`flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-xl p-0 shadow-none transition-all ${
                                         filters.favorites
                                             ? 'border-rose-500 bg-rose-500 text-white shadow-[0_0_12px_rgba(244,63,94,0.3)] hover:bg-rose-600'
                                             : 'text-muted-foreground hover:border-rose-300 hover:text-foreground dark:hover:border-rose-800'
                                     }`}
                                 >
                                     <Heart
-                                        className={`h-4 w-4 ${
+                                        className={`h-4 w-4 shrink-0 ${
                                             filters.favorites
                                                 ? 'fill-white text-white'
                                                 : 'text-rose-500'
@@ -1174,14 +944,14 @@ export default function DesignsPage({
                                 </Button>
 
                                 {/* Sort */}
-                                <div className="w-28 shrink-0">
+                                <div className="w-28 shrink-0 sm:w-32">
                                     <Select
                                         value={filters.sort || 'newest'}
                                         onValueChange={(value) =>
                                             updateFilters({ sort: value })
                                         }
                                     >
-                                        <SelectTrigger className="h-9 text-xs shadow-none">
+                                        <SelectTrigger className="h-9 w-full text-xs shadow-none">
                                             <SelectValue placeholder="Sort" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -1195,17 +965,20 @@ export default function DesignsPage({
                                     </Select>
                                 </div>
 
-                                {/* Clear All */}
-                                {hasFilters && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={clearFilters}
-                                        className="h-9 cursor-pointer px-2.5 text-xs text-muted-foreground shadow-none transition-colors hover:text-destructive"
-                                    >
-                                        Clear
-                                    </Button>
-                                )}
+                                {/* Clear All (Fixed slot so toolbar never shifts when toggling filters) */}
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={clearFilters}
+                                    disabled={!hasFilters}
+                                    className={`h-9 shrink-0 px-2.5 text-xs transition-opacity ${
+                                        hasFilters
+                                            ? 'cursor-pointer text-muted-foreground opacity-100 hover:text-destructive'
+                                            : 'pointer-events-none opacity-0'
+                                    }`}
+                                >
+                                    Clear
+                                </Button>
 
                                 {/* Visual Count */}
                                 <div className="hidden items-center px-1 text-xs font-medium text-muted-foreground sm:inline-flex">
@@ -1562,42 +1335,83 @@ export default function DesignsPage({
 
                                                                     <DropdownMenuSeparator className="my-1 border-border/60" />
 
-                                                                    <DropdownMenuItem
-                                                                        onClick={(
-                                                                            e,
-                                                                        ) => {
-                                                                            e.preventDefault();
-                                                                            e.stopPropagation();
-                                                                            setDesignToRegenerate(
-                                                                                design,
-                                                                            );
-                                                                        }}
-                                                                        className="cursor-pointer gap-2 text-xs font-medium text-primary hover:text-primary"
-                                                                    >
-                                                                        <RefreshCw className="h-3.5 w-3.5" />
-                                                                        Regenerate
-                                                                        Design
-                                                                    </DropdownMenuItem>
+                                                                    {design.status === 'draft' || design.is_draft ? (
+                                                                        <>
+                                                                            <DropdownMenuItem
+                                                                                onClick={(
+                                                                                    e,
+                                                                                ) => {
+                                                                                    e.preventDefault();
+                                                                                    e.stopPropagation();
+                                                                                    router.visit(
+                                                                                        design.generator_url ||
+                                                                                            getEditStudioUrl(
+                                                                                                design,
+                                                                                            ),
+                                                                                    );
+                                                                                }}
+                                                                                className="cursor-pointer gap-2 text-xs font-medium text-amber-600 dark:text-amber-400"
+                                                                            >
+                                                                                <Sparkles className="h-3.5 w-3.5" />
+                                                                                Resume Draft
+                                                                            </DropdownMenuItem>
 
-                                                                    <DropdownMenuItem
-                                                                        onClick={(
-                                                                            e,
-                                                                        ) => {
-                                                                            e.preventDefault();
-                                                                            e.stopPropagation();
-                                                                            router.visit(
-                                                                                getEditStudioUrl(
-                                                                                    design,
-                                                                                ),
-                                                                            );
-                                                                        }}
-                                                                        className="cursor-pointer gap-2 text-xs font-medium"
-                                                                    >
-                                                                        <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
-                                                                        Edit in
-                                                                        AI
-                                                                        Studio
-                                                                    </DropdownMenuItem>
+                                                                            <DropdownMenuItem
+                                                                                onClick={(
+                                                                                    e,
+                                                                                ) => {
+                                                                                    e.preventDefault();
+                                                                                    e.stopPropagation();
+                                                                                    handleFinalize(
+                                                                                        design.id,
+                                                                                    );
+                                                                                }}
+                                                                                className="cursor-pointer gap-2 text-xs font-medium text-emerald-600 dark:text-emerald-400"
+                                                                            >
+                                                                                <Check className="h-3.5 w-3.5" />
+                                                                                Finalize Design
+                                                                            </DropdownMenuItem>
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <DropdownMenuItem
+                                                                                onClick={(
+                                                                                    e,
+                                                                                ) => {
+                                                                                    e.preventDefault();
+                                                                                    e.stopPropagation();
+                                                                                    setDesignToRegenerate(
+                                                                                        design,
+                                                                                    );
+                                                                                }}
+                                                                                className="cursor-pointer gap-2 text-xs font-medium text-primary hover:text-primary"
+                                                                            >
+                                                                                <RefreshCw className="h-3.5 w-3.5" />
+                                                                                Regenerate
+                                                                                Design
+                                                                            </DropdownMenuItem>
+
+                                                                            <DropdownMenuItem
+                                                                                onClick={(
+                                                                                    e,
+                                                                                ) => {
+                                                                                    e.preventDefault();
+                                                                                    e.stopPropagation();
+                                                                                    router.visit(
+                                                                                        getEditStudioUrl(
+                                                                                            design,
+                                                                                        ),
+                                                                                    );
+                                                                                }}
+                                                                                className="cursor-pointer gap-2 text-xs font-medium"
+                                                                            >
+                                                                                <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
+                                                                                Edit in
+                                                                                AI
+                                                                                Studio
+                                                                            </DropdownMenuItem>
+                                                                        </>
+                                                                    )}
 
                                                                     {!design.campaign_id &&
                                                                         design.event_id && (
@@ -1727,10 +1541,12 @@ export default function DesignsPage({
 
                                                 {/* Info */}
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="truncate text-sm font-semibold text-foreground transition-colors group-hover:text-primary">
-                                                        {design.product_name ||
-                                                            'Untitled design'}
-                                                    </p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="truncate text-sm font-semibold text-foreground transition-colors group-hover:text-primary">
+                                                            {design.product_name ||
+                                                                'Untitled design'}
+                                                        </p>
+                                                    </div>
                                                 </div>
 
                                                 {/* Date */}
@@ -1870,40 +1686,80 @@ export default function DesignsPage({
                                                                 Download as SVG
                                                             </DropdownMenuItem>
                                                             <DropdownMenuSeparator className="my-1 border-border/60" />
-                                                            <DropdownMenuItem
-                                                                onClick={(
-                                                                    e,
-                                                                ) => {
-                                                                    e.preventDefault();
-                                                                    e.stopPropagation();
-                                                                    setDesignToRegenerate(
-                                                                        design,
-                                                                    );
-                                                                }}
-                                                                className="cursor-pointer gap-2 text-xs font-medium text-primary hover:text-primary"
-                                                            >
-                                                                <RefreshCw className="h-3.5 w-3.5" />{' '}
-                                                                Regenerate
-                                                                Design
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                onClick={(
-                                                                    e,
-                                                                ) => {
-                                                                    e.preventDefault();
-                                                                    e.stopPropagation();
-                                                                    router.visit(
-                                                                        getEditStudioUrl(
-                                                                            design,
-                                                                        ),
-                                                                    );
-                                                                }}
-                                                                className="cursor-pointer gap-2 text-xs font-medium"
-                                                            >
-                                                                <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />{' '}
-                                                                Edit in AI
-                                                                Studio
-                                                            </DropdownMenuItem>
+                                                            {design.status === 'draft' || design.is_draft ? (
+                                                                <>
+                                                                    <DropdownMenuItem
+                                                                        onClick={(
+                                                                            e,
+                                                                        ) => {
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+                                                                            router.visit(
+                                                                                design.generator_url ||
+                                                                                    getEditStudioUrl(
+                                                                                        design,
+                                                                                    ),
+                                                                            );
+                                                                        }}
+                                                                        className="cursor-pointer gap-2 text-xs font-medium text-amber-600 dark:text-amber-400"
+                                                                    >
+                                                                        <Sparkles className="h-3.5 w-3.5" />{' '}
+                                                                        Resume Draft
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem
+                                                                        onClick={(
+                                                                            e,
+                                                                        ) => {
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+                                                                            handleFinalize(
+                                                                                design.id,
+                                                                            );
+                                                                        }}
+                                                                        className="cursor-pointer gap-2 text-xs font-medium text-emerald-600 dark:text-emerald-400"
+                                                                    >
+                                                                        <Check className="h-3.5 w-3.5" />{' '}
+                                                                        Finalize Design
+                                                                    </DropdownMenuItem>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <DropdownMenuItem
+                                                                        onClick={(
+                                                                            e,
+                                                                        ) => {
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+                                                                            setDesignToRegenerate(
+                                                                                design,
+                                                                            );
+                                                                        }}
+                                                                        className="cursor-pointer gap-2 text-xs font-medium text-primary hover:text-primary"
+                                                                    >
+                                                                        <RefreshCw className="h-3.5 w-3.5" />{' '}
+                                                                        Regenerate
+                                                                        Design
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem
+                                                                        onClick={(
+                                                                            e,
+                                                                        ) => {
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+                                                                            router.visit(
+                                                                                getEditStudioUrl(
+                                                                                    design,
+                                                                                ),
+                                                                            );
+                                                                        }}
+                                                                        className="cursor-pointer gap-2 text-xs font-medium"
+                                                                    >
+                                                                        <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />{' '}
+                                                                        Edit in AI
+                                                                        Studio
+                                                                    </DropdownMenuItem>
+                                                                </>
+                                                            )}
                                                             {!design.campaign_id &&
                                                                 design.event_id && (
                                                                     <>
@@ -2030,612 +1886,25 @@ export default function DesignsPage({
             )}
 
             {/* =============================================================
-                IMMERSIVE FULL SCREEN IMAGE VIEWER WITH SCROLL DETAILS & ZOOM
+                UNIFIED IMAGE VIEWER
             ============================================================= */}
-
-            {previewDesign && (
-                <div
-                    id="design-modal-container"
-                    onScroll={(e) => {
-                        const target = e.currentTarget;
-
-                        if (target.scrollTop > 150) {
-                            setIsScrolledToDetails(true);
-                        } else {
-                            setIsScrolledToDetails(false);
-                        }
-                    }}
-                    className="dark fixed inset-0 z-[150] animate-in overflow-x-hidden overflow-y-auto scroll-smooth bg-black/95 text-white backdrop-blur-2xl duration-200 select-none fade-in"
-                >
-                    {/* Top Floating Control Bar (Sticky) */}
-                    <div className="sticky top-0 z-[160] flex w-full items-center justify-between border-b border-white/10 bg-gradient-to-b from-black/95 via-black/85 to-transparent px-5 py-3.5 backdrop-blur-md sm:px-8">
-                        <div className="flex items-center gap-3">
-                            <h2 className="max-w-[200px] truncate text-sm font-semibold text-white sm:max-w-md sm:text-base">
-                                {previewDesign.product_name || 'Design Visual'}
-                            </h2>
-
-                            <Badge
-                                variant="outline"
-                                className="border-primary/40 bg-primary/20 font-mono text-[10px] font-bold text-primary"
-                            >
-                                <Sparkles className="mr-1 inline h-2.5 w-2.5" />
-                                {previewDesign.generation_metadata?.model ||
-                                    previewDesign.model ||
-                                    'gpt-image-2'}
-                            </Badge>
-
-                            {previewDesign.campaign_name && (
-                                <Badge
-                                    variant="outline"
-                                    className="hidden border-white/20 bg-white/5 text-[10px] text-white/90 sm:inline-flex"
-                                >
-                                    {previewDesign.campaign_name}
-                                </Badge>
-                            )}
-
-                            <span className="hidden text-[11px] font-medium text-white/50 md:inline">
-                                {currentPreviewIndex + 1} of {designList.length}
-                            </span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            {/* Zoom Status Hint */}
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (!isZoomed) {
-                                        setZoomOrigin({ x: 50, y: 50 });
-                                        setIsZoomed(true);
-                                    } else {
-                                        setIsZoomed(false);
-                                    }
-                                }}
-                                className="hidden cursor-pointer items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80 backdrop-blur-md transition-all hover:bg-white/20 hover:text-white sm:flex"
-                                title="Click image or button to zoom"
-                            >
-                                {isZoomed ? (
-                                    <>
-                                        <ZoomOut className="h-3.5 w-3.5 text-primary" />
-                                        <span>Zoomed (175%)</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <ZoomIn className="h-3.5 w-3.5" />
-                                        <span>Click to Zoom</span>
-                                    </>
-                                )}
-                            </button>
-
-                            {/* Favorite Button */}
-                            <button
-                                type="button"
-                                onClick={() => toggleFavorite(previewDesign.id)}
-                                className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-full backdrop-blur-md transition-all ${
-                                    isDesignFavorite(previewDesign)
-                                        ? 'border border-rose-500/40 bg-rose-500/20 text-rose-400'
-                                        : 'bg-white/10 text-white hover:bg-white/20'
-                                }`}
-                                title="Toggle Favorite"
-                            >
-                                <Heart
-                                    className={`h-4 w-4 ${
-                                        isDesignFavorite(previewDesign)
-                                            ? 'fill-rose-400 text-rose-400'
-                                            : ''
-                                    }`}
-                                />
-                            </button>
-
-                            {/* Download Dropdown */}
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button
-                                        type="button"
-                                        className="flex h-9 cursor-pointer items-center gap-1.5 rounded-full bg-white/10 px-3 text-xs font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20"
-                                        title="Download Visual"
-                                    >
-                                        <Download className="h-4 w-4" />
-                                        Download
-                                        <ChevronDown className="h-3 w-3 opacity-70" />
-                                    </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                    align="end"
-                                    className="z-[180] w-48 rounded-xl border-white/20 bg-black/90 p-1.5 text-white shadow-xl backdrop-blur-xl"
-                                >
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            handleDownload(previewDesign, 'png')
-                                        }
-                                        className="cursor-pointer gap-2 text-xs font-medium text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
-                                    >
-                                        <Download className="h-3.5 w-3.5 text-primary" />
-                                        PNG (High Quality)
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            handleDownload(
-                                                previewDesign,
-                                                'jpeg',
-                                            )
-                                        }
-                                        className="cursor-pointer gap-2 text-xs font-medium text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
-                                    >
-                                        <Download className="h-3.5 w-3.5 text-blue-400" />
-                                        JPEG (Web-Optimized)
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            handleDownload(previewDesign, 'svg')
-                                        }
-                                        className="cursor-pointer gap-2 text-xs font-medium text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
-                                    >
-                                        <Download className="h-3.5 w-3.5 text-emerald-400" />
-                                        SVG (Vector Embed)
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-
-                            {/* Close Full Screen Button */}
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setPreviewDesign(null);
-                                    setIsZoomed(false);
-                                }}
-                                className="ml-1 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md transition-all hover:bg-white/30"
-                                title="Close (Esc)"
-                            >
-                                <X className="h-5 w-5" />
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Floating Previous Image Button (Left) */}
-                    {hasPrevDesign && (
-                        <button
-                            type="button"
-                            onClick={goToPrevDesign}
-                            className="fixed top-1/2 left-3 z-[170] flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/60 text-white/85 shadow-2xl backdrop-blur-md transition-all duration-200 hover:scale-110 hover:border-white/40 hover:bg-black/90 hover:text-white active:scale-95 sm:left-6 sm:h-13 sm:w-13"
-                            title="Previous visual (←)"
-                            aria-label="Previous image"
-                        >
-                            <ChevronLeft className="h-6 w-6 sm:h-7 sm:w-7" />
-                        </button>
-                    )}
-
-                    {/* Floating Next Image Button (Right) */}
-                    {hasNextDesign && (
-                        <button
-                            type="button"
-                            onClick={goToNextDesign}
-                            className="fixed top-1/2 right-3 z-[170] flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/60 text-white/85 shadow-2xl backdrop-blur-md transition-all duration-200 hover:scale-110 hover:border-white/40 hover:bg-black/90 hover:text-white active:scale-95 sm:right-6 sm:h-13 sm:w-13"
-                            title="Next visual (→)"
-                            aria-label="Next image"
-                        >
-                            <ChevronRight className="h-6 w-6 sm:h-7 sm:w-7" />
-                        </button>
-                    )}
-
-                    {/* Section 1: Full-view Image Canvas (Fits viewport, click to zoom) */}
-                    <div className="group/canvas relative flex min-h-[calc(100vh-4.5rem)] w-full flex-col items-center justify-center px-4 pt-4 pb-20 sm:px-8 sm:pt-6 sm:pb-24">
-                        {/* Ambient Glow */}
-                        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
-                            <div className="h-[450px] w-[450px] rounded-full bg-gradient-to-tr from-primary/20 via-blue-500/10 to-transparent opacity-40 blur-3xl" />
-                        </div>
-
-                        {/* Subtle Black Gradient Overlay at the Very Bottom of Dark Backdrop */}
-                        <div className="pointer-events-none absolute right-0 bottom-0 left-0 z-10 h-28 bg-gradient-to-t from-black via-black/80 to-transparent" />
-
-                        {previewDesign.image_url ? (
-                            <img
-                                src={previewDesign.image_url}
-                                alt={
-                                    previewDesign.product_name ||
-                                    'Design visual'
-                                }
-                                onClick={(e) => {
-                                    e.stopPropagation();
-
-                                    if (!isZoomed) {
-                                        const rect =
-                                            e.currentTarget.getBoundingClientRect();
-                                        const offsetX = e.clientX - rect.left;
-                                        const offsetY = e.clientY - rect.top;
-                                        const xPercent = Math.max(
-                                            0,
-                                            Math.min(
-                                                100,
-                                                (offsetX / rect.width) * 100,
-                                            ),
-                                        );
-                                        const yPercent = Math.max(
-                                            0,
-                                            Math.min(
-                                                100,
-                                                (offsetY / rect.height) * 100,
-                                            ),
-                                        );
-                                        setZoomOrigin({
-                                            x: xPercent,
-                                            y: yPercent,
-                                        });
-                                        setIsZoomed(true);
-                                    } else {
-                                        setIsZoomed(false);
-                                    }
-                                }}
-                                style={{
-                                    transformOrigin: isZoomed
-                                        ? `${zoomOrigin.x}% ${zoomOrigin.y}%`
-                                        : 'center center',
-                                }}
-                                className={`z-20 block max-h-[calc(100vh-12rem)] max-w-[86vw] cursor-pointer rounded-2xl object-contain drop-shadow-2xl transition-transform duration-300 ease-out select-none ${
-                                    isZoomed
-                                        ? 'scale-[1.75] cursor-zoom-out'
-                                        : 'scale-100 cursor-zoom-in'
-                                }`}
-                            />
-                        ) : (
-                            <div className="z-20 flex flex-col items-center justify-center text-white/50">
-                                <ImageIcon className="h-16 w-16" />
-                                <p className="mt-2 text-sm">
-                                    No visual available
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Static Scroll Indicator Button (Dark circular navigation arrow layered over the black gradient zone) */}
-                        <button
-                            type="button"
-                            onClick={handleToggleScrollDetails}
-                            className="group/scroll absolute bottom-4 left-1/2 z-30 flex h-10 w-10 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/80 text-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.6)] backdrop-blur-xl transition-all duration-300 hover:scale-110 hover:border-primary/60 hover:bg-black hover:text-white hover:shadow-[0_0_20px_rgba(var(--primary),0.5)] active:scale-95"
-                            title={
-                                isScrolledToDetails
-                                    ? 'Scroll up to image'
-                                    : 'Scroll down for details'
-                            }
-                            aria-label={
-                                isScrolledToDetails
-                                    ? 'Scroll up to image'
-                                    : 'Scroll down for details'
-                            }
-                        >
-                            {isScrolledToDetails ? (
-                                <ChevronUp className="h-5 w-5 transition-transform duration-300 group-hover/scroll:text-primary" />
-                            ) : (
-                                <ChevronDown className="h-5 w-5 transition-transform duration-300 group-hover/scroll:text-primary" />
-                            )}
-                        </button>
-                    </div>
-
-                    {/* Section 2: Recreated, Classy Details & Functions Section */}
-                    <div
-                        id="design-modal-details"
-                        className="relative z-30 w-full border-t border-border/80 bg-card/98 px-4 pt-8 pb-16 text-foreground backdrop-blur-3xl sm:px-8"
-                    >
-                        <div className="mx-auto max-w-3xl space-y-6">
-                            {/* Header / Title block */}
-                            <div className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <div className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold tracking-wider text-primary-foreground uppercase shadow-md shadow-primary/20">
-                                        <Sparkles className="h-4 w-4" />
-                                        Visual Creative Details
-                                    </div>
-                                    <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-                                        {previewDesign.product_name ||
-                                            'Design Visual'}
-                                    </h3>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => {
-                                            const d = previewDesign;
-                                            setPreviewDesign(null);
-                                            setDesignToRegenerate(d);
-                                        }}
-                                        disabled={isRegenerating}
-                                        className="h-9 cursor-pointer gap-2 border-primary/30 text-xs font-bold text-primary hover:bg-primary/10"
-                                    >
-                                        <RefreshCw
-                                            className={`h-4 w-4 ${isRegenerating ? 'animate-spin' : ''}`}
-                                        />
-                                        Regenerate
-                                    </Button>
-
-                                    <Button
-                                        asChild
-                                        size="sm"
-                                        className="h-9 cursor-pointer gap-2 bg-primary px-4 text-xs font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:scale-105 hover:bg-primary/90"
-                                    >
-                                        <Link
-                                            href={getEditStudioUrl(
-                                                previewDesign,
-                                            )}
-                                        >
-                                            <Sparkles className="h-4 w-4" />
-                                            Edit in AI Studio
-                                        </Link>
-                                    </Button>
-                                </div>
-                            </div>
-
-                            {/* Tagline Card (Ultra-visible, high-contrast primary card) */}
-                            {previewDesign.tagline && (
-                                <div className="group relative overflow-hidden rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-xs transition-all hover:border-primary/50 sm:p-6">
-                                    <div className="inline-flex items-center gap-1.5 rounded-md bg-primary/15 px-2.5 py-1 text-[11px] font-bold tracking-wider text-primary uppercase">
-                                        <Tag className="h-3.5 w-3.5" />
-                                        Catchy Tagline & Hook
-                                    </div>
-                                    <p className="mt-3 text-lg leading-snug font-bold text-foreground italic sm:text-xl">
-                                        "{previewDesign.tagline}"
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* Prompt & Visual Concept (with hover effect) */}
-                            <div className="group rounded-2xl border border-border/80 bg-muted/30 p-5 shadow-xs transition-all duration-300 hover:border-border">
-                                <div className="inline-block rounded-md bg-muted px-2.5 py-1 text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
-                                    AI Prompt & Concept
-                                </div>
-                                <p className="mt-2.5 text-sm leading-relaxed font-medium text-foreground sm:text-base">
-                                    {previewDesign.prompt ||
-                                        'AI marketing creative tailored for maximum visual impact, tuned to your brand theme and offering.'}
-                                </p>
-                            </div>
-
-                            {/* Creative Styling: Themes, Brand Tones & Render Style */}
-                            <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
-                                <h4 className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                                    Creative Direction & Styling
-                                </h4>
-                                <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                                    {/* Render Style */}
-                                    <div className="space-y-1.5 rounded-xl border border-border/60 bg-muted/20 p-3">
-                                        <span className="text-[11px] font-semibold text-muted-foreground">
-                                            Render Style
-                                        </span>
-                                        <div>
-                                            <span className="inline-block rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
-                                                {previewDesign.render_style ||
-                                                    previewDesign
-                                                        .generation_metadata
-                                                        ?.render_style ||
-                                                    'Studio Product Still'}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Content Style / Themes */}
-                                    <div className="space-y-1.5 rounded-xl border border-border/60 bg-muted/20 p-3">
-                                        <span className="text-[11px] font-semibold text-muted-foreground">
-                                            Visual Themes
-                                        </span>
-                                        <div className="flex flex-wrap gap-1">
-                                            {(() => {
-                                                const styles =
-                                                    previewDesign.content_style ||
-                                                    previewDesign.visual_theme;
-                                                const list = Array.isArray(
-                                                    styles,
-                                                )
-                                                    ? styles
-                                                    : styles
-                                                      ? String(styles)
-                                                            .split(',')
-                                                            .map((s) =>
-                                                                s.trim(),
-                                                            )
-                                                      : [];
-
-                                                if (!list.length) {
-                                                    return (
-                                                        <span className="text-xs text-muted-foreground">
-                                                            Product-focused
-                                                            (Auto)
-                                                        </span>
-                                                    );
-                                                }
-
-                                                return list.map(
-                                                    (item: string) => (
-                                                        <span
-                                                            key={item}
-                                                            className="rounded-md border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[10px] font-semibold text-primary"
-                                                        >
-                                                            {item}
-                                                        </span>
-                                                    ),
-                                                );
-                                            })()}
-                                        </div>
-                                    </div>
-
-                                    {/* Brand Tones */}
-                                    <div className="space-y-1.5 rounded-xl border border-border/60 bg-muted/20 p-3">
-                                        <span className="text-[11px] font-semibold text-muted-foreground">
-                                            Brand Tone
-                                        </span>
-                                        <div className="flex flex-wrap gap-1">
-                                            {(() => {
-                                                const tones =
-                                                    previewDesign.brand_tone;
-                                                const list = Array.isArray(
-                                                    tones,
-                                                )
-                                                    ? tones
-                                                    : tones
-                                                      ? String(tones)
-                                                            .split(',')
-                                                            .map((s) =>
-                                                                s.trim(),
-                                                            )
-                                                      : [];
-
-                                                if (!list.length) {
-                                                    return (
-                                                        <span className="text-xs text-muted-foreground">
-                                                            Professional (Auto)
-                                                        </span>
-                                                    );
-                                                }
-
-                                                return list.map(
-                                                    (item: string) => (
-                                                        <span
-                                                            key={item}
-                                                            className="rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-foreground"
-                                                        >
-                                                            {item}
-                                                        </span>
-                                                    ),
-                                                );
-                                            })()}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Metadata Grid (4 columns with hover cards) */}
-                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                                <div className="group rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 sm:p-5">
-                                    <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                                        <Tag className="h-3.5 w-3.5 text-primary" />
-                                        Product
-                                    </div>
-                                    <p className="mt-2 truncate text-base font-bold text-foreground">
-                                        {previewDesign.product_name ||
-                                            'Standard Offering'}
-                                    </p>
-                                    {previewDesign.price && (
-                                        <p className="mt-0.5 text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
-                                            ₱{previewDesign.price}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="group rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 sm:p-5">
-                                    <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                                        <Layers className="h-3.5 w-3.5 text-primary" />
-                                        Campaign
-                                    </div>
-                                    <p className="mt-2 truncate text-base font-bold text-foreground">
-                                        {previewDesign.campaign_name ||
-                                            'Direct Creative'}
-                                    </p>
-                                </div>
-
-                                <div className="group rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 sm:p-5">
-                                    <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                                        <CalendarDays className="h-3.5 w-3.5 text-primary" />
-                                        Created / Event
-                                    </div>
-                                    <p className="mt-2 truncate text-base font-bold text-foreground">
-                                        {previewDesign.event_name ||
-                                            previewDesign.created_at}
-                                    </p>
-                                </div>
-
-                                <div className="group rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 sm:p-5">
-                                    <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                                        <Sparkles className="h-3.5 w-3.5 text-primary" />
-                                        AI Engine & Quality
-                                    </div>
-                                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                                        <p className="truncate font-mono text-sm font-bold text-foreground">
-                                            {previewDesign.generation_metadata
-                                                ?.model ||
-                                                previewDesign.model ||
-                                                'gpt-image-2'}
-                                        </p>
-                                        <span
-                                            className={`py-0.2 rounded border px-1.5 text-[9px] font-bold uppercase ${
-                                                (previewDesign
-                                                    .generation_metadata
-                                                    ?.quality || 'medium') ===
-                                                'high'
-                                                    ? 'border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400'
-                                                    : (previewDesign
-                                                            .generation_metadata
-                                                            ?.quality ||
-                                                            'medium') === 'low'
-                                                      ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                                                      : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                                            }`}
-                                        >
-                                            {previewDesign.generation_metadata
-                                                ?.quality || 'medium'}
-                                        </span>
-                                    </div>
-                                    <p className="mt-0.5 text-[10px] text-muted-foreground">
-                                        OpenAI Synthesis •{' '}
-                                        {(previewDesign.generation_metadata
-                                            ?.quality || 'medium') === 'high'
-                                            ? '2.0× HD Studio'
-                                            : (previewDesign.generation_metadata
-                                                    ?.quality || 'medium') ===
-                                                'low'
-                                              ? '0.5× Draft'
-                                              : '1.0× Standard'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Actions Bar (Download formats + Delete) */}
-                            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <span className="mr-1 text-xs font-bold text-muted-foreground">
-                                        Download as:
-                                    </span>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() =>
-                                            handleDownload(previewDesign, 'png')
-                                        }
-                                        className="cursor-pointer gap-1.5 border-border bg-card text-xs font-semibold text-foreground shadow-none transition-all hover:bg-muted"
-                                    >
-                                        <Download className="h-3.5 w-3.5 text-primary" />
-                                        PNG
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() =>
-                                            handleDownload(
-                                                previewDesign,
-                                                'jpeg',
-                                            )
-                                        }
-                                        className="cursor-pointer gap-1.5 border-border bg-card text-xs font-semibold text-foreground shadow-none transition-all hover:bg-muted"
-                                    >
-                                        <Download className="h-3.5 w-3.5 text-blue-500" />
-                                        JPEG
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() =>
-                                            handleDownload(previewDesign, 'svg')
-                                        }
-                                        className="cursor-pointer gap-1.5 border-border bg-card text-xs font-semibold text-foreground shadow-none transition-all hover:bg-muted"
-                                    >
-                                        <Download className="h-3.5 w-3.5 text-emerald-500" />
-                                        SVG
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <UnifiedImageViewer
+                isOpen={Boolean(previewDesign)}
+                onClose={() => setPreviewDesign(null)}
+                items={designList}
+                currentIndex={currentPreviewIndex}
+                onNavigate={(newIndex) => setPreviewDesign(designList[newIndex])}
+                context="design"
+                onDownload={(design, format) => handleDownload(design, format)}
+                onDelete={(design) => setDesignToDelete(design)}
+                onFinalize={(design) => handleFinalize(design.id)}
+                isFinalizing={isFinalizing}
+                onRegenerate={(design) => setDesignToRegenerate(design)}
+                isRegenerating={isRegenerating}
+                onFavoriteToggle={(design) => toggleFavorite(design.id)}
+                isFavorite={(design) => isDesignFavorite(design)}
+                getStudioUrl={(design) => getEditStudioUrl(design)}
+            />
 
             {/* =============================================================
                 BULK DELETE CONFIRMATION MODAL

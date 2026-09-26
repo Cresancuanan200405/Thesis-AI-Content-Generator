@@ -24,12 +24,15 @@ import {
     Tag,
     Trash2,
     X,
-    ZoomIn,
-    ZoomOut,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import {
+    UnifiedImageViewer,
+    CampaignViewerPanel,
+    CampaignViewerItem,
+} from '@/components/image-viewer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -97,6 +100,70 @@ export default function CampaignShowPage({
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    /* Creatives Sub-tabs & Finalizing State */
+    const [creativeTab, setCreativeTab] = useState<'all' | 'drafts' | 'final'>('all');
+    const [isFinalizing, setIsFinalizing] = useState(false);
+
+    const creativeCounts = useMemo(() => {
+        if (campaign?.creative_counts) {
+            return campaign.creative_counts;
+        }
+        return {
+            drafts: designs.filter((d: any) => d.status === 'draft' || d.is_draft).length,
+            final: designs.filter((d: any) => d.status !== 'draft' && !d.is_draft).length,
+            total: designs.length,
+        };
+    }, [campaign?.creative_counts, designs]);
+
+    const drafts = useMemo(() => {
+        if (Array.isArray(campaign?.drafts) && campaign.drafts.length > 0) {
+            return campaign.drafts;
+        }
+        return designs.filter((d: any) => d.status === 'draft' || d.is_draft);
+    }, [campaign?.drafts, designs]);
+
+    const finalDesigns = useMemo(() => {
+        if (Array.isArray(campaign?.final_designs) && campaign.final_designs.length > 0) {
+            return campaign.final_designs;
+        }
+        return designs.filter((d: any) => d.status !== 'draft' && !d.is_draft);
+    }, [campaign?.final_designs, designs]);
+
+    const displayedDesigns = useMemo(() => {
+        if (creativeTab === 'drafts') {
+            return drafts;
+        }
+        if (creativeTab === 'final') {
+            return finalDesigns;
+        }
+        return designs;
+    }, [creativeTab, drafts, finalDesigns, designs]);
+
+    const handleFinalize = (designId: number) => {
+        setIsFinalizing(true);
+        router.post(
+            `/designs/${designId}/finalize`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success('Design finalized successfully.');
+                    setPreviewDesign((prev: any) =>
+                        prev && prev.id === designId
+                            ? { ...prev, status: 'final', is_draft: false }
+                            : prev,
+                    );
+                },
+                onError: () => {
+                    toast.error('Failed to finalize design.');
+                },
+                onFinish: () => {
+                    setIsFinalizing(false);
+                },
+            },
+        );
+    };
+
     /* Gallery Modal State */
     const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
 
@@ -140,114 +207,29 @@ export default function CampaignShowPage({
         );
     };
 
-    /* Preview Modal State */
+    /* Image Preview State (Unified Image Viewer) */
     const [previewDesign, setPreviewDesign] = useState<any>(null);
-    const [isZoomed, setIsZoomed] = useState(false);
-    const [zoomOrigin, setZoomOrigin] = useState({ x: 50, y: 50 });
-    const [isScrolledToDetails, setIsScrolledToDetails] = useState(false);
+    const [designToDelete, setDesignToDelete] = useState<any>(null);
+    const [isDeletingDesign, setIsDeletingDesign] = useState(false);
+
+    const currentPreviewList = useMemo(() => {
+        if (displayedDesigns.some((d: any) => d.id === previewDesign?.id)) {
+            return displayedDesigns;
+        }
+        return designs;
+    }, [displayedDesigns, designs, previewDesign]);
+
+    const currentPreviewIndex = previewDesign
+        ? currentPreviewList.findIndex((d: any) => d.id === previewDesign.id)
+        : -1;
 
     const openPreview = (design: any) => {
         setPreviewDesign(design);
-        setIsZoomed(false);
-        setZoomOrigin({ x: 50, y: 50 });
-        setIsScrolledToDetails(false);
     };
 
-    const closePreview = (e?: React.MouseEvent) => {
-        if (e) {
-            e.stopPropagation();
-        }
-
+    const closePreview = () => {
         setPreviewDesign(null);
-        setIsZoomed(false);
-        setZoomOrigin({ x: 50, y: 50 });
-        setIsScrolledToDetails(false);
     };
-
-    const currentPreviewIndex = designs.findIndex(
-        (d) => d.id === previewDesign?.id,
-    );
-    const hasPrevDesign = currentPreviewIndex > 0;
-    const hasNextDesign =
-        currentPreviewIndex !== -1 && currentPreviewIndex < designs.length - 1;
-
-    const handlePrevDesign = (e?: React.MouseEvent) => {
-        if (e) {
-            e.stopPropagation();
-        }
-
-        if (hasPrevDesign) {
-            setPreviewDesign(designs[currentPreviewIndex - 1]);
-            setIsZoomed(false);
-            setZoomOrigin({ x: 50, y: 50 });
-            setIsScrolledToDetails(false);
-        }
-    };
-
-    const handleNextDesign = (e?: React.MouseEvent) => {
-        if (e) {
-            e.stopPropagation();
-        }
-
-        if (hasNextDesign) {
-            setPreviewDesign(designs[currentPreviewIndex + 1]);
-            setIsZoomed(false);
-            setZoomOrigin({ x: 50, y: 50 });
-            setIsScrolledToDetails(false);
-        }
-    };
-
-    const handleToggleScrollDetails = () => {
-        if (!isScrolledToDetails) {
-            const el = document.getElementById('campaign-modal-details');
-
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth' });
-                setIsScrolledToDetails(true);
-            }
-        } else {
-            const container = document.getElementById(
-                'campaign-modal-container',
-            );
-
-            if (container) {
-                container.scrollTo({ top: 0, behavior: 'smooth' });
-                setIsScrolledToDetails(false);
-            }
-        }
-    };
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (!previewDesign) {
-                return;
-            }
-
-            if (e.key === 'Escape') {
-                closePreview();
-            } else if (e.key === 'ArrowLeft') {
-                if (hasPrevDesign) {
-                    setPreviewDesign(designs[currentPreviewIndex - 1]);
-                    setIsZoomed(false);
-                }
-            } else if (e.key === 'ArrowRight') {
-                if (hasNextDesign) {
-                    setPreviewDesign(designs[currentPreviewIndex + 1]);
-                    setIsZoomed(false);
-                }
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [
-        previewDesign,
-        currentPreviewIndex,
-        hasPrevDesign,
-        hasNextDesign,
-        designs,
-    ]);
 
     const [editForm, setEditForm] = useState({
         name: campaign?.name || '',
@@ -334,6 +316,34 @@ export default function CampaignShowPage({
             onFinish: () => {
                 setIsDeleting(false);
                 setIsDeleteOpen(false);
+            },
+        });
+    };
+
+    const confirmDeleteDesign = () => {
+        if (!designToDelete) {
+            return;
+        }
+
+        setIsDeletingDesign(true);
+
+        router.delete(`/designs/${designToDelete.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                const deletedId = designToDelete.id;
+                setDesignToDelete(null);
+
+                if (previewDesign?.id === deletedId) {
+                    closePreview();
+                }
+
+                toast.success('Visual deleted successfully.');
+            },
+            onError: () => {
+                toast.error('Failed to delete visual.');
+            },
+            onFinish: () => {
+                setIsDeletingDesign(false);
             },
         });
     };
@@ -569,12 +579,15 @@ export default function CampaignShowPage({
                                     <ImageIcon className="h-3.5 w-3.5" />
                                 </div>
                                 <span className="text-xs font-medium text-muted-foreground">
-                                    Total Designs
+                                    Creatives
                                 </span>
                             </div>
                             <p className="mt-2 text-base font-semibold">
-                                {designs.length}{' '}
-                                {designs.length === 1 ? 'asset' : 'assets'}
+                                {creativeCounts.total}{' '}
+                                {creativeCounts.total === 1 ? 'creative' : 'creatives'}
+                            </p>
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                                Drafts: <span className="font-semibold text-amber-500">{creativeCounts.drafts}</span> • Final: <span className="font-semibold text-emerald-500">{creativeCounts.final}</span>
                             </p>
                         </div>
 
@@ -605,26 +618,56 @@ export default function CampaignShowPage({
                     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
                         {/* LEFT COLUMN: VISUAL ASSETS & STRATEGY */}
                         <div className="space-y-5">
-                            {/* COMPACT & PROFESSIONAL CAMPAIGN VISUALS CARD */}
+                            {/* COMPACT & PROFESSIONAL CAMPAIGN CREATIVES CARD */}
                             <Card className="overflow-hidden rounded-2xl border-border bg-card shadow-xs">
                                 <CardHeader className="border-b border-border/60 bg-muted/10 p-4">
                                     <div className="flex flex-wrap items-center justify-between gap-3">
-                                        <div className="flex items-center gap-2">
-                                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                                <ImageIcon className="h-4 w-4" />
+                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                                    <ImageIcon className="h-4 w-4" />
+                                                </div>
+                                                <CardTitle className="text-sm font-bold">
+                                                    Creatives
+                                                </CardTitle>
                                             </div>
-                                            <CardTitle className="text-sm font-bold">
-                                                Campaign Visuals
-                                            </CardTitle>
-                                            <Badge
-                                                variant="secondary"
-                                                className="h-5 rounded-full px-2 text-[10px] font-bold"
-                                            >
-                                                {designs.length}{' '}
-                                                {designs.length === 1
-                                                    ? 'Asset'
-                                                    : 'Assets'}
-                                            </Badge>
+
+                                            {/* Sub-tabs: All / Drafts / Final Designs */}
+                                            <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-muted/40 p-0.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCreativeTab('all')}
+                                                    className={`cursor-pointer rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
+                                                        creativeTab === 'all'
+                                                            ? 'bg-background text-foreground shadow-xs'
+                                                            : 'text-muted-foreground hover:text-foreground'
+                                                    }`}
+                                                >
+                                                    All ({creativeCounts.total})
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCreativeTab('drafts')}
+                                                    className={`cursor-pointer rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
+                                                        creativeTab === 'drafts'
+                                                            ? 'bg-amber-500/20 text-amber-700 dark:text-amber-400 shadow-xs'
+                                                            : 'text-muted-foreground hover:text-foreground'
+                                                    }`}
+                                                >
+                                                    Drafts ({creativeCounts.drafts})
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCreativeTab('final')}
+                                                    className={`cursor-pointer rounded-md px-2.5 py-1 text-xs font-semibold transition-all ${
+                                                        creativeTab === 'final'
+                                                            ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 shadow-xs'
+                                                            : 'text-muted-foreground hover:text-foreground'
+                                                    }`}
+                                                >
+                                                    Final Designs ({creativeCounts.final})
+                                                </button>
+                                            </div>
                                         </div>
 
                                         {available_designs.length > 0 && (
@@ -651,18 +694,22 @@ export default function CampaignShowPage({
                                 </CardHeader>
 
                                 <CardContent className="p-4">
-                                    {designs.length === 0 ? (
+                                    {displayedDesigns.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center py-8 text-center">
                                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted/60 text-muted-foreground">
                                                 <ImageIcon className="h-6 w-6" />
                                             </div>
                                             <p className="mt-3 text-xs font-semibold text-foreground">
-                                                No Visual Assets Added
+                                                {creativeTab === 'drafts'
+                                                    ? 'No Draft Creatives'
+                                                    : creativeTab === 'final'
+                                                      ? 'No Final Designs'
+                                                      : 'No Creatives Added'}
                                             </p>
                                             <p className="mt-1 max-w-xs text-[11px] text-muted-foreground">
-                                                Generate AI marketing visuals or
-                                                attach existing designs from
-                                                your catalog.
+                                                {creativeTab === 'drafts'
+                                                    ? 'Save generated creatives as drafts to continue editing them later.'
+                                                    : 'Generate AI marketing visuals or attach existing designs from your catalog.'}
                                             </p>
                                             <div className="mt-4 flex items-center gap-2">
                                                 {available_designs.length >
@@ -697,7 +744,7 @@ export default function CampaignShowPage({
                                         </div>
                                     ) : (
                                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                                            {designs.map(
+                                            {displayedDesigns.map(
                                                 (
                                                     design: any,
                                                     index: number,
@@ -740,7 +787,7 @@ export default function CampaignShowPage({
                                                         )}
 
                                                         {/* Quick overlay info on hover */}
-                                                        <div className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/80 via-black/20 to-transparent p-2.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                                                        <div className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/85 via-black/25 to-transparent p-2.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                                                             <div className="flex justify-end">
                                                                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-xs">
                                                                     <Eye className="h-3 w-3" />
@@ -752,12 +799,11 @@ export default function CampaignShowPage({
                                                                         `Visual #${index + 1}`}
                                                                 </p>
                                                                 {design.price && (
-                                                                    <p className="text-[10px] font-bold text-emerald-400">
-                                                                        ₱
-                                                                        {
-                                                                            design.price
-                                                                        }
-                                                                    </p>
+                                                                    <div className="mt-0.5">
+                                                                        <p className="text-[10px] font-bold text-emerald-400">
+                                                                            ₱{design.price}
+                                                                        </p>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -891,424 +937,96 @@ export default function CampaignShowPage({
             </div>
 
             {/* =============================================================
-                IMMERSIVE FULL SCREEN CAMPAIGN VISUAL VIEWER (NO MODAL BOX)
+                UNIFIED CAMPAIGN IMAGE VIEWER
             ============================================================= */}
+            <UnifiedImageViewer
+                isOpen={Boolean(previewDesign)}
+                onClose={closePreview}
+                items={currentPreviewList}
+                currentIndex={currentPreviewIndex}
+                onNavigate={(newIndex) => {
+                    if (newIndex >= 0 && newIndex < currentPreviewList.length) {
+                        setPreviewDesign(currentPreviewList[newIndex]);
+                    }
+                }}
+                context="campaign"
+                onDownload={(item, format) => {
+                    const url = (item as any)?.download_url || (item as any)?.image_url;
+                    downloadVisualAsFormat(
+                        url,
+                        `${campaign.name}-${(item as any)?.product_name || 'visual'}`,
+                        format,
+                    );
+                }}
+                renderCustomPanel={(design) => (
+                    <CampaignViewerPanel
+                        design={design as CampaignViewerItem}
+                        campaign={campaign}
+                        onFinalize={handleFinalize}
+                        isFinalizing={isFinalizing}
+                        onDownload={(item, format) => {
+                            const url = (item as any)?.download_url || item?.image_url;
+                            downloadVisualAsFormat(
+                                url,
+                                `${campaign.name}-${item?.product_name || 'visual'}`,
+                                format,
+                            );
+                        }}
+                        onDelete={(item) => setDesignToDelete(item)}
+                    />
+                )}
+            />
 
-            {/* Unified Fullscreen Visual Preview Modal */}
-            {previewDesign && (
-                <div
-                    id="campaign-modal-container"
-                    onScroll={(e) => {
-                        const target = e.currentTarget;
-
-                        if (target.scrollTop > 150) {
-                            setIsScrolledToDetails(true);
-                        } else {
-                            setIsScrolledToDetails(false);
-                        }
-                    }}
-                    className="dark fixed inset-0 z-[150] animate-in overflow-x-hidden overflow-y-auto scroll-smooth bg-black/95 text-white backdrop-blur-2xl duration-200 select-none fade-in"
+            {/* =============================================================
+                DELETE DESIGN VISUAL CONFIRMATION MODAL
+            ============================================================= */}
+            <Dialog
+                open={Boolean(designToDelete)}
+                onOpenChange={(open) => {
+                    if (!open && !isDeletingDesign) {
+                        setDesignToDelete(null);
+                    }
+                }}
+            >
+                <DialogContent
+                    className="z-[160] rounded-2xl sm:max-w-md"
+                    overlayClassName="z-[160]"
                 >
-                    {/* Top Floating Control Bar (Sticky) */}
-                    <div className="sticky top-0 z-[160] flex w-full items-center justify-between border-b border-white/10 bg-gradient-to-b from-black/95 via-black/85 to-transparent px-5 py-3.5 backdrop-blur-md sm:px-8">
-                        <div className="flex items-center gap-3">
-                            <h2 className="max-w-[200px] truncate text-sm font-semibold text-white sm:max-w-md sm:text-base">
-                                {previewDesign.product_name ||
-                                    'Campaign Visual'}
-                            </h2>
-                            <Badge
-                                variant="outline"
-                                className="hidden border-white/20 bg-white/5 text-[10px] text-white/90 sm:inline-flex"
-                            >
-                                {campaign.name}{' '}
-                                {designs.length > 1 &&
-                                    `(${currentPreviewIndex + 1}/${designs.length})`}
-                            </Badge>
-                        </div>
+                    <DialogHeader>
+                        <DialogTitle className="text-lg">
+                            Delete Visual?
+                        </DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete{' '}
+                            <span className="font-semibold text-foreground">
+                                "{designToDelete?.product_name || 'this visual'}"
+                            </span>
+                            ? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
 
-                        <div className="flex items-center gap-2">
-                            {/* Zoom Toggle Button */}
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (!isZoomed) {
-                                        setZoomOrigin({ x: 50, y: 50 });
-                                        setIsZoomed(true);
-                                    } else {
-                                        setIsZoomed(false);
-                                    }
-                                }}
-                                className="hidden cursor-pointer items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80 backdrop-blur-md transition-all hover:bg-white/20 hover:text-white sm:flex"
-                                title="Click image or button to zoom"
-                            >
-                                {isZoomed ? (
-                                    <>
-                                        <ZoomOut className="h-3.5 w-3.5 text-primary" />
-                                        <span>Zoomed (175%)</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <ZoomIn className="h-3.5 w-3.5" />
-                                        <span>Click to Zoom</span>
-                                    </>
-                                )}
-                            </button>
-
-                            {/* Download Dropdown */}
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button
-                                        type="button"
-                                        className="flex h-9 cursor-pointer items-center gap-1.5 rounded-full bg-white/10 px-3 text-xs font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20"
-                                        title="Download Visual"
-                                    >
-                                        <Download className="h-4 w-4" />
-                                        Download
-                                        <ChevronDown className="h-3 w-3 opacity-70" />
-                                    </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                    align="end"
-                                    className="z-[180] w-48 rounded-xl border-white/20 bg-black/90 p-1.5 text-white shadow-xl backdrop-blur-xl"
-                                >
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            downloadVisualAsFormat(
-                                                previewDesign.image_url,
-                                                `${campaign.name}-${previewDesign.product_name || 'visual'}`,
-                                                'png',
-                                            )
-                                        }
-                                        className="cursor-pointer gap-2 text-xs font-medium text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
-                                    >
-                                        <Download className="h-3.5 w-3.5 text-primary" />
-                                        PNG (High Quality)
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            downloadVisualAsFormat(
-                                                previewDesign.image_url,
-                                                `${campaign.name}-${previewDesign.product_name || 'visual'}`,
-                                                'jpeg',
-                                            )
-                                        }
-                                        className="cursor-pointer gap-2 text-xs font-medium text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
-                                    >
-                                        <Download className="h-3.5 w-3.5 text-blue-400" />
-                                        JPEG (Web-Optimized)
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            downloadVisualAsFormat(
-                                                previewDesign.image_url,
-                                                `${campaign.name}-${previewDesign.product_name || 'visual'}`,
-                                                'svg',
-                                            )
-                                        }
-                                        className="cursor-pointer gap-2 text-xs font-medium text-white hover:bg-white/20 focus:bg-white/20 focus:text-white"
-                                    >
-                                        <Download className="h-3.5 w-3.5 text-emerald-400" />
-                                        SVG (Vector Embed)
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-
-                            <button
-                                type="button"
-                                onClick={closePreview}
-                                className="ml-1 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md transition-all hover:bg-white/30"
-                                title="Close (Esc)"
-                            >
-                                <X className="h-5 w-5" />
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Floating Previous Image Button (Left) */}
-                    {hasPrevDesign && (
-                        <button
+                    <DialogFooter className="mt-6 gap-2 sm:gap-0">
+                        <Button
                             type="button"
-                            onClick={handlePrevDesign}
-                            className="fixed top-1/2 left-3 z-[170] flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/60 text-white/85 shadow-2xl backdrop-blur-md transition-all duration-200 hover:scale-110 hover:border-white/40 hover:bg-black/90 hover:text-white active:scale-95 sm:left-6 sm:h-13 sm:w-13"
-                            title="Previous visual (←)"
-                            aria-label="Previous image"
+                            variant="outline"
+                            onClick={() => setDesignToDelete(null)}
+                            disabled={isDeletingDesign}
                         >
-                            <ChevronLeft className="h-6 w-6 sm:h-7 sm:w-7" />
-                        </button>
-                    )}
-
-                    {/* Floating Next Image Button (Right) */}
-                    {hasNextDesign && (
-                        <button
+                            Cancel
+                        </Button>
+                        <Button
                             type="button"
-                            onClick={handleNextDesign}
-                            className="fixed top-1/2 right-3 z-[170] flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/60 text-white/85 shadow-2xl backdrop-blur-md transition-all duration-200 hover:scale-110 hover:border-white/40 hover:bg-black/90 hover:text-white active:scale-95 sm:right-6 sm:h-13 sm:w-13"
-                            title="Next visual (→)"
-                            aria-label="Next image"
+                            variant="destructive"
+                            onClick={confirmDeleteDesign}
+                            disabled={isDeletingDesign}
+                            className="gap-2"
                         >
-                            <ChevronRight className="h-6 w-6 sm:h-7 sm:w-7" />
-                        </button>
-                    )}
-
-                    {/* Section 1: Full-view Image Canvas */}
-                    <div className="group/canvas relative flex min-h-[calc(100vh-4.5rem)] w-full flex-col items-center justify-center px-4 pt-4 pb-20 sm:px-8 sm:pt-6 sm:pb-24">
-                        {/* Ambient Glow */}
-                        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
-                            <div className="h-[450px] w-[450px] rounded-full bg-gradient-to-tr from-primary/20 via-blue-500/10 to-transparent opacity-40 blur-3xl" />
-                        </div>
-
-                        {/* Subtle Black Gradient Overlay at the Very Bottom of Dark Backdrop */}
-                        <div className="pointer-events-none absolute right-0 bottom-0 left-0 z-10 h-28 bg-gradient-to-t from-black via-black/80 to-transparent" />
-
-                        {previewDesign.image_url ? (
-                            <img
-                                src={previewDesign.image_url}
-                                alt={
-                                    previewDesign.product_name ||
-                                    'Campaign visual'
-                                }
-                                onClick={(e) => {
-                                    e.stopPropagation();
-
-                                    if (!isZoomed) {
-                                        const rect =
-                                            e.currentTarget.getBoundingClientRect();
-                                        const offsetX = e.clientX - rect.left;
-                                        const offsetY = e.clientY - rect.top;
-                                        const xPercent = Math.max(
-                                            0,
-                                            Math.min(
-                                                100,
-                                                (offsetX / rect.width) * 100,
-                                            ),
-                                        );
-                                        const yPercent = Math.max(
-                                            0,
-                                            Math.min(
-                                                100,
-                                                (offsetY / rect.height) * 100,
-                                            ),
-                                        );
-                                        setZoomOrigin({
-                                            x: xPercent,
-                                            y: yPercent,
-                                        });
-                                        setIsZoomed(true);
-                                    } else {
-                                        setIsZoomed(false);
-                                    }
-                                }}
-                                style={{
-                                    transformOrigin: isZoomed
-                                        ? `${zoomOrigin.x}% ${zoomOrigin.y}%`
-                                        : 'center center',
-                                }}
-                                className={`z-20 block max-h-[calc(100vh-12rem)] max-w-[86vw] cursor-pointer rounded-2xl object-contain drop-shadow-2xl transition-transform duration-300 ease-out select-none ${
-                                    isZoomed
-                                        ? 'scale-[1.75] cursor-zoom-out'
-                                        : 'scale-100 cursor-zoom-in'
-                                }`}
-                            />
-                        ) : (
-                            <div className="z-20 flex flex-col items-center justify-center text-white/50">
-                                <ImageIcon className="h-16 w-16" />
-                                <p className="mt-2 text-sm">
-                                    No visual available
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Static Scroll Indicator Button (Dark circular navigation arrow layered over the black gradient zone) */}
-                        <button
-                            type="button"
-                            onClick={handleToggleScrollDetails}
-                            className="group/scroll absolute bottom-4 left-1/2 z-30 flex h-10 w-10 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/80 text-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.6)] backdrop-blur-xl transition-all duration-300 hover:scale-110 hover:border-primary/60 hover:bg-black hover:text-white hover:shadow-[0_0_20px_rgba(var(--primary),0.5)] active:scale-95"
-                            title={
-                                isScrolledToDetails
-                                    ? 'Scroll up to image'
-                                    : 'Scroll down for details'
-                            }
-                            aria-label={
-                                isScrolledToDetails
-                                    ? 'Scroll up to image'
-                                    : 'Scroll down for details'
-                            }
-                        >
-                            {isScrolledToDetails ? (
-                                <ChevronUp className="h-5 w-5 transition-transform duration-300 group-hover/scroll:text-primary" />
-                            ) : (
-                                <ChevronDown className="h-5 w-5 transition-transform duration-300 group-hover/scroll:text-primary" />
-                            )}
-                        </button>
-                    </div>
-
-                    {/* Section 2: Recreated, Classy Details & Functions Section */}
-                    <div
-                        id="campaign-modal-details"
-                        className="relative z-30 w-full border-t border-border/80 bg-card/98 px-4 pt-8 pb-16 text-foreground backdrop-blur-3xl sm:px-8"
-                    >
-                        <div className="mx-auto max-w-3xl space-y-6">
-                            <div className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <div className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold tracking-wider text-primary-foreground uppercase shadow-md shadow-primary/20">
-                                        <Sparkles className="h-4 w-4" />
-                                        Visual Creative Details
-                                    </div>
-                                    <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-                                        {previewDesign.product_name ||
-                                            'Campaign Visual'}
-                                    </h3>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        asChild
-                                        size="sm"
-                                        className="h-9 cursor-pointer gap-2 bg-primary px-4 text-xs font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:scale-105 hover:bg-primary/90"
-                                    >
-                                        <Link
-                                            href={`/campaigns/${campaign.id}/generator?product_name=${encodeURIComponent(
-                                                previewDesign.product_name ||
-                                                    '',
-                                            )}${campaign?.event_id ? `&event_id=${campaign.event_id}` : ''}&price=${encodeURIComponent(previewDesign.price || '')}&tagline=${encodeURIComponent(previewDesign.tagline || '')}&prompt=${encodeURIComponent(previewDesign.prompt || '')}&aspect_ratio=${encodeURIComponent(previewDesign.aspect_ratio || '1:1')}`}
-                                        >
-                                            <Sparkles className="h-4 w-4" />
-                                            Edit in AI Studio
-                                        </Link>
-                                    </Button>
-                                </div>
-                            </div>
-
-                            {previewDesign.tagline && (
-                                <div className="group relative overflow-hidden rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-xs transition-all hover:border-primary/50 sm:p-6">
-                                    <div className="inline-flex items-center gap-1.5 rounded-md bg-primary/15 px-2.5 py-1 text-[11px] font-bold tracking-wider text-primary uppercase">
-                                        <Tag className="h-3.5 w-3.5" />
-                                        Catchy Tagline & Hook
-                                    </div>
-                                    <p className="mt-3 text-lg leading-snug font-bold text-foreground italic sm:text-xl">
-                                        "{previewDesign.tagline}"
-                                    </p>
-                                </div>
-                            )}
-
-                            <div className="group rounded-2xl border border-border/80 bg-muted/30 p-5 shadow-xs transition-all duration-300 hover:border-border">
-                                <div className="inline-block rounded-md bg-muted px-2.5 py-1 text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
-                                    AI Prompt & Concept
-                                </div>
-                                <p className="mt-2.5 text-sm leading-relaxed font-medium text-foreground sm:text-base">
-                                    {previewDesign.prompt ||
-                                        `${campaign.name} visual creative tailored for high engagement.`}
-                                </p>
-                            </div>
-
-                            <div className="grid gap-3 sm:grid-cols-3">
-                                <div className="group rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all hover:-translate-y-0.5 hover:border-primary/40 sm:p-5">
-                                    <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                                        <Tag className="h-3.5 w-3.5 text-primary" />
-                                        Product
-                                    </div>
-                                    <p className="mt-2 truncate text-base font-bold text-foreground">
-                                        {previewDesign.product_name ||
-                                            'Standard Offering'}
-                                    </p>
-                                    {previewDesign.price && (
-                                        <p className="mt-0.5 text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
-                                            ₱{previewDesign.price}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="group rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all hover:-translate-y-0.5 hover:border-primary/40 sm:p-5">
-                                    <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                                        <Layers className="h-3.5 w-3.5 text-primary" />
-                                        Campaign
-                                    </div>
-                                    <p className="mt-2 truncate text-base font-bold text-foreground">
-                                        {campaign.name}
-                                    </p>
-                                </div>
-
-                                <div className="group rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all hover:-translate-y-0.5 hover:border-primary/40 sm:p-5">
-                                    <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                                        <CalendarDays className="h-3.5 w-3.5 text-primary" />
-                                        Created
-                                    </div>
-                                    <p className="mt-2 truncate text-base font-bold text-foreground">
-                                        {previewDesign.created_at ||
-                                            'Saved Visual'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <span className="mr-1 text-xs font-bold text-muted-foreground">
-                                        Download as:
-                                    </span>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() =>
-                                            downloadVisualAsFormat(
-                                                previewDesign.image_url,
-                                                `${campaign.name}-${previewDesign.product_name || 'visual'}`,
-                                                'png',
-                                            )
-                                        }
-                                        className="cursor-pointer gap-1.5 border-border bg-card text-xs font-semibold text-foreground shadow-none transition-all hover:bg-muted"
-                                    >
-                                        <Download className="h-3.5 w-3.5 text-primary" />
-                                        PNG
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() =>
-                                            downloadVisualAsFormat(
-                                                previewDesign.image_url,
-                                                `${campaign.name}-${previewDesign.product_name || 'visual'}`,
-                                                'jpeg',
-                                            )
-                                        }
-                                        className="cursor-pointer gap-1.5 border-border bg-card text-xs font-semibold text-foreground shadow-none transition-all hover:bg-muted"
-                                    >
-                                        <Download className="h-3.5 w-3.5 text-blue-500" />
-                                        JPEG
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() =>
-                                            downloadVisualAsFormat(
-                                                previewDesign.image_url,
-                                                `${campaign.name}-${previewDesign.product_name || 'visual'}`,
-                                                'svg',
-                                            )
-                                        }
-                                        className="cursor-pointer gap-1.5 border-border bg-card text-xs font-semibold text-foreground shadow-none transition-all hover:bg-muted"
-                                    >
-                                        <Download className="h-3.5 w-3.5 text-emerald-500" />
-                                        SVG
-                                    </Button>
-                                </div>
-
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={closePreview}
-                                    className="h-8 cursor-pointer border-border bg-card px-4 text-xs font-semibold text-foreground transition-all hover:bg-muted"
-                                >
-                                    Close
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+                            <Trash2 className="h-4 w-4" />
+                            {isDeletingDesign ? 'Deleting...' : 'Delete Visual'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* =============================================================
                 EDIT CAMPAIGN MODAL

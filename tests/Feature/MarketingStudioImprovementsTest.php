@@ -543,10 +543,10 @@ test('MarketingDesignSystem evaluates six-part primary visual core similarity ac
         ->and($evalDerived['max_match_count'])->toBeLessThanOrEqual(4);
 });
 
-test('ModularPromptOrchestrator injects negative authoritative copy directive when deterministic compositing is active', function () {
+test('ModularPromptOrchestrator configures complete final design typography without delegating to application text overlay', function () {
     $orchestrator = app(ModularPromptOrchestrator::class);
 
-    $promptWithCompositor = $orchestrator->orchestrate([
+    $prompt = $orchestrator->orchestrate([
         'product_name' => 'Cold Brew Nitro',
         'business_name' => 'CoffeYessir',
         'tagline' => 'Velvety smooth finish',
@@ -554,27 +554,13 @@ test('ModularPromptOrchestrator injects negative authoritative copy directive wh
         'deterministic_compositing' => true,
     ]);
 
-    expect($promptWithCompositor)
-        ->toContain('• AUTHORITATIVE COPY RENDERING:')
-        ->toContain('The application will add all final marketing text after image generation.')
-        ->toContain('Do NOT render, invent, paraphrase, duplicate, or approximate:')
-        ->toContain('- Product Name')
-        ->toContain('- Business Name')
-        ->toContain('- Tagline')
-        ->toContain('- Price')
-        ->toContain('- Campaign Name')
-        ->toContain('Leave intentional clean negative space for the application-owned text overlay.');
-
-    // When deterministic compositing is not passed, directive is absent
-    $promptWithoutCompositor = $orchestrator->orchestrate([
-        'product_name' => 'Cold Brew Nitro',
-        'business_name' => 'CoffeYessir',
-        'tagline' => 'Velvety smooth finish',
-        'price' => '₱160',
-        'deterministic_compositing' => false,
-    ]);
-
-    expect($promptWithoutCompositor)->not->toContain('• AUTHORITATIVE COPY RENDERING:');
+    expect($prompt)
+        ->toContain('FINAL MARKETING DESIGN TASK')
+        ->toContain('• Hero Product: "Cold Brew Nitro"')
+        ->toContain('• BUSINESS / SHOP NAME: "CoffeYessir"')
+        ->toContain('• TAGLINE: "Velvety smooth finish"')
+        ->toContain('• PRICE: "₱160"')
+        ->not->toContain('The application will add all final marketing text after image generation.');
 });
 
 test('OpenAIImageService records enriched compositor and visual generation metadata', function () {
@@ -612,7 +598,8 @@ test('OpenAIImageService records enriched compositor and visual generation metad
     ]);
 
     expect($meta['ai_visual_generation']['success'])->toBeTrue()
-        ->and($meta['deterministic_text_compositing'])->toBeTrue()
+        ->and($meta['deterministic_text_compositing'])->toBeFalse()
+        ->and($meta['complete_gpt_design'])->toBeTrue()
         ->and($meta['authoritative_text_layers']['product_name'])->toBe('Espresso Roast')
         ->and($meta['authoritative_text_layers']['brand_name'])->toBe('Coffee Lab')
         ->and($meta['authoritative_text_layers']['tagline'])->toBe('Pure Energy')

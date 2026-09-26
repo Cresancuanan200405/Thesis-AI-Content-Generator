@@ -52,7 +52,8 @@ class DesignRegenerationService
                 ->whereIn('id', $catalogProductIds)
                 ->get()
                 ->sortBy(function (Product $p) use ($catalogProductIds) {
-                    $pos = array_search($p->id, $catalogProductIds, true);
+                    $strIds = array_map('strval', $catalogProductIds);
+                    $pos = array_search((string) $p->id, $strIds, true);
 
                     return $pos === false ? 999 : $pos;
                 })
@@ -126,7 +127,12 @@ class DesignRegenerationService
         $renderStyle = (string) ($meta['render_style'] ?? 'Studio Product Still');
         $designTreatment = $this->designSystem->validateDesignTreatment($meta['design_treatment'] ?? 'Auto');
         $copyEmphasis = $this->designSystem->validateCopyEmphasis($meta['copy_emphasis'] ?? 'Balanced');
-        $typographyLayout = $meta['typography_layout'] ?? null;
+        $typographyLayout = $meta['copy_layout'] ?? $meta['typography_layout'] ?? null;
+        $copyLayout = $typographyLayout;
+        $productNameStyle = $meta['product_name_style'] ?? null;
+        $priceStyle = $meta['price_style'] ?? null;
+        $taglineStyle = $meta['tagline_style'] ?? null;
+        $textDepthMode = $meta['text_depth_mode'] ?? null;
         $compositionType = $meta['composition_type'] ?? null;
         $cameraViewpoint = $meta['camera_viewpoint'] ?? null;
         $lightingProfile = $meta['lighting_profile'] ?? null;
@@ -158,32 +164,71 @@ class DesignRegenerationService
         $taglineMode = $includeTagline ? ($design->tagline_mode ?? $meta['tagline_mode'] ?? 'ai') : 'none';
 
         // 8. Build Complete Multi-Product Compositor Contract
+        $totalSelectedProducts = $catalogProducts->count() + count($customProducts);
+        $isMultiProduct = $totalSelectedProducts > 1;
+
+        $historicalPrices = [];
+        if (! empty($meta['prices']) && is_array($meta['prices'])) {
+            $historicalPrices = $meta['prices'];
+        } elseif (! empty($meta['authoritative_copy']['prices']) && is_array($meta['authoritative_copy']['prices'])) {
+            $historicalPrices = $meta['authoritative_copy']['prices'];
+        } elseif (! empty($meta['authoritative_text_layers']['prices']) && is_array($meta['authoritative_text_layers']['prices'])) {
+            $historicalPrices = $meta['authoritative_text_layers']['prices'];
+        }
+
+        $resolveProductPrice = function (?Product $prod, ?string $prodName = null, ?int $idx = null) use ($historicalPrices, $numericPrice, $isMultiProduct): ?string {
+            // 1. Authoritative current product record price
+            if ($prod && $prod->price !== null && $prod->price !== '') {
+                return (string) $prod->price;
+            }
+            // 2. Persisted historical price by product ID
+            if ($prod && isset($historicalPrices[(string) $prod->id])) {
+                return (string) $historicalPrices[(string) $prod->id];
+            }
+            // 3. Persisted historical price by product name
+            $lookupName = $prod ? $prod->name : $prodName;
+            if ($lookupName && isset($historicalPrices[$lookupName])) {
+                return (string) $historicalPrices[$lookupName];
+            }
+            // 4. Fallback for single-product design only
+            if (! $isMultiProduct && $numericPrice !== null && $numericPrice !== '') {
+                return (string) $numericPrice;
+            }
+
+            // For multi-product, DO NOT assign another product's price or scalar design price
+            return null;
+        };
+
+        $primaryPrice = $includePrices ? $resolveProductPrice($product, $productName, 0) : null;
         $primaryProductContract = null;
         if ($product) {
             $primaryProductContract = [
                 'name' => $product->name,
-                'price' => $includePrices ? ($meta['primary_product']['price'] ?? $product->price) : null,
+                'price' => $primaryPrice,
             ];
         } elseif (! empty($productName)) {
             $primaryProductContract = [
                 'name' => $productName,
-                'price' => $includePrices ? ($meta['price'] ?? $numericPrice ?? null) : null,
+                'price' => $primaryPrice,
             ];
         }
 
         $coFeaturedProductsContract = [];
         if ($catalogProducts && $catalogProducts->count() > 1) {
-            foreach ($catalogProducts->slice(1) as $cp) {
+            foreach ($catalogProducts->slice(1)->values() as $idx => $cp) {
                 $coFeaturedProductsContract[] = [
                     'name' => $cp->name,
-                    'price' => $includePrices ? $cp->price : null,
+                    'price' => $includePrices ? $resolveProductPrice($cp, $cp->name, $idx + 1) : null,
                 ];
             }
         }
-        foreach ($customProducts as $custom) {
+        foreach ($customProducts as $cIdx => $custom) {
             $cName = is_array($custom) ? ($custom['name'] ?? null) : ($custom->name ?? null);
             $cPrice = is_array($custom) ? ($custom['price'] ?? null) : ($custom->price ?? null);
             if (! empty($cName)) {
+                if ($includePrices && empty($cPrice)) {
+                    $cPrice = $historicalPrices["custom_{$cIdx}"] ?? $historicalPrices[$cName] ?? null;
+                }
                 $coFeaturedProductsContract[] = [
                     'name' => $cName,
                     'price' => $includePrices ? $cPrice : null,
@@ -193,19 +238,28 @@ class DesignRegenerationService
 
         $pricesContract = [];
         if ($includePrices) {
-            if (! empty($meta['prices']) && is_array($meta['prices'])) {
-                $pricesContract = $meta['prices'];
-            } else {
-                if ($primaryProductContract && ! empty($primaryProductContract['price'])) {
-                    $pricesContract[$primaryProductContract['name']] = $primaryProductContract['price'];
+            if ($primaryProductContract && ! empty($primaryProductContract['price'])) {
+                $pricesContract[$primaryProductContract['name']] = $primaryProductContract['price'];
+                if ($product) {
+                    $pricesContract[(string) $product->id] = $primaryProductContract['price'];
                 }
-                foreach ($coFeaturedProductsContract as $cfp) {
-                    if (! empty($cfp['price'])) {
-                        $pricesContract[$cfp['name']] = $cfp['price'];
+            }
+            if ($catalogProducts && $catalogProducts->count() > 1) {
+                foreach ($catalogProducts->slice(1)->values() as $idx => $cp) {
+                    $cPrice = $coFeaturedProductsContract[$idx]['price'] ?? null;
+                    if (! empty($cPrice)) {
+                        $pricesContract[$cp->name] = $cPrice;
+                        $pricesContract[(string) $cp->id] = $cPrice;
                     }
                 }
-                if (empty($pricesContract) && ! empty($priceForPrompt)) {
-                    $pricesContract[$productName] = $priceForPrompt;
+            }
+            foreach ($customProducts as $cIdx => $custom) {
+                $cName = is_array($custom) ? ($custom['name'] ?? null) : ($custom->name ?? null);
+                $customOffset = ($catalogProducts ? max(0, $catalogProducts->count() - 1) : 0) + $cIdx;
+                $cPrice = $coFeaturedProductsContract[$customOffset]['price'] ?? null;
+                if (! empty($cName) && ! empty($cPrice)) {
+                    $pricesContract[$cName] = $cPrice;
+                    $pricesContract["custom_{$cIdx}"] = $cPrice;
                 }
             }
         }
@@ -220,6 +274,11 @@ class DesignRegenerationService
             'camera_viewpoint' => $cameraViewpoint,
             'lighting_profile' => $lightingProfile,
             'prop_profile' => $propProfile,
+            'copy_layout' => $copyLayout,
+            'product_name_style' => $productNameStyle,
+            'price_style' => $priceStyle,
+            'tagline_style' => $taglineStyle,
+            'text_depth_mode' => $textDepthMode,
         ];
 
         $variationCore = $this->designSystem->deriveDiverseVisualCore(
@@ -240,6 +299,11 @@ class DesignRegenerationService
         $varSceneFamily = $variationCore['scene_family'] ?? $sceneFamily;
         $varEnvironmentFamily = $variationCore['environment_family'] ?? $environmentFamily;
         $varPropProfile = $variationCore['prop_profile'] ?? $propProfile;
+        $varCopyLayout = $variationCore['copy_layout'] ?? $copyLayout;
+        $varProductNameStyle = $variationCore['product_name_style'] ?? $productNameStyle;
+        $varPriceStyle = $variationCore['price_style'] ?? $priceStyle;
+        $varTaglineStyle = $variationCore['tagline_style'] ?? $taglineStyle;
+        $varTextDepthMode = $variationCore['text_depth_mode'] ?? $textDepthMode;
 
         // Build Complete Generation Options with Authoritative State
         $options = [
@@ -264,7 +328,7 @@ class DesignRegenerationService
             'campaign_name' => $campaignName,
             'campaign_objective' => $campaignObjective,
             'event_name' => $eventName,
-            'price' => $includePrices ? ($priceForPrompt ?? $primaryProductContract['price'] ?? null) : null,
+            'price' => $isMultiProduct ? null : ($priceForPrompt ?? ($primaryPrice ? (is_numeric($primaryPrice) ? '₱'.number_format((float) $primaryPrice, 2, '.', ',') : (string) $primaryPrice) : null)),
             'include_prices' => $includePrices,
             'tagline' => $normalizedTagline,
             'include_tagline' => $includeTagline,
@@ -274,13 +338,18 @@ class DesignRegenerationService
             'custom_products' => $customProducts,
             'primary_product' => $primaryProductContract,
             'co_featured_products' => $coFeaturedProductsContract,
-            'prices' => $pricesContract,
+            'prices' => $isMultiProduct ? $pricesContract : null,
             'brand_tone' => $brandTone,
             'visual_theme' => $contentStyle,
             'render_style' => $renderStyle,
             'design_treatment' => $designTreatment,
             'copy_emphasis' => $copyEmphasis,
-            'typography_layout' => $typographyLayout,
+            'typography_layout' => $varCopyLayout,
+            'copy_layout' => $varCopyLayout,
+            'product_name_style' => $varProductNameStyle,
+            'price_style' => $varPriceStyle,
+            'tagline_style' => $varTaglineStyle,
+            'text_depth_mode' => $varTextDepthMode,
             'composition_type' => $varCompositionType,
             'camera_viewpoint' => $varCameraViewpoint,
             'lighting_profile' => $varLightingProfile,

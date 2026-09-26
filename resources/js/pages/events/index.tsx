@@ -13,9 +13,9 @@ import {
     ShoppingBag,
     Tag,
     Trash2,
+    X,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -79,34 +79,22 @@ interface EventManagementPageProps {
     };
 }
 
-const TYPE_STYLES: Record<string, { bg: string; text: string; border: string; label: string; dot: string }> = {
+const TYPE_STYLES: Record<string, { text: string; label: string }> = {
     holiday: {
-        bg: 'bg-rose-500/10 dark:bg-rose-500/15',
-        text: 'text-rose-700 dark:text-rose-300',
-        border: 'border-rose-500/30',
+        text: 'text-rose-600 dark:text-rose-400',
         label: 'Philippine Holiday',
-        dot: 'bg-rose-500',
     },
     seasonal: {
-        bg: 'bg-cyan-500/10 dark:bg-cyan-500/15',
-        text: 'text-cyan-700 dark:text-cyan-300',
-        border: 'border-cyan-500/30',
+        text: 'text-cyan-600 dark:text-cyan-400',
         label: 'Seasonal Event',
-        dot: 'bg-cyan-500',
     },
     commercial: {
-        bg: 'bg-blue-500/10 dark:bg-blue-500/15',
-        text: 'text-blue-700 dark:text-blue-300',
-        border: 'border-blue-500/30',
+        text: 'text-blue-600 dark:text-blue-400',
         label: 'Marketing Event',
-        dot: 'bg-blue-500',
     },
     custom: {
-        bg: 'bg-purple-500/10 dark:bg-purple-500/15',
-        text: 'text-purple-700 dark:text-purple-300',
-        border: 'border-purple-500/30',
+        text: 'text-purple-600 dark:text-purple-400',
         label: 'Custom Event',
-        dot: 'bg-purple-500',
     },
 };
 
@@ -118,6 +106,29 @@ export default function EventManagementPage({
 }: EventManagementPageProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTypeFilter, setActiveTypeFilter] = useState(filter || 'all');
+    const [selectedYear, setSelectedYear] = useState<string>('all');
+
+    // Available years extracted from events list + current year
+    const availableYears = useMemo(() => {
+        const yearsSet = new Set<string>();
+        events.forEach((e) => {
+            const rawStart = e.start_date || e.date;
+            if (rawStart) {
+                const y = String(rawStart).substring(0, 4);
+                if (/^\d{4}$/.test(y)) {
+                    yearsSet.add(y);
+                }
+            }
+            if (e.end_date) {
+                const y = String(e.end_date).substring(0, 4);
+                if (/^\d{4}$/.test(y)) {
+                    yearsSet.add(y);
+                }
+            }
+        });
+        yearsSet.add(String(new Date().getFullYear()));
+        return Array.from(yearsSet).sort((a, b) => Number(b) - Number(a));
+    }, [events]);
 
     // Create Modal State
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -131,6 +142,9 @@ export default function EventManagementPage({
     });
     const [createErrors, setCreateErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // View Event Modal State
+    const [viewingEvent, setViewingEvent] = useState<EventItem | null>(null);
 
     // Edit Modal State
     const [editingEvent, setEditingEvent] = useState<EventItem | null>(null);
@@ -163,9 +177,16 @@ export default function EventManagementPage({
                 matchesType = e.type === 'custom';
             }
 
-            return matchesSearch && matchesType;
+            let matchesYear = true;
+            if (selectedYear !== 'all') {
+                const startYear = String(e.start_date || e.date || '').substring(0, 4);
+                const endYear = String(e.end_date || '').substring(0, 4);
+                matchesYear = startYear === selectedYear || endYear === selectedYear;
+            }
+
+            return matchesSearch && matchesType && matchesYear;
         });
-    }, [events, searchQuery, activeTypeFilter]);
+    }, [events, searchQuery, activeTypeFilter, selectedYear]);
 
     // Handle Create Submit
     const handleCreateSubmit = (e: React.FormEvent) => {
@@ -268,16 +289,16 @@ export default function EventManagementPage({
         <>
             <Head title="Event Management" />
 
-            <div className="space-y-6 p-4 md:p-6 lg:p-8">
-                {/* Header */}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border/60 pb-4">
-                    <div>
+            <div className="min-h-screen bg-background pb-24 text-foreground">
+                <div className="space-y-6 p-4 md:p-6 lg:p-8">
+                    {/* Header */}
+                    <div className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-2.5">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                                 <Calendar className="h-5 w-5" />
                             </div>
                             <div>
-                                <h1 className="text-xl font-bold tracking-tight text-foreground">
+                                <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
                                     Event Management
                                 </h1>
                                 <p className="text-xs text-muted-foreground">
@@ -285,236 +306,438 @@ export default function EventManagementPage({
                                 </p>
                             </div>
                         </div>
+
+                        <div className="flex items-center gap-2 self-start sm:self-auto">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                asChild
+                                className="h-8 gap-1.5 rounded-xl text-xs font-semibold shadow-2xs"
+                            >
+                                <Link href="/calendar">
+                                    <CalendarDays className="h-3.5 w-3.5" />
+                                    View Calendar
+                                </Link>
+                            </Button>
+
+                            <Button
+                                onClick={() => {
+                                    setCreateCategory('custom');
+                                    setCreateErrors({});
+                                    setIsCreateOpen(true);
+                                }}
+                                size="sm"
+                                className="h-8 gap-1.5 rounded-xl bg-primary text-xs font-semibold text-primary-foreground shadow-2xs hover:bg-primary/90"
+                            >
+                                <Plus className="h-3.5 w-3.5" />
+                                Add Event
+                            </Button>
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                            className="rounded-xl text-xs font-semibold"
+                    {/* Metric Summary Cards */}
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        <Card
+                            onClick={() => setActiveTypeFilter('all')}
+                            className={`cursor-pointer rounded-2xl border border-border/70 bg-card p-4 shadow-2xs transition-all hover:bg-muted/30 ${
+                                activeTypeFilter === 'all' ? 'ring-2 ring-primary/40 bg-primary/5' : ''
+                            }`}
+                            role="button"
+                            tabIndex={0}
                         >
-                            <Link href="/calendar">
-                                <CalendarDays className="mr-1.5 h-3.5 w-3.5" />
-                                View Calendar
-                            </Link>
-                        </Button>
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <span>Total Events</span>
+                                <Calendar className="h-4 w-4 text-primary" />
+                            </div>
+                            <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">{stats.total}</p>
+                        </Card>
 
-                        <Button
-                            onClick={() => {
-                                setCreateCategory('custom');
-                                setCreateErrors({});
-                                setIsCreateOpen(true);
-                            }}
-                            size="sm"
-                            className="rounded-xl bg-primary text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary/90"
+                        <Card
+                            onClick={() => setActiveTypeFilter(activeTypeFilter === 'holiday' ? 'all' : 'holiday')}
+                            className={`cursor-pointer rounded-2xl border border-border/70 bg-card p-4 shadow-2xs transition-all hover:bg-rose-500/5 ${
+                                activeTypeFilter === 'holiday' ? 'ring-2 ring-rose-500/50 bg-rose-500/10' : ''
+                            }`}
+                            role="button"
+                            tabIndex={0}
                         >
-                            <Plus className="mr-1.5 h-4 w-4" />
-                            Add Event
-                        </Button>
-                    </div>
-                </div>
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <span>Philippine Holidays</span>
+                                <PartyPopper className="h-4 w-4 text-rose-500" />
+                            </div>
+                            <p className="mt-2 text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400">{stats.holidays}</p>
+                        </Card>
 
-                {/* Metric Summary Cards */}
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <Card className="rounded-2xl border-border bg-card p-4 shadow-2xs">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span>Total Events</span>
-                            <Calendar className="h-4 w-4 text-primary" />
-                        </div>
-                        <p className="mt-2 text-2xl font-bold text-foreground">{stats.total}</p>
-                    </Card>
+                        <Card
+                            onClick={() => setActiveTypeFilter(activeTypeFilter === 'commercial' ? 'all' : 'commercial')}
+                            className={`cursor-pointer rounded-2xl border border-border/70 bg-card p-4 shadow-2xs transition-all hover:bg-blue-500/5 ${
+                                activeTypeFilter === 'commercial' ? 'ring-2 ring-blue-500/50 bg-blue-500/10' : ''
+                            }`}
+                            role="button"
+                            tabIndex={0}
+                        >
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <span>Marketing Events</span>
+                                <ShoppingBag className="h-4 w-4 text-blue-500" />
+                            </div>
+                            <p className="mt-2 text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{stats.commercial}</p>
+                        </Card>
 
-                    <Card className="rounded-2xl border-border bg-card p-4 shadow-2xs">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span>Philippine Holidays</span>
-                            <PartyPopper className="h-4 w-4 text-rose-500" />
-                        </div>
-                        <p className="mt-2 text-2xl font-bold text-rose-600 dark:text-rose-400">{stats.holidays}</p>
-                    </Card>
-
-                    <Card className="rounded-2xl border-border bg-card p-4 shadow-2xs">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span>Marketing Events</span>
-                            <ShoppingBag className="h-4 w-4 text-blue-500" />
-                        </div>
-                        <p className="mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.commercial}</p>
-                    </Card>
-
-                    <Card className="rounded-2xl border-border bg-card p-4 shadow-2xs">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span>Custom Events</span>
-                            <Tag className="h-4 w-4 text-purple-500" />
-                        </div>
-                        <p className="mt-2 text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.custom}</p>
-                    </Card>
-                </div>
-
-                {/* Search & Filter Toolbar */}
-                <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-3 shadow-2xs sm:flex-row sm:items-center sm:justify-between">
-                    <div className="relative flex-1 sm:max-w-xs">
-                        <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                            type="text"
-                            placeholder="Search events by name..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="h-8 rounded-xl pl-9 text-xs"
-                        />
+                        <Card
+                            onClick={() => setActiveTypeFilter(activeTypeFilter === 'custom' ? 'all' : 'custom')}
+                            className={`cursor-pointer rounded-2xl border border-border/70 bg-card p-4 shadow-2xs transition-all hover:bg-purple-500/5 ${
+                                activeTypeFilter === 'custom' ? 'ring-2 ring-purple-500/50 bg-purple-500/10' : ''
+                            }`}
+                            role="button"
+                            tabIndex={0}
+                        >
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <span>Custom Events</span>
+                                <Tag className="h-4 w-4 text-purple-500" />
+                            </div>
+                            <p className="mt-2 text-2xl font-bold tracking-tight text-purple-600 dark:text-purple-400">{stats.custom}</p>
+                        </Card>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Filter className="h-3.5 w-3.5" />
-                            <span>Type:</span>
-                        </div>
-                        <Select value={activeTypeFilter} onValueChange={setActiveTypeFilter}>
-                            <SelectTrigger className="h-8 w-[140px] rounded-xl bg-background text-xs font-medium">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent align="end">
-                                <SelectItem value="all" className="text-xs">All Types</SelectItem>
-                                <SelectItem value="holiday" className="text-xs">Holidays</SelectItem>
-                                <SelectItem value="commercial" className="text-xs">Marketing Events</SelectItem>
-                                <SelectItem value="custom" className="text-xs">Custom Events</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
+                    {/* Sticky Filter Toolbar */}
+                    <div className="sticky top-11 z-30 mb-5 rounded-2xl border border-white/25 bg-card/95 p-2.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:p-3 dark:border-white/10 dark:bg-card/95">
+                        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+                            {/* Search */}
+                            <div className="relative min-w-0 flex-1">
+                                <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    type="text"
+                                    placeholder="Search events by name or description..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="h-8.5 border-input bg-background pr-8 pl-8.5 text-xs shadow-none focus-visible:ring-primary/30"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearchQuery('')}
+                                        className="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer text-muted-foreground/60 transition-colors hover:text-foreground"
+                                        aria-label="Clear search"
+                                    >
+                                        <X className="h-3.5 w-3.5" />
+                                    </button>
+                                )}
+                            </div>
 
-                {/* Events Table / List */}
-                <Card className="overflow-hidden rounded-3xl border-border bg-card shadow-xs">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs">
-                            <thead className="border-b border-border bg-muted/20 text-[11px] font-semibold text-muted-foreground">
-                                <tr>
-                                    <th className="py-3 px-4">Event Name</th>
-                                    <th className="py-3 px-4">Type</th>
-                                    <th className="py-3 px-4">Schedule Dates</th>
-                                    <th className="py-3 px-4">Status & Campaigns</th>
-                                    <th className="py-3 px-4">Ownership</th>
-                                    <th className="py-3 px-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border/60">
-                                {filteredEvents.length === 0 ? (
+                            <div className="flex shrink-0 flex-wrap items-center gap-2.5">
+                                {/* Year Filter */}
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-medium text-muted-foreground">Year:</span>
+                                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                                        <SelectTrigger className="h-8.5 w-[110px] rounded-xl bg-background text-xs font-medium">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent align="end">
+                                            <SelectItem value="all" className="text-xs">All Years</SelectItem>
+                                            {availableYears.map((yr) => (
+                                                <SelectItem key={yr} value={yr} className="text-xs font-mono">
+                                                    {yr}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Type Filter */}
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-medium text-muted-foreground">Type:</span>
+                                    <Select value={activeTypeFilter} onValueChange={setActiveTypeFilter}>
+                                        <SelectTrigger className="h-8.5 w-[140px] rounded-xl bg-background text-xs font-medium">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent align="end">
+                                            <SelectItem value="all" className="text-xs">All Types</SelectItem>
+                                            <SelectItem value="holiday" className="text-xs font-medium text-rose-600 dark:text-rose-400">Holidays</SelectItem>
+                                            <SelectItem value="commercial" className="text-xs font-medium text-blue-600 dark:text-blue-400">Marketing Events</SelectItem>
+                                            <SelectItem value="custom" className="text-xs font-medium text-purple-600 dark:text-purple-400">Custom Events</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <span className="text-xs font-medium text-muted-foreground pl-1">
+                                    {filteredEvents.length} {filteredEvents.length === 1 ? 'event' : 'events'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Events Table / List */}
+                    <Card className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs">
+                                <thead className="border-b border-border/60 bg-muted/30 text-[11px] font-semibold text-muted-foreground">
                                     <tr>
-                                        <td colSpan={6} className="py-12 text-center text-xs text-muted-foreground">
-                                            No events found matching your search.
-                                        </td>
+                                        <th className="py-3 px-4">Event Name</th>
+                                        <th className="py-3 px-4">Type</th>
+                                        <th className="py-3 px-4">Schedule Dates</th>
+                                        <th className="py-3 px-4">Status & Campaigns</th>
+                                        <th className="py-3 px-4 text-right">Actions</th>
                                     </tr>
-                                ) : (
-                                    filteredEvents.map((evt) => {
-                                        const typeStyle = TYPE_STYLES[evt.type] || TYPE_STYLES.custom;
-                                        const isMultiDay = evt.start_date !== evt.end_date;
+                                </thead>
+                                <tbody className="divide-y divide-border/50">
+                                    {filteredEvents.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={5} className="py-12 text-center text-xs text-muted-foreground">
+                                                No events found matching your search.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        filteredEvents.map((evt) => {
+                                            const typeStyle = TYPE_STYLES[evt.type] || TYPE_STYLES.custom;
+                                            const isMultiDay = evt.start_date !== evt.end_date;
 
-                                        return (
-                                            <tr key={evt.id} className="transition-colors hover:bg-muted/10">
-                                                <td className="py-3 px-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`h-2 w-2 shrink-0 rounded-full ${typeStyle.dot}`} />
+                                            return (
+                                                <tr
+                                                    key={evt.id}
+                                                    onClick={() => setViewingEvent(evt)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                            e.preventDefault();
+                                                            setViewingEvent(evt);
+                                                        }
+                                                    }}
+                                                    tabIndex={0}
+                                                    role="button"
+                                                    className="group cursor-pointer transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:bg-muted/40"
+                                                >
+                                                    <td className="py-3.5 px-4">
                                                         <div>
-                                                            <p className="font-semibold text-foreground">{evt.name}</p>
+                                                            <p className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                                                                {evt.name}
+                                                            </p>
                                                             {evt.description && (
-                                                                <p className="line-clamp-1 max-w-sm text-[11px] text-muted-foreground">
+                                                                <p className="line-clamp-1 max-w-sm text-[11px] text-muted-foreground mt-0.5">
                                                                     {evt.description}
                                                                 </p>
                                                             )}
                                                         </div>
-                                                    </div>
-                                                </td>
+                                                    </td>
 
-                                                <td className="py-3 px-4">
-                                                    <Badge
-                                                        variant="outline"
-                                                        className={`text-[10px] font-semibold ${typeStyle.bg} ${typeStyle.text} ${typeStyle.border}`}
-                                                    >
-                                                        {typeStyle.label}
-                                                    </Badge>
-                                                </td>
-
-                                                <td className="py-3 px-4">
-                                                    <div className="space-y-0.5">
-                                                        <p className="font-mono text-[11px] font-medium text-foreground">
-                                                            {evt.start_date}
-                                                            {isMultiDay && ` → ${evt.end_date}`}
-                                                        </p>
-                                                        {isMultiDay && (
-                                                            <span className="inline-flex items-center gap-1 rounded bg-muted/40 px-1.5 py-0.2 text-[9px] font-mono text-muted-foreground">
-                                                                <Clock className="h-2.5 w-2.5" />
-                                                                Multi-day range
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </td>
-
-                                                <td className="py-3 px-4">
-                                                    {evt.has_campaign ? (
-                                                        <Badge variant="outline" className="border-primary/40 bg-primary/10 text-[10px] font-semibold text-primary">
-                                                            Linked ({evt.campaigns_count} Campaign{evt.campaigns_count > 1 ? 's' : ''})
-                                                        </Badge>
-                                                    ) : (
-                                                        <span className="text-[11px] text-muted-foreground">Unlinked</span>
-                                                    )}
-                                                </td>
-
-                                                <td className="py-3 px-4">
-                                                    {evt.is_global ? (
-                                                        <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                                                            <Lock className="h-3 w-3 text-muted-foreground/70" />
-                                                            System / Official
+                                                    <td className="py-3.5 px-4 font-medium">
+                                                        <span className={`text-xs font-semibold ${typeStyle.text}`}>
+                                                            {typeStyle.label}
                                                         </span>
-                                                    ) : (
-                                                        <span className="text-[11px] font-medium text-foreground">Your Event</span>
-                                                    )}
-                                                </td>
+                                                    </td>
 
-                                                <td className="py-3 px-4 text-right">
-                                                    <div className="flex items-center justify-end gap-1.5">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            asChild
-                                                            className="h-7 px-2 text-xs"
-                                                        >
-                                                            <Link href={evt.show_url}>View</Link>
-                                                        </Button>
+                                                    <td className="py-3.5 px-4">
+                                                        <div className="space-y-0.5">
+                                                            <p className="font-mono text-xs font-medium text-foreground">
+                                                                {evt.start_date}
+                                                                {isMultiDay && <span className="text-muted-foreground"> → {evt.end_date}</span>}
+                                                            </p>
+                                                            {isMultiDay && (
+                                                                <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                                                                    <Clock className="h-2.5 w-2.5" />
+                                                                    Multi-day
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </td>
 
-                                                        {evt.can_edit ? (
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => handleOpenEdit(evt)}
-                                                                className="h-7 px-2 text-xs"
-                                                            >
-                                                                <Edit3 className="mr-1 h-3 w-3" />
-                                                                Edit
-                                                            </Button>
+                                                    <td className="py-3.5 px-4">
+                                                        {evt.has_campaign ? (
+                                                            <span className="text-xs font-medium text-primary">
+                                                                Linked ({evt.campaigns_count} Campaign{evt.campaigns_count > 1 ? 's' : ''})
+                                                            </span>
                                                         ) : (
-                                                            <span className="text-[11px] text-muted-foreground/50 px-2 italic">Protected</span>
+                                                            <span className="text-xs text-muted-foreground">Unlinked</span>
                                                         )}
+                                                    </td>
 
-                                                        {evt.can_delete && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => setDeletingEvent(evt)}
-                                                                className="h-7 px-2 text-xs text-rose-600 hover:bg-rose-500/10 hover:text-rose-700 dark:text-rose-400"
-                                                            >
-                                                                <Trash2 className="h-3 w-3" />
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </Card>
+                                                    <td className="py-3.5 px-4 text-right">
+                                                        <div
+                                                            className="flex items-center justify-end gap-1.5"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            {evt.can_edit ? (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleOpenEdit(evt);
+                                                                    }}
+                                                                    className="h-7 px-2 text-xs"
+                                                                >
+                                                                    <Edit3 className="mr-1 h-3 w-3" />
+                                                                    Edit
+                                                                </Button>
+                                                            ) : (
+                                                                <span className="text-[11px] text-muted-foreground/50 px-2 italic">Protected</span>
+                                                            )}
+
+                                                            {evt.can_delete && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setDeletingEvent(evt);
+                                                                    }}
+                                                                    className="h-7 px-2 text-xs text-muted-foreground hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400"
+                                                                >
+                                                                    <Trash2 className="h-3 w-3" />
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </Card>
+                </div>
             </div>
+
+            {/* =====================================================
+                VIEW EVENT DETAILS MODAL
+            ====================================================== */}
+            <Dialog open={Boolean(viewingEvent)} onOpenChange={(open) => !open && setViewingEvent(null)}>
+                <DialogContent className="max-h-[85vh] flex flex-col overflow-hidden rounded-3xl border-border bg-card p-0 shadow-2xl sm:max-w-lg">
+                    <DialogHeader className="shrink-0 border-b border-border bg-muted/20 p-5 sm:p-6 pb-4">
+                        <div className="flex items-center gap-2.5 min-w-0 pr-6">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                <CalendarDays className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className={`text-[11px] font-bold uppercase tracking-wider ${TYPE_STYLES[viewingEvent?.type || '']?.text || 'text-muted-foreground'}`}>
+                                    {TYPE_STYLES[viewingEvent?.type || '']?.label || 'Marketing Event'}
+                                </p>
+                                <DialogTitle className="text-base font-bold text-foreground sm:text-lg truncate" title={viewingEvent?.name}>
+                                    {viewingEvent?.name}
+                                </DialogTitle>
+                            </div>
+                        </div>
+                        <DialogDescription className="sr-only">
+                            Details and timeline for {viewingEvent?.name}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {/* Modal Body - Scrollable so it never overflows user screen */}
+                    <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-xs">
+                        {/* Schedule Dates & Type */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="rounded-2xl border border-border/70 bg-muted/20 p-3.5 space-y-1">
+                                <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
+                                    <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+                                    Schedule Date
+                                </span>
+                                <p className="font-mono text-xs font-semibold text-foreground">
+                                    {viewingEvent?.start_date}
+                                    {viewingEvent?.start_date !== viewingEvent?.end_date && (
+                                        <span> → {viewingEvent?.end_date}</span>
+                                    )}
+                                </p>
+                                {viewingEvent?.start_date !== viewingEvent?.end_date && (
+                                    <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                                        <Clock className="h-2.5 w-2.5 shrink-0" />
+                                        Multi-day range
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="rounded-2xl border border-border/70 bg-muted/20 p-3.5 space-y-1">
+                                <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
+                                    <Tag className="h-3.5 w-3.5 text-primary shrink-0" />
+                                    Event Type
+                                </span>
+                                <p className={`text-xs font-bold truncate ${TYPE_STYLES[viewingEvent?.type || '']?.text || 'text-foreground'}`}>
+                                    {TYPE_STYLES[viewingEvent?.type || '']?.label || 'Custom Event'}
+                                </p>
+                                <span className="text-[10px] text-muted-foreground block truncate">
+                                    {viewingEvent?.is_global ? 'System / Official' : 'Custom Business Event'}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Long weekend alert if applicable */}
+                        {viewingEvent?.is_long_weekend && (
+                            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-amber-700 dark:text-amber-300">
+                                <div className="flex items-center gap-1.5 font-semibold text-xs">
+                                    <PartyPopper className="h-4 w-4 shrink-0" />
+                                    <span>Long Weekend Opportunity</span>
+                                </div>
+                                {viewingEvent.long_weekend_details && (
+                                    <p className="mt-1 text-[11px] text-amber-800/80 dark:text-amber-200/80 leading-relaxed">
+                                        {viewingEvent.long_weekend_details}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Overview / Description */}
+                        <div className="rounded-2xl border border-border/70 bg-muted/20 p-3.5 space-y-1.5">
+                            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                Overview & Marketing Context
+                            </span>
+                            <p className="text-xs leading-relaxed text-foreground whitespace-pre-wrap">
+                                {viewingEvent?.description?.trim() ||
+                                    'No description provided for this marketing event. Use this event date to plan targeted promotional campaigns.'}
+                            </p>
+                        </div>
+
+                        {/* Linked Campaigns Info */}
+                        <div className="rounded-2xl border border-border/70 bg-muted/20 p-3.5 flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                    <ShoppingBag className="h-4 w-4" />
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-foreground">Linked Campaigns</p>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        {viewingEvent?.has_campaign
+                                            ? `${viewingEvent.campaigns_count} active campaign(s) running for this event`
+                                            : 'No campaigns currently associated with this event'}
+                                    </p>
+                                </div>
+                            </div>
+                            <span className="font-mono text-sm font-bold text-foreground">
+                                {viewingEvent?.campaigns_count || 0}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Modal Footer */}
+                    <DialogFooter className="shrink-0 border-t border-border bg-muted/20 p-3.5 sm:p-4 flex flex-row items-center justify-end gap-2">
+                        <div className="flex items-center gap-2">
+                            {viewingEvent?.can_edit && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        const evt = viewingEvent;
+                                        setViewingEvent(null);
+                                        handleOpenEdit(evt);
+                                    }}
+                                    className="text-xs gap-1.5"
+                                >
+                                    <Edit3 className="h-3.5 w-3.5" />
+                                    Edit Event
+                                </Button>
+                            )}
+
+                            <Button
+                                asChild
+                                size="sm"
+                                className="text-xs gap-1.5 bg-primary font-semibold text-primary-foreground hover:bg-primary/90"
+                            >
+                                <Link href={`/campaigns?create=true&event_id=${viewingEvent?.id}`}>
+                                    <Plus className="h-3.5 w-3.5" />
+                                    Create Campaign
+                                </Link>
+                            </Button>
+                        </div>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* =====================================================
                 ADD EVENT MODAL

@@ -4,15 +4,19 @@ import {
     ArrowLeft,
     ArrowRight,
     BadgePercent,
+    Building2,
     Camera,
     Check,
+    ChevronDown,
     Clapperboard,
     Compass,
     Loader2,
     Package,
     PenTool,
+    RotateCcw,
     SlidersHorizontal,
     Sparkles,
+    Calendar,
     Wand2,
     X,
 } from 'lucide-react';
@@ -26,6 +30,19 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Textarea } from '@/components/ui/textarea';
 import {
     Tooltip,
@@ -34,6 +51,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { downloadVisualAsFormat } from '@/lib/download';
+import { useSetBreadcrumbs } from '@/context/breadcrumb-context';
 
 import { AspectRatioSelector } from './components/AspectRatioSelector';
 import { BusinessNameSection } from './components/BusinessNameSection';
@@ -85,6 +103,8 @@ interface ManualGeneratorProps {
     initialEvent?: EventItem | null;
     design_system?: Partial<DesignSystemExport>;
     recent_fingerprints?: Array<Record<string, any>>;
+    initial_draft?: any;
+    origin?: string;
 }
 
 export default function ManualGenerator({
@@ -99,6 +119,8 @@ export default function ManualGenerator({
     initialProduct = null,
     design_system = undefined,
     recent_fingerprints = [],
+    initial_draft = null,
+    origin = undefined,
 }: ManualGeneratorProps) {
     // -------------------------------------------------------------------------
     // INDEPENDENT MANUAL STATE
@@ -120,6 +142,17 @@ export default function ManualGenerator({
     const [designTreatment, setDesignTreatment] = useState<DesignTreatment>('Auto');
     const [copyEmphasis, setCopyEmphasis] = useState<CopyEmphasis>('Balanced');
     const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
+    const [recentSuggestions, setRecentSuggestions] = useState<string[]>([]);
+    const [openPresetSections, setOpenPresetSections] = useState<Record<string, boolean>>({
+        treatment: true,
+        emphasis: true,
+        render: false,
+        themes: false,
+        tone: false,
+    });
+    const togglePresetSection = (key: string) => {
+        setOpenPresetSections((prev) => ({ ...prev, [key]: !prev[key] }));
+    };
     const scenePromptTextareaRef = useRef<HTMLTextAreaElement>(null);
 
     const adjustScenePromptHeight = useCallback(() => {
@@ -139,6 +172,14 @@ export default function ManualGenerator({
     const [taglineMode, setTaglineMode] = useState<TaglineMode>('none');
     const [isGeneratingTagline, setIsGeneratingTagline] = useState(false);
     const [includePrices, setIncludePrices] = useState<boolean>(true);
+    const [showEventText, setShowEventText] = useState<boolean>(() => Boolean(selectedEvent));
+
+    useEffect(() => {
+        if (selectedEvent) {
+            setShowEventText(true);
+        }
+    }, [selectedEvent]);
+
     const [includeBusinessName, setIncludeBusinessName] = useState<boolean>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('ai_studio_include_business_name');
@@ -161,11 +202,98 @@ export default function ManualGenerator({
     const [savedDesign, setSavedDesign] = useState<GeneratedDesign | null>(null);
     const [isSavedToDesigns, setIsSavedToDesigns] = useState(false);
     const [isSavingDesign, setIsSavingDesign] = useState(false);
+    const [isSavedAsDraft, setIsSavedAsDraft] = useState(false);
+    const [isSavingDraft, setIsSavingDraft] = useState(false);
 
-    // UI Viewports & Modals
-    const [isSummaryCollapsed, setIsSummaryCollapsed] = useState(false);
+    // UI Viewports & Modals (Collapsed by default to eliminate duplication with active wizard)
+    const [isSummaryCollapsed, setIsSummaryCollapsed] = useState(true);
     const [isPreviewFullViewOpen, setIsPreviewFullViewOpen] = useState(false);
     const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
+
+    // Restore draft state when opened
+    useEffect(() => {
+        if (!initial_draft) return;
+
+        const meta = initial_draft.generation_metadata || {};
+        if (initial_draft.prompt) setScenePrompt(initial_draft.prompt);
+        if (initial_draft.tagline) {
+            setTagline(initial_draft.tagline);
+            setIncludeTagline(true);
+        }
+        if (initial_draft.tagline_mode) setTaglineMode(initial_draft.tagline_mode);
+        if (meta.render_style) setRenderStyle(meta.render_style);
+        if (Array.isArray(meta.content_style)) setContentStyle(meta.content_style);
+        if (Array.isArray(meta.brand_tone)) setBrandTone(meta.brand_tone);
+        if (meta.design_treatment) setDesignTreatment(meta.design_treatment);
+        if (meta.copy_emphasis) setCopyEmphasis(meta.copy_emphasis);
+        if (meta.aspect_ratio || initial_draft.aspect_ratio) {
+            setAspectRatio(meta.aspect_ratio || initial_draft.aspect_ratio);
+        }
+        if (typeof meta.show_event_text === 'boolean') {
+            setShowEventText(meta.show_event_text);
+        }
+
+        if (Array.isArray(meta.custom_products) && meta.custom_products.length > 0) {
+            setCustomProducts(meta.custom_products.map((cp: any, idx: number) => ({
+                id: `cp_${idx}_${Date.now()}`,
+                name: cp.name || '',
+                price: cp.price || '',
+                description: cp.description || '',
+            })));
+        }
+
+        const draftIsDraft = initial_draft.status === 'draft';
+        setIsSavedAsDraft(draftIsDraft);
+        setIsSavedToDesigns(!draftIsDraft);
+
+        setSavedDesign({
+            id: initial_draft.id,
+            image_url: initial_draft.image_url,
+            generated_image_path: initial_draft.generated_image_path,
+            product_name: initial_draft.product_name,
+            tagline: initial_draft.tagline || '',
+            aspect_ratio: meta.aspect_ratio || initial_draft.aspect_ratio || '1:1',
+            image_model: meta.model || 'gpt-image-2',
+            prompt: initial_draft.prompt,
+            generation_meta: meta,
+            status: initial_draft.status,
+        });
+
+        setGenerationState('ready');
+
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('open_modal') === '1' || params.get('view_creative') === '1' || params.get('view_modal') === '1') {
+                setIsPreviewFullViewOpen(true);
+            }
+        }
+    }, [initial_draft]);
+
+    // Breadcrumbs Navigation (Campaigns / Designs -> Generator -> Image Modal)
+    const breadcrumbs = useMemo(() => {
+        const generatorHref = campaign?.id
+            ? `/generator/manual?campaign_id=${campaign.id}`
+            : '/generator/manual';
+
+        const rootCrumb = origin === 'designs'
+            ? { title: 'My Designs', href: '/designs' }
+            : { title: 'Campaigns', href: '/campaigns' };
+
+        if (generationState === 'ready') {
+            return [
+                rootCrumb,
+                { title: 'Generator', href: generatorHref },
+                { title: 'Image Modal', href: '#' },
+            ];
+        }
+
+        return [
+            rootCrumb,
+            { title: 'Generator', href: generatorHref },
+        ];
+    }, [campaign?.id, generationState, origin]);
+
+    useSetBreadcrumbs(breadcrumbs);
 
     // -------------------------------------------------------------------------
     // DERIVED VALIDATIONS
@@ -251,6 +379,11 @@ export default function ManualGenerator({
 
     const handleRemoveCustomProduct = (id: string) => {
         setCustomProducts((prev) => prev.filter((item) => item.id !== id));
+    };
+
+    const handleClearAllProducts = () => {
+        setSelectedCatalogProducts([]);
+        setCustomProducts([]);
     };
 
     // -------------------------------------------------------------------------
@@ -339,18 +472,30 @@ export default function ManualGenerator({
                     target: 'prompt',
                     catalog_product_ids: catalogIds,
                     custom_products: customItems,
+                    event_id: selectedEvent?.id,
+                    show_event_text: showEventText,
                     user_instruction: scenePrompt.trim(),
                     render_style: renderStyle,
+                    design_treatment: designTreatment,
+                    copy_emphasis: copyEmphasis,
                     visual_theme: contentStyle,
                     brand_tone: brandTone,
                     aspect_ratio: aspectRatio,
                     include_business_name: includeBusinessName,
+                    include_prices: includePrices,
+                    include_tagline: includeTagline,
+                    tagline: tagline.trim(),
+                    previous_concepts: recentSuggestions,
                 }),
             });
 
             const data = await response.json();
             if (response.ok && data.success && data.visual_prompt) {
                 setScenePrompt(data.visual_prompt);
+                setRecentSuggestions((prev) => [
+                    data.visual_prompt,
+                    ...prev.filter((p) => p !== data.visual_prompt).slice(0, 4),
+                ]);
                 if (data.tagline && !tagline.trim()) {
                     setTagline(data.tagline);
                     setTaglineMode('ai');
@@ -388,6 +533,15 @@ export default function ManualGenerator({
         setContentStyle(shuffled.contentStyle);
 
         toast.success('Applied creative direction presets!');
+    };
+
+    const handleClearPresets = () => {
+        setDesignTreatment('Auto');
+        setCopyEmphasis('Balanced');
+        setRenderStyle('Studio Product Still');
+        setContentStyle([]);
+        setBrandTone([]);
+        toast.success('Creative direction presets cleared.');
     };
 
     // -------------------------------------------------------------------------
@@ -445,6 +599,7 @@ export default function ManualGenerator({
             formData.append('product_name', effectiveProductName);
             formData.append('image_prompt', scenePrompt);
             formData.append('prompt', scenePrompt);
+            formData.append('scene_prompt', scenePrompt);
 
             formData.append('include_prices', includePrices ? '1' : '0');
 
@@ -454,6 +609,7 @@ export default function ManualGenerator({
             if (selectedEvent?.id) {
                 formData.append('event_id', String(selectedEvent.id));
             }
+            formData.append('show_event_text', showEventText ? '1' : '0');
             uniqueSelectedCatalogProducts.forEach((p) => {
                 formData.append('catalog_product_ids[]', String(p.id));
             });
@@ -571,18 +727,22 @@ export default function ManualGenerator({
     };
 
     // -------------------------------------------------------------------------
-    // SAVE DESIGN & DOWNLOAD
+    // SAVE AS DRAFT, FINALIZE DESIGN & DOWNLOAD
     // -------------------------------------------------------------------------
-    const handleSaveToDesigns = async () => {
-        if (isSavedToDesigns && savedDesign?.id) {
-            toast.info('Design is already saved in My Designs.');
+    const handleSaveAsDraft = async () => {
+        if (isSavedAsDraft && savedDesign?.id) {
+            toast.info('Creative is already saved as a draft.');
             return;
         }
 
-        setIsSavingDesign(true);
+        setIsSavingDraft(true);
         setSaveErrorMessage(null);
         try {
             const formData = new FormData();
+            formData.append('status', 'draft');
+            if (savedDesign?.id) {
+                formData.append('design_id', String(savedDesign.id));
+            }
             formData.append('product_name', effectiveProductName);
             const exactPrompt = savedDesign?.prompt || savedDesign?.generation_meta?.prompt || scenePrompt;
             formData.append('prompt', exactPrompt);
@@ -601,6 +761,125 @@ export default function ManualGenerator({
             if (selectedEvent?.id) {
                 formData.append('event_id', String(selectedEvent.id));
             }
+            formData.append('show_event_text', showEventText ? '1' : '0');
+            if (uniqueSelectedCatalogProducts[0]?.id) {
+                formData.append(
+                    'product_id',
+                    String(uniqueSelectedCatalogProducts[0].id),
+                );
+            }
+            uniqueSelectedCatalogProducts.forEach((p) => {
+                formData.append('catalog_product_ids[]', String(p.id));
+            });
+            customProducts.forEach((cp, idx) => {
+                formData.append(`custom_products[${idx}][name]`, cp.name);
+                if (cp.price) formData.append(`custom_products[${idx}][price]`, cp.price);
+                if (cp.description) formData.append(`custom_products[${idx}][description]`, cp.description);
+            });
+            formData.append('include_prices', includePrices ? '1' : '0');
+            if (campaign?.id) {
+                formData.append('campaign_id', String(campaign.id));
+            }
+            formData.append('aspect_ratio', aspectRatio);
+            formData.append('image_model', 'gpt-image-2');
+            formData.append('image_quality', imageQuality);
+            formData.append('design_treatment', designTreatment);
+            formData.append('copy_emphasis', copyEmphasis);
+            formData.append('include_tagline', includeTagline ? '1' : '0');
+            formData.append('tagline_mode', includeTagline ? (tagline.trim() ? taglineMode : 'ai') : 'none');
+            if (includeTagline && tagline.trim()) {
+                formData.append('tagline', tagline.trim());
+            }
+            formData.append('include_business_name', includeBusinessName ? '1' : '0');
+            if (includeBusinessName && business?.name) {
+                formData.append('business_name', business.name);
+            }
+            formData.append('render_style', renderStyle);
+            contentStyle.forEach((style) =>
+                formData.append('content_style[]', style),
+            );
+            brandTone.forEach((tone) => formData.append('brand_tone[]', tone));
+            formData.append('generation_mode', 'manual');
+            if (savedDesign?.generation_meta) {
+                formData.append('generation_metadata', JSON.stringify(savedDesign.generation_meta));
+            }
+
+            const response = await fetch('/designs', {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN':
+                        document.querySelector<HTMLMetaElement>(
+                            'meta[name="csrf-token"]',
+                        )?.content || '',
+                },
+                body: formData,
+            });
+
+            const data = await response.json();
+            if (response.ok && data.success) {
+                setIsSavedAsDraft(true);
+                setIsSavedToDesigns(false);
+                setSaveErrorMessage(null);
+                if (data.design) {
+                    setSavedDesign((prev) => (prev ? { ...prev, id: data.design.id, status: 'draft' } : prev));
+                    if (typeof window !== 'undefined' && data.design.id) {
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('draft_id', String(data.design.id));
+                        window.history.replaceState({}, '', url.toString());
+                    }
+                }
+                toast.success(data.message || 'Draft saved');
+            } else {
+                const errorMsg = data.errors
+                    ? Object.values(data.errors).flat().join('\n')
+                    : (data.message || 'Failed to save draft.');
+                setSaveErrorMessage(errorMsg);
+                toast.error(errorMsg);
+            }
+        } catch {
+            const netErr = 'Network error saving draft. Please check your connection and try again.';
+            setSaveErrorMessage(netErr);
+            toast.error(netErr);
+        } finally {
+            setIsSavingDraft(false);
+        }
+    };
+
+    const handleSaveToDesigns = async () => {
+        if (isSavedToDesigns && savedDesign?.id && savedDesign?.status !== 'draft') {
+            toast.info('Design is already saved in My Designs.');
+            return;
+        }
+
+        setIsSavingDesign(true);
+        setSaveErrorMessage(null);
+        try {
+            const formData = new FormData();
+            formData.append('status', 'final');
+            if (savedDesign?.id) {
+                formData.append('design_id', String(savedDesign.id));
+            }
+            formData.append('product_name', effectiveProductName);
+            const exactPrompt = savedDesign?.prompt || savedDesign?.generation_meta?.prompt || scenePrompt;
+            formData.append('prompt', exactPrompt);
+            formData.append('image_prompt', exactPrompt);
+            formData.append('scene_prompt', scenePrompt);
+
+            if (savedDesign?.generated_image_path) {
+                formData.append(
+                    'generated_image_path',
+                    savedDesign.generated_image_path,
+                );
+            }
+            if (effectivePrice && includePrices) {
+                formData.append('price', effectivePrice.replace(/[^0-9.]/g, ''));
+            }
+            if (selectedEvent?.id) {
+                formData.append('event_id', String(selectedEvent.id));
+            }
+            formData.append('show_event_text', showEventText ? '1' : '0');
             if (uniqueSelectedCatalogProducts[0]?.id) {
                 formData.append(
                     'product_id',
@@ -659,9 +938,15 @@ export default function ManualGenerator({
             const data = await response.json();
             if (response.ok && data.success) {
                 setIsSavedToDesigns(true);
+                setIsSavedAsDraft(false);
                 setSaveErrorMessage(null);
                 if (data.design) {
-                    setSavedDesign((prev) => (prev ? { ...prev, id: data.design.id } : prev));
+                    setSavedDesign((prev) => (prev ? { ...prev, id: data.design.id, status: 'final' } : prev));
+                    if (typeof window !== 'undefined' && data.design.id) {
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('draft_id', String(data.design.id));
+                        window.history.replaceState({}, '', url.toString());
+                    }
                 }
                 toast.success(data.message || 'Saved to My Designs!');
             } else {
@@ -697,7 +982,7 @@ export default function ManualGenerator({
             title: 'Products & Campaign',
             subtitle: 'Catalog & Context',
             icon: Package,
-            isCompleted: stepOneValid && currentStep > 1,
+            isCompleted: hasProductSelected,
             isAccessible: true,
         },
         {
@@ -705,24 +990,24 @@ export default function ManualGenerator({
             title: 'Creative Direction',
             subtitle: 'Scene & Styling',
             icon: Sparkles,
-            isCompleted: stepTwoValid && currentStep > 2,
-            isAccessible: stepOneValid,
+            isCompleted: Boolean(stepTwoValid),
+            isAccessible: hasProductSelected,
         },
         {
             step: 3,
             title: 'Marketing Copy',
             subtitle: 'Tagline & Identity',
             icon: PenTool,
-            isCompleted: currentStep > 3,
-            isAccessible: stepOneValid && stepTwoValid,
+            isCompleted: Boolean(!includeTagline || tagline.trim().length > 0),
+            isAccessible: hasProductSelected && stepTwoValid,
         },
         {
             step: 4,
             title: 'Format & Generate',
             subtitle: 'Canvas & Review',
             icon: SlidersHorizontal,
-            isCompleted: false,
-            isAccessible: stepOneValid && stepTwoValid,
+            isCompleted: Boolean(aspectRatio && canGenerateManual),
+            isAccessible: hasProductSelected && stepTwoValid,
         },
     ];
 
@@ -739,24 +1024,26 @@ export default function ManualGenerator({
 
             <div
                 className={`flex w-full min-w-0 max-w-full overflow-x-clip bg-background text-foreground ${generationState === 'generating'
-                        ? 'h-[calc(100vh-2.75rem)] overflow-hidden sm:h-[calc(100vh-3rem)]'
-                        : 'min-h-[calc(100vh-2.75rem)] sm:min-h-[calc(100vh-3rem)]'
+                    ? 'h-[calc(100vh-2.75rem)] overflow-hidden sm:h-[calc(100vh-3rem)]'
+                    : 'min-h-[calc(100vh-2.75rem)] sm:min-h-[calc(100vh-3rem)]'
                     }`}
             >
                 {/* MAIN STUDIO WORKSPACE */}
                 <div
                     className={`min-w-0 flex-1 ${generationState === 'generating'
-                            ? 'flex h-full max-h-full flex-col items-center justify-center overflow-hidden p-2 sm:p-4'
-                            : 'space-y-3.5 p-3 sm:p-4 lg:p-5'
+                        ? 'flex h-full max-h-full flex-col items-center justify-center overflow-hidden p-2 sm:p-4'
+                        : 'space-y-3.5 p-3 sm:p-4 lg:p-5'
                         }`}
                 >
                     {/* Header */}
-                    <StudioHeader
-                        activeMode="manual"
-                        activeCampaign={campaign}
-                        campaigns={campaigns}
-                        generationState={generationState}
-                    />
+                    {generationState !== 'ready' && (
+                        <StudioHeader
+                            activeMode="manual"
+                            activeCampaign={campaign}
+                            campaigns={campaigns}
+                            generationState={generationState}
+                        />
+                    )}
 
                     {/* GENERATION STATE SWITCHING */}
                     {generationState === 'generating' ? (
@@ -790,8 +1077,16 @@ export default function ManualGenerator({
                             isSavedToDesigns={isSavedToDesigns}
                             isSavingDesign={isSavingDesign}
                             onSaveToDesigns={handleSaveToDesigns}
+                            isSavedAsDraft={isSavedAsDraft}
+                            isSavingDraft={isSavingDraft}
+                            onSaveAsDraft={handleSaveAsDraft}
                             onDownload={handleDownload}
                             onOpenFullscreen={() => setIsPreviewFullViewOpen(true)}
+                            onViewGeneratedCreative={() => setIsPreviewFullViewOpen(true)}
+                            designId={savedDesign?.id}
+                            origin={origin}
+                            campaignId={campaign?.id}
+                            campaignName={campaign?.name}
                             onEditParameters={() => setGenerationState('idle')}
                             onRegenerate={() => handleGenerateManual({ is_variation: true })}
                             designTreatment={designTreatment}
@@ -854,13 +1149,6 @@ export default function ManualGenerator({
                                                             : 'Choose canvas aspect ratio, review creative brief summary, and generate final image.'}
                                             </p>
                                         </div>
-                                        <Badge
-                                            variant="outline"
-                                            className="self-start sm:self-auto border-primary/30 bg-primary/10 text-[10px] font-bold text-primary"
-                                        >
-                                            <SlidersHorizontal className="mr-1 h-3 w-3" />
-                                            Manual Mode
-                                        </Badge>
                                     </div>
                                 </CardHeader>
 
@@ -868,31 +1156,12 @@ export default function ManualGenerator({
                                     {/* STEP 1: PRODUCTS & CAMPAIGN */}
                                     {currentStep === 1 && (
                                         <div className="space-y-3">
-                                            {campaign && (
-                                                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs">
-                                                    <div className="flex flex-wrap items-center justify-between gap-1.5">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="font-bold text-foreground">Active Campaign:</span>
-                                                            <span className="font-semibold text-primary">{campaign.name}</span>
-                                                        </div>
-                                                        {selectedEvent && (
-                                                            <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary text-[10px] font-bold">
-                                                                Event: {selectedEvent.name}
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-                                                    {(campaign.description || campaign.objective) && (
-                                                        <p className="mt-1 text-muted-foreground text-[11px] leading-relaxed">
-                                                            {campaign.description || campaign.objective}
-                                                        </p>
-                                                    )}
-                                                    {campaign.target_audience && (
-                                                        <p className="mt-1 text-[11px] text-muted-foreground">
-                                                            <strong className="text-foreground">Target Audience:</strong> {campaign.target_audience}
-                                                        </p>
-                                                    )}
+                                            <div className="flex items-center justify-between pb-1">
+                                                <div className="flex items-center gap-1.5">
+                                                    <Package className="h-4 w-4 text-primary" />
+                                                    <Label className="text-xs font-bold text-foreground">Featured Products & Offerings</Label>
                                                 </div>
-                                            )}
+                                            </div>
 
                                             <ProductSelector
                                                 products={products}
@@ -907,6 +1176,7 @@ export default function ManualGenerator({
                                                 inlineProductSearch={inlineProductSearch}
                                                 onSearchChange={setInlineProductSearch}
                                                 onOpenBrowseModal={() => setIsProductModalOpen(true)}
+                                                onClearAllSelections={handleClearAllProducts}
                                             />
                                         </div>
                                     )}
@@ -923,15 +1193,12 @@ export default function ManualGenerator({
                                                         </Label>
                                                         <HelpTooltip text="Detailed scene prompt describing the visual setting, composition, lighting, and mood. Required for manual generation." />
                                                         {scenePrompt.trim() ? (
-                                                            <Badge
-                                                                variant="outline"
-                                                                className="border-emerald-500/30 bg-emerald-500/10 text-[10px] font-bold text-emerald-600 dark:text-emerald-400"
-                                                            >
-                                                                <Check className="mr-1 h-2.5 w-2.5" />
+                                                            <span className="flex items-center gap-1 rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                                <Check className="h-2.5 w-2.5 stroke-[3]" />
                                                                 Ready
-                                                            </Badge>
+                                                            </span>
                                                         ) : (
-                                                            <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                                                            <span className="flex items-center gap-1 rounded border border-red-500/40 bg-red-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-red-600 dark:text-red-400">
                                                                 Required
                                                             </span>
                                                         )}
@@ -956,7 +1223,7 @@ export default function ManualGenerator({
                                                                     <span>
                                                                         {scenePrompt.trim()
                                                                             ? 'Suggest Different Angle'
-                                                                            : 'Generate Visual Prompt'}
+                                                                            : 'Suggest Visual Prompt'}
                                                                     </span>
                                                                 </>
                                                             )}
@@ -968,7 +1235,7 @@ export default function ManualGenerator({
                                                     ref={scenePromptTextareaRef}
                                                     value={scenePrompt}
                                                     onChange={(e) => setScenePrompt(e.target.value)}
-                                                    placeholder="Describe scene staging, festive props, lighting, or backdrop (or click Generate Visual Prompt to have AI compose one)..."
+                                                    placeholder="Describe scene staging, festive props, lighting, or backdrop (or click Suggest Visual Prompt to have AI compose one)..."
                                                     className="w-full resize-y text-xs leading-relaxed transition-all focus-visible:ring-primary/30 rounded-xl border-border/80 bg-background/80 p-2.5 min-h-[72px]"
                                                     style={{
                                                         fieldSizing: 'content',
@@ -977,8 +1244,8 @@ export default function ManualGenerator({
 
                                                 {scenePrompt.trim() ? (
                                                     <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                                                        <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
-                                                            <Check className="h-3 w-3" /> Custom visual prompt is ready to guide image rendering.
+                                                        <span className="flex items-center gap-1 font-medium text-foreground">
+                                                            <Check className="h-3 w-3 text-primary" /> Custom visual prompt is ready to guide image rendering.
                                                         </span>
                                                         <button
                                                             type="button"
@@ -990,7 +1257,7 @@ export default function ManualGenerator({
                                                     </div>
                                                 ) : (
                                                     <p className="text-[11px] text-muted-foreground">
-                                                        Describe the scene or click <strong>Generate Visual Prompt</strong> to auto-create one.
+
                                                     </p>
                                                 )}
                                             </div>
@@ -1011,326 +1278,338 @@ export default function ManualGenerator({
                                                     </div>
                                                 </div>
 
-                                                <Button
-                                                    type="button"
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={applyDynamicSuggestions}
-                                                    className="relative h-7 gap-1.5 self-start rounded-lg border-primary/40 bg-primary/10 px-2.5 text-xs font-bold text-primary shadow-xs ring-1 ring-primary/30 transition-all duration-200 hover:border-primary hover:bg-primary hover:text-primary-foreground active:scale-95 sm:self-auto"
-                                                >
-                                                    <Sparkles className="h-3 w-3 animate-pulse" />
-                                                    Shuffle Presets
-                                                </Button>
+                                                <div className="flex items-center gap-2">
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={handleClearPresets}
+                                                        className="relative h-7 gap-1.5 self-start rounded-lg border-border/80 bg-background px-2.5 text-xs font-semibold text-muted-foreground transition-all duration-200 hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive active:scale-95 sm:self-auto cursor-pointer"
+                                                        title="Reset all creative direction presets to defaults"
+                                                    >
+                                                        <RotateCcw className="h-3 w-3" />
+                                                        Clear Presets
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={applyDynamicSuggestions}
+                                                        className="relative h-7 gap-1.5 self-start rounded-lg border-primary/40 bg-primary/10 px-2.5 text-xs font-bold text-primary shadow-xs ring-1 ring-primary/30 transition-all duration-200 hover:border-primary hover:bg-primary hover:text-primary-foreground active:scale-95 sm:self-auto cursor-pointer"
+                                                    >
+                                                        <Sparkles className="h-3 w-3 animate-pulse" />
+                                                        Shuffle Presets
+                                                    </Button>
+                                                </div>
                                             </div>
 
-                                            {/* Design Treatment (Single-select, 1 of 6) */}
-                                            <div className="space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Label className="text-xs font-semibold text-foreground">
-                                                            Design Treatment
-                                                        </Label>
-                                                        <HelpTooltip text="Controls the overall visual and typographic layout structure of the marketing creative." />
-                                                    </div>
-                                                    <span className="flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-bold text-primary">
-                                                        <Check className="h-3 w-3" /> {designTreatment} Selected
-                                                    </span>
-                                                </div>
+                                            {/* PRESETS ACCORDION: 5 DROPDOWN SECTIONS WITH FULL CARDS */}
+                                            <div className="space-y-3">
+                                                {/* 1. Design Treatment Section */}
+                                                <div className="rounded-xl border border-border/80 bg-card/60 p-3 shadow-xs">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => togglePresetSection('treatment')}
+                                                        className="flex w-full items-center justify-between cursor-pointer select-none text-left"
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <SlidersHorizontal className="h-4 w-4 shrink-0 text-primary" />
+                                                            <span className="text-xs font-bold text-foreground">
+                                                                Design Treatment
+                                                            </span>
+                                                            <HelpTooltip text="Controls the overall visual and typographic layout structure of the creative." />
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="flex items-center gap-1 rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                                <Check className="h-2.5 w-2.5 stroke-[3]" />
+                                                                {designTreatment}
+                                                            </span>
+                                                            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${openPresetSections.treatment ? 'rotate-180' : ''}`} />
+                                                        </div>
+                                                    </button>
 
-                                                <div className="grid gap-2 sm:grid-cols-3">
-                                                    {designTreatmentOptions.map((opt) => {
-                                                        const isSelected = designTreatment === opt.value;
-                                                        return (
-                                                            <button
-                                                                key={opt.value}
-                                                                type="button"
-                                                                onClick={() => setDesignTreatment(opt.value)}
-                                                                className={`group relative flex flex-col justify-between rounded-xl border p-2.5 text-left transition-all ${isSelected
-                                                                        ? 'border-primary bg-primary/10 shadow-xs ring-1 ring-primary/40'
-                                                                        : 'border-border bg-card hover:border-primary/40 hover:bg-muted/30'
-                                                                    }`}
-                                                            >
-                                                                <div className="space-y-1">
-                                                                    <div className="flex items-center justify-between gap-1.5">
-                                                                        <span className="text-xs font-bold text-foreground group-hover:text-primary">
-                                                                            {opt.label}
-                                                                        </span>
-                                                                        <span className={`rounded-md border px-1.5 py-0.5 text-[9px] font-bold ${opt.badgeColor}`}>
-                                                                            {opt.badge}
-                                                                        </span>
-                                                                    </div>
-                                                                    <p className="line-clamp-2 text-[10px] text-muted-foreground">
-                                                                        {opt.description}
-                                                                    </p>
-                                                                </div>
-                                                                <div className="mt-2 flex items-center justify-end">
-                                                                    <div
-                                                                        className={`flex h-4 w-4 items-center justify-center rounded-full border transition-all ${isSelected
-                                                                                ? 'border-primary bg-primary text-primary-foreground'
-                                                                                : 'border-muted-foreground/30 opacity-40 group-hover:border-primary/60 group-hover:opacity-100'
-                                                                            }`}
+                                                    {openPresetSections.treatment && (
+                                                        <div className="animate-in fade-in slide-in-from-top-1 duration-200 grid gap-2 sm:grid-cols-3 pt-3">
+                                                            {designTreatmentOptions.map((opt) => {
+                                                                const isSelected = designTreatment === opt.value;
+                                                                return (
+                                                                    <button
+                                                                        key={opt.value}
+                                                                        type="button"
+                                                                        onClick={() => setDesignTreatment(opt.value)}
+                                                                        className={`group relative flex flex-col justify-between rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none ${
+                                                                            isSelected
+                                                                                ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
+                                                                                : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
+                                                                        }`}
                                                                     >
-                                                                        {isSelected && <Check className="h-2.5 w-2.5 stroke-[3]" />}
-                                                                    </div>
-                                                                </div>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-
-                                            {/* Copy Emphasis (Single-select, 1 of 4) */}
-                                            <div className="space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Label className="text-xs font-semibold text-foreground">
-                                                            Copy Emphasis
-                                                        </Label>
-                                                        <HelpTooltip text="Determines the dominant hierarchical focus between the product, campaign tagline, or promotional price." />
-                                                    </div>
-                                                    <span className="flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-bold text-primary">
-                                                        <Check className="h-3 w-3" /> {copyEmphasis} Selected
-                                                    </span>
-                                                </div>
-
-                                                <div className="grid gap-2 grid-cols-2 sm:grid-cols-4">
-                                                    {copyEmphasisOptions.map((opt) => {
-                                                        const isSelected = copyEmphasis === opt.value;
-                                                        return (
-                                                            <button
-                                                                key={opt.value}
-                                                                type="button"
-                                                                onClick={() => setCopyEmphasis(opt.value)}
-                                                                className={`rounded-xl border p-2 text-left transition-all ${isSelected
-                                                                        ? 'border-primary bg-primary/10 font-bold text-primary shadow-xs ring-1 ring-primary/40'
-                                                                        : 'border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/30'
-                                                                    }`}
-                                                            >
-                                                                <div className="flex items-center justify-between">
-                                                                    <span className="text-xs font-semibold">{opt.label}</span>
-                                                                    {isSelected && <Check className="h-3 w-3 text-primary" />}
-                                                                </div>
-                                                                <p className="mt-0.5 line-clamp-1 text-[10px] text-muted-foreground">
-                                                                    {opt.description}
-                                                                </p>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-
-                                            {/* Render Style (Pick 1 of 4) */}
-                                            <div className="space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Label className="text-xs font-semibold text-foreground">
-                                                            Render Style
-                                                        </Label>
-                                                        <HelpTooltip text="Defines visual rendering mode, studio camera treatment, volumetric lighting, and scene fidelity." />
-                                                    </div>
-                                                    <span className="flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-bold text-primary">
-                                                        <Check className="h-3 w-3" /> 1 / 1 Selected
-                                                    </span>
-                                                </div>
-
-                                                <div className="grid gap-2 sm:grid-cols-2">
-                                                    {renderStyleOptions.map((opt) => {
-                                                        const isSelected = renderStyle === opt.value;
-                                                        const IconComponent =
-                                                            opt.value === 'Studio Product Still'
-                                                                ? Camera
-                                                                : opt.value === 'Cinematic Marketing'
-                                                                    ? Clapperboard
-                                                                    : opt.value === 'Lifestyle Capture'
-                                                                        ? Compass
-                                                                        : PenTool;
-
-                                                        return (
-                                                            <TooltipProvider key={opt.value} delayDuration={150}>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => setRenderStyle(opt.value)}
-                                                                            className={`group relative flex items-start gap-2.5 rounded-xl border p-2.5 text-left transition-all ${isSelected
-                                                                                    ? 'border-primary bg-primary/10 shadow-xs ring-1 ring-primary/40'
-                                                                                    : 'border-border bg-card hover:border-primary/40 hover:bg-muted/30'
-                                                                                }`}
-                                                                        >
-                                                                            <div
-                                                                                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${isSelected
-                                                                                        ? 'bg-primary text-primary-foreground'
-                                                                                        : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
-                                                                                    }`}
-                                                                            >
-                                                                                <IconComponent className="h-3.5 w-3.5" />
-                                                                            </div>
-                                                                            <div className="min-w-0 flex-1 space-y-0.5">
-                                                                                <div className="flex items-center justify-between gap-1.5">
-                                                                                    <span className="truncate text-xs font-bold text-foreground transition-colors group-hover:text-primary">
-                                                                                        {opt.label}
-                                                                                    </span>
-                                                                                    <span
-                                                                                        className={`shrink-0 rounded-md border px-1.5 py-0.2 text-[9px] font-bold ${opt.badgeColor}`}
-                                                                                    >
+                                                                        <div className="space-y-1">
+                                                                            <div className="flex items-center justify-between gap-1.5">
+                                                                                <span className={`text-xs font-bold ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground group-hover:text-primary'}`}>
+                                                                                    {opt.label}
+                                                                                </span>
+                                                                                <div className="flex items-center gap-1">
+                                                                                    <span className={`rounded-md border px-1.5 py-0.5 text-[9px] font-bold ${opt.badgeColor}`}>
                                                                                         {opt.badge}
                                                                                     </span>
+                                                                                    <HelpTooltip text={opt.description} />
                                                                                 </div>
-                                                                                <p className="line-clamp-1 text-[10px] text-muted-foreground">
-                                                                                    {opt.tagline}
-                                                                                </p>
                                                                             </div>
-                                                                            <div
-                                                                                className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-all ${isSelected
-                                                                                        ? 'border-primary bg-primary text-primary-foreground'
-                                                                                        : 'border-muted-foreground/30 opacity-40 group-hover:border-primary/60 group-hover:opacity-100'
-                                                                                    }`}
-                                                                            >
-                                                                                {isSelected && (
-                                                                                    <Check className="h-2.5 w-2.5 stroke-[3]" />
-                                                                                )}
+                                                                            <p className="line-clamp-2 text-[10px] text-muted-foreground">
+                                                                                {opt.description}
+                                                                            </p>
+                                                                        </div>
+                                                                        {isSelected && (
+                                                                            <div className="mt-2 flex items-center justify-end">
+                                                                                <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 stroke-[3]" />
                                                                             </div>
-                                                                        </button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent
-                                                                        side="top"
-                                                                        className="max-w-xs rounded-xl p-2.5 text-xs leading-relaxed"
+                                                                        )}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* 2. Copy Emphasis Section */}
+                                                <div className="rounded-xl border border-border/80 bg-card/60 p-3 shadow-xs">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => togglePresetSection('emphasis')}
+                                                        className="flex w-full items-center justify-between cursor-pointer select-none text-left"
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+                                                            <span className="text-xs font-bold text-foreground">
+                                                                Copy Emphasis
+                                                            </span>
+                                                            <HelpTooltip text="Determines dominant focus between product, campaign tagline, or promotional price." />
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="flex items-center gap-1 rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                                <Check className="h-2.5 w-2.5 stroke-[3]" />
+                                                                {copyEmphasis}
+                                                            </span>
+                                                            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${openPresetSections.emphasis ? 'rotate-180' : ''}`} />
+                                                        </div>
+                                                    </button>
+
+                                                    {openPresetSections.emphasis && (
+                                                        <div className="animate-in fade-in slide-in-from-top-1 duration-200 grid gap-2 grid-cols-2 sm:grid-cols-4 pt-3">
+                                                            {copyEmphasisOptions.map((opt) => {
+                                                                const isSelected = copyEmphasis === opt.value;
+                                                                return (
+                                                                    <button
+                                                                        key={opt.value}
+                                                                        type="button"
+                                                                        onClick={() => setCopyEmphasis(opt.value)}
+                                                                        className={`rounded-xl border p-2 text-left transition-all cursor-pointer select-none ${
+                                                                            isSelected
+                                                                                ? 'border-emerald-500 bg-emerald-500/10 font-bold shadow-xs ring-1 ring-emerald-500/40'
+                                                                                : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
+                                                                        }`}
                                                                     >
-                                                                        {opt.description}
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-
-                                            {/* Visual Themes (Multi-select, max 3) */}
-                                            <div className="space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Label className="text-xs font-semibold text-foreground">
-                                                            Visual Themes
-                                                        </Label>
-                                                        <HelpTooltip text="Art direction and photography aesthetics (e.g. Lifestyle, Minimal, Storytelling, Editorial)." />
-                                                    </div>
-                                                    <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
-                                                        Optional • {contentStyle.length} / 3 Selected
-                                                    </span>
+                                                                        <div className="flex items-center justify-between gap-1">
+                                                                            <span className={`text-xs font-semibold ${isSelected ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-foreground'}`}>{opt.label}</span>
+                                                                            <div className="flex items-center gap-1">
+                                                                                <HelpTooltip text={opt.description} />
+                                                                                {isSelected && <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400 stroke-[3]" />}
+                                                                            </div>
+                                                                        </div>
+                                                                        <p className="mt-0.5 line-clamp-1 text-[10px] text-muted-foreground">
+                                                                            {opt.description}
+                                                                        </p>
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
                                                 </div>
 
-                                                <TooltipProvider delayDuration={150}>
-                                                    <div className="flex flex-wrap gap-1.5">
-                                                        {contentStyleOptions.map((style) => {
-                                                            const active = contentStyle.includes(style);
-                                                            const disabled = !active && contentStyle.length >= 3;
-                                                            const desc =
-                                                                contentStyleDescriptions[style] ||
-                                                                'Art direction visual theme preset.';
+                                                {/* 3. Render Style Section */}
+                                                <div className="rounded-xl border border-border/80 bg-card/60 p-3 shadow-xs">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => togglePresetSection('render')}
+                                                        className="flex w-full items-center justify-between cursor-pointer select-none text-left"
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <Camera className="h-4 w-4 shrink-0 text-primary" />
+                                                            <span className="text-xs font-bold text-foreground">
+                                                                Render Style
+                                                            </span>
+                                                            <HelpTooltip text="Defines visual rendering mode, studio camera treatment, volumetric lighting, and scene fidelity." />
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="flex items-center gap-1 rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                                <Check className="h-2.5 w-2.5 stroke-[3]" />
+                                                                {renderStyle}
+                                                            </span>
+                                                            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${openPresetSections.render ? 'rotate-180' : ''}`} />
+                                                        </div>
+                                                    </button>
 
-                                                            return (
-                                                                <Tooltip key={style}>
-                                                                    <TooltipTrigger asChild>
+                                                    {openPresetSections.render && (
+                                                        <div className="animate-in fade-in slide-in-from-top-1 duration-200 grid gap-2 sm:grid-cols-2 pt-3">
+                                                            {renderStyleOptions.map((opt) => {
+                                                                const isSelected = renderStyle === opt.value;
+                                                                const IconComponent =
+                                                                    opt.value === 'Studio Product Still'
+                                                                        ? Camera
+                                                                        : opt.value === 'Cinematic Marketing'
+                                                                            ? Clapperboard
+                                                                            : opt.value === 'Lifestyle Capture'
+                                                                                ? Compass
+                                                                                : PenTool;
+                                                                return (
+                                                                    <button
+                                                                        key={opt.value}
+                                                                        type="button"
+                                                                        onClick={() => setRenderStyle(opt.value)}
+                                                                        className={`group relative flex items-start gap-2.5 rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none ${
+                                                                            isSelected
+                                                                                ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
+                                                                                : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
+                                                                        }`}
+                                                                    >
+                                                                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${
+                                                                            isSelected ? 'border-emerald-500/40 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'border-border bg-muted/60 text-muted-foreground'
+                                                                        }`}>
+                                                                            <IconComponent className="h-4 w-4" />
+                                                                        </div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <div className="flex items-center justify-between gap-1">
+                                                                                <span className={`text-xs font-bold truncate ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'}`}>{opt.label}</span>
+                                                                                <div className="flex items-center gap-1">
+                                                                                    <span className="rounded border px-1 py-0.2 text-[9px] font-bold text-muted-foreground">{opt.badge}</span>
+                                                                                    <HelpTooltip text={opt.tagline || opt.label} />
+                                                                                </div>
+                                                                            </div>
+                                                                            <p className="text-[10px] text-muted-foreground line-clamp-1">{opt.tagline}</p>
+                                                                        </div>
+                                                                        {isSelected && <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 stroke-[3] shrink-0 mt-0.5" />}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* 4. Visual Themes Section */}
+                                                <div className="rounded-xl border border-border/80 bg-card/60 p-3 shadow-xs">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => togglePresetSection('themes')}
+                                                        className="flex w-full items-center justify-between cursor-pointer select-none text-left"
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <Wand2 className="h-4 w-4 shrink-0 text-primary" />
+                                                            <span className="text-xs font-bold text-foreground">
+                                                                Visual Themes
+                                                            </span>
+                                                            <HelpTooltip text="Art direction and photography aesthetics (up to 3 presets)." />
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="flex items-center gap-1 rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                                {contentStyle.length > 0 ? `${contentStyle.length} / 3 Selected` : 'None Selected'}
+                                                            </span>
+                                                            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${openPresetSections.themes ? 'rotate-180' : ''}`} />
+                                                        </div>
+                                                    </button>
+
+                                                    {openPresetSections.themes && (
+                                                        <div className="animate-in fade-in slide-in-from-top-1 duration-200 flex flex-wrap gap-1.5 pt-3">
+                                                            {contentStyleOptions.map((style) => {
+                                                                const active = contentStyle.includes(style);
+                                                                const disabled = !active && contentStyle.length >= 3;
+                                                                const desc = contentStyleDescriptions[style] || style;
+                                                                return (
+                                                                    <div key={style} className="inline-flex items-center">
                                                                         <button
                                                                             type="button"
                                                                             disabled={disabled}
                                                                             onClick={() => {
                                                                                 if (active) {
-                                                                                    setContentStyle(
-                                                                                        contentStyle.filter((s) => s !== style),
-                                                                                    );
+                                                                                    setContentStyle(contentStyle.filter((s) => s !== style));
                                                                                 } else if (contentStyle.length < 3) {
                                                                                     setContentStyle([...contentStyle, style]);
                                                                                 }
                                                                             }}
-                                                                            className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${active
-                                                                                    ? 'border-primary bg-primary font-semibold text-primary-foreground shadow-xs'
-                                                                                    : disabled
-                                                                                        ? 'cursor-not-allowed border-border bg-muted/20 opacity-40'
-                                                                                        : 'border-border bg-background hover:border-primary/40 hover:bg-muted/40'
-                                                                                }`}
+                                                                            className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition-all cursor-pointer select-none inline-flex items-center gap-1.5 ${
+                                                                                active
+                                                                                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold shadow-2xs ring-1 ring-emerald-500/30'
+                                                                                    : 'border-border/80 bg-card text-muted-foreground hover:border-emerald-500/40 hover:text-foreground'
+                                                                            } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                                                                            title={desc}
                                                                         >
-                                                                            {active && (
-                                                                                <Check className="mr-1 inline h-3 w-3 stroke-[3]" />
-                                                                            )}
-                                                                            {style}
+                                                                            <span>{style}</span>
+                                                                            {active && <Check className="h-3 w-3 stroke-[3]" />}
+                                                                            <HelpTooltip text={desc} />
                                                                         </button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent
-                                                                        side="top"
-                                                                        className="max-w-xs rounded-xl p-2.5 text-xs leading-relaxed"
-                                                                    >
-                                                                        {desc}
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </TooltipProvider>
-                                            </div>
-
-                                            {/* Brand Tone (Multi-select, max 3) */}
-                                            <div className="space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Label className="text-xs font-semibold text-foreground">
-                                                            Brand Tone
-                                                        </Label>
-                                                        <HelpTooltip text="Brand emotional vibe and atmosphere (e.g. Luxury, Warm, Bold, Modern) to guide lighting and tone." />
-                                                    </div>
-                                                    <span className="rounded-full border border-border/70 bg-muted/40 px-2 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
-                                                        Optional • {brandTone.length} / 3 Selected
-                                                    </span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
                                                 </div>
 
-                                                <TooltipProvider delayDuration={150}>
-                                                    <div className="flex flex-wrap gap-1.5">
-                                                        {toneOptions.map((tone) => {
-                                                            const active = brandTone.includes(tone);
-                                                            const disabled = !active && brandTone.length >= 3;
-                                                            const desc =
-                                                                brandToneDescriptions[tone] ||
-                                                                'Brand tone and emotional atmosphere preset.';
+                                                {/* 5. Brand Tone Section */}
+                                                <div className="rounded-xl border border-border/80 bg-card/60 p-3 shadow-xs">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => togglePresetSection('tone')}
+                                                        className="flex w-full items-center justify-between cursor-pointer select-none text-left"
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <Package className="h-4 w-4 shrink-0 text-primary" />
+                                                            <span className="text-xs font-bold text-foreground">
+                                                                Brand Tone
+                                                            </span>
+                                                            <HelpTooltip text="Brand emotional vibe and atmosphere (up to 3 presets)." />
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="flex items-center gap-1 rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                                {brandTone.length > 0 ? `${brandTone.length} / 3 Selected` : 'None Selected'}
+                                                            </span>
+                                                            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${openPresetSections.tone ? 'rotate-180' : ''}`} />
+                                                        </div>
+                                                    </button>
 
-                                                            return (
-                                                                <Tooltip key={tone}>
-                                                                    <TooltipTrigger asChild>
+                                                    {openPresetSections.tone && (
+                                                        <div className="animate-in fade-in slide-in-from-top-1 duration-200 flex flex-wrap gap-1.5 pt-3">
+                                                            {toneOptions.map((tone) => {
+                                                                const active = brandTone.includes(tone);
+                                                                const disabled = !active && brandTone.length >= 3;
+                                                                const desc = brandToneDescriptions[tone] || tone;
+                                                                return (
+                                                                    <div key={tone} className="inline-flex items-center">
                                                                         <button
                                                                             type="button"
                                                                             disabled={disabled}
                                                                             onClick={() => {
                                                                                 if (active) {
-                                                                                    setBrandTone(
-                                                                                        brandTone.filter((t) => t !== tone),
-                                                                                    );
+                                                                                    setBrandTone(brandTone.filter((t) => t !== tone));
                                                                                 } else if (brandTone.length < 3) {
                                                                                     setBrandTone([...brandTone, tone]);
                                                                                 }
                                                                             }}
-                                                                            className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${active
-                                                                                    ? 'border-primary bg-primary font-semibold text-primary-foreground shadow-xs'
-                                                                                    : disabled
-                                                                                        ? 'cursor-not-allowed border-border bg-muted/20 opacity-40'
-                                                                                        : 'border-border bg-background hover:border-primary/40 hover:bg-muted/40'
-                                                                                }`}
+                                                                            className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition-all cursor-pointer select-none inline-flex items-center gap-1.5 ${
+                                                                                active
+                                                                                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold shadow-2xs ring-1 ring-emerald-500/30'
+                                                                                    : 'border-border/80 bg-card text-muted-foreground hover:border-emerald-500/40 hover:text-foreground'
+                                                                            } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                                                                            title={desc}
                                                                         >
-                                                                            {active && (
-                                                                                <Check className="mr-1 inline h-3 w-3 stroke-[3]" />
-                                                                            )}
-                                                                            {tone}
+                                                                            <span>{tone}</span>
+                                                                            {active && <Check className="h-3 w-3 stroke-[3]" />}
+                                                                            <HelpTooltip text={desc} />
                                                                         </button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent
-                                                                        side="top"
-                                                                        className="max-w-xs rounded-xl p-2.5 text-xs leading-relaxed"
-                                                                    >
-                                                                        {desc}
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </TooltipProvider>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     )}
@@ -1338,10 +1617,28 @@ export default function ManualGenerator({
                                     {/* STEP 3: MARKETING COPY */}
                                     {currentStep === 3 && (
                                         <div className="animate-in space-y-3.5 duration-200 fade-in">
-                                            {/* Tagline Card */}
-                                            <div className="space-y-3 rounded-xl border border-border/80 bg-card/60 p-3.5 shadow-xs">
+                                            {/* Tagline Card Box */}
+                                            <div className="space-y-3 rounded-xl border border-border/80 bg-card/60 p-3.5">
                                                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2.5">
-                                                    <div className="flex items-center gap-2">
+                                                    <div
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        onClick={() => {
+                                                            const val = !includeTagline;
+                                                            setIncludeTagline(val);
+                                                            if (!val) setTaglineMode('none');
+                                                            else if (tagline.trim()) setTaglineMode('manual');
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === ' ' || e.key === 'Enter') {
+                                                                const val = !includeTagline;
+                                                                setIncludeTagline(val);
+                                                                if (!val) setTaglineMode('none');
+                                                                else if (tagline.trim()) setTaglineMode('manual');
+                                                            }
+                                                        }}
+                                                        className="flex items-center gap-2.5 cursor-pointer select-none"
+                                                    >
                                                         <Checkbox
                                                             id="manual_include_tagline"
                                                             checked={includeTagline}
@@ -1351,17 +1648,17 @@ export default function ManualGenerator({
                                                                 if (!val) setTaglineMode('none');
                                                                 else if (tagline.trim()) setTaglineMode('manual');
                                                             }}
-                                                            className="h-5 w-5 cursor-pointer rounded-md"
+                                                            className="h-4 w-4 cursor-pointer rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
                                                         />
                                                         <div>
                                                             <Label
                                                                 htmlFor="manual_include_tagline"
                                                                 className="cursor-pointer text-xs font-bold text-foreground"
                                                             >
-                                                                Include Tagline
+                                                                Include Tagline Headline
                                                             </Label>
                                                             <p className="text-[10px] text-muted-foreground">
-                                                                Enable or disable headline copy on visual
+                                                                Click card to enable or disable headline copy on visual
                                                             </p>
                                                         </div>
                                                     </div>
@@ -1377,8 +1674,8 @@ export default function ManualGenerator({
                                                         >
                                                             <Sparkles
                                                                 className={`h-3 w-3 ${isGeneratingTagline
-                                                                        ? 'animate-spin'
-                                                                        : 'animate-pulse'
+                                                                    ? 'animate-spin'
+                                                                    : 'animate-pulse'
                                                                     }`}
                                                             />
                                                             {isGeneratingTagline
@@ -1407,7 +1704,7 @@ export default function ManualGenerator({
                                                                         setTagline('');
                                                                         setTaglineMode('none');
                                                                     }}
-                                                                    className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                                                    className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                                                                     title="Clear tagline"
                                                                 >
                                                                     <X className="h-3.5 w-3.5" />
@@ -1415,7 +1712,7 @@ export default function ManualGenerator({
                                                             )}
                                                         </div>
 
-                                                        {tagline.trim() ? (
+                                                        {tagline.trim() && (
                                                             <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-xs">
                                                                 <div>
                                                                     <span className="mr-1.5 text-[10px] font-bold tracking-wider text-primary uppercase">
@@ -1432,107 +1729,104 @@ export default function ManualGenerator({
                                                                     {taglineMode === 'ai' ? 'AI Generated' : 'Custom'}
                                                                 </Badge>
                                                             </div>
-                                                        ) : (
-                                                            <p className="text-[11px] text-muted-foreground">
-                                                                Tagline is <strong>ON</strong>. Enter your custom headline, click <strong>Suggest Tagline</strong>, or leave blank to let AI invent one automatically.
-                                                            </p>
                                                         )}
                                                     </div>
-                                                ) : (
-                                                    <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-                                                        Tagline is <strong>OFF</strong>. No headline text will be rendered in the marketing image.
-                                                    </div>
-                                                )}
+                                                ) : null}
                                             </div>
 
-                                            {/* Include Prices Card */}
-                                            <div className="flex items-center justify-between rounded-xl border border-border/80 bg-card/60 px-4 py-3 shadow-xs">
-                                                <div className="flex items-center gap-2.5">
-                                                    <BadgePercent className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                                                    <div>
-                                                        <Label
-                                                            htmlFor="manual_include_prices"
-                                                            className="cursor-pointer text-xs font-bold text-foreground"
-                                                        >
-                                                            Include Prices
-                                                        </Label>
-                                                        <p className="text-[10px] text-muted-foreground">
+                                            {/* Simple Clickable Card Boxes Grid for Toggles */}
+                                            <div className="grid gap-3 sm:grid-cols-3">
+                                                {/* Include Prices Card Box */}
+                                                <div
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={() => setIncludePrices(!includePrices)}
+                                                    onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') setIncludePrices(!includePrices); }}
+                                                    className="group relative flex flex-col justify-between rounded-xl border border-border/80 bg-card/60 p-3 transition-all cursor-pointer hover:bg-muted/30 select-none"
+                                                >
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                                <BadgePercent className="h-4 w-4 text-primary" />
+                                                                <p className="text-xs font-bold text-foreground">Include Prices</p>
+                                                            </div>
+                                                            <Checkbox
+                                                                checked={includePrices}
+                                                                onCheckedChange={(c) => setIncludePrices(Boolean(c))}
+                                                                className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
+                                                            />
+                                                        </div>
+                                                        <p className="line-clamp-2 text-[10px] text-muted-foreground">
                                                             Render authoritative catalog and custom product pricing
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <Checkbox
-                                                    id="manual_include_prices"
-                                                    checked={includePrices}
-                                                    onCheckedChange={(checked) => setIncludePrices(Boolean(checked))}
-                                                    className="h-5 w-5 cursor-pointer rounded-md"
-                                                />
-                                            </div>
 
-                                            {/* Business Name Card */}
-                                            <BusinessNameSection
-                                                includeBusinessName={includeBusinessName}
-                                                onToggleIncludeBusinessName={setIncludeBusinessName}
-                                                businessName={business?.name}
-                                            />
+                                                {/* Business Name Card Box */}
+                                                <div
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={() => setIncludeBusinessName(!includeBusinessName)}
+                                                    onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') setIncludeBusinessName(!includeBusinessName); }}
+                                                    className="group relative flex flex-col justify-between rounded-xl border border-border/80 bg-card/60 p-3 transition-all cursor-pointer hover:bg-muted/30 select-none"
+                                                >
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                                <Building2 className="h-4 w-4 text-primary" />
+                                                                <p className="text-xs font-bold text-foreground">Business Name</p>
+                                                            </div>
+                                                            <Checkbox
+                                                                checked={includeBusinessName}
+                                                                onCheckedChange={(c) => setIncludeBusinessName(Boolean(c))}
+                                                                className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
+                                                            />
+                                                        </div>
+                                                        <p className="line-clamp-2 text-[10px] text-muted-foreground">
+                                                            Feature &ldquo;{business?.name || 'Your Business'}&rdquo; brand identity on creative
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Show Event/Holiday Text Card Box */}
+                                                {selectedEvent && (
+                                                    <div
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        onClick={() => setShowEventText(!showEventText)}
+                                                        onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') setShowEventText(!showEventText); }}
+                                                        className="group relative flex flex-col justify-between rounded-xl border border-border/80 bg-card/60 p-3 transition-all cursor-pointer hover:bg-muted/30 select-none"
+                                                    >
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Calendar className="h-4 w-4 text-primary" />
+                                                                    <p className="text-xs font-bold text-foreground">Event Text</p>
+                                                                </div>
+                                                                <Checkbox
+                                                                    checked={showEventText}
+                                                                    onCheckedChange={(c) => setShowEventText(Boolean(c))}
+                                                                    className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
+                                                                />
+                                                            </div>
+                                                            <p className="line-clamp-2 text-[10px] text-muted-foreground">
+                                                                Allow &ldquo;{selectedEvent.name}&rdquo; typography on image
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     )}
 
                                     {/* STEP 4: FORMAT & GENERATE */}
                                     {currentStep === 4 && (
                                         <div className="animate-in space-y-4 duration-200 fade-in">
-                                            {/* Canvas Aspect Ratio Selector */}
+                                            {/* Canvas Aspect Ratio Selector (Clickable Cards) */}
                                             <AspectRatioSelector
                                                 value={aspectRatio}
                                                 onChange={setAspectRatio}
                                             />
-
-                                            {/* Pre-generation Review & Brief Summary */}
-                                            <div className="space-y-2.5 rounded-xl border border-border/80 bg-card/60 p-3.5 shadow-xs">
-                                                <div className="flex items-center justify-between border-b border-border/60 pb-2">
-                                                    <Label className="text-xs font-bold uppercase tracking-wider text-foreground">
-                                                        Creative Brief Review
-                                                    </Label>
-                                                    <Badge variant="outline" className="border-primary/30 bg-primary/10 text-[10px] font-bold text-primary">
-                                                        Ready to Render
-                                                    </Badge>
-                                                </div>
-
-                                                <div className="grid gap-2 text-xs sm:grid-cols-2">
-                                                    <div className="rounded-lg border border-border/60 bg-background/60 p-2.5 space-y-1">
-                                                        <span className="text-[10px] font-bold uppercase text-muted-foreground">Promoting:</span>
-                                                        <p className="font-semibold text-foreground">{effectiveProductName}</p>
-                                                        {uniqueSelectedCatalogProducts.length > 1 && (
-                                                            <p className="text-[10px] text-muted-foreground">
-                                                                +{uniqueSelectedCatalogProducts.length - 1} more catalog item(s)
-                                                            </p>
-                                                        )}
-                                                        {campaign && (
-                                                            <p className="text-[10px] text-primary">Campaign: {campaign.name}</p>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="rounded-lg border border-border/60 bg-background/60 p-2.5 space-y-1">
-                                                        <span className="text-[10px] font-bold uppercase text-muted-foreground">Art Direction:</span>
-                                                        <div className="flex flex-wrap gap-1">
-                                                            <Badge variant="outline" className="text-[10px] font-semibold">{designTreatment}</Badge>
-                                                            <Badge variant="outline" className="text-[10px] font-semibold">{copyEmphasis}</Badge>
-                                                            <Badge variant="outline" className="text-[10px] font-semibold">{renderStyle}</Badge>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="rounded-lg border border-border/60 bg-background/60 p-2.5 space-y-1 sm:col-span-2">
-                                                        <span className="text-[10px] font-bold uppercase text-muted-foreground">Copy Elements:</span>
-                                                        <div className="flex flex-wrap gap-2 text-[11px]">
-                                                            <span>Tagline: <strong>{includeTagline ? (tagline.trim() ? `"${tagline.trim()}"` : 'AI Generated (Rule C)') : 'Excluded'}</strong></span>
-                                                            <span>•</span>
-                                                            <span>Prices: <strong>{includePrices ? 'Included' : 'Excluded'}</strong></span>
-                                                            <span>•</span>
-                                                            <span>Business Name: <strong>{includeBusinessName ? 'Included' : 'Excluded'}</strong></span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
                                         </div>
                                     )}
 
@@ -1555,12 +1849,7 @@ export default function ManualGenerator({
 
                                         {currentStep < 4 ? (
                                             <div className="flex items-center gap-2">
-                                                {currentStep === 2 && !stepTwoValid && (
-                                                    <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
-                                                        <Sparkles className="h-3.5 w-3.5" />
-                                                        Enter scene prompt to continue
-                                                    </span>
-                                                )}
+
                                                 <Button
                                                     type="button"
                                                     onClick={() =>
@@ -1588,8 +1877,8 @@ export default function ManualGenerator({
                                                 onClick={() => handleGenerateManual()}
                                                 disabled={!canGenerateManual || isManualGenerating}
                                                 className={`min-w-[240px] gap-2 text-xs font-bold shadow-md ${isQuotaExceeded
-                                                        ? 'border border-destructive/30 bg-destructive/15 text-destructive hover:bg-destructive/20'
-                                                        : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                                                    ? 'border border-destructive/30 bg-destructive/15 text-destructive hover:bg-destructive/20'
+                                                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
                                                     }`}
                                             >
                                                 {isQuotaExceeded ? (
@@ -1635,12 +1924,16 @@ export default function ManualGenerator({
                         renderStyle={renderStyle}
                         contentStyle={contentStyle}
                         brandTone={brandTone}
+                        designTreatment={designTreatment}
+                        copyEmphasis={copyEmphasis}
+                        scenePrompt={scenePrompt}
                         imageModel={imageModel}
                         imageQuality={imageQuality}
                         includeBusinessName={includeBusinessName}
                         isAutomaticMode={false}
                         includePrices={includePrices}
                         includeTagline={includeTagline}
+                        showEventText={showEventText}
                     />
                 )}
             </div>
@@ -1666,6 +1959,9 @@ export default function ManualGenerator({
                 isSavedToDesigns={isSavedToDesigns}
                 isSavingDesign={isSavingDesign}
                 onSaveToDesigns={handleSaveToDesigns}
+                isSavedAsDraft={isSavedAsDraft}
+                isSavingDraft={isSavingDraft}
+                onSaveAsDraft={handleSaveAsDraft}
                 onDownload={handleDownload}
                 onRegenerate={() => {
                     setIsPreviewFullViewOpen(false);
@@ -1698,6 +1994,7 @@ export default function ManualGenerator({
                 imageModel={imageModel}
                 hasReferenceImage={uniqueSelectedCatalogProducts.length > 0}
                 creativeFingerprint={savedDesign?.generation_meta?.creative_fingerprint}
+                origin={origin}
             />
         </>
     );

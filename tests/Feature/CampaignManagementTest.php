@@ -899,3 +899,34 @@ it('rejects cross-tenant event IDs when creating a campaign', function () {
     $response->assertSessionHasErrors(['event_id']);
     $this->assertDatabaseMissing('campaigns', ['name' => 'Hacked Campaign']);
 });
+
+it('can delete a visual associated with a campaign and redirect back to the campaign', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'name' => 'Summer Launch Campaign',
+    ]);
+
+    $design = Design::factory()->create([
+        'user_id' => $user->id,
+        'campaign_id' => $campaign->id,
+        'product_name' => 'Summer Sunscreen',
+        'generated_image_path' => 'designs/test_summer_sunscreen.png',
+        'status' => 'completed',
+    ]);
+
+    Storage::disk('public')->put('designs/test_summer_sunscreen.png', 'fake_image_content');
+
+    $campaignUrl = route('campaigns.show', $campaign);
+
+    $response = $this->actingAs($user)
+        ->from($campaignUrl)
+        ->delete("/designs/{$design->id}");
+
+    $response->assertRedirect($campaignUrl);
+    $response->assertSessionHas('success', 'Design deleted successfully.');
+
+    $this->assertSoftDeleted('designs', ['id' => $design->id]);
+});

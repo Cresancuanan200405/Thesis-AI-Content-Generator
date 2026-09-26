@@ -120,8 +120,21 @@ class DesignController extends Controller
             $query->latest();
         }
 
+        $status = strtolower(trim((string) $request->input('status', 'all')));
+        if ($status === 'draft' || $status === 'drafts') {
+            $query->where('status', Design::STATUS_DRAFT);
+        } elseif ($status === 'final' || $status === 'finals') {
+            $query->whereIn('status', [Design::STATUS_FINAL, Design::STATUS_COMPLETED]);
+        }
+
+        $statusCounts = [
+            'all' => $user->designs()->count(),
+            'drafts' => $user->designs()->where('status', Design::STATUS_DRAFT)->count(),
+            'final' => $user->designs()->whereIn('status', [Design::STATUS_FINAL, Design::STATUS_COMPLETED])->count(),
+        ];
+
         /** @var LengthAwarePaginator<int, Design> $designs */
-        $designs = $query->paginate(12)->withQueryString();
+        $designs = $query->paginate(18)->withQueryString();
         /** @var Collection<int, Event> $events */
         $events = $user->events()->orderBy('date')->get();
         /** @var Collection<int, Product> $products */
@@ -148,11 +161,20 @@ class DesignController extends Controller
                 'image_quality' => $design->generation_metadata['quality'] ?? 'medium',
                 'generation_metadata' => $design->generation_metadata,
                 'status' => $design->status,
+                'is_draft' => $design->isDraft(),
                 'is_favorite' => (bool) $design->is_favorite,
                 'created_at' => $design->created_at?->format('M j, Y'),
                 'image_url' => $this->imageUrl($design),
                 'download_url' => route('designs.download', $design),
                 'show_url' => route('designs.show', $design),
+                'generator_url' => route(
+                    (($design->generation_metadata['mode'] ?? null) === 'manual') ? 'generator.manual.index' : 'generator.automatic.index',
+                    array_filter([
+                        'campaign_id' => $design->campaign_id,
+                        'draft_id' => $design->id,
+                        'origin' => 'designs',
+                    ])
+                ),
             ]),
             'events' => $events->map(fn (Event $event): array => [
                 'id' => $event->id,
@@ -167,6 +189,7 @@ class DesignController extends Controller
                 'name' => $campaign->name,
                 'event_id' => $campaign->event_id,
             ])->values()->all(),
+            'status_counts' => $statusCounts,
             'filters' => [
                 'search' => $search,
                 'categories' => $selectedCategories,
@@ -174,6 +197,7 @@ class DesignController extends Controller
                 'period' => $period,
                 'favorites' => $favorites,
                 'sort' => $sort,
+                'status' => $status,
             ],
             'pagination' => [
                 'current_page' => $designs->currentPage(),
@@ -268,6 +292,20 @@ class DesignController extends Controller
             $catalogProductIds = [(int) $request->input('product_id')];
         }
 
+        $catalogProducts = empty($catalogProductIds)
+            ? collect()
+            : Product::query()
+                ->where('business_id', $businessId)
+                ->whereIn('id', $catalogProductIds)
+                ->get()
+                ->sortBy(function (Product $p) use ($catalogProductIds) {
+                    $strIds = array_map('strval', $catalogProductIds);
+                    $pos = array_search((string) $p->id, $strIds, true);
+
+                    return $pos === false ? 999 : $pos;
+                })
+                ->values();
+
         $customProducts = $request->input('custom_products', []);
         $referenceImagePaths = $request->input('reference_image_paths', []);
         if (empty($referenceImagePaths) && $referenceImagePath) {
@@ -277,6 +315,9 @@ class DesignController extends Controller
         $includePrices = $request->has('include_prices')
             ? filter_var($request->input('include_prices'), FILTER_VALIDATE_BOOLEAN)
             : true;
+
+        $totalProductCount = $catalogProducts->count() + count($customProducts);
+        $isMultiProduct = $totalProductCount > 1;
 
         $incomingMeta = [];
         if ($request->filled('generation_metadata')) {
@@ -291,46 +332,55 @@ class DesignController extends Controller
             }
         }
 
+        if (empty($customProducts) && ! empty($incomingMeta['custom_products']) && is_array($incomingMeta['custom_products'])) {
+            $customProducts = $incomingMeta['custom_products'];
+        }
+
+        $pricesMap = [];
+        if ($includePrices) {
+            if (! empty($incomingMeta['prices']) && is_array($incomingMeta['prices'])) {
+                $pricesMap = $incomingMeta['prices'];
+            }
+            foreach ($catalogProducts as $cp) {
+                if ($cp->price !== null && $cp->price !== '') {
+                    $pricesMap[(string) $cp->id] = (string) $cp->price;
+                    $pricesMap[$cp->name] = (string) $cp->price;
+                }
+            }
+            foreach ($customProducts as $cIdx => $cProd) {
+                $cName = is_array($cProd) ? ($cProd['name'] ?? null) : ($cProd->name ?? null);
+                $cPrice = is_array($cProd) ? ($cProd['price'] ?? null) : ($cProd->price ?? null);
+                if (! empty($cName) && ! empty($cPrice)) {
+                    $pricesMap["custom_{$cIdx}"] = (string) $cPrice;
+                    $pricesMap[$cName] = (string) $cPrice;
+                }
+            }
+        }
+
+        $targetStatus = $request->input('status', Design::STATUS_COMPLETED);
+
+        $existingDesign = null;
+        if ($request->filled('design_id')) {
+            $existingDesign = $user->designs()->whereKey($request->input('design_id'))->first();
+        }
+        if (! $existingDesign && $request->filled('generated_image_path')) {
+            $existingDesign = $user->designs()->where('generated_image_path', (string) $request->input('generated_image_path'))->first();
+        }
+
         if ($request->filled('generated_image_path')) {
             $generatedImagePath = (string) $request->input('generated_image_path');
-
-            $existingDesign = $user->designs()->where('generated_image_path', $generatedImagePath)->first();
-            if ($existingDesign) {
-                if ($request->wantsJson()) {
-                    return response()->json([
-                        'success' => true,
-                        'design' => [
-                            'id' => $existingDesign->id,
-                            'product_name' => $existingDesign->product_name,
-                            'tagline' => $existingDesign->tagline,
-                            'status' => $existingDesign->status,
-                            'image_url' => $this->imageUrl($existingDesign),
-                            'show_url' => route('designs.show', $existingDesign),
-                        ],
-                        'message' => 'Design is already saved in My Designs.',
-                    ]);
-                }
-
-                return redirect()->route('designs.show', $existingDesign)->with('info', 'Design is already saved in My Designs.');
-            }
         } else {
-            $catalogProducts = empty($catalogProductIds)
-                ? collect()
-                : Product::query()
-                    ->where('business_id', $businessId)
-                    ->whereIn('id', $catalogProductIds)
-                    ->get();
-
             $generatedImagePath = $this->openAIImageService->generate($prompt, [
                 // Step 1 — Product & Campaign
-                'product_name' => (string) $request->input('product_name'),
+                'product_name' => $catalogProducts->first() ? $catalogProducts->first()->name : (string) $request->input('product_name'),
                 'product_description' => $product?->description,
                 'product_category' => $business?->category,
                 'product_image_url' => $productImageUrl,
                 'campaign_name' => $campaign?->name,
                 'campaign_objective' => $campaign?->objective,
                 'event_name' => $event?->name,
-                'price' => $includePrices ? $request->input('price') : null,
+                'price' => ($isMultiProduct || ! $includePrices) ? null : ($catalogProducts->first() ? $catalogProducts->first()->price : $request->input('price')),
+                'prices' => $isMultiProduct ? $pricesMap : null,
                 'include_prices' => $includePrices,
                 'catalog_products' => $catalogProducts,
                 'custom_products' => $customProducts,
@@ -399,6 +449,7 @@ class DesignController extends Controller
                 'business_name' => $businessName,
                 'aspect_ratio' => $aspectRatio,
                 'include_prices' => $includePrices,
+                'prices' => ! empty($pricesMap) ? $pricesMap : ($incomingMeta['prices'] ?? null),
                 'catalog_product_ids' => $catalogProductIds,
                 'custom_products' => $customProducts,
                 'reference_image_paths' => $referenceImagePaths,
@@ -414,6 +465,7 @@ class DesignController extends Controller
                 'custom_products' => $customProducts,
                 'reference_image_paths' => $referenceImagePaths,
                 'include_prices' => $includePrices,
+                'prices' => ! empty($pricesMap) ? $pricesMap : ($incomingMeta['prices'] ?? null),
                 'design_treatment' => $designTreatment,
                 'copy_emphasis' => $copyEmphasis,
                 'include_tagline' => $includeTagline,
@@ -425,6 +477,65 @@ class DesignController extends Controller
             ]
         );
 
+        if ($existingDesign) {
+            if ($existingDesign->isFinal() && in_array($targetStatus, [Design::STATUS_FINAL, Design::STATUS_COMPLETED], true)) {
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'design' => [
+                            'id' => $existingDesign->id,
+                            'product_name' => $existingDesign->product_name,
+                            'tagline' => $existingDesign->tagline,
+                            'status' => $existingDesign->status,
+                            'image_url' => $this->imageUrl($existingDesign),
+                            'show_url' => route('designs.show', $existingDesign),
+                        ],
+                        'message' => 'Design is already saved in My Designs.',
+                    ]);
+                }
+
+                return redirect()->route('designs.show', $existingDesign)->with('info', 'Design is already saved in My Designs.');
+            }
+
+            $existingDesign->update([
+                'status' => $targetStatus,
+                'campaign_id' => $request->input('campaign_id') ?: $existingDesign->campaign_id,
+                'event_id' => $request->input('event_id') ?: $existingDesign->event_id,
+                'product_id' => $request->input('product_id') ?: $existingDesign->product_id,
+                'product_name' => $request->input('product_name') ?: $existingDesign->product_name,
+                'prompt' => $prompt ?: $existingDesign->prompt,
+                'price' => $includePrices ? ($catalogProducts->first()?->price ?? ($request->filled('price') ? $request->input('price') : $existingDesign->price)) : null,
+                'brand_tone' => $brandTone ?: $existingDesign->brand_tone,
+                'visual_theme' => $visualTheme ?: $existingDesign->visual_theme,
+                'tagline' => $normalizedTagline ?: $existingDesign->tagline,
+                'tagline_mode' => $request->input('tagline_mode', $existingDesign->tagline_mode),
+                'reference_image_path' => $referenceImagePath ?: $existingDesign->reference_image_path,
+                'generated_image_path' => $generatedImagePath ?: $existingDesign->generated_image_path,
+                'generation_metadata' => ! empty($mergedMetadata) ? array_merge($existingDesign->generation_metadata ?? [], $mergedMetadata) : $existingDesign->generation_metadata,
+            ]);
+
+            $message = $targetStatus === Design::STATUS_DRAFT
+                ? 'Draft saved'
+                : 'Design finalized and saved to My Designs.';
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'design' => [
+                        'id' => $existingDesign->id,
+                        'product_name' => $existingDesign->product_name,
+                        'tagline' => $existingDesign->tagline,
+                        'status' => $existingDesign->status,
+                        'image_url' => $this->imageUrl($existingDesign),
+                        'show_url' => route('designs.show', $existingDesign),
+                    ],
+                    'message' => $message,
+                ]);
+            }
+
+            return redirect()->route('designs.show', $existingDesign)->with('success', $message);
+        }
+
         $design = $user->designs()->create([
             'business_id' => $businessId,
             'campaign_id' => $request->input('campaign_id'),
@@ -432,7 +543,7 @@ class DesignController extends Controller
             'product_id' => $request->input('product_id'),
             'product_name' => $request->input('product_name'),
             'prompt' => $prompt,
-            'price' => $request->input('price'),
+            'price' => $includePrices ? ($catalogProducts->first()?->price ?? $request->input('price')) : null,
             'brand_tone' => $brandTone,
             'visual_theme' => $visualTheme,
             'tagline' => $normalizedTagline,
@@ -440,8 +551,12 @@ class DesignController extends Controller
             'reference_image_path' => $referenceImagePath,
             'generated_image_path' => $generatedImagePath,
             'generation_metadata' => $mergedMetadata,
-            'status' => 'completed',
+            'status' => $targetStatus,
         ]);
+
+        $message = $targetStatus === Design::STATUS_DRAFT
+            ? 'Draft saved'
+            : 'Design saved to My Designs.';
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -454,11 +569,34 @@ class DesignController extends Controller
                     'image_url' => $this->imageUrl($design),
                     'show_url' => route('designs.show', $design),
                 ],
-                'message' => 'Design saved to My Designs.',
+                'message' => $message,
             ]);
         }
 
-        return redirect()->route('designs.show', $design)->with('success', 'Design saved to My Designs.');
+        return redirect()->route('designs.show', $design)->with('success', $message);
+    }
+
+    public function finalize(Request $request, Design $design): SymfonyResponse
+    {
+        $this->authorize('update', $design);
+
+        $design->update(['status' => Design::STATUS_FINAL]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'design' => [
+                    'id' => $design->id,
+                    'product_name' => $design->product_name,
+                    'status' => $design->status,
+                    'image_url' => $this->imageUrl($design),
+                    'show_url' => route('designs.show', $design),
+                ],
+                'message' => 'Design finalized and saved to My Designs.',
+            ]);
+        }
+
+        return back()->with('success', 'Design finalized and saved to My Designs.');
     }
 
     public function attachCampaign(Request $request, Design $design): SymfonyResponse
@@ -654,7 +792,7 @@ class DesignController extends Controller
 
         $design->delete();
 
-        return redirect()->route('designs.index')->with('success', 'Design deleted successfully.');
+        return back(fallback: route('designs.index'))->with('success', 'Design deleted successfully.');
     }
 
     public function bulkDestroy(Request $request): RedirectResponse

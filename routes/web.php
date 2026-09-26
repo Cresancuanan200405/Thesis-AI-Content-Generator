@@ -308,6 +308,7 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
     Route::post('designs/bulk-delete', [DesignController::class, 'bulkDestroy'])->name('designs.bulk-delete');
     Route::get('designs/{design}', [DesignController::class, 'show'])->name('designs.show');
     Route::post('designs/{design}/favorite', [DesignController::class, 'toggleFavorite'])->name('designs.favorite');
+    Route::post('designs/{design}/finalize', [DesignController::class, 'finalize'])->name('designs.finalize');
     Route::post('designs/{design}/attach-campaign', [DesignController::class, 'attachCampaign'])->name('designs.attach-campaign');
     Route::get('designs/{design}/download', [DesignController::class, 'download'])->name('designs.download');
     Route::post('designs/{design}/regenerate', [DesignController::class, 'regenerate'])->name('designs.regenerate');

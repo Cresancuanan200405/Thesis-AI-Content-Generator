@@ -57,7 +57,7 @@ automatic.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     automatic.form = automaticForm
 /**
 * @see \App\Http\Controllers\ManualGeneratorController::manual
- * @see app/Http/Controllers/ManualGeneratorController.php:50
+ * @see app/Http/Controllers/ManualGeneratorController.php:51
  * @route '/generator/manual'
  */
 export const manual = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -72,7 +72,7 @@ manual.definition = {
 
 /**
 * @see \App\Http\Controllers\ManualGeneratorController::manual
- * @see app/Http/Controllers/ManualGeneratorController.php:50
+ * @see app/Http/Controllers/ManualGeneratorController.php:51
  * @route '/generator/manual'
  */
 manual.url = (options?: RouteQueryOptions) => {
@@ -81,7 +81,7 @@ manual.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\ManualGeneratorController::manual
- * @see app/Http/Controllers/ManualGeneratorController.php:50
+ * @see app/Http/Controllers/ManualGeneratorController.php:51
  * @route '/generator/manual'
  */
 manual.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -91,7 +91,7 @@ manual.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\ManualGeneratorController::manual
- * @see app/Http/Controllers/ManualGeneratorController.php:50
+ * @see app/Http/Controllers/ManualGeneratorController.php:51
  * @route '/generator/manual'
  */
     const manualForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -101,7 +101,7 @@ manual.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\ManualGeneratorController::manual
- * @see app/Http/Controllers/ManualGeneratorController.php:50
+ * @see app/Http/Controllers/ManualGeneratorController.php:51
  * @route '/generator/manual'
  */
         manualForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -245,7 +245,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     store.form = storeForm
 /**
 * @see \App\Http\Controllers\ManualGeneratorController::preview
- * @see app/Http/Controllers/ManualGeneratorController.php:50
+ * @see app/Http/Controllers/ManualGeneratorController.php:51
  * @route '/generator/preview'
  */
 export const preview = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -260,7 +260,7 @@ preview.definition = {
 
 /**
 * @see \App\Http\Controllers\ManualGeneratorController::preview
- * @see app/Http/Controllers/ManualGeneratorController.php:50
+ * @see app/Http/Controllers/ManualGeneratorController.php:51
  * @route '/generator/preview'
  */
 preview.url = (options?: RouteQueryOptions) => {
@@ -269,7 +269,7 @@ preview.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\ManualGeneratorController::preview
- * @see app/Http/Controllers/ManualGeneratorController.php:50
+ * @see app/Http/Controllers/ManualGeneratorController.php:51
  * @route '/generator/preview'
  */
 preview.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -279,7 +279,7 @@ preview.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\ManualGeneratorController::preview
- * @see app/Http/Controllers/ManualGeneratorController.php:50
+ * @see app/Http/Controllers/ManualGeneratorController.php:51
  * @route '/generator/preview'
  */
     const previewForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -289,7 +289,7 @@ preview.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\ManualGeneratorController::preview
- * @see app/Http/Controllers/ManualGeneratorController.php:50
+ * @see app/Http/Controllers/ManualGeneratorController.php:51
  * @route '/generator/preview'
  */
         previewForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

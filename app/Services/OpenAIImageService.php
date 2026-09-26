@@ -154,16 +154,21 @@ class OpenAIImageService
             $business = auth()->user()?->business;
         }
 
-        // 3. Modular Prompt Orchestration with strict priority
-        $orchestratedOptions = array_merge($options, [
-            'deterministic_compositing' => true,
-            'user_prompt' => $userPrompt,
-            'aspect_ratio' => $aspectRatio,
-            'image_model' => $apiModel,
-            'reference_image_paths' => array_column($validReferenceImages, 'path'),
-            'reference_image_path' => $referenceImagePath,
-        ]);
-        $fullPrompt = $this->promptOrchestrator->orchestrate($orchestratedOptions, $business, $visionBlueprint);
+        // 3. Modular Prompt Orchestration with strict priority (Exact Single Pass Guard)
+        $isAlreadyOrchestrated = Str::startsWith($userPrompt, 'FINAL MARKETING DESIGN TASK');
+        if ($isAlreadyOrchestrated) {
+            $fullPrompt = $userPrompt;
+        } else {
+            $orchestratedOptions = array_merge($options, [
+                'deterministic_compositing' => true,
+                'user_prompt' => $userPrompt,
+                'aspect_ratio' => $aspectRatio,
+                'image_model' => $apiModel,
+                'reference_image_paths' => array_column($validReferenceImages, 'path'),
+                'reference_image_path' => $referenceImagePath,
+            ]);
+            $fullPrompt = $this->promptOrchestrator->orchestrate($orchestratedOptions, $business, $visionBlueprint);
+        }
 
         $headers = [
             'Authorization' => 'Bearer '.$apiKey,
@@ -419,6 +424,7 @@ class OpenAIImageService
             'fallback_used' => $fallbackUsed,
             'fallback_reason' => $fallbackReason,
             'supports_image_editing' => true,
+            'prices' => $options['prices'] ?? null,
             'business_name' => $options['business_name'] ?? null,
             'ai_visual_generation' => [
                 'success' => true,

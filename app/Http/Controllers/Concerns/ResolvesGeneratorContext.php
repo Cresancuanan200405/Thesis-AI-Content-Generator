@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Concerns;
 
 use App\Models\Business;
 use App\Models\Campaign;
+use App\Models\Design;
 use App\Models\Event;
 use App\Models\Product;
 use App\Models\User;
@@ -30,10 +31,17 @@ trait ResolvesGeneratorContext
             return redirect()->route('login');
         }
 
+        $draftId = $request->input('draft_id') ?: $request->input('design_id');
+        /** @var Design|null $draft */
+        $draft = null;
+        if ($draftId) {
+            $draft = $user->designs()->with(['product', 'event', 'campaign'])->whereKey($draftId)->first();
+        }
+
         $campaignParam = $request->route('campaign');
         $campaignId = $campaignParam instanceof Campaign
             ? $campaignParam->id
-            : ($campaignParam ?: ($request->input('campaign_id') ?: $request->input('campaign')));
+            : ($campaignParam ?: ($request->input('campaign_id') ?: $request->input('campaign') ?: $draft?->campaign_id));
 
         if (! $campaignId) {
             return redirect()->route('campaigns.index')
@@ -139,6 +147,25 @@ trait ResolvesGeneratorContext
             ])->values()->all(),
             'design_system' => app(MarketingDesignSystem::class)->getExportableTaxonomies(),
             'recent_fingerprints' => app(MarketingDesignSystem::class)->getRecentFingerprints($user, $business, 6),
+            'initial_draft' => $draft ? [
+                'id' => $draft->id,
+                'product_name' => $draft->product_name,
+                'product_id' => $draft->product_id,
+                'campaign_id' => $draft->campaign_id,
+                'event_id' => $draft->event_id,
+                'prompt' => $draft->prompt,
+                'price' => $draft->price ? (string) $draft->price : null,
+                'brand_tone' => $draft->brand_tone,
+                'visual_theme' => $draft->visual_theme,
+                'tagline' => $draft->tagline,
+                'tagline_mode' => $draft->tagline_mode,
+                'aspect_ratio' => $draft->generation_metadata['aspect_ratio'] ?? null,
+                'status' => $draft->status,
+                'image_url' => $draft->generated_image_path ? Storage::url($draft->generated_image_path) : null,
+                'generated_image_path' => $draft->generated_image_path,
+                'generation_metadata' => $draft->generation_metadata,
+            ] : null,
+            'origin' => $request->input('origin'),
         ];
     }
 

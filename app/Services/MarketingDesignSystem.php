@@ -18,6 +18,7 @@ class MarketingDesignSystem
         'Classic' => 'Timeless commercial print advertisement layout with structured copy zones and clear product dominance.',
         'Editorial' => 'High-fashion and magazine editorial layout featuring artistic whitespace, sophisticated framing, and bespoke typography.',
         'Bold Promo' => 'Dynamic retail promotional layout with high-energy accents, strong contrast, and urgent commercial callouts.',
+        'Bold Commercial' => 'Dynamic commercial promotional layout with high-energy accents, strong contrast, and urgent commercial callouts.',
         'Minimal' => 'Contemporary minimalist aesthetic featuring expansive negative space, muted elegance, and uncluttered focus.',
         'Premium' => 'High-end luxury brand aesthetic featuring opulent textures, refined studio lighting, and prestige finish.',
     ];
@@ -49,6 +50,109 @@ class MarketingDesignSystem
         'minimalist' => 'Clean, understated typography with generous negative space and disciplined alignment.',
         'premium' => 'Prestigious, luxury lettering with sophisticated kerning, subtle metallic/foil accents, and restrained elegance.',
         'balanced' => 'Harmonious commercial layout where text and product share balanced visual weight.',
+        'asymmetric_editorial' => 'Asymmetric distribution with text concentrated on one flank and hero on the opposite.',
+        'centered_hero' => 'Centered vertical stack with product in the middle, copy balanced above and below.',
+        'left_information_stack' => 'Structured left-aligned information hierarchy leaving right zone open for product.',
+        'right_information_stack' => 'Structured right-aligned text block paired with left-anchored product staging.',
+        'bottom_editorial' => 'Expansive atmospheric upper canvas with editorial text grouped in lower third.',
+        'split_composition' => 'Geometric bisected composition with product on one half and graphic copy on the other.',
+        'floating_copy' => 'Deconstructed typography floating organically in negative-space pockets around product.',
+        'layered_typography' => 'Dimensional multi-layer text arrangement interacting with scene depth planes.',
+        'magazine_cover' => 'High-fashion editorial cover hierarchy with masthead, teaser headline, and pricing.',
+        'product_first' => 'Product visually dominates 60%+ of canvas; typography occupies disciplined minimal zone.',
+        'price_first' => 'Promotional pricing commands dominant focal scale; product and tagline flank the offer.',
+        'tagline_first' => 'Tagline/headline acts as the primary visual hero; product supports the conceptual hook.',
+    ];
+
+    /**
+     * Controlled registry for Copy Layouts.
+     *
+     * @var array<string, string>
+     */
+    public const COPY_LAYOUTS = [
+        'asymmetric_editorial' => 'Asymmetric distribution with text concentrated on one flank and hero on the opposite.',
+        'centered_hero' => 'Centered vertical stack with product in the middle, copy balanced above and below.',
+        'left_information_stack' => 'Structured left-aligned information hierarchy leaving right zone open for product.',
+        'right_information_stack' => 'Structured right-aligned text block paired with left-anchored product staging.',
+        'bottom_editorial' => 'Expansive atmospheric upper canvas with editorial text grouped in lower third.',
+        'split_composition' => 'Geometric bisected composition with product on one half and graphic copy on the other.',
+        'floating_copy' => 'Deconstructed typography floating organically in negative-space pockets around product.',
+        'layered_typography' => 'Dimensional multi-layer text arrangement interacting with scene depth planes.',
+        'magazine_cover' => 'High-fashion editorial cover hierarchy with masthead, teaser headline, and pricing.',
+        'product_first' => 'Product visually dominates 60%+ of canvas; typography occupies disciplined minimal zone.',
+        'price_first' => 'Promotional pricing commands dominant focal scale; product and tagline flank the offer.',
+        'tagline_first' => 'Tagline/headline acts as the primary visual hero; product supports the conceptual hook.',
+        'balanced' => 'Harmonious commercial proportion between product, headline, price, and branding.',
+    ];
+
+    /**
+     * Controlled registry for Product Name Typography Styles.
+     *
+     * @var array<string, string>
+     */
+    public const PRODUCT_NAME_STYLES = [
+        'editorial_serif' => 'High-contrast elegant editorial serif with refined ligatures and magazine sophistication.',
+        'modern_sans' => 'Crisp, contemporary geometric sans-serif with clean proportions and high legibility.',
+        'luxury_thin' => 'Ultra-thin, sophisticated tracking display font conveying prestige and exclusivity.',
+        'bold_condensed' => 'High-impact condensed display lettering delivering commanding promotional presence.',
+        'uppercase_catalog' => 'Spaced uppercase lettering delivering authoritative commercial catalog clarity.',
+        'stacked_display' => 'Multi-line stacked typographic arrangement creating a sculptural architectural title block.',
+        'vertical_display' => 'Rotated vertical typographic treatment running along a lateral margin.',
+        'oversized_title' => 'Commanding oversized title typography anchoring the visual composition.',
+        'minimal_caption' => 'Understated, subtle title styling allowing product imagery complete dominance.',
+        'product_adjacent' => 'Directly paired in close proximity to the physical product as an integrated caption.',
+    ];
+
+    /**
+     * Controlled registry for Price Typography Styles.
+     *
+     * @var array<string, string>
+     */
+    public const PRICE_STYLES = [
+        'oversized_display' => 'Commanding large-scale numeric display asserting promotional value as a primary hook.',
+        'editorial_price' => 'Refined, understated editorial numeral layout styled harmoniously with the product name.',
+        'floating_price' => 'Airy, decoupled floating price badge integrated into negative space with subtle drop shadow.',
+        'price_badge' => 'Distinctive graphic sticker, badge, or geometrical emblem containing the price.',
+        'price_card' => 'Clean translucent or opaque frosted card framing the pricing clearly.',
+        'outlined_price' => 'Modern architectural outline / stroked typography creating graphic depth.',
+        'vertical_price' => 'Vertical numeral orientation aligned with edge grid or product axis.',
+        'corner_price' => 'Anchored cleanly in a designated corner safe zone.',
+        'inline_price' => 'Flowing inline directly following or flanking the product title.',
+        'split_currency_price' => 'Superscript currency symbol with prominent oversized integer and refined decimals.',
+    ];
+
+    /**
+     * Controlled registry for Tagline Typography Styles.
+     *
+     * @var array<string, string>
+     */
+    public const TAGLINE_STYLES = [
+        'editorial_headline' => 'Refined magazine headline typography with sophisticated kerning and evocative voice.',
+        'hero_headline' => 'Bold, dominant marketing hook headline commanding immediate visual attention.',
+        'oversized_statement' => 'Expansive statement lettering stretching across the canvas as a graphic design element.',
+        'small_caption' => 'Delicate, quiet subtitle anchored beneath product title with generous letter spacing.',
+        'centered_statement' => 'Centered balanced slogan positioned harmoniously along the central vertical axis.',
+        'split_line' => 'Two-line staggered phrase creating dynamic reading rhythm.',
+        'vertical_tagline' => 'Elegant vertical lettering running down a composition margin.',
+        'background_type' => 'Large, subtle lower-opacity typographic background layer integrated into the environment.',
+        'floating_tagline' => 'Freely anchored tagline floating in intentional negative space.',
+        'product_adjacent' => 'Positioned intimately next to the product silhouette as an integrated narrative note.',
+        'minimal_footer' => 'Restrained footer-line tagline anchored near the bottom safe margin.',
+    ];
+
+    /**
+     * Controlled registry for Text Depth / Layering Modes.
+     *
+     * @var array<string, string>
+     */
+    public const TEXT_DEPTH_MODES = [
+        'background' => 'Typography positioned behind product or graphic elements in the background plane.',
+        'midground' => 'Typography nestled into the scene midground alongside supporting architectural or floral elements.',
+        'product_adjacent' => 'Typography living in the same focal plane as the product.',
+        'foreground' => 'Typography crisp and dominant in the absolute foreground plane in front of environmental depth.',
+        'overlap' => 'Typography intentionally intersecting or slightly overlapping product or prop silhouettes for high-fashion editorial depth.',
+        'floating' => 'Typography floating with subtle atmospheric shadows between scene layers.',
+        'mixed' => 'Multi-plane depth composition with background tagline, midground product, and foreground price badge.',
     ];
 
     /**
@@ -75,6 +179,7 @@ class MarketingDesignSystem
      */
     public const CAMERA_VIEWPOINTS = [
         'front/eye-level' => 'Direct eye-level perspective creating an honest, relatable, and clear view of the product.',
+        'eye-level' => 'Direct eye-level perspective creating an honest, relatable, and clear view of the product.',
         'three-quarter' => 'Slightly elevated 45-degree three-quarter commercial studio angle revealing both top and front geometry.',
         'overhead' => 'Direct 90-degree flat-lay top-down camera angle highlighting surface styling and geometric layout.',
         'macro' => 'Extreme close-up macro lens perspective highlighting intricate product details and textures.',
@@ -87,6 +192,31 @@ class MarketingDesignSystem
      * @var array<string, string>
      */
     public const SCENE_FAMILIES = [
+        'studio' => 'Clean, controlled commercial advertising studio setting isolating product craft and form.',
+        'editorial' => 'Sophisticated magazine-style editorial set with artistic asymmetry and high-fashion styling.',
+        'lifestyle' => 'Authentic lived-in contextual scene capturing product in natural, everyday routine.',
+        'architectural' => 'Modern interior or exterior architectural space highlighting spatial depth, concrete, glass, or stone.',
+        'bathroom' => 'Luxury spa or contemporary hotel bathroom featuring polished stone, tile, soft towels, and clean moisture accents.',
+        'vanity' => 'Curated morning vanity or dressing table with elegant mirror reflections and beauty accoutrements.',
+        'nature' => 'Lush natural outdoor environment with organic foliage, earth textures, and daylight.',
+        'tropical' => 'Vibrant sun-soaked tropical atmosphere with lush palms, bright daylight, and refreshing warmth.',
+        'beach' => 'Sun-drenched coastal shoreline with soft sand, oceanic light, and warm summer breeze.',
+        'urban' => 'Contemporary cosmopolitan city setting, stylish storefront, or modern metropolitan loft.',
+        'retail' => 'High-end boutique showroom, curated retail display counter, or concept store plinth.',
+        'kitchen' => 'Bright contemporary culinary kitchen with quartz, marble, or warm wood surfaces and fresh ingredients.',
+        'office' => 'Sleek executive workspace, creative design studio, or modern tech workspace.',
+        'laboratory' => 'Pristine futuristic cosmetic or scientific laboratory set with clean glass, chrome, and clinical purity.',
+        'futuristic' => 'Forward-looking sci-fi commercial set with neon accents, polished chrome, holographic reflections, and modern geometry.',
+        'abstract' => 'Conceptual advertising space featuring artistic color fields, floating planes, and sculpted forms.',
+        'geometric' => 'Sculptural scene composed of geometric plinths, arches, pedestals, and dimensional shapes.',
+        'cinematic' => 'High-drama cinematic movie-still environment with atmospheric depth and moody lighting.',
+        'seasonal' => 'Atmospheric seasonal holiday or festival set with rich thematic props and celebratory mood.',
+        'holiday' => 'Festive commercial celebration environment with elegant decorations and warm ambient glow.',
+        'luxury' => 'Opulent prestige staging with velvet, marble, gold leaf, and high-end visual elegance.',
+        'minimal' => 'Ultra-clean minimalist space with expansive negative space and disciplined reduction.',
+        'promotional' => 'High-energy commercial promotional stage with dynamic angles, vibrant accents, and high-conversion focus.',
+        'outdoor' => 'Fresh open-air outdoor setting under natural daylight with organic materials.',
+        'botanical' => 'Organic botanical sanctuary with lush green foliage, flora, and natural earth materials.',
         'tabletop still life' => 'Intimate, focused arrangement of product and complementary accents on an artisanal tabletop surface.',
         'in-use lifestyle action' => 'Dynamic contextual moment capturing product actively integrated into an authentic daily routine.',
         'minimalist podium / pedestal' => 'Clean geometric plinth staging isolating product as a sculptural centerpiece.',
@@ -103,6 +233,25 @@ class MarketingDesignSystem
      * @var array<string, string>
      */
     public const ENVIRONMENT_FAMILIES = [
+        'clean_seamless_studio' => 'Seamless infinite cyclorama backdrop with pristine, distraction-free neutral tones.',
+        'marble_studio' => 'Polished Carrara or Nero Marquina marble slabs with subtle veining and soft reflective sheen.',
+        'concrete_studio' => 'Brutalist polished concrete podiums with industrial texture and modern architectural shadows.',
+        'glass_studio' => 'Multi-pane tinted and frosted glass panels with specular refractions and transparent layers.',
+        'luxury_bathroom' => 'High-end spa bathroom featuring honed limestone, brass fixtures, and soft ambient warmth.',
+        'modern_vanity' => 'Backlit vanity mirror, fluted glass canisters, and brushed metal trays on light oak.',
+        'sunlit_window' => 'Warm streaming sunlight casting architectural window-frame shadows onto an airy textured surface.',
+        'tropical_greenery' => 'Lush monstera, palm fronds, and tropical foliage with dappled natural sunlight.',
+        'beach_light' => 'Bright coastal daylight, fine white sand textures, and soft coastal haze.',
+        'botanical_surface' => 'Artisanal slate or raw travertine surface styled with fresh botanical cuttings and moss.',
+        'premium_countertop' => 'Upscale quartz or butcher-block countertop styled with professional culinary accents.',
+        'architectural_interior' => 'Scandinavian or modern minimalist interior featuring clean lines, glass partitions, and airy volume.',
+        'fashion_editorial_set' => 'High-fashion cyclorama with color-blocked gel lighting, sculptural props, and bold shadows.',
+        'futuristic_lab' => 'Sterile high-tech laboratory with glowing edge-lit acrylic, stainless steel, and cool cyan grading.',
+        'colorful_gradient_world' => 'Vibrant duotone or pastel gradient background creating an energetic modern commercial poster aesthetic.',
+        'dark_cinematic_set' => 'Moody low-key commercial studio with deep charcoal textures, rim lighting, and atmospheric smoke.',
+        'soft_neutral_lifestyle' => 'Earthy linen drapery, warm beige plaster walls, and lived-in organic serenity.',
+        'abstract_sculptural_space' => 'Surreal architectural composition of floating spheres, curved arches, and matte pastel plinths.',
+        'geometric_display_set' => 'Multi-tiered geometric pedestals, cylinders, and cubes arranged in rhythmic visual steps.',
         'warm artisanal cafe' => 'Cozy wooden countertops, espresso equipment, soft morning cafe ambiance.',
         'sleek modern studio' => 'Pristine, neutral commercial photography studio with seamless cyclorama.',
         'sunlit contemporary kitchen' => 'Bright marble or quartz counters, morning sunlight through windows, clean modern home aesthetic.',
@@ -111,6 +260,158 @@ class MarketingDesignSystem
         'vibrant urban boutique' => 'Contemporary retail storefront or pop-up showroom with curated display shelving.',
         'clean architectural showroom' => 'Brutalist or Scandinavian concrete, glass, oak, and minimalist lines.',
         'rich textural backdrop' => 'Hand-painted canvas, textured plaster, brushed stone, or raw linen backdrop.',
+    ];
+
+    /**
+     * Controlled registry for Visual World Archetypes.
+     *
+     * @var array<string, array<string, string>>
+     */
+    public const VISUAL_WORLD_ARCHETYPES = [
+        'PREMIUM_STUDIO' => [
+            'name' => 'Premium Studio',
+            'description' => 'Controlled lighting, seamless or marble environment, centered or asymmetric product, restrained editorial typography.',
+            'scene_family' => 'studio',
+            'environment_family' => 'marble_studio',
+            'lighting_profile' => 'premium studio',
+            'camera_viewpoint' => 'three-quarter',
+            'composition_type' => 'centered hero',
+            'prop_profile' => 'minimal geometry & brass accents',
+            'typography_layout' => 'editorial',
+            'copy_layout' => 'asymmetric_editorial',
+            'product_name_style' => 'luxury_thin',
+            'price_style' => 'editorial_price',
+            'tagline_style' => 'editorial_headline',
+            'text_depth_mode' => 'foreground',
+            'design_treatment' => 'Premium',
+            'render_style' => 'Studio Product Still',
+        ],
+        'EDITORIAL_FASHION' => [
+            'name' => 'Editorial Fashion',
+            'description' => 'Dramatic negative space, magazine typography, unconventional product placement, directional light.',
+            'scene_family' => 'editorial',
+            'environment_family' => 'fashion_editorial_set',
+            'lighting_profile' => 'dramatic side light',
+            'camera_viewpoint' => 'front/eye-level',
+            'composition_type' => 'asymmetric negative-space layout',
+            'prop_profile' => 'lifestyle accessories & tools of craft',
+            'typography_layout' => 'editorial',
+            'copy_layout' => 'magazine_cover',
+            'product_name_style' => 'editorial_serif',
+            'price_style' => 'floating_price',
+            'tagline_style' => 'oversized_statement',
+            'text_depth_mode' => 'overlap',
+            'design_treatment' => 'Editorial',
+            'render_style' => 'Cinematic Marketing',
+        ],
+        'LIFESTYLE_MORNING' => [
+            'name' => 'Lifestyle Morning',
+            'description' => 'Real-world environment, natural light, contextual props, relaxed product arrangement.',
+            'scene_family' => 'lifestyle',
+            'environment_family' => 'sunlit_window',
+            'lighting_profile' => 'warm morning',
+            'camera_viewpoint' => 'three-quarter',
+            'composition_type' => 'diagonal editorial',
+            'prop_profile' => 'refined ceramics & linen textures',
+            'typography_layout' => 'balanced',
+            'copy_layout' => 'bottom_editorial',
+            'product_name_style' => 'modern_sans',
+            'price_style' => 'price_card',
+            'tagline_style' => 'centered_statement',
+            'text_depth_mode' => 'product_adjacent',
+            'design_treatment' => 'Classic',
+            'render_style' => 'Lifestyle Capture',
+        ],
+        'CINEMATIC' => [
+            'name' => 'Cinematic',
+            'description' => 'Dramatic contrast, atmospheric depth, strong perspective, foreground/background separation.',
+            'scene_family' => 'cinematic',
+            'environment_family' => 'dark_cinematic_set',
+            'lighting_profile' => 'moody contrast',
+            'camera_viewpoint' => 'front/eye-level',
+            'composition_type' => 'layered foreground/background',
+            'prop_profile' => 'none / pure zero-prop isolation',
+            'typography_layout' => 'bold promotional',
+            'copy_layout' => 'split_composition',
+            'product_name_style' => 'bold_condensed',
+            'price_style' => 'oversized_display',
+            'tagline_style' => 'hero_headline',
+            'text_depth_mode' => 'mixed',
+            'design_treatment' => 'Bold Promo',
+            'render_style' => 'Cinematic Marketing',
+        ],
+        'SCULPTURAL' => [
+            'name' => 'Sculptural',
+            'description' => 'Geometric forms, pedestals, unusual spatial composition, controlled shadows.',
+            'scene_family' => 'geometric',
+            'environment_family' => 'abstract_sculptural_space',
+            'lighting_profile' => 'dramatic side light',
+            'camera_viewpoint' => 'three-quarter',
+            'composition_type' => 'asymmetric negative-space layout',
+            'prop_profile' => 'minimal geometry & brass accents',
+            'typography_layout' => 'minimalist',
+            'copy_layout' => 'floating_copy',
+            'product_name_style' => 'stacked_display',
+            'price_style' => 'floating_price',
+            'tagline_style' => 'vertical_tagline',
+            'text_depth_mode' => 'midground',
+            'design_treatment' => 'Minimal',
+            'render_style' => 'Minimalist Graphic',
+        ],
+        'FUTURISTIC' => [
+            'name' => 'Futuristic',
+            'description' => 'Glass, chrome, clean architectural forms, modern directional lighting.',
+            'scene_family' => 'futuristic',
+            'environment_family' => 'glass_studio',
+            'lighting_profile' => 'premium studio',
+            'camera_viewpoint' => 'front/eye-level',
+            'composition_type' => 'centered hero',
+            'prop_profile' => 'none / pure zero-prop isolation',
+            'typography_layout' => 'bold promotional',
+            'copy_layout' => 'right_information_stack',
+            'product_name_style' => 'modern_sans',
+            'price_style' => 'outlined_price',
+            'tagline_style' => 'hero_headline',
+            'text_depth_mode' => 'overlap',
+            'design_treatment' => 'Premium',
+            'render_style' => 'Studio Product Still',
+        ],
+        'BOTANICAL' => [
+            'name' => 'Botanical',
+            'description' => 'Natural materials, leaves/plants, organic textures, soft light.',
+            'scene_family' => 'nature',
+            'environment_family' => 'botanical_surface',
+            'lighting_profile' => 'soft diffused',
+            'camera_viewpoint' => 'overhead',
+            'composition_type' => 'curated editorial flat-lay',
+            'prop_profile' => 'raw organic ingredients & botanicals',
+            'typography_layout' => 'editorial',
+            'copy_layout' => 'left_information_stack',
+            'product_name_style' => 'editorial_serif',
+            'price_style' => 'corner_price',
+            'tagline_style' => 'small_caption',
+            'text_depth_mode' => 'product_adjacent',
+            'design_treatment' => 'Editorial',
+            'render_style' => 'Lifestyle Capture',
+        ],
+        'PROMOTIONAL' => [
+            'name' => 'Promotional',
+            'description' => 'Bold typography, stronger price emphasis, energetic composition, visual hierarchy around offer.',
+            'scene_family' => 'promotional',
+            'environment_family' => 'colorful_gradient_world',
+            'lighting_profile' => 'golden hour',
+            'camera_viewpoint' => 'front/eye-level',
+            'composition_type' => 'centered hero',
+            'prop_profile' => 'none / pure zero-prop isolation',
+            'typography_layout' => 'bold promotional',
+            'copy_layout' => 'price_first',
+            'product_name_style' => 'bold_condensed',
+            'price_style' => 'oversized_display',
+            'tagline_style' => 'hero_headline',
+            'text_depth_mode' => 'foreground',
+            'design_treatment' => 'Bold Promo',
+            'render_style' => 'Minimalist Graphic',
+        ],
     ];
 
     /**
@@ -125,6 +426,47 @@ class MarketingDesignSystem
         'lifestyle accessories & tools of craft' => 'Notebook, artisan utensils, measuring tools, authentic craft accessories.',
         'fresh seasonal foliage & warm stoneware' => 'Subtle eucalyptus sprigs, seasonal flowers, warm matte stoneware.',
         'none / pure zero-prop isolation' => 'Zero distracting props; absolute laser focus on product geometry and packaging.',
+    ];
+
+    /**
+     * Controlled registry for Multi-Product Spatial Arrangement Strategies.
+     *
+     * @var array<string, string>
+     */
+    public const PRODUCT_ARRANGEMENTS = [
+        'hero + supporting products' => 'One primary hero product elevated on a raised block while secondary products flank or rest on a lower tier.',
+        'staggered depth' => 'Primary product in crisp foreground focus with companion items layered behind at differing depths.',
+        'diagonal progression' => 'Products arranged along a dynamic diagonal line on stepped pedestals.',
+        'asymmetric grouping' => 'Natural, editorial grouping with deliberate spacing and breathing room.',
+        'foreground/background' => 'Dimensional multi-plane composition with hero in sharp foreground and supporting products in soft midground.',
+        'tiered pedestal' => 'Varied surface heights giving each item distinct vertical clearance.',
+        'nested arrangement' => 'Interlocking or nested presentation grouping complementary products intimately.',
+        'mirrored arrangement' => 'Symmetrical or reflective staging creating balanced visual dialogue between paired items.',
+        'sculptural cluster' => 'Artistic organic cluster with varying elevations, angles, and negative-space pockets.',
+        'editorial cascade' => 'Flowing stepped cascade leading the eye smoothly across all featured items.',
+    ];
+
+    /**
+     * Controlled registry for Background Styles / Treatments.
+     *
+     * @var array<string, string>
+     */
+    public const BACKGROUND_STYLES = [
+        'clean white' => 'Pristine, high-key clean white seamless studio backdrop with subtle contact shadows.',
+        'full black' => 'Deep obsidian / full-black luxury background with dramatic rim lighting and velvety contrast.',
+        'dark gradient' => 'Smooth charcoal to deep obsidian gradient backdrop creating subtle depth and mood.',
+        'dual-tone split' => 'Striking two-tone color-block surface or wall split diagonally or vertically.',
+        'pastel color blocking' => 'Vibrant, soft pastel color-blocked geometric backdrop surfaces with clean shadow lines.',
+        'monochrome' => 'Tone-on-tone monochromatic background harmonious with the product colorway.',
+        'glass' => 'Translucent tinted or fluted architectural glass panels with specular reflections and refraction.',
+        'marble' => 'Honed Carrara, Nero Marquina, or Calacatta marble slab with organic mineral veining.',
+        'stone' => 'Raw travertine, textured slate, limestone, or sandstone architectural surfaces.',
+        'botanical' => 'Natural organic foliage, lush greenery, dewy moss, and dappled sunlit botanical environment.',
+        'architectural' => 'Minimalist modern interior with clean concrete arches, glass partitions, and spatial depth.',
+        'cinematic atmospheric' => 'Moody atmospheric background with volumetric light haze and soft cinematic bokeh.',
+        'abstract' => 'Conceptual artistic background with soft geometric shapes, floating planes, and sculpted forms.',
+        'geometric' => 'Sculptural arrangement of tiered plinths, arches, cylinders, and multi-level pedestals.',
+        'natural outdoor' => 'Fresh open-air setting under natural daylight with earth, wood, and organic outdoor textures.',
     ];
 
     /**
@@ -433,6 +775,36 @@ class MarketingDesignSystem
         return array_keys(self::PROP_PROFILES);
     }
 
+    public function copyLayouts(): array
+    {
+        return array_keys(self::COPY_LAYOUTS);
+    }
+
+    public function productNameStyles(): array
+    {
+        return array_keys(self::PRODUCT_NAME_STYLES);
+    }
+
+    public function priceStyles(): array
+    {
+        return array_keys(self::PRICE_STYLES);
+    }
+
+    public function taglineStyles(): array
+    {
+        return array_keys(self::TAGLINE_STYLES);
+    }
+
+    public function textDepthModes(): array
+    {
+        return array_keys(self::TEXT_DEPTH_MODES);
+    }
+
+    public function visualWorldArchetypes(): array
+    {
+        return array_keys(self::VISUAL_WORLD_ARCHETYPES);
+    }
+
     /**
      * Get all controlled taxonomies as an exportable configuration array.
      *
@@ -444,12 +816,18 @@ class MarketingDesignSystem
             'design_treatments' => self::DESIGN_TREATMENTS,
             'copy_emphases' => self::COPY_EMPHASES,
             'typography_layouts' => self::TYPOGRAPHY_LAYOUTS,
+            'copy_layouts' => self::COPY_LAYOUTS,
+            'product_name_styles' => self::PRODUCT_NAME_STYLES,
+            'price_styles' => self::PRICE_STYLES,
+            'tagline_styles' => self::TAGLINE_STYLES,
+            'text_depth_modes' => self::TEXT_DEPTH_MODES,
             'composition_types' => self::COMPOSITION_TYPES,
             'camera_viewpoints' => self::CAMERA_VIEWPOINTS,
             'lighting_profiles' => self::LIGHTING_PROFILES,
             'scene_families' => self::SCENE_FAMILIES,
             'environment_families' => self::ENVIRONMENT_FAMILIES,
             'prop_profiles' => self::PROP_PROFILES,
+            'visual_world_archetypes' => self::VISUAL_WORLD_ARCHETYPES,
             'render_styles' => self::RENDER_STYLES,
             'brand_tones' => self::BRAND_TONES,
             'visual_themes' => self::VISUAL_THEMES,
@@ -550,13 +928,20 @@ class MarketingDesignSystem
         }
 
         $trimmed = strtolower(trim($value));
+        $normalized = str_replace(['_', '-'], ' ', $trimmed);
+        $asSnake = str_replace([' ', '-'], '_', $trimmed);
+
         foreach (self::SCENE_FAMILIES as $key => $desc) {
-            if ($trimmed === strtolower($key)) {
+            $kLower = strtolower($key);
+            $kNorm = str_replace(['_', '-'], ' ', $kLower);
+            $kSnake = str_replace([' ', '-'], '_', $kLower);
+
+            if ($trimmed === $kLower || $normalized === $kNorm || $asSnake === $kSnake) {
                 return $key;
             }
         }
 
-        return 'tabletop still life';
+        return 'studio';
     }
 
     public function validateEnvironmentFamily(?string $value): ?string
@@ -566,13 +951,20 @@ class MarketingDesignSystem
         }
 
         $trimmed = strtolower(trim($value));
+        $normalized = str_replace(['_', '-'], ' ', $trimmed);
+        $asSnake = str_replace([' ', '-'], '_', $trimmed);
+
         foreach (self::ENVIRONMENT_FAMILIES as $key => $desc) {
-            if ($trimmed === strtolower($key)) {
+            $kLower = strtolower($key);
+            $kNorm = str_replace(['_', '-'], ' ', $kLower);
+            $kSnake = str_replace([' ', '-'], '_', $kLower);
+
+            if ($trimmed === $kLower || $normalized === $kNorm || $asSnake === $kSnake) {
                 return $key;
             }
         }
 
-        return 'warm artisanal cafe';
+        return 'clean_seamless_studio';
     }
 
     public function validatePropProfile(?string $value): ?string
@@ -589,6 +981,212 @@ class MarketingDesignSystem
         }
 
         return 'refined ceramics & linen textures';
+    }
+
+    public function validateCopyLayout(?string $value): string
+    {
+        if (empty($value)) {
+            return 'balanced';
+        }
+
+        $trimmed = strtolower(trim($value));
+        $normalized = str_replace(['_', '-'], ' ', $trimmed);
+        $asSnake = str_replace([' ', '-'], '_', $trimmed);
+
+        foreach (self::COPY_LAYOUTS as $key => $desc) {
+            $kLower = strtolower($key);
+            $kNorm = str_replace(['_', '-'], ' ', $kLower);
+            $kSnake = str_replace([' ', '-'], '_', $kLower);
+
+            if ($trimmed === $kLower || $normalized === $kNorm || $asSnake === $kSnake) {
+                return $key;
+            }
+        }
+
+        return 'balanced';
+    }
+
+    public function validateProductNameStyle(?string $value): string
+    {
+        if (empty($value)) {
+            return 'modern_sans';
+        }
+
+        $trimmed = strtolower(trim($value));
+        $normalized = str_replace(['_', '-'], ' ', $trimmed);
+        $asSnake = str_replace([' ', '-'], '_', $trimmed);
+
+        foreach (self::PRODUCT_NAME_STYLES as $key => $desc) {
+            $kLower = strtolower($key);
+            $kNorm = str_replace(['_', '-'], ' ', $kLower);
+            $kSnake = str_replace([' ', '-'], '_', $kLower);
+
+            if ($trimmed === $kLower || $normalized === $kNorm || $asSnake === $kSnake) {
+                return $key;
+            }
+        }
+
+        return 'modern_sans';
+    }
+
+    public function validatePriceStyle(?string $value): string
+    {
+        if (empty($value)) {
+            return 'editorial_price';
+        }
+
+        $trimmed = strtolower(trim($value));
+        $normalized = str_replace(['_', '-'], ' ', $trimmed);
+        $asSnake = str_replace([' ', '-'], '_', $trimmed);
+
+        foreach (self::PRICE_STYLES as $key => $desc) {
+            $kLower = strtolower($key);
+            $kNorm = str_replace(['_', '-'], ' ', $kLower);
+            $kSnake = str_replace([' ', '-'], '_', $kLower);
+
+            if ($trimmed === $kLower || $normalized === $kNorm || $asSnake === $kSnake) {
+                return $key;
+            }
+        }
+
+        return 'editorial_price';
+    }
+
+    public function validateTaglineStyle(?string $value): string
+    {
+        if (empty($value)) {
+            return 'editorial_headline';
+        }
+
+        $trimmed = strtolower(trim($value));
+        $normalized = str_replace(['_', '-'], ' ', $trimmed);
+        $asSnake = str_replace([' ', '-'], '_', $trimmed);
+
+        foreach (self::TAGLINE_STYLES as $key => $desc) {
+            $kLower = strtolower($key);
+            $kNorm = str_replace(['_', '-'], ' ', $kLower);
+            $kSnake = str_replace([' ', '-'], '_', $kLower);
+
+            if ($trimmed === $kLower || $normalized === $kNorm || $asSnake === $kSnake) {
+                return $key;
+            }
+        }
+
+        return 'editorial_headline';
+    }
+
+    public function validateTextDepthMode(?string $value): string
+    {
+        if (empty($value)) {
+            return 'foreground';
+        }
+
+        $trimmed = strtolower(trim($value));
+        $normalized = str_replace(['_', '-'], ' ', $trimmed);
+        $asSnake = str_replace([' ', '-'], '_', $trimmed);
+
+        foreach (self::TEXT_DEPTH_MODES as $key => $desc) {
+            $kLower = strtolower($key);
+            $kNorm = str_replace(['_', '-'], ' ', $kLower);
+            $kSnake = str_replace([' ', '-'], '_', $kLower);
+
+            if ($trimmed === $kLower || $normalized === $kNorm || $asSnake === $kSnake) {
+                return $key;
+            }
+        }
+
+        return 'foreground';
+    }
+
+    public function validateVisualArchetype(?string $value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        $trimmed = strtoupper(trim(str_replace([' ', '-'], '_', $value)));
+        if (array_key_exists($trimmed, self::VISUAL_WORLD_ARCHETYPES)) {
+            return $trimmed;
+        }
+
+        foreach (self::VISUAL_WORLD_ARCHETYPES as $key => $data) {
+            if (strcasecmp($data['name'], trim($value)) === 0) {
+                return $key;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Resolve a Visual World Archetype specification by key.
+     *
+     * @return array<string, string>|null
+     */
+    public function resolveVisualArchetype(string $key): ?array
+    {
+        $validKey = $this->validateVisualArchetype($key);
+        if ($validKey && isset(self::VISUAL_WORLD_ARCHETYPES[$validKey])) {
+            $archetype = self::VISUAL_WORLD_ARCHETYPES[$validKey];
+            $archetype['key'] = $validKey;
+            $archetype['label'] = $archetype['name'] ?? $validKey;
+
+            return $archetype;
+        }
+
+        return null;
+    }
+
+    public static function validateProductArrangement(?string $value): string
+    {
+        if (empty($value)) {
+            return 'hero + supporting products';
+        }
+
+        $trimmed = strtolower(trim($value));
+        $normalized = str_replace(['_', '-'], ' ', $trimmed);
+
+        foreach (self::PRODUCT_ARRANGEMENTS as $key => $desc) {
+            $kLower = strtolower($key);
+            $kNorm = str_replace(['_', '-'], ' ', $kLower);
+
+            if ($trimmed === $kLower || $normalized === $kNorm) {
+                return $key;
+            }
+        }
+
+        return 'hero + supporting products';
+    }
+
+    public static function productArrangements(): array
+    {
+        return array_keys(self::PRODUCT_ARRANGEMENTS);
+    }
+
+    public static function validateBackgroundStyle(?string $value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        $trimmed = strtolower(trim($value));
+        $normalized = str_replace(['_', '-'], ' ', $trimmed);
+
+        foreach (self::BACKGROUND_STYLES as $key => $desc) {
+            $kLower = strtolower($key);
+            $kNorm = str_replace(['_', '-'], ' ', $kLower);
+
+            if ($trimmed === $kLower || $normalized === $kNorm) {
+                return $key;
+            }
+        }
+
+        return null;
+    }
+
+    public static function backgroundStyles(): array
+    {
+        return array_keys(self::BACKGROUND_STYLES);
     }
 
     /**
@@ -796,12 +1394,21 @@ class MarketingDesignSystem
             'lighting_profile' => $this->validateLightingProfile($params['lighting_profile'] ?? null),
             'prop_profile' => $this->validatePropProfile($params['prop_profile'] ?? null),
             'typography_layout' => $this->validateTypographyLayout($params['typography_layout'] ?? null),
+            'copy_layout' => $this->validateCopyLayout($params['copy_layout'] ?? ($params['typography_layout'] ?? null)),
+            'product_name_style' => $this->validateProductNameStyle($params['product_name_style'] ?? null),
+            'price_style' => $this->validatePriceStyle($params['price_style'] ?? null),
+            'tagline_style' => $this->validateTaglineStyle($params['tagline_style'] ?? null),
+            'text_depth_mode' => $this->validateTextDepthMode($params['text_depth_mode'] ?? null),
             'copy_emphasis' => $this->validateCopyEmphasis($params['copy_emphasis'] ?? null),
             'design_treatment' => $this->validateDesignTreatment($params['design_treatment'] ?? null),
             'render_style' => $this->validateRenderStyle($params['render_style'] ?? null),
             'visual_theme' => $this->validateVisualThemes($params['visual_theme'] ?? null),
             'brand_tone' => $this->validateBrandTones($params['brand_tone'] ?? null),
             'aspect_ratio' => $this->validateAspectRatio($params['aspect_ratio'] ?? null),
+            'visual_archetype' => $this->validateVisualArchetype($params['visual_archetype'] ?? ($params['visual_world_archetype'] ?? null)),
+            'visual_world_archetype' => $this->validateVisualArchetype($params['visual_world_archetype'] ?? ($params['visual_archetype'] ?? null)),
+            'product_arrangement' => $this->validateProductArrangement($params['product_arrangement'] ?? null),
+            'background_style' => $this->validateBackgroundStyle($params['background_style'] ?? null),
         ];
     }
 
@@ -838,12 +1445,21 @@ class MarketingDesignSystem
                     'lighting_profile' => $meta['lighting_profile'] ?? null,
                     'prop_profile' => $meta['prop_profile'] ?? null,
                     'typography_layout' => $meta['typography_layout'] ?? null,
+                    'copy_layout' => $meta['copy_layout'] ?? null,
+                    'product_name_style' => $meta['product_name_style'] ?? null,
+                    'price_style' => $meta['price_style'] ?? null,
+                    'tagline_style' => $meta['tagline_style'] ?? null,
+                    'text_depth_mode' => $meta['text_depth_mode'] ?? null,
                     'copy_emphasis' => $meta['copy_emphasis'] ?? null,
                     'design_treatment' => $meta['design_treatment'] ?? null,
                     'render_style' => $meta['render_style'] ?? null,
                     'visual_theme' => $meta['visual_theme'] ?? null,
                     'brand_tone' => $meta['brand_tone'] ?? null,
                     'aspect_ratio' => $meta['aspect_ratio'] ?? null,
+                    'visual_archetype' => $meta['visual_archetype'] ?? ($meta['visual_world_archetype'] ?? null),
+                    'visual_world_archetype' => $meta['visual_world_archetype'] ?? ($meta['visual_archetype'] ?? null),
+                    'product_arrangement' => $meta['product_arrangement'] ?? null,
+                    'background_style' => $meta['background_style'] ?? null,
                 ];
             }
         }
@@ -1067,24 +1683,40 @@ class MarketingDesignSystem
         $scenePool = array_keys(self::SCENE_FAMILIES);
         if ($isFoodOrBeverage) {
             $scenePool = [
+                'kitchen',
+                'studio',
+                'lifestyle',
                 'tabletop still life',
                 'curated editorial flat-lay',
                 'in-use lifestyle action',
-                'architectural interior setting',
                 'outdoor natural setting',
+                'architectural interior setting',
                 'minimalist podium / pedestal',
             ];
         } elseif ($isFashionOrApparel) {
             $scenePool = [
+                'editorial',
+                'studio',
+                'lifestyle',
+                'urban',
+                'architectural',
+                'minimal',
+                'luxury',
                 'in-use lifestyle action',
                 'minimalist podium / pedestal',
                 'curated editorial flat-lay',
-                'architectural interior setting',
                 'outdoor natural setting',
                 'artistic floating / suspension',
             ];
         } elseif ($isBeautyOrPersonalCare) {
             $scenePool = [
+                'bathroom',
+                'vanity',
+                'studio',
+                'nature',
+                'editorial',
+                'minimal',
+                'luxury',
                 'tabletop still life',
                 'minimalist podium / pedestal',
                 'curated editorial flat-lay',
@@ -1093,11 +1725,16 @@ class MarketingDesignSystem
             ];
         } elseif ($isTechOrOffice) {
             $scenePool = [
+                'office',
+                'futuristic',
+                'studio',
+                'geometric',
+                'minimal',
+                'architectural',
                 'environmental workspace',
                 'tabletop still life',
                 'minimalist podium / pedestal',
                 'in-use lifestyle action',
-                'architectural interior setting',
             ];
         }
         $prioritizedScenes = $this->prioritizeByDiversityBudget($scenePool, $recentScenes, $candidate['scene_family'] ?? null);
@@ -1107,8 +1744,12 @@ class MarketingDesignSystem
         $envPool = array_keys(self::ENVIRONMENT_FAMILIES);
         if ($isFoodOrBeverage) {
             $envPool = [
+                'premium_countertop',
+                'sunlit_window',
                 'warm artisanal cafe',
                 'sunlit contemporary kitchen',
+                'clean_seamless_studio',
+                'marble_studio',
                 'botanical garden / natural patio',
                 'cozy residential living space',
                 'rich textural backdrop',
@@ -1116,7 +1757,12 @@ class MarketingDesignSystem
             ];
         } elseif ($isFashionOrApparel) {
             $envPool = [
+                'fashion_editorial_set',
+                'architectural_interior',
                 'vibrant urban boutique',
+                'clean_seamless_studio',
+                'marble_studio',
+                'concrete_studio',
                 'clean architectural showroom',
                 'sleek modern studio',
                 'rich textural backdrop',
@@ -1124,7 +1770,13 @@ class MarketingDesignSystem
             ];
         } elseif ($isBeautyOrPersonalCare) {
             $envPool = [
-                'sunlit contemporary kitchen',
+                'luxury_bathroom',
+                'modern_vanity',
+                'clean_seamless_studio',
+                'marble_studio',
+                'botanical_surface',
+                'sunlit_window',
+                'glass_studio',
                 'clean architectural showroom',
                 'sleek modern studio',
                 'rich textural backdrop',
@@ -1132,6 +1784,10 @@ class MarketingDesignSystem
             ];
         } elseif ($isTechOrOffice) {
             $envPool = [
+                'futuristic_lab',
+                'concrete_studio',
+                'glass_studio',
+                'clean_seamless_studio',
                 'sleek modern studio',
                 'clean architectural showroom',
                 'cozy residential living space',
@@ -1237,7 +1893,51 @@ class MarketingDesignSystem
         $prioritizedProps = $this->prioritizeByDiversityBudget($propPool, $recentProps, $candidate['prop_profile'] ?? null);
         $resolved['prop_profile'] = $prioritizedProps[0];
 
-        // 7. Enforce multi-dimensional change: Require intentional change in at least THREE dimensions
+        // 7. Typography & Depth Dimensions Diversity
+        $recentCopyLayouts = collect($recentFingerprints)->pluck('copy_layout')->filter()->all();
+        $recentTextDepths = collect($recentFingerprints)->pluck('text_depth_mode')->filter()->all();
+        $recentProdNameStyles = collect($recentFingerprints)->pluck('product_name_style')->filter()->all();
+        $recentPriceStyles = collect($recentFingerprints)->pluck('price_style')->filter()->all();
+        $recentTaglineStyles = collect($recentFingerprints)->pluck('tagline_style')->filter()->all();
+
+        $copyLayoutPool = array_keys(self::COPY_LAYOUTS);
+        $prioritizedCopyLayouts = $this->prioritizeByDiversityBudget($copyLayoutPool, $recentCopyLayouts, $candidate['copy_layout'] ?? null);
+        $resolved['copy_layout'] = $prioritizedCopyLayouts[0];
+        $resolved['typography_layout'] = $resolved['copy_layout'];
+
+        $textDepthPool = array_keys(self::TEXT_DEPTH_MODES);
+        $prioritizedTextDepths = $this->prioritizeByDiversityBudget($textDepthPool, $recentTextDepths, $candidate['text_depth_mode'] ?? null);
+        $resolved['text_depth_mode'] = $prioritizedTextDepths[0];
+
+        $prodNameStylePool = array_keys(self::PRODUCT_NAME_STYLES);
+        $prioritizedProdNameStyles = $this->prioritizeByDiversityBudget($prodNameStylePool, $recentProdNameStyles, $candidate['product_name_style'] ?? null);
+        $resolved['product_name_style'] = $prioritizedProdNameStyles[0];
+
+        $priceStylePool = array_keys(self::PRICE_STYLES);
+        $prioritizedPriceStyles = $this->prioritizeByDiversityBudget($priceStylePool, $recentPriceStyles, $candidate['price_style'] ?? null);
+        $resolved['price_style'] = $prioritizedPriceStyles[0];
+
+        $taglineStylePool = array_keys(self::TAGLINE_STYLES);
+        $prioritizedTaglineStyles = $this->prioritizeByDiversityBudget($taglineStylePool, $recentTaglineStyles, $candidate['tagline_style'] ?? null);
+        $resolved['tagline_style'] = $prioritizedTaglineStyles[0];
+
+        // 7b. Secondary Diversity: Visual World Archetype, Background Style, and Product Arrangement
+        $recentArchetypes = collect($recentFingerprints)->pluck('visual_world_archetype')->filter()->all();
+        $archetypePool = array_keys(self::VISUAL_WORLD_ARCHETYPES);
+        $prioritizedArchetypes = $this->prioritizeByDiversityBudget($archetypePool, $recentArchetypes, $candidate['visual_world_archetype'] ?? null);
+        $resolved['visual_world_archetype'] = $prioritizedArchetypes[0] ?? null;
+
+        $recentBgStyles = collect($recentFingerprints)->pluck('background_style')->filter()->all();
+        $bgStylePool = array_keys(self::BACKGROUND_STYLES);
+        $prioritizedBgStyles = $this->prioritizeByDiversityBudget($bgStylePool, $recentBgStyles, $candidate['background_style'] ?? null);
+        $resolved['background_style'] = $prioritizedBgStyles[0] ?? null;
+
+        $recentArrangements = collect($recentFingerprints)->pluck('product_arrangement')->filter()->all();
+        $arrangementPool = array_keys(self::PRODUCT_ARRANGEMENTS);
+        $prioritizedArrangements = $this->prioritizeByDiversityBudget($arrangementPool, $recentArrangements, $candidate['product_arrangement'] ?? null);
+        $resolved['product_arrangement'] = $prioritizedArrangements[0] ?? 'hero + supporting products';
+
+        // 8. Enforce multi-dimensional change: Require intentional change in at least THREE dimensions
         $changedCount = 0;
         foreach (self::PRIMARY_VISUAL_CORE_KEYS as $dimKey) {
             if (($resolved[$dimKey] ?? null) !== ($candidate[$dimKey] ?? null)) {
@@ -1269,7 +1969,7 @@ class MarketingDesignSystem
             }
         }
 
-        // 8. Final Coherence Validation: Enforce cross-dimensional physical/compositional harmony
+        // 9. Final Coherence Validation: Enforce cross-dimensional physical/compositional harmony
         if ($resolved['composition_type'] === 'overhead') {
             $resolved['camera_viewpoint'] = 'overhead';
             if ($resolved['scene_family'] === 'architectural interior setting') {
@@ -1309,19 +2009,28 @@ class MarketingDesignSystem
         ?string $category = null,
         ?string $eventName = null
     ): array {
-        $scene = $visualCore['scene_family'] ?? 'tabletop still life';
-        $env = $visualCore['environment_family'] ?? 'warm artisanal cafe';
+        $sceneKey = $visualCore['scene_family'] ?? 'studio';
+        $envKey = $visualCore['environment_family'] ?? 'clean_seamless_studio';
+        $scene = $sceneKey;
+        $env = $envKey;
         $comp = $visualCore['composition_type'] ?? 'centered hero';
         $camera = $visualCore['camera_viewpoint'] ?? 'front/eye-level';
         $lighting = $visualCore['lighting_profile'] ?? 'soft diffused';
         $props = $visualCore['prop_profile'] ?? 'refined ceramics & linen textures';
+        $bgStyle = $visualCore['background_style'] ?? null;
+        $arrangement = $visualCore['product_arrangement'] ?? null;
+        $archetypeKey = $visualCore['visual_world_archetype'] ?? null;
+        $archetype = $archetypeKey ? $this->resolveVisualArchetype($archetypeKey) : null;
 
         $eventContext = $eventName ? " celebrating {$eventName}" : '';
-        $concept = "Authentic {$productName} in {$scene} setting within {$env}{$eventContext}";
+        $archetypeContext = $archetype ? " in a {$archetype['name']} visual world" : '';
+        $concept = "Authentic {$productName} in {$scene} setting within {$env}{$archetypeContext}{$eventContext}";
 
-        $strategy = "Staged with {$comp} composition from a {$camera} viewpoint, illuminated by {$lighting} lighting in a {$env} environment with {$props}.";
+        $bgPhrase = $bgStyle ? " featuring a {$bgStyle} background" : '';
+        $arrPhrase = $arrangement ? " with a deliberate {$arrangement} spatial arrangement" : '';
+        $strategy = "Staged with {$comp} composition{$arrPhrase} from a {$camera} viewpoint, illuminated by {$lighting} lighting in a {$env} environment{$bgPhrase} with {$props}.";
 
-        $scenePrompt = "A professional commercial advertisement showcasing {$productName}{$eventContext}. Staged as a {$scene} within a {$env}. The composition follows a {$comp} layout viewed from a {$camera} angle, bathed in {$lighting} lighting, and tastefully accented with {$props}. Product integrity and authentic commercial presentation are maintained with clean negative space for typography.";
+        $scenePrompt = "A professional commercial advertisement showcasing {$productName}{$eventContext}. Staged as a {$scene} within a {$env}{$bgPhrase}{$arrPhrase}. The composition follows a {$comp} layout viewed from a {$camera} angle, bathed in {$lighting} lighting, and tastefully accented with {$props}. Product integrity and authentic commercial presentation are maintained with clean negative space for typography.";
 
         return [
             'creative_concept' => $concept,
