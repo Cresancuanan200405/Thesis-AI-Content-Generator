@@ -312,8 +312,8 @@ class EventController extends Controller
         $user = $request->user();
         $typeFilter = $request->input('type', 'all');
 
-        // Ensure Philippine holidays are synced
-        foreach ([now()->year, now()->year + 1] as $year) {
+        // Ensure Philippine holidays are synced for past, current, and upcoming years
+        foreach ([now()->year - 1, now()->year, now()->year + 1, now()->year + 2] as $year) {
             try {
                 $holidayService->ensureYearSynced((int) $year);
             } catch (\Exception $e) {
@@ -334,13 +334,22 @@ class EventController extends Controller
             $query->where('type', 'custom');
         }
 
-        $events = $query->get()->map(function (Event $event) use ($user): array {
+        $userCampaignsByEvent = $user->campaigns()
+            ->whereNotNull('event_id')
+            ->where('status', '!=', 'archived')
+            ->latest('updated_at')
+            ->get(['id', 'event_id'])
+            ->groupBy('event_id');
+
+        $events = $query->get()->map(function (Event $event) use ($user, $userCampaignsByEvent): array {
             $eventDate = $event->getAttributeValue('date');
             $eventEndDate = $event->getAttributeValue('end_date');
             $startDateStr = $eventDate instanceof CarbonInterface ? $eventDate->format('Y-m-d') : ($eventDate ? Carbon::parse($eventDate)->format('Y-m-d') : null);
             $endDateStr = $eventEndDate instanceof CarbonInterface ? $eventEndDate->format('Y-m-d') : ($eventEndDate ? Carbon::parse($eventEndDate)->format('Y-m-d') : $startDateStr);
 
             $canManage = ! $event->is_global && (int) $event->user_id === (int) $user->id;
+            $linkedCampaigns = $userCampaignsByEvent->get($event->id);
+            $latestCampaignId = $linkedCampaigns?->first()?->id;
 
             return [
                 'id' => $event->id,
@@ -358,16 +367,17 @@ class EventController extends Controller
                 'can_delete' => $canManage && (int) $event->campaigns_count === 0,
                 'campaigns_count' => (int) $event->campaigns_count,
                 'has_campaign' => (int) $event->campaigns_count > 0,
+                'latest_campaign_id' => $latestCampaignId,
                 'show_url' => route('events.show', $event),
             ];
         });
 
-        $holidayCatalog = $holidayService->getHolidaysForYear(now()->year);
-
         return Inertia::render('events/index', [
             'events' => $events->values()->all(),
             'filter' => $typeFilter,
-            'holiday_catalog' => $holidayCatalog,
+            'current_year' => (int) now()->year,
+            'selected_year' => $request->has('year') ? (string) $request->input('year') : (string) now()->year,
+            'holiday_catalog' => [],
             'stats' => [
                 'total' => $events->count(),
                 'holidays' => $events->whereIn('type', ['holiday', 'seasonal'])->count(),
@@ -377,34 +387,115 @@ class EventController extends Controller
         ]);
     }
 
-    public function store(StoreEventRequest $request): RedirectResponse|JsonResponse
+    public function store(StoreEventRequest $request, PhilippineHolidayService $holidayService): RedirectResponse|JsonResponse
     {
         $eventDate = $request->getDate();
         $eventEndDate = $request->getEndDate();
         $eventType = $request->getType();
+        $rawName = $request->input('name');
+        $normalizedName = trim((string) $rawName);
+        $lowerNormalizedName = mb_strtolower($normalizedName);
 
-        // Check for duplicates: user_id + date + name
-        $duplicate = Event::where('user_id', $request->user()->id)
-            ->where('date', $eventDate)
-            ->where('name', trim($request->input('name')))
-            ->exists();
+        $existing = null;
 
-        if ($duplicate) {
-            $error = 'You already have an event with this name on this date.';
-
-            // Return JSON for AJAX requests
-            if ($request->wantsJson() || $request->header('Accept') === 'application/json') {
-                return response()->json(
-                    ['message' => $error, 'errors' => ['name' => [$error]]],
-                    422,
-                );
+        // 1. Philippine / System Holiday deduplication
+        if ($eventType === 'holiday' || $eventType === 'seasonal') {
+            try {
+                $year = (int) Carbon::parse($eventDate)->year;
+                $holidayService->ensureYearSynced($year);
+            } catch (\Throwable $e) {
+                Log::error("Failed to sync holidays for year {$year}: {$e->getMessage()}");
             }
 
-            return back()->withErrors(['name' => $error]);
+            // Check if equivalent canonical global event already exists
+            $existing = Event::query()
+                ->where('is_global', true)
+                ->whereDate('date', $eventDate)
+                ->where(function ($q) use ($lowerNormalizedName, $normalizedName) {
+                    $q->whereRaw('LOWER(TRIM(name)) = ?', [$lowerNormalizedName])
+                        ->orWhere('name', $normalizedName)
+                        ->orWhereRaw('LOWER(name) LIKE ?', ['%'.$lowerNormalizedName.'%'])
+                        ->orWhereRaw('? LIKE LOWER(name)', [$lowerNormalizedName]);
+                })
+                ->first();
+
+            // If an official global holiday exists on that date and type is holiday
+            if (! $existing) {
+                $existing = Event::query()
+                    ->where('is_global', true)
+                    ->whereDate('date', $eventDate)
+                    ->whereIn('type', ['holiday', 'seasonal'])
+                    ->first();
+            }
+
+            // Or if user already has an event on this date
+            if (! $existing) {
+                $existing = Event::query()
+                    ->where('user_id', $request->user()->id)
+                    ->whereDate('date', $eventDate)
+                    ->where(function ($q) use ($lowerNormalizedName, $normalizedName) {
+                        $q->whereRaw('LOWER(TRIM(name)) = ?', [$lowerNormalizedName])
+                            ->orWhere('name', $normalizedName);
+                    })
+                    ->first();
+            }
+        } else {
+            // 2. Marketing ('commercial') and Custom ('custom') events:
+            // Check within current user/business scope + normalized event name + date
+            $existing = Event::query()
+                ->where('user_id', $request->user()->id)
+                ->whereDate('date', $eventDate)
+                ->where(function ($q) use ($lowerNormalizedName, $normalizedName) {
+                    $q->whereRaw('LOWER(TRIM(name)) = ?', [$lowerNormalizedName])
+                        ->orWhere('name', $normalizedName);
+                })
+                ->first();
+
+            // Also check if an identical canonical global event exists on that date
+            if (! $existing) {
+                $existing = Event::query()
+                    ->where('is_global', true)
+                    ->whereDate('date', $eventDate)
+                    ->where(function ($q) use ($lowerNormalizedName, $normalizedName) {
+                        $q->whereRaw('LOWER(TRIM(name)) = ?', [$lowerNormalizedName])
+                            ->orWhere('name', $normalizedName);
+                    })
+                    ->first();
+            }
         }
 
+        // If equivalent event already exists, reuse it idempotently without creating duplicate
+        if ($existing) {
+            $message = "{$existing->name} is already in your Event Bank.";
+
+            if ($request->wantsJson() || $request->header('Accept') === 'application/json') {
+                $existingDate = $existing->getAttributeValue('date');
+                $existingEndDate = $existing->getAttributeValue('end_date');
+
+                return response()->json([
+                    'message' => $message,
+                    'already_exists' => true,
+                    'event' => [
+                        'id' => $existing->id,
+                        'name' => $existing->name,
+                        'description' => $existing->description,
+                        'date' => $existingDate instanceof CarbonInterface ? $existingDate->format('Y-m-d') : ($existingDate ? Carbon::parse($existingDate)->format('Y-m-d') : null),
+                        'start_date' => $existingDate instanceof CarbonInterface ? $existingDate->format('Y-m-d') : ($existingDate ? Carbon::parse($existingDate)->format('Y-m-d') : null),
+                        'end_date' => $existingEndDate instanceof CarbonInterface ? $existingEndDate->format('Y-m-d') : ($existingEndDate ? Carbon::parse($existingEndDate)->format('Y-m-d') : null),
+                        'type' => $existing->type,
+                        'category' => $existing->category ?? $existing->type,
+                        'is_global' => (bool) $existing->is_global,
+                        'user_id' => $existing->user_id,
+                    ],
+                ], 200);
+            }
+
+            return redirect()->route('events.index')->with('info', $message);
+        }
+
+        // 3. Create new canonical user-owned event
         $event = $request->user()->events()->create([
-            'name' => trim($request->input('name')),
+            'name' => $normalizedName,
             'description' => $request->input('description'),
             'date' => $eventDate,
             'end_date' => $eventEndDate,
@@ -413,13 +504,13 @@ class EventController extends Controller
             'is_global' => false,
         ]);
 
-        // Return JSON for AJAX requests
         if ($request->wantsJson() || $request->header('Accept') === 'application/json') {
             $eventDate = $event->getAttributeValue('date');
             $eventEndDate = $event->getAttributeValue('end_date');
 
             return response()->json([
                 'message' => 'Event created successfully.',
+                'already_exists' => false,
                 'event' => [
                     'id' => $event->id,
                     'name' => $event->name,
@@ -428,6 +519,7 @@ class EventController extends Controller
                     'start_date' => $eventDate instanceof CarbonInterface ? $eventDate->format('Y-m-d') : null,
                     'end_date' => $eventEndDate instanceof CarbonInterface ? $eventEndDate->format('Y-m-d') : ($eventDate instanceof CarbonInterface ? $eventDate->format('Y-m-d') : null),
                     'type' => $event->type,
+                    'category' => $event->category ?? $event->type,
                     'is_global' => (bool) $event->is_global,
                     'user_id' => $event->user_id,
                 ],

@@ -4,8 +4,10 @@ use App\Models\Business;
 use App\Models\Campaign;
 use App\Models\Design;
 use App\Models\Event;
+use App\Models\Product;
 use App\Models\User;
 use App\Services\PhilippineHolidayService;
+use Inertia\Testing\AssertableInertia as Assert;
 
 it('guest cannot access the marketing calendar', function () {
     $this->get('/calendar')
@@ -522,4 +524,460 @@ it('creating a custom event does not automatically create a campaign', function 
     ]);
 
     expect(Campaign::count())->toBe($initialCampaignCount);
+});
+
+it('selecting an existing global Philippine holiday reuses the canonical event and does not duplicate', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    $globalHoliday = Event::factory()->global()->create([
+        'name' => 'Christmas Day',
+        'date' => '2026-12-25',
+        'type' => 'holiday',
+        'category' => 'regular',
+        'country' => 'PH',
+    ]);
+
+    $initialEventCount = Event::count();
+
+    $response = $this->actingAs($user)
+        ->post('/events', [
+            'name' => 'Christmas Day',
+            'start_date' => '2026-12-25',
+            'type' => 'holiday',
+        ]);
+
+    $response->assertRedirect(route('events.index'))
+        ->assertSessionHas('info');
+
+    // Only 1 canonical Christmas Day event exists on Dec 25, 2026
+    expect(Event::where('name', 'like', '%Christmas%')->whereDate('date', '2026-12-25')->count())->toBe(1);
+
+    // Global holiday remains canonical and uncorrupted
+    $reloaded = $globalHoliday->fresh();
+    expect($reloaded->is_global)->toBeTrue()
+        ->and($reloaded->user_id)->toBeNull();
+
+    // No user-owned duplicate was created
+    expect(Event::where('user_id', $user->id)->where('name', 'like', '%Christmas%')->exists())->toBeFalse();
+});
+
+it('selecting the same holiday via json returns the canonical existing event without duplication', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    $globalHoliday = Event::factory()->global()->create([
+        'name' => 'Independence Day',
+        'date' => '2026-06-12',
+        'type' => 'holiday',
+        'category' => 'regular',
+        'country' => 'PH',
+    ]);
+
+    $response = $this->actingAs($user)
+        ->postJson('/events', [
+            'name' => 'Independence Day',
+            'start_date' => '2026-06-12',
+            'type' => 'holiday',
+        ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'already_exists' => true,
+            'event' => [
+                'id' => $globalHoliday->id,
+                'is_global' => true,
+            ],
+        ]);
+
+    // Only 1 canonical Independence Day event exists for 2026
+    expect(Event::where('name', 'like', '%Independence%')->whereYear('date', 2026)->count())->toBe(1)
+        ->and(Event::where('user_id', $user->id)->count())->toBe(0);
+});
+
+it('user can create a marketing event and exact normalized duplicate on same date is prevented', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    $this->actingAs($user)
+        ->post('/events', [
+            'name' => '11.11 Flash Sale',
+            'start_date' => '2026-11-11',
+            'type' => 'commercial',
+        ])
+        ->assertRedirect(route('events.index'));
+
+    expect(Event::where('user_id', $user->id)->where('name', '11.11 Flash Sale')->count())->toBe(1);
+
+    // Attempt to post exact duplicate with surrounding whitespace and case variation
+    $response = $this->actingAs($user)
+        ->postJson('/events', [
+            'name' => '  11.11 flash sale  ',
+            'start_date' => '2026-11-11',
+            'type' => 'commercial',
+        ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'already_exists' => true,
+        ]);
+
+    // Ensure count remains exactly 1
+    expect(Event::where('user_id', $user->id)->whereDate('date', '2026-11-11')->count())->toBe(1);
+});
+
+it('user can create a custom event and exact normalized duplicate on same date is prevented', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    $this->actingAs($user)
+        ->post('/events', [
+            'name' => 'Store Anniversary',
+            'start_date' => '2026-08-15',
+            'type' => 'custom',
+        ])
+        ->assertRedirect(route('events.index'));
+
+    expect(Event::where('user_id', $user->id)->where('name', 'Store Anniversary')->count())->toBe(1);
+
+    // Attempt duplicate
+    $response = $this->actingAs($user)
+        ->postJson('/events', [
+            'name' => 'store anniversary',
+            'start_date' => '2026-08-15',
+            'type' => 'custom',
+        ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'already_exists' => true,
+        ]);
+
+    expect(Event::where('user_id', $user->id)->whereDate('date', '2026-08-15')->count())->toBe(1);
+});
+
+it('allows same event name on different dates', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    $this->actingAs($user)
+        ->post('/events', [
+            'name' => 'Summer Sale',
+            'start_date' => '2026-04-01',
+            'type' => 'commercial',
+        ])
+        ->assertRedirect(route('events.index'));
+
+    $this->actingAs($user)
+        ->post('/events', [
+            'name' => 'Summer Sale',
+            'start_date' => '2026-06-01',
+            'type' => 'commercial',
+        ])
+        ->assertRedirect(route('events.index'));
+
+    $userEvents = Event::where('user_id', $user->id)->where('name', 'Summer Sale')->get();
+    expect($userEvents->count())->toBe(2)
+        ->and($userEvents->pluck('date')->map(fn ($d) => $d->format('Y-m-d'))->all())
+        ->toEqualCanonicalizing(['2026-04-01', '2026-06-01']);
+});
+
+it('events remain tenant-isolated between different users', function () {
+    $userA = User::factory()->create(['onboarding_completed' => true]);
+    $userB = User::factory()->create(['onboarding_completed' => true]);
+
+    // User A creates an event
+    $eventA = Event::factory()->create([
+        'user_id' => $userA->id,
+        'name' => 'VIP Appreciation Day',
+        'date' => '2026-09-15',
+        'type' => 'custom',
+        'is_global' => false,
+    ]);
+
+    // User B creates their own event with same name and date
+    $this->actingAs($userB)
+        ->post('/events', [
+            'name' => 'VIP Appreciation Day',
+            'start_date' => '2026-09-15',
+            'type' => 'custom',
+        ])
+        ->assertRedirect(route('events.index'));
+
+    expect(Event::where('user_id', $userB->id)->where('name', 'VIP Appreciation Day')->exists())->toBeTrue();
+
+    // User B cannot edit User A's event
+    $this->actingAs($userB)
+        ->putJson("/events/{$eventA->id}", [
+            'name' => 'Hacked Event',
+        ])
+        ->assertForbidden();
+
+    // User B cannot delete User A's event
+    $this->actingAs($userB)
+        ->deleteJson("/events/{$eventA->id}")
+        ->assertForbidden();
+});
+
+it('campaign creation references existing event and does not create another event', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+
+    $event = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Mega Mid-Year Launch',
+        'date' => '2026-07-01',
+        'type' => 'commercial',
+    ]);
+
+    $initialEventCount = Event::count();
+
+    $this->actingAs($user)
+        ->post('/campaigns', [
+            'business_id' => $business->id,
+            'event_id' => $event->id,
+            'name' => 'Summer Clearance Wave',
+            'start_date' => '2026-07-01',
+            'end_date' => '2026-07-05',
+        ])
+        ->assertRedirect();
+
+    $campaign = Campaign::where('user_id', $user->id)->where('name', 'Summer Clearance Wave')->firstOrFail();
+    expect($campaign->event_id)->toBe($event->id);
+
+    // Event count must not change
+    expect(Event::count())->toBe($initialEventCount);
+});
+
+it('event bank and marketing calendar reference the same canonical event records', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    $event = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Anniversary Blowout',
+        'date' => '2026-10-20',
+        'type' => 'custom',
+    ]);
+
+    // View Event Bank
+    $bankResponse = $this->actingAs($user)->get('/events')->assertOk();
+    $bankEvents = collect($bankResponse->original->getData()['page']['props']['events']);
+    expect($bankEvents->pluck('id'))->toContain($event->id);
+
+    // View Calendar
+    $calendarResponse = $this->actingAs($user)->get('/calendar')->assertOk();
+    $calendarEvents = collect($calendarResponse->original->getData()['page']['props']['events']);
+    expect($calendarEvents->pluck('id'))->toContain($event->id);
+});
+
+it('existing event_id reaches generator unchanged and selectedEvent resolves correctly', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+
+    $event = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Autumn Coffee Launch',
+        'date' => '2026-09-30',
+        'type' => 'seasonal',
+    ]);
+
+    $product = Product::factory()->create([
+        'business_id' => $business->id,
+        'name' => 'Caramel Cold Brew',
+    ]);
+
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event->id,
+        'product_id' => $product->id,
+        'name' => 'Fall Coffee Wave',
+    ]);
+
+    $response = $this->actingAs($user)
+        ->get("/generator/manual?campaign_id={$campaign->id}");
+
+    $response->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('campaign.id', $campaign->id)
+            ->where('campaign.event_id', $event->id)
+            ->where('selectedEvent.id', $event->id)
+            ->where('selectedEvent.name', 'Autumn Coffee Launch')
+        );
+});
+
+it('campaigns index can filter by event_id', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+
+    $event1 = Event::factory()->create(['user_id' => $user->id, 'name' => 'Event 1', 'date' => '2026-05-01']);
+    $event2 = Event::factory()->create(['user_id' => $user->id, 'name' => 'Event 2', 'date' => '2026-06-01']);
+
+    $campaign1 = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event1->id,
+        'name' => 'Campaign For Event 1',
+    ]);
+
+    $campaign2 = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event2->id,
+        'name' => 'Campaign For Event 2',
+    ]);
+
+    $response = $this->actingAs($user)
+        ->get("/campaigns?event_id={$event1->id}")
+        ->assertOk();
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->has('campaigns', 1)
+        ->where('campaigns.0.id', $campaign1->id)
+    );
+});
+
+it('Philippine holiday synchronization remains idempotent', function () {
+    $holidayService = app(PhilippineHolidayService::class);
+
+    $sync1 = $holidayService->syncHolidays(2026);
+    $count1 = Event::where('country', 'PH')->whereYear('date', 2026)->count();
+
+    $sync2 = $holidayService->syncHolidays(2026);
+    $count2 = Event::where('country', 'PH')->whereYear('date', 2026)->count();
+
+    expect($count2)->toBe($count1)
+        ->and($sync2['synced'])->toBe(0)
+        ->and($sync2['skipped'])->toBeGreaterThan(0);
+});
+
+it('event bank defaults to current year dynamically and provides current_year prop', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    $response = $this->actingAs($user)
+        ->get('/events')
+        ->assertOk();
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('events/index')
+        ->where('current_year', now()->year)
+        ->where('selected_year', (string) now()->year)
+        ->has('events')
+    );
+});
+
+it('event bank supports selecting a specific year via query parameter', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    $targetYear = (string) (now()->year + 1);
+
+    $response = $this->actingAs($user)
+        ->get("/events?year={$targetYear}")
+        ->assertOk();
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('events/index')
+        ->where('current_year', now()->year)
+        ->where('selected_year', $targetYear)
+    );
+});
+
+it('event bank retains multi-year access including historical and future events', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    $pastYear = now()->year - 1;
+    $futureYear = now()->year + 1;
+
+    $pastEvent = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Historical Black Friday',
+        'date' => "{$pastYear}-11-27",
+        'type' => 'commercial',
+    ]);
+
+    $futureEvent = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Future New Year Bash',
+        'date' => "{$futureYear}-01-01",
+        'type' => 'custom',
+    ]);
+
+    $response = $this->actingAs($user)
+        ->get('/events')
+        ->assertOk();
+
+    $events = collect($response->original->getData()['page']['props']['events']);
+    expect($events->pluck('id'))->toContain($pastEvent->id)
+        ->and($events->pluck('id'))->toContain($futureEvent->id);
+});
+
+it('user can create a marketing event and custom event with valid dates', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    // Create Marketing Event
+    $this->actingAs($user)
+        ->post('/events', [
+            'name' => '11.11 Flash Sale Promo',
+            'start_date' => now()->addMonths(2)->format('Y-m-d'),
+            'end_date' => now()->addMonths(2)->format('Y-m-d'),
+            'description' => 'Annual 11.11 marketing discount campaign.',
+            'type' => 'commercial',
+        ])
+        ->assertRedirect(route('events.index'));
+
+    $this->assertDatabaseHas('events', [
+        'user_id' => $user->id,
+        'name' => '11.11 Flash Sale Promo',
+        'type' => 'commercial',
+        'is_global' => false,
+    ]);
+
+    // Create Custom Event
+    $this->actingAs($user)
+        ->post('/events', [
+            'name' => 'Main Branch 10th Anniversary',
+            'start_date' => now()->addMonths(3)->format('Y-m-d'),
+            'end_date' => now()->addMonths(3)->format('Y-m-d'),
+            'description' => 'Celebrating 10 years of business excellence.',
+            'type' => 'custom',
+        ])
+        ->assertRedirect(route('events.index'));
+
+    $this->assertDatabaseHas('events', [
+        'user_id' => $user->id,
+        'name' => 'Main Branch 10th Anniversary',
+        'type' => 'custom',
+        'is_global' => false,
+    ]);
+});
+
+it('existing Philippine holiday can be viewed and linked to campaign without duplication', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+
+    $holiday = Event::factory()->create([
+        'user_id' => null,
+        'is_global' => true,
+        'name' => 'Rizal Day',
+        'date' => now()->year.'-12-30',
+        'type' => 'holiday',
+        'category' => 'regular',
+    ]);
+
+    // View Event
+    $this->actingAs($user)
+        ->get("/events/{$holiday->id}")
+        ->assertOk();
+
+    // Create Campaign referencing existing holiday
+    $initialEventCount = Event::count();
+
+    $this->actingAs($user)
+        ->post('/campaigns', [
+            'business_id' => $business->id,
+            'name' => 'Rizal Day Commemoration Campaign',
+            'event_id' => $holiday->id,
+            'status' => 'draft',
+        ])
+        ->assertRedirect();
+
+    expect(Event::count())->toBe($initialEventCount);
+
+    $createdCampaign = Campaign::where('user_id', $user->id)->where('name', 'Rizal Day Commemoration Campaign')->firstOrFail();
+    expect($createdCampaign->event_id)->toBe($holiday->id);
 });

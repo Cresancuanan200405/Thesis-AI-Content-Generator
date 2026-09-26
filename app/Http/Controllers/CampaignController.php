@@ -66,6 +66,10 @@ class CampaignController extends Controller
             $query->where('status', $status);
         }
 
+        if ($eventId = $request->input('event_id')) {
+            $query->where('event_id', (int) $eventId);
+        }
+
         $view = $request->query('view', 'opportunities');
         if (! in_array($view, ['opportunities', 'hub'], true)) {
             $view = 'opportunities';

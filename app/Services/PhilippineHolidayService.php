@@ -433,7 +433,7 @@ class PhilippineHolidayService
     {
         try {
             $existing = Event::query()
-                ->where('date', $holiday['date'])
+                ->whereDate('date', $holiday['date'])
                 ->where('type', $holiday['type'])
                 ->where('is_global', true)
                 ->first();
@@ -441,7 +441,7 @@ class PhilippineHolidayService
             if (! $existing) {
                 $existing = Event::query()
                     ->where('name', $holiday['name'])
-                    ->where('date', $holiday['date'])
+                    ->whereDate('date', $holiday['date'])
                     ->first();
             }
 

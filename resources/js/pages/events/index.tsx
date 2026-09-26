@@ -5,6 +5,8 @@ import {
     Check,
     Clock,
     Edit3,
+    ExternalLink,
+    Eye,
     Filter,
     Lock,
     PartyPopper,
@@ -15,7 +17,7 @@ import {
     Trash2,
     X,
 } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -53,6 +55,7 @@ interface EventItem {
     can_delete: boolean;
     campaigns_count: number;
     has_campaign: boolean;
+    latest_campaign_id?: number | null;
     show_url: string;
 }
 
@@ -70,6 +73,8 @@ interface HolidayCatalogItem {
 interface EventManagementPageProps {
     events: EventItem[];
     filter?: string;
+    current_year?: number;
+    selected_year?: string;
     holiday_catalog?: HolidayCatalogItem[];
     stats?: {
         total: number;
@@ -101,14 +106,16 @@ const TYPE_STYLES: Record<string, { text: string; label: string }> = {
 export default function EventManagementPage({
     events = [],
     filter = 'all',
-    holiday_catalog = [],
+    current_year,
+    selected_year,
     stats = { total: 0, holidays: 0, commercial: 0, custom: 0 },
 }: EventManagementPageProps) {
+    const dynamicCurrentYear = String(current_year || new Date().getFullYear());
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTypeFilter, setActiveTypeFilter] = useState(filter || 'all');
-    const [selectedYear, setSelectedYear] = useState<string>('all');
+    const [selectedYear, setSelectedYear] = useState<string>(selected_year || dynamicCurrentYear);
 
-    // Available years extracted from events list + current year
+    // Available years extracted from events list + dynamic current year
     const availableYears = useMemo(() => {
         const yearsSet = new Set<string>();
         events.forEach((e) => {
@@ -126,22 +133,56 @@ export default function EventManagementPage({
                 }
             }
         });
-        yearsSet.add(String(new Date().getFullYear()));
+        yearsSet.add(dynamicCurrentYear);
         return Array.from(yearsSet).sort((a, b) => Number(b) - Number(a));
-    }, [events]);
+    }, [events, dynamicCurrentYear]);
 
-    // Create Modal State
+    // Active Year-Scoped Events
+    const yearScopedEvents = useMemo(() => {
+        if (selectedYear === 'all') return events;
+        return events.filter((e) => {
+            const startYear = String(e.start_date || e.date || '').substring(0, 4);
+            const endYear = String(e.end_date || '').substring(0, 4);
+            return startYear === selectedYear || endYear === selectedYear;
+        });
+    }, [events, selectedYear]);
+
+    // Active Metrics scoped to selected year
+    const activeStats = useMemo(() => ({
+        total: yearScopedEvents.length,
+        holidays: yearScopedEvents.filter((e) => e.type === 'holiday' || e.type === 'seasonal').length,
+        commercial: yearScopedEvents.filter((e) => e.type === 'commercial').length,
+        custom: yearScopedEvents.filter((e) => e.type === 'custom').length,
+    }), [yearScopedEvents]);
+
+    // Create Modal State (Marketing Event & Custom Event only)
     const [isCreateOpen, setIsCreateOpen] = useState(false);
-    const [createCategory, setCreateCategory] = useState<'holiday' | 'commercial' | 'custom'>('custom');
+    const [createCategory, setCreateCategory] = useState<'commercial' | 'custom'>('commercial');
     const [createForm, setCreateForm] = useState({
         name: '',
         start_date: new Date().toISOString().substring(0, 10),
         end_date: new Date().toISOString().substring(0, 10),
         description: '',
-        type: 'custom',
+        type: 'commercial',
     });
     const [createErrors, setCreateErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Duplicate detection helper: checks against existing canonical events
+    const findExistingEvent = useCallback((name: string, date: string) => {
+        const normName = name.trim().toLowerCase();
+        if (!normName || !date) return null;
+        return (
+            events.find((e) => {
+                const eDate = e.start_date || e.date;
+                return eDate === date && e.name.trim().toLowerCase() === normName;
+            }) || null
+        );
+    }, [events]);
+
+    const existingDuplicateForForm = useMemo(() => {
+        return findExistingEvent(createForm.name, createForm.start_date);
+    }, [findExistingEvent, createForm.name, createForm.start_date]);
 
     // View Event Modal State
     const [viewingEvent, setViewingEvent] = useState<EventItem | null>(null);
@@ -160,9 +201,9 @@ export default function EventManagementPage({
     // Delete Modal State
     const [deletingEvent, setDeletingEvent] = useState<EventItem | null>(null);
 
-    // Filtered events
+    // Filtered events based on year + search + type
     const filteredEvents = useMemo(() => {
-        return events.filter((e) => {
+        return yearScopedEvents.filter((e) => {
             const matchesSearch =
                 !searchQuery ||
                 e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -177,16 +218,9 @@ export default function EventManagementPage({
                 matchesType = e.type === 'custom';
             }
 
-            let matchesYear = true;
-            if (selectedYear !== 'all') {
-                const startYear = String(e.start_date || e.date || '').substring(0, 4);
-                const endYear = String(e.end_date || '').substring(0, 4);
-                matchesYear = startYear === selectedYear || endYear === selectedYear;
-            }
-
-            return matchesSearch && matchesType && matchesYear;
+            return matchesSearch && matchesType;
         });
-    }, [events, searchQuery, activeTypeFilter, selectedYear]);
+    }, [yearScopedEvents, searchQuery, activeTypeFilter]);
 
     // Handle Create Submit
     const handleCreateSubmit = (e: React.FormEvent) => {
@@ -199,17 +233,18 @@ export default function EventManagementPage({
             start_date: createForm.start_date,
             end_date: createForm.end_date,
             description: createForm.description,
-            type: createCategory === 'holiday' ? 'holiday' : createCategory,
+            type: createCategory,
         }, {
             onSuccess: () => {
                 setIsCreateOpen(false);
                 setIsSubmitting(false);
+                const defaultDate = selectedYear !== 'all' ? `${selectedYear}-01-01` : new Date().toISOString().substring(0, 10);
                 setCreateForm({
                     name: '',
-                    start_date: new Date().toISOString().substring(0, 10),
-                    end_date: new Date().toISOString().substring(0, 10),
+                    start_date: defaultDate,
+                    end_date: defaultDate,
                     description: '',
-                    type: 'custom',
+                    type: createCategory,
                 });
             },
             onError: (errs) => {
@@ -274,20 +309,9 @@ export default function EventManagementPage({
         });
     };
 
-    // Select Catalog Holiday
-    const handleSelectCatalogHoliday = (h: HolidayCatalogItem) => {
-        setCreateForm({
-            name: h.name,
-            start_date: h.date,
-            end_date: h.end_date || h.date,
-            description: h.description || '',
-            type: h.type || 'holiday',
-        });
-    };
-
     return (
         <>
-            <Head title="Event Management" />
+            <Head title="Event Bank" />
 
             <div className="min-h-screen bg-background pb-24 text-foreground">
                 <div className="space-y-6 p-4 md:p-6 lg:p-8">
@@ -298,11 +322,29 @@ export default function EventManagementPage({
                                 <Calendar className="h-5 w-5" />
                             </div>
                             <div>
-                                <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
-                                    Event Management
-                                </h1>
+                                <div className="flex items-center gap-2.5">
+                                    <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
+                                        Event Bank
+                                    </h1>
+                                    {/* Prominent Current-Year Selector */}
+                                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                                        <SelectTrigger className="h-7 rounded-lg bg-muted/60 hover:bg-muted font-bold text-xs px-2.5 border-border/80 gap-1.5 text-primary">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent align="start">
+                                            {availableYears.map((yr) => (
+                                                <SelectItem key={yr} value={yr} className="text-xs font-semibold">
+                                                    {yr} {yr === dynamicCurrentYear && '(Current Year)'}
+                                                </SelectItem>
+                                            ))}
+                                            <SelectItem value="all" className="text-xs text-muted-foreground border-t border-border/60 mt-1">
+                                                All Years
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                                 <p className="text-xs text-muted-foreground">
-                                    Create and manage marketing events, custom sales, and Philippine holidays.
+                                    Manage your marketing occasions, business events, and Philippine holidays for {selectedYear === 'all' ? 'all time' : selectedYear}.
                                 </p>
                             </div>
                         </div>
@@ -322,8 +364,16 @@ export default function EventManagementPage({
 
                             <Button
                                 onClick={() => {
-                                    setCreateCategory('custom');
+                                    setCreateCategory('commercial');
                                     setCreateErrors({});
+                                    const defaultDate = selectedYear !== 'all' ? `${selectedYear}-01-01` : new Date().toISOString().substring(0, 10);
+                                    setCreateForm({
+                                        name: '',
+                                        start_date: defaultDate,
+                                        end_date: defaultDate,
+                                        description: '',
+                                        type: 'commercial',
+                                    });
                                     setIsCreateOpen(true);
                                 }}
                                 size="sm"
@@ -335,7 +385,7 @@ export default function EventManagementPage({
                         </div>
                     </div>
 
-                    {/* Metric Summary Cards */}
+                    {/* Metric Summary Cards Scoped to Selected Year */}
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         <Card
                             onClick={() => setActiveTypeFilter('all')}
@@ -346,10 +396,10 @@ export default function EventManagementPage({
                             tabIndex={0}
                         >
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                <span>Total Events</span>
+                                <span>Total Events ({selectedYear === 'all' ? 'All' : selectedYear})</span>
                                 <Calendar className="h-4 w-4 text-primary" />
                             </div>
-                            <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">{stats.total}</p>
+                            <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">{activeStats.total}</p>
                         </Card>
 
                         <Card
@@ -364,7 +414,7 @@ export default function EventManagementPage({
                                 <span>Philippine Holidays</span>
                                 <PartyPopper className="h-4 w-4 text-rose-500" />
                             </div>
-                            <p className="mt-2 text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400">{stats.holidays}</p>
+                            <p className="mt-2 text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400">{activeStats.holidays}</p>
                         </Card>
 
                         <Card
@@ -379,7 +429,7 @@ export default function EventManagementPage({
                                 <span>Marketing Events</span>
                                 <ShoppingBag className="h-4 w-4 text-blue-500" />
                             </div>
-                            <p className="mt-2 text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{stats.commercial}</p>
+                            <p className="mt-2 text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{activeStats.commercial}</p>
                         </Card>
 
                         <Card
@@ -394,7 +444,7 @@ export default function EventManagementPage({
                                 <span>Custom Events</span>
                                 <Tag className="h-4 w-4 text-purple-500" />
                             </div>
-                            <p className="mt-2 text-2xl font-bold tracking-tight text-purple-600 dark:text-purple-400">{stats.custom}</p>
+                            <p className="mt-2 text-2xl font-bold tracking-tight text-purple-600 dark:text-purple-400">{activeStats.custom}</p>
                         </Card>
                     </div>
 
@@ -428,16 +478,18 @@ export default function EventManagementPage({
                                 <div className="flex items-center gap-1.5">
                                     <span className="text-xs font-medium text-muted-foreground">Year:</span>
                                     <Select value={selectedYear} onValueChange={setSelectedYear}>
-                                        <SelectTrigger className="h-8.5 w-[110px] rounded-xl bg-background text-xs font-medium">
+                                        <SelectTrigger className="h-8.5 w-[110px] rounded-xl bg-background text-xs font-semibold">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent align="end">
-                                            <SelectItem value="all" className="text-xs">All Years</SelectItem>
                                             {availableYears.map((yr) => (
-                                                <SelectItem key={yr} value={yr} className="text-xs font-mono">
+                                                <SelectItem key={yr} value={yr} className="text-xs font-mono font-medium">
                                                     {yr}
                                                 </SelectItem>
                                             ))}
+                                            <SelectItem value="all" className="text-xs text-muted-foreground border-t border-border/60 mt-1">
+                                                All Years
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -451,7 +503,7 @@ export default function EventManagementPage({
                                         </SelectTrigger>
                                         <SelectContent align="end">
                                             <SelectItem value="all" className="text-xs">All Types</SelectItem>
-                                            <SelectItem value="holiday" className="text-xs font-medium text-rose-600 dark:text-rose-400">Holidays</SelectItem>
+                                            <SelectItem value="holiday" className="text-xs font-medium text-rose-600 dark:text-rose-400">Philippine Holidays</SelectItem>
                                             <SelectItem value="commercial" className="text-xs font-medium text-blue-600 dark:text-blue-400">Marketing Events</SelectItem>
                                             <SelectItem value="custom" className="text-xs font-medium text-purple-600 dark:text-purple-400">Custom Events</SelectItem>
                                         </SelectContent>
@@ -482,7 +534,55 @@ export default function EventManagementPage({
                                     {filteredEvents.length === 0 ? (
                                         <tr>
                                             <td colSpan={5} className="py-12 text-center text-xs text-muted-foreground">
-                                                No events found matching your search.
+                                                <div className="flex flex-col items-center justify-center p-6 text-center max-w-sm mx-auto">
+                                                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-muted/60 text-muted-foreground mb-3">
+                                                        <Calendar className="h-5 w-5" />
+                                                    </div>
+                                                    <p className="font-semibold text-sm text-foreground">
+                                                        {activeTypeFilter === 'holiday'
+                                                            ? `No Philippine Holidays in ${selectedYear === 'all' ? 'the calendar' : selectedYear}.`
+                                                            : activeTypeFilter === 'commercial'
+                                                              ? `No Marketing Events in ${selectedYear === 'all' ? 'the calendar' : selectedYear}.`
+                                                              : activeTypeFilter === 'custom'
+                                                                ? `No Custom Events in ${selectedYear === 'all' ? 'the calendar' : selectedYear}.`
+                                                                : `No events found for ${selectedYear === 'all' ? 'the selected criteria' : selectedYear}.`}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                        {activeTypeFilter === 'holiday'
+                                                            ? 'Official Philippine holidays for this year will appear here when loaded.'
+                                                            : activeTypeFilter === 'commercial'
+                                                              ? 'Create promotional sales, flash deals, and commercial marketing occasions.'
+                                                              : activeTypeFilter === 'custom'
+                                                                ? 'Create store anniversaries, product launches, or business milestones.'
+                                                                : 'Get started by creating a marketing or custom event for your Event Bank.'}
+                                                    </p>
+                                                    {activeTypeFilter !== 'holiday' && (
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setCreateCategory(activeTypeFilter === 'custom' ? 'custom' : 'commercial');
+                                                                setCreateErrors({});
+                                                                const defaultDate = selectedYear !== 'all' ? `${selectedYear}-01-01` : new Date().toISOString().substring(0, 10);
+                                                                setCreateForm({
+                                                                    name: '',
+                                                                    start_date: defaultDate,
+                                                                    end_date: defaultDate,
+                                                                    description: '',
+                                                                    type: activeTypeFilter === 'custom' ? 'custom' : 'commercial',
+                                                                });
+                                                                setIsCreateOpen(true);
+                                                            }}
+                                                            className="mt-4 gap-1.5 rounded-xl text-xs font-semibold"
+                                                        >
+                                                            <Plus className="h-3.5 w-3.5" />
+                                                            {activeTypeFilter === 'commercial'
+                                                                ? 'Create Marketing Event'
+                                                                : activeTypeFilter === 'custom'
+                                                                  ? 'Create Custom Event'
+                                                                  : 'Add Event'}
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ) : (
@@ -540,11 +640,23 @@ export default function EventManagementPage({
 
                                                     <td className="py-3.5 px-4">
                                                         {evt.has_campaign ? (
-                                                            <span className="text-xs font-medium text-primary">
-                                                                Linked ({evt.campaigns_count} Campaign{evt.campaigns_count > 1 ? 's' : ''})
-                                                            </span>
+                                                            <Link
+                                                                href={evt.latest_campaign_id ? `/campaigns/${evt.latest_campaign_id}` : `/campaigns?event_id=${evt.id}`}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
+                                                            >
+                                                                <span>Open Campaign ({evt.campaigns_count})</span>
+                                                                <ExternalLink className="h-3 w-3" />
+                                                            </Link>
                                                         ) : (
-                                                            <span className="text-xs text-muted-foreground">Unlinked</span>
+                                                            <Link
+                                                                href={`/campaigns?create=true&event_id=${evt.id}`}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="text-[11px] text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1"
+                                                            >
+                                                                <Plus className="h-3 w-3" />
+                                                                <span>Create Campaign</span>
+                                                            </Link>
                                                         )}
                                                     </td>
 
@@ -724,61 +836,68 @@ export default function EventManagementPage({
                                 </Button>
                             )}
 
-                            <Button
-                                asChild
-                                size="sm"
-                                className="text-xs gap-1.5 bg-primary font-semibold text-primary-foreground hover:bg-primary/90"
-                            >
-                                <Link href={`/campaigns?create=true&event_id=${viewingEvent?.id}`}>
-                                    <Plus className="h-3.5 w-3.5" />
-                                    Create Campaign
-                                </Link>
-                            </Button>
+                            {viewingEvent?.has_campaign ? (
+                                <Button
+                                    asChild
+                                    size="sm"
+                                    className="text-xs gap-1.5 bg-primary font-semibold text-primary-foreground hover:bg-primary/90"
+                                >
+                                    <Link href={viewingEvent.latest_campaign_id ? `/campaigns/${viewingEvent.latest_campaign_id}` : `/campaigns?event_id=${viewingEvent.id}`}>
+                                        <ExternalLink className="h-3.5 w-3.5" />
+                                        Open Campaign
+                                    </Link>
+                                </Button>
+                            ) : (
+                                <Button
+                                    asChild
+                                    size="sm"
+                                    className="text-xs gap-1.5 bg-primary font-semibold text-primary-foreground hover:bg-primary/90"
+                                >
+                                    <Link href={`/campaigns?create=true&event_id=${viewingEvent?.id}`}>
+                                        <Plus className="h-3.5 w-3.5" />
+                                        Create Campaign
+                                    </Link>
+                                </Button>
+                            )}
                         </div>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
             {/* =====================================================
-                ADD EVENT MODAL
+                ADD EVENT MODAL (USER-MANAGED EVENTS ONLY)
             ====================================================== */}
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                 <DialogContent className="max-h-[90vh] flex flex-col overflow-hidden rounded-3xl border-border bg-card p-0 shadow-2xl sm:max-w-lg">
-                    <form onSubmit={handleCreateSubmit} className="flex min-h-0 flex-1 flex-col">
+                    <form onSubmit={handleCreateSubmit} className="flex flex-col min-h-0 h-full">
                         <DialogHeader className="shrink-0 border-b border-border bg-muted/20 p-5 sm:p-6 pb-4">
-                            <div className="flex items-center gap-2">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                    <Plus className="h-4 w-4" />
+                            <div className="flex items-center gap-2.5">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                    <Plus className="h-5 w-5" />
                                 </div>
                                 <DialogTitle className="text-lg font-bold text-foreground">
-                                    Add Calendar Event
+                                    Add Event
                                 </DialogTitle>
                             </div>
                             <DialogDescription className="mt-1 text-xs text-muted-foreground">
-                                Add an event to your marketing schedule. Events exist independently and can be selected by future campaigns.
+                                Create a marketing or business event for your Event Bank.
                             </DialogDescription>
                         </DialogHeader>
 
-                        {/* Category Selector Tabs */}
+                        {/* Category Selector Tabs: Marketing Event & Custom Event Only */}
                         <div className="shrink-0 border-b border-border/70 bg-muted/10 p-3">
-                            <div className="grid grid-cols-3 gap-1 rounded-2xl border border-border/80 bg-muted/30 p-1 text-xs">
+                            <div className="grid grid-cols-2 gap-1 rounded-2xl border border-border/80 bg-muted/30 p-1 text-xs">
                                 <button
                                     type="button"
-                                    onClick={() => setCreateCategory('holiday')}
-                                    className={`flex items-center justify-center gap-1.5 rounded-xl px-2 py-1.5 font-semibold transition-all ${
-                                        createCategory === 'holiday'
-                                            ? 'bg-card text-foreground shadow-2xs'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                    }`}
-                                >
-                                    <PartyPopper className="h-3.5 w-3.5 text-rose-500" />
-                                    <span>Philippine Holiday</span>
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={() => setCreateCategory('commercial')}
-                                    className={`flex items-center justify-center gap-1.5 rounded-xl px-2 py-1.5 font-semibold transition-all ${
+                                    onClick={() => {
+                                        setCreateCategory('commercial');
+                                        setCreateErrors({});
+                                        setCreateForm((prev) => ({
+                                            ...prev,
+                                            type: 'commercial',
+                                        }));
+                                    }}
+                                    className={`flex items-center justify-center gap-1.5 rounded-xl px-2 py-2 font-semibold transition-all ${
                                         createCategory === 'commercial'
                                             ? 'bg-card text-foreground shadow-2xs'
                                             : 'text-muted-foreground hover:text-foreground'
@@ -790,8 +909,15 @@ export default function EventManagementPage({
 
                                 <button
                                     type="button"
-                                    onClick={() => setCreateCategory('custom')}
-                                    className={`flex items-center justify-center gap-1.5 rounded-xl px-2 py-1.5 font-semibold transition-all ${
+                                    onClick={() => {
+                                        setCreateCategory('custom');
+                                        setCreateErrors({});
+                                        setCreateForm((prev) => ({
+                                            ...prev,
+                                            type: 'custom',
+                                        }));
+                                    }}
+                                    className={`flex items-center justify-center gap-1.5 rounded-xl px-2 py-2 font-semibold transition-all ${
                                         createCategory === 'custom'
                                             ? 'bg-card text-foreground shadow-2xs'
                                             : 'text-muted-foreground hover:text-foreground'
@@ -805,40 +931,6 @@ export default function EventManagementPage({
 
                         {/* Form Fields */}
                         <div className="min-h-0 flex-1 overflow-y-auto space-y-4 p-5 sm:p-6">
-                            {createCategory === 'holiday' ? (
-                                <div className="space-y-3">
-                                    <Label className="text-xs font-semibold text-foreground">
-                                        Select from Philippine Holiday Catalog
-                                    </Label>
-                                    <p className="text-[11px] text-muted-foreground">
-                                        Official Philippine holidays are curated from the official catalog to avoid duplicate entries.
-                                    </p>
-
-                                    <div className="max-h-56 space-y-1.5 overflow-y-auto rounded-xl border border-border p-2">
-                                        {holiday_catalog.map((h) => {
-                                            const isSelected = createForm.name === h.name;
-                                            return (
-                                                <div
-                                                    key={h.name}
-                                                    onClick={() => handleSelectCatalogHoliday(h)}
-                                                    className={`flex cursor-pointer items-center justify-between rounded-lg p-2.5 transition-all text-xs ${
-                                                        isSelected
-                                                            ? 'bg-primary/10 border border-primary/30 text-primary font-semibold'
-                                                            : 'hover:bg-muted/40 text-foreground'
-                                                    }`}
-                                                >
-                                                    <div>
-                                                        <p>{h.name}</p>
-                                                        <p className="text-[10px] text-muted-foreground">{h.date}</p>
-                                                    </div>
-                                                    {isSelected && <Check className="h-4 w-4 text-primary" />}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            ) : null}
-
                             <div className="space-y-1.5">
                                 <Label htmlFor="event_name" className="text-xs font-semibold text-foreground">
                                     Event Name *
@@ -849,8 +941,8 @@ export default function EventManagementPage({
                                     onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
                                     placeholder={
                                         createCategory === 'commercial'
-                                            ? 'e.g., Payday Flash Sale, Black Friday Mega Promo'
-                                            : 'e.g., Shop Anniversary, Grand Reopening'
+                                            ? 'e.g., 11.11 Flash Sale, Summer Sale, Back to School, Anniversary Sale'
+                                            : 'e.g., Store Anniversary, Grand Opening, New Branch Launch, Customer Appreciation Day'
                                     }
                                     required
                                     className="text-xs"
@@ -896,6 +988,16 @@ export default function EventManagementPage({
                                 </div>
                             </div>
 
+                            {/* Existing duplicate notice for marketing/custom */}
+                            {existingDuplicateForForm && (
+                                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-amber-700 dark:text-amber-300 text-xs">
+                                    <p className="font-semibold">Event already exists on this date</p>
+                                    <p className="text-[11px] text-amber-800/80 dark:text-amber-200/80 mt-0.5">
+                                        An event named &quot;{existingDuplicateForForm.name}&quot; already exists in your Event Bank for this date ({existingDuplicateForForm.start_date || existingDuplicateForForm.date}).
+                                    </p>
+                                </div>
+                            )}
+
                             <div className="space-y-1.5">
                                 <Label htmlFor="description" className="text-xs font-semibold text-foreground">
                                     Description / Promotion Notes
@@ -928,9 +1030,13 @@ export default function EventManagementPage({
                                 type="submit"
                                 size="sm"
                                 disabled={isSubmitting || !createForm.name}
-                                className="bg-primary text-xs font-semibold text-primary-foreground"
+                                className="bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90"
                             >
-                                {isSubmitting ? 'Saving...' : 'Save Event'}
+                                {isSubmitting
+                                    ? 'Creating...'
+                                    : createCategory === 'commercial'
+                                      ? 'Create Marketing Event'
+                                      : 'Create Custom Event'}
                             </Button>
                         </DialogFooter>
                     </form>
