@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -124,28 +123,18 @@ export function EventsHolidays({
     }, [displayedHolidays, isSecondaryExpanded]);
 
     return (
-        <div className="mb-6 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-2xs sm:p-5">
             <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex items-center gap-2.5">
                     <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
                         <Calendar className="h-4 w-4" />
                     </div>
                     <div>
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-sm font-bold text-foreground">
-                                This Year's Events & Holidays —{' '}
-                                {currentCampaignYear}
-                            </h2>
-                            <Badge
-                                variant="outline"
-                                className="border-border text-[10px] font-medium text-muted-foreground"
-                            >
-                                Secondary
-                            </Badge>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground">
-                            Browse all promotional opportunities, holidays, and
-                            observances for {currentCampaignYear}
+                        <h2 className="text-sm font-bold text-foreground">
+                            This Year's Events & Holidays — {currentCampaignYear}
+                        </h2>
+                        <p className="text-xs text-muted-foreground">
+                            Browse all promotional opportunities, holidays, and observances for {currentCampaignYear}
                         </p>
                     </div>
                 </div>
@@ -157,7 +146,7 @@ export function EventsHolidays({
                         onClick={() => setEventsTab('all')}
                         className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
                             eventsTab === 'all'
-                                ? 'bg-background text-foreground shadow-xs'
+                                ? 'bg-background text-foreground shadow-2xs'
                                 : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
@@ -168,7 +157,7 @@ export function EventsHolidays({
                         onClick={() => setEventsTab('upcoming')}
                         className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
                             eventsTab === 'upcoming'
-                                ? 'bg-background text-foreground shadow-xs'
+                                ? 'bg-background text-foreground shadow-2xs'
                                 : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
@@ -179,7 +168,7 @@ export function EventsHolidays({
                         onClick={() => setEventsTab('past')}
                         className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
                             eventsTab === 'past'
-                                ? 'bg-background text-foreground shadow-xs'
+                                ? 'bg-background text-foreground shadow-2xs'
                                 : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
@@ -190,11 +179,11 @@ export function EventsHolidays({
                         onClick={() => setEventsTab('missed')}
                         className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
                             eventsTab === 'missed'
-                                ? 'bg-rose-500/10 text-rose-600 shadow-xs dark:text-rose-400'
+                                ? 'bg-rose-500/10 text-rose-600 shadow-2xs dark:text-rose-400'
                                 : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
-                        Missed Opportunities ({eventCounts.missed})
+                        Missed ({eventCounts.missed})
                     </button>
                 </div>
             </div>
@@ -207,13 +196,14 @@ export function EventsHolidays({
                         value={eventsSearchQuery}
                         onChange={(e) => setEventsSearchQuery(e.target.value)}
                         placeholder="Search events, holidays, observances..."
-                        className="h-8 rounded-xl bg-background pl-8 text-xs"
+                        className="h-8.5 rounded-xl border-input bg-background pr-8 pl-8.5 text-xs shadow-none"
                     />
                     {eventsSearchQuery && (
                         <button
                             type="button"
                             onClick={() => setEventsSearchQuery('')}
-                            className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            className="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer text-muted-foreground/60 transition-colors hover:text-foreground"
+                            aria-label="Clear search"
                         >
                             <X className="h-3.5 w-3.5" />
                         </button>
@@ -224,10 +214,10 @@ export function EventsHolidays({
                     value={eventsCategoryFilter}
                     onValueChange={setEventsCategoryFilter}
                 >
-                    <SelectTrigger className="h-8 w-full rounded-xl bg-background text-xs sm:w-[180px]">
+                    <SelectTrigger className="h-8.5 w-full rounded-xl bg-background text-xs font-medium sm:w-[180px]">
                         <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl border-border bg-popover">
+                    <SelectContent align="end" className="rounded-xl border-border bg-popover">
                         <SelectItem value="all" className="text-xs">
                             All Categories
                         </SelectItem>
@@ -266,74 +256,56 @@ export function EventsHolidays({
                             return (
                                 <div
                                     key={evt.id}
-                                    className={`flex flex-col justify-between rounded-xl border p-3.5 transition-all hover:shadow-2xs ${
-                                        evt.is_missed
-                                            ? 'border-rose-500/30 bg-rose-500/[0.02] dark:border-rose-500/20'
-                                            : evt.has_campaign
-                                              ? 'border-emerald-500/30 bg-emerald-500/[0.02] dark:border-emerald-500/20'
-                                              : 'border-border/70 bg-background/60 hover:border-primary/40'
-                                    }`}
+                                    className="group flex flex-col justify-between rounded-xl border border-border/70 bg-card p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
                                 >
-                                    <div className="space-y-1.5">
+                                    <div className="space-y-2">
                                         <div className="flex items-center justify-between gap-2">
-                                            <span
-                                                className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[9px] font-semibold tracking-wider uppercase ${style.border} ${style.bg} ${style.text}`}
-                                            >
+                                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                                 <span
                                                     className={`h-1.5 w-1.5 rounded-full ${style.dot}`}
                                                 />
-                                                {style.label}
-                                            </span>
+                                                <span className="font-medium">
+                                                    {style.label}
+                                                </span>
+                                            </div>
                                             {evt.is_missed ? (
-                                                <Badge
-                                                    variant="outline"
-                                                    className="border-rose-500/30 bg-rose-500/10 text-[9px] font-bold text-rose-600 dark:text-rose-400"
-                                                >
+                                                <span className="text-[11px] font-semibold text-rose-600 dark:text-rose-400">
                                                     Missed Opportunity
-                                                </Badge>
+                                                </span>
                                             ) : evt.has_campaign ? (
-                                                <Badge
-                                                    variant="outline"
-                                                    className="border-emerald-500/30 bg-emerald-500/10 text-[9px] font-bold text-emerald-600 dark:text-emerald-400"
-                                                >
-                                                    Campaign Exists
-                                                </Badge>
+                                                <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                    Campaign Active
+                                                </span>
                                             ) : evt.is_upcoming ? (
-                                                <Badge
-                                                    variant="outline"
-                                                    className="border-primary/30 bg-primary/10 text-[9px] font-bold text-primary"
-                                                >
-                                                    Upcoming Opportunity
-                                                </Badge>
+                                                <span className="text-[11px] font-semibold text-primary">
+                                                    Upcoming
+                                                </span>
                                             ) : (
-                                                <Badge
-                                                    variant="outline"
-                                                    className="border-border/80 bg-muted/40 text-[9px] font-medium text-muted-foreground"
-                                                >
+                                                <span className="text-[11px] font-medium text-muted-foreground">
                                                     Past Event
-                                                </Badge>
+                                                </span>
                                             )}
                                         </div>
 
-                                        <h3 className="line-clamp-1 text-xs font-bold text-foreground">
+                                        <h3 className="line-clamp-1 text-xs font-semibold text-foreground transition-colors group-hover:text-primary">
                                             {evt.name}
                                         </h3>
 
-                                        <p className="text-[11px] font-medium text-muted-foreground">
+                                        <p className="text-xs text-muted-foreground">
                                             {evt.date_formatted || evt.date}
                                         </p>
 
                                         {evt.description && (
-                                            <p className="line-clamp-2 text-[10px] text-muted-foreground/80">
+                                            <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground/80">
                                                 {evt.description}
                                             </p>
                                         )}
                                     </div>
 
-                                    <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2.5">
+                                    <div className="mt-3.5 flex items-center justify-between border-t border-border/50 pt-2.5">
                                         {evt.has_campaign ? (
                                             <>
-                                                <span className="max-w-[130px] truncate text-[10px] font-medium text-muted-foreground">
+                                                <span className="max-w-[130px] truncate text-xs font-medium text-muted-foreground">
                                                     {evt.campaign_name ||
                                                         'Active Campaign'}
                                                 </span>
@@ -341,7 +313,7 @@ export function EventsHolidays({
                                                     asChild
                                                     size="sm"
                                                     variant="outline"
-                                                    className="h-7 text-xs font-semibold"
+                                                    className="h-7.5 rounded-xl text-xs font-semibold"
                                                 >
                                                     <Link
                                                         href={`/campaigns/${evt.campaign_id}`}
@@ -352,7 +324,7 @@ export function EventsHolidays({
                                             </>
                                         ) : evt.is_missed ? (
                                             <>
-                                                <span className="text-[10px] font-medium text-rose-600 dark:text-rose-400">
+                                                <span className="text-xs font-medium text-rose-600 dark:text-rose-400">
                                                     Window missed
                                                 </span>
                                                 <Button
@@ -362,14 +334,14 @@ export function EventsHolidays({
                                                     onClick={() =>
                                                         onCreateCampaign(evt)
                                                     }
-                                                    className="h-7 gap-1 border-rose-500/30 text-xs font-semibold text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
+                                                    className="h-7.5 gap-1 rounded-xl border-rose-500/30 text-xs font-semibold text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
                                                 >
                                                     Create Campaign
                                                 </Button>
                                             </>
                                         ) : evt.is_past ? (
                                             <>
-                                                <span className="text-[10px] text-muted-foreground">
+                                                <span className="text-xs text-muted-foreground">
                                                     Past holiday
                                                 </span>
                                                 <Button
@@ -379,14 +351,14 @@ export function EventsHolidays({
                                                     onClick={() =>
                                                         onCreateCampaign(evt)
                                                     }
-                                                    className="h-7 text-xs font-semibold"
+                                                    className="h-7.5 rounded-xl text-xs font-semibold"
                                                 >
                                                     Create Campaign
                                                 </Button>
                                             </>
                                         ) : (
                                             <>
-                                                <span className="text-[10px] text-muted-foreground">
+                                                <span className="text-xs text-muted-foreground">
                                                     No campaign yet
                                                 </span>
                                                 <Button
@@ -395,7 +367,7 @@ export function EventsHolidays({
                                                     onClick={() =>
                                                         onCreateCampaign(evt)
                                                     }
-                                                    className="h-7 gap-1 text-xs font-semibold"
+                                                    className="h-7.5 gap-1 rounded-xl text-xs font-semibold shadow-2xs"
                                                 >
                                                     <Plus className="h-3 w-3" />
                                                     Create Campaign
@@ -409,7 +381,7 @@ export function EventsHolidays({
                     </div>
 
                     {displayedHolidays.length > 6 && (
-                        <div className="mt-3.5 flex justify-center">
+                        <div className="mt-4 flex justify-center">
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -449,7 +421,7 @@ export function EventsHolidays({
                                 ? 'No Past Events Found'
                                 : 'No Events or Holidays Found'}
                     </h3>
-                    <p className="mt-1 max-w-sm text-[11px] text-muted-foreground">
+                    <p className="mt-1 max-w-sm text-xs text-muted-foreground">
                         {eventsTab === 'missed'
                             ? "Great news! You haven't missed any eligible promotional opportunity windows since finalizing your account."
                             : eventsTab === 'upcoming'

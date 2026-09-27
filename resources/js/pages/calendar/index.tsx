@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import {
     Calendar as CalendarIcon,
+    Check,
     ChevronLeft,
     ChevronRight,
     Filter,
@@ -9,6 +10,12 @@ import {
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
     Select,
     SelectContent,
@@ -245,14 +252,14 @@ export default function MarketingCalendarPage({
                     </div>
 
                     {/* =====================================================
-                        STICKY NAVIGATION TOOLBAR
+                        STICKY NAVIGATION & FILTER TOOLBAR (MATCHING MY DESIGNS)
                     ====================================================== */}
-                    <div className="sticky top-11 z-20 -mx-4 border-b border-border/60 bg-background/95 px-4 py-2 shadow-2xs backdrop-blur-xl transition-all sm:top-12 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8 dark:bg-background/90">
-                        <div className="flex flex-col gap-2.5 rounded-2xl border border-border/80 bg-card p-2.5 shadow-xs sm:flex-row sm:items-center sm:justify-between sm:p-3">
-                            {/* Navigation controls */}
-                            <div className="flex flex-wrap items-center gap-2">
+                    <div className="sticky top-11 z-30 mb-6 rounded-2xl border border-white/25 bg-card/95 p-2.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:p-3 dark:border-white/10 dark:bg-card/95">
+                        <div className="flex items-center justify-between gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-2.5">
+                            {/* Navigation controls & Filters (Static left-anchored group) */}
+                            <div className="flex shrink-0 items-center gap-2">
                                 {/* Prev / Next Buttons */}
-                                <div className="flex items-center rounded-xl border border-border bg-background p-0.5">
+                                <div className="flex shrink-0 items-center rounded-xl border border-border bg-background p-0.5">
                                     <Button
                                         type="button"
                                         variant="ghost"
@@ -280,7 +287,7 @@ export default function MarketingCalendarPage({
                                     value={String(currentMonth)}
                                     onValueChange={handleMonthChange}
                                 >
-                                    <SelectTrigger className="h-8 w-[120px] bg-background text-xs font-semibold">
+                                    <SelectTrigger className="h-8.5 w-[115px] shrink-0 rounded-xl bg-background text-xs font-semibold shadow-none">
                                         <SelectValue>
                                             {monthNames[currentMonth]}
                                         </SelectValue>
@@ -303,7 +310,7 @@ export default function MarketingCalendarPage({
                                     value={String(currentYear)}
                                     onValueChange={handleYearChange}
                                 >
-                                    <SelectTrigger className="h-8 w-[85px] bg-background text-xs font-semibold">
+                                    <SelectTrigger className="h-8.5 w-[80px] shrink-0 rounded-xl bg-background text-xs font-semibold shadow-none">
                                         <SelectValue>{currentYear}</SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
@@ -324,22 +331,28 @@ export default function MarketingCalendarPage({
                                     variant="outline"
                                     size="sm"
                                     onClick={jumpToToday}
-                                    className="h-8 rounded-xl bg-background px-3 text-xs font-medium"
+                                    className="h-8.5 shrink-0 rounded-xl bg-background px-3 text-xs font-medium shadow-none"
                                 >
                                     Today
                                 </Button>
-                            </div>
 
-                            {/* View Switcher & Filters */}
-                            <div className="flex flex-wrap items-center gap-2">
-                                {/* Filter Selector */}
-                                <div className="flex items-center gap-1.5">
-                                    <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+                                {/* Vertical Divider */}
+                                <div className="mx-1 h-5 w-px shrink-0 bg-border/80" />
+
+                                {/* Category Filter Selector */}
+                                <div className="w-36 shrink-0 sm:w-40">
                                     <Select
                                         value={activeFilter}
                                         onValueChange={setActiveFilter}
                                     >
-                                        <SelectTrigger className="h-8 w-[130px] bg-background text-xs font-medium">
+                                        <SelectTrigger
+                                            className={`h-8.5 w-full min-w-0 gap-1.5 rounded-xl text-xs shadow-none ${
+                                                activeFilter !== 'all'
+                                                    ? 'border-primary/50 bg-primary/10 font-semibold text-primary'
+                                                    : 'bg-background'
+                                            }`}
+                                        >
+                                            <Filter className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -354,45 +367,115 @@ export default function MarketingCalendarPage({
                                     </Select>
                                 </div>
 
-                                {/* View Mode Dropdown Selector */}
-                                <Select
-                                    value={viewMode}
-                                    onValueChange={(val: 'grid' | 'agenda' | 'year') => setViewMode(val)}
+                                {/* Clear All (Fixed slot so toolbar never shifts when toggling filters) */}
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setActiveFilter('all')}
+                                    disabled={activeFilter === 'all'}
+                                    className={`h-8.5 shrink-0 px-2.5 text-xs transition-opacity ${
+                                        activeFilter !== 'all'
+                                            ? 'cursor-pointer text-muted-foreground opacity-100 hover:text-destructive'
+                                            : 'pointer-events-none opacity-0'
+                                    }`}
                                 >
-                                    <SelectTrigger className="h-8 w-[110px] bg-background text-xs font-semibold">
-                                        <div className="flex items-center gap-1.5 truncate">
-                                            {viewMode === 'grid' && <LayoutGrid className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
-                                            {viewMode === 'agenda' && <List className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
-                                            {viewMode === 'year' && <CalendarIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
-                                            <span>
-                                                {viewMode === 'grid' ? 'Month' : viewMode === 'agenda' ? 'Agenda' : 'Year'}
-                                            </span>
-                                        </div>
-                                    </SelectTrigger>
-                                    <SelectContent align="end">
-                                        <SelectItem value="grid" className="text-xs font-medium">
+                                    Clear
+                                </Button>
+
+                                {/* Event Count */}
+                                <div className="hidden shrink-0 items-center px-1 text-xs font-medium text-muted-foreground sm:inline-flex">
+                                    {filteredEvents.length}{' '}
+                                    {filteredEvents.length === 1 ? 'event' : 'events'}
+                                </div>
+                            </div>
+
+                            {/* View Mode Switcher (Icon-only Dropdown matching My Designs) */}
+                            <div className="flex shrink-0 items-center pl-2">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8.5 w-8.5 rounded-xl p-0 text-muted-foreground shadow-none hover:text-foreground shrink-0"
+                                            title={`Current view: ${
+                                                viewMode === 'grid'
+                                                    ? 'Month'
+                                                    : viewMode === 'agenda'
+                                                      ? 'Agenda'
+                                                      : 'Year'
+                                            }`}
+                                            aria-label="Toggle View Mode"
+                                        >
+                                            {viewMode === 'grid' && (
+                                                <LayoutGrid className="h-4 w-4" />
+                                            )}
+                                            {viewMode === 'agenda' && (
+                                                <List className="h-4 w-4" />
+                                            )}
+                                            {viewMode === 'year' && (
+                                                <CalendarIcon className="h-4 w-4" />
+                                            )}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                        align="end"
+                                        className="w-36 rounded-xl p-1 shadow-md"
+                                    >
+                                        <DropdownMenuItem
+                                            onClick={() => setViewMode('grid')}
+                                            className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
+                                                viewMode === 'grid'
+                                                    ? 'bg-primary/10 font-semibold text-primary'
+                                                    : 'text-foreground hover:bg-muted'
+                                            }`}
+                                        >
                                             <div className="flex items-center gap-2">
-                                                <LayoutGrid className="h-3.5 w-3.5 text-muted-foreground" />
+                                                <LayoutGrid className="h-3.5 w-3.5" />
                                                 <span>Month</span>
                                             </div>
-                                        </SelectItem>
-                                        <SelectItem value="agenda" className="text-xs font-medium">
+                                            {viewMode === 'grid' && (
+                                                <Check className="h-3.5 w-3.5 text-primary" />
+                                            )}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => setViewMode('agenda')}
+                                            className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
+                                                viewMode === 'agenda'
+                                                    ? 'bg-primary/10 font-semibold text-primary'
+                                                    : 'text-foreground hover:bg-muted'
+                                            }`}
+                                        >
                                             <div className="flex items-center gap-2">
-                                                <List className="h-3.5 w-3.5 text-muted-foreground" />
+                                                <List className="h-3.5 w-3.5" />
                                                 <span>Agenda</span>
                                             </div>
-                                        </SelectItem>
-                                        <SelectItem value="year" className="text-xs font-medium">
+                                            {viewMode === 'agenda' && (
+                                                <Check className="h-3.5 w-3.5 text-primary" />
+                                            )}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => setViewMode('year')}
+                                            className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
+                                                viewMode === 'year'
+                                                    ? 'bg-primary/10 font-semibold text-primary'
+                                                    : 'text-foreground hover:bg-muted'
+                                            }`}
+                                        >
                                             <div className="flex items-center gap-2">
-                                                <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                                                <CalendarIcon className="h-3.5 w-3.5" />
                                                 <span>Year</span>
                                             </div>
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                            {viewMode === 'year' && (
+                                                <Check className="h-3.5 w-3.5 text-primary" />
+                                            )}
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                         </div>
                     </div>
+
 
                     {/* =====================================================
                         MAIN CALENDAR CANVAS
@@ -434,27 +517,27 @@ export default function MarketingCalendarPage({
                             <div className="flex flex-wrap items-center gap-3">
                                 <span className="font-semibold text-foreground">Legend:</span>
                                 <div className="flex items-center gap-1.5">
-                                    <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
+                                    <span className="h-2.5 w-2.5 rounded-[2px] bg-rose-500" />
                                     <span>Regular Holiday</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                    <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                                    <span className="h-2.5 w-2.5 rounded-[2px] bg-amber-500" />
                                     <span>Special Non-Working</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                                    <span className="h-2.5 w-2.5 rounded-[2px] bg-emerald-500" />
                                     <span>Islamic Holiday</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                    <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                                    <span className="h-2.5 w-2.5 rounded-[2px] bg-blue-500" />
                                     <span>Retail Sale</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                    <span className="h-2.5 w-2.5 rounded-full bg-purple-500" />
+                                    <span className="h-2.5 w-2.5 rounded-[2px] bg-purple-500" />
                                     <span>Custom Event</span>
                                 </div>
                                 <div className="flex items-center gap-1.5 border-l border-border/80 pl-3">
-                                    <span className="h-2.5 w-2.5 rounded-full bg-slate-400 dark:bg-slate-500" />
+                                    <span className="h-2.5 w-2.5 rounded-[2px] bg-slate-400 dark:bg-slate-500" />
                                     <span className="font-medium text-muted-foreground">Past Event</span>
                                 </div>
                             </div>

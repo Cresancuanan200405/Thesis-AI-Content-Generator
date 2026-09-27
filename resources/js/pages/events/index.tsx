@@ -18,6 +18,7 @@ import {
     X,
 } from 'lucide-react';
 import React, { useCallback, useMemo, useState } from 'react';
+import { ViewEventDialog } from '@/components/view-event-dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -711,158 +712,16 @@ export default function EventManagementPage({
             {/* =====================================================
                 VIEW EVENT DETAILS MODAL
             ====================================================== */}
-            <Dialog open={Boolean(viewingEvent)} onOpenChange={(open) => !open && setViewingEvent(null)}>
-                <DialogContent className="max-h-[85vh] flex flex-col overflow-hidden rounded-3xl border-border bg-card p-0 shadow-2xl sm:max-w-lg">
-                    <DialogHeader className="shrink-0 border-b border-border bg-muted/20 p-5 sm:p-6 pb-4">
-                        <div className="flex items-center gap-2.5 min-w-0 pr-6">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                <CalendarDays className="h-5 w-5" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                                <p className={`text-[11px] font-bold uppercase tracking-wider ${TYPE_STYLES[viewingEvent?.type || '']?.text || 'text-muted-foreground'}`}>
-                                    {TYPE_STYLES[viewingEvent?.type || '']?.label || 'Marketing Event'}
-                                </p>
-                                <DialogTitle className="text-base font-bold text-foreground sm:text-lg truncate" title={viewingEvent?.name}>
-                                    {viewingEvent?.name}
-                                </DialogTitle>
-                            </div>
-                        </div>
-                        <DialogDescription className="sr-only">
-                            Details and timeline for {viewingEvent?.name}
-                        </DialogDescription>
-                    </DialogHeader>
+            <ViewEventDialog
+                event={viewingEvent}
+                open={Boolean(viewingEvent)}
+                onOpenChange={(open) => !open && setViewingEvent(null)}
+                onEdit={(evt) => {
+                    setViewingEvent(null);
+                    handleOpenEdit(evt as EventItem);
+                }}
+            />
 
-                    {/* Modal Body - Scrollable so it never overflows user screen */}
-                    <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-xs">
-                        {/* Schedule Dates & Type */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="rounded-2xl border border-border/70 bg-muted/20 p-3.5 space-y-1">
-                                <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
-                                    <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
-                                    Schedule Date
-                                </span>
-                                <p className="font-mono text-xs font-semibold text-foreground">
-                                    {viewingEvent?.start_date}
-                                    {viewingEvent?.start_date !== viewingEvent?.end_date && (
-                                        <span> → {viewingEvent?.end_date}</span>
-                                    )}
-                                </p>
-                                {viewingEvent?.start_date !== viewingEvent?.end_date && (
-                                    <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                                        <Clock className="h-2.5 w-2.5 shrink-0" />
-                                        Multi-day range
-                                    </span>
-                                )}
-                            </div>
-
-                            <div className="rounded-2xl border border-border/70 bg-muted/20 p-3.5 space-y-1">
-                                <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
-                                    <Tag className="h-3.5 w-3.5 text-primary shrink-0" />
-                                    Event Type
-                                </span>
-                                <p className={`text-xs font-bold truncate ${TYPE_STYLES[viewingEvent?.type || '']?.text || 'text-foreground'}`}>
-                                    {TYPE_STYLES[viewingEvent?.type || '']?.label || 'Custom Event'}
-                                </p>
-                                <span className="text-[10px] text-muted-foreground block truncate">
-                                    {viewingEvent?.is_global ? 'System / Official' : 'Custom Business Event'}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Long weekend alert if applicable */}
-                        {viewingEvent?.is_long_weekend && (
-                            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-amber-700 dark:text-amber-300">
-                                <div className="flex items-center gap-1.5 font-semibold text-xs">
-                                    <PartyPopper className="h-4 w-4 shrink-0" />
-                                    <span>Long Weekend Opportunity</span>
-                                </div>
-                                {viewingEvent.long_weekend_details && (
-                                    <p className="mt-1 text-[11px] text-amber-800/80 dark:text-amber-200/80 leading-relaxed">
-                                        {viewingEvent.long_weekend_details}
-                                    </p>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Overview / Description */}
-                        <div className="rounded-2xl border border-border/70 bg-muted/20 p-3.5 space-y-1.5">
-                            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                                Overview & Marketing Context
-                            </span>
-                            <p className="text-xs leading-relaxed text-foreground whitespace-pre-wrap">
-                                {viewingEvent?.description?.trim() ||
-                                    'No description provided for this marketing event. Use this event date to plan targeted promotional campaigns.'}
-                            </p>
-                        </div>
-
-                        {/* Linked Campaigns Info */}
-                        <div className="rounded-2xl border border-border/70 bg-muted/20 p-3.5 flex items-center justify-between">
-                            <div className="flex items-center gap-2.5">
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                    <ShoppingBag className="h-4 w-4" />
-                                </div>
-                                <div>
-                                    <p className="font-semibold text-foreground">Linked Campaigns</p>
-                                    <p className="text-[11px] text-muted-foreground">
-                                        {viewingEvent?.has_campaign
-                                            ? `${viewingEvent.campaigns_count} active campaign(s) running for this event`
-                                            : 'No campaigns currently associated with this event'}
-                                    </p>
-                                </div>
-                            </div>
-                            <span className="font-mono text-sm font-bold text-foreground">
-                                {viewingEvent?.campaigns_count || 0}
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Modal Footer */}
-                    <DialogFooter className="shrink-0 border-t border-border bg-muted/20 p-3.5 sm:p-4 flex flex-row items-center justify-end gap-2">
-                        <div className="flex items-center gap-2">
-                            {viewingEvent?.can_edit && (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                        const evt = viewingEvent;
-                                        setViewingEvent(null);
-                                        handleOpenEdit(evt);
-                                    }}
-                                    className="text-xs gap-1.5"
-                                >
-                                    <Edit3 className="h-3.5 w-3.5" />
-                                    Edit Event
-                                </Button>
-                            )}
-
-                            {viewingEvent?.has_campaign ? (
-                                <Button
-                                    asChild
-                                    size="sm"
-                                    className="text-xs gap-1.5 bg-primary font-semibold text-primary-foreground hover:bg-primary/90"
-                                >
-                                    <Link href={viewingEvent.latest_campaign_id ? `/campaigns/${viewingEvent.latest_campaign_id}` : `/campaigns?event_id=${viewingEvent.id}`}>
-                                        <ExternalLink className="h-3.5 w-3.5" />
-                                        Open Campaign
-                                    </Link>
-                                </Button>
-                            ) : (
-                                <Button
-                                    asChild
-                                    size="sm"
-                                    className="text-xs gap-1.5 bg-primary font-semibold text-primary-foreground hover:bg-primary/90"
-                                >
-                                    <Link href={`/campaigns?create=true&event_id=${viewingEvent?.id}`}>
-                                        <Plus className="h-3.5 w-3.5" />
-                                        Create Campaign
-                                    </Link>
-                                </Button>
-                            )}
-                        </div>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
 
             {/* =====================================================
                 ADD EVENT MODAL (USER-MANAGED EVENTS ONLY)

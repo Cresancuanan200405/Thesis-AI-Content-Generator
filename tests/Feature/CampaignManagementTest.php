@@ -930,3 +930,104 @@ it('can delete a visual associated with a campaign and redirect back to the camp
 
     $this->assertSoftDeleted('designs', ['id' => $design->id]);
 });
+
+test('campaign show provides authoritative generation source per design and campaign generation summary', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+    $campaign = Campaign::factory()->create(['business_id' => $business->id, 'user_id' => $user->id]);
+
+    $autoDesign = Design::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'campaign_id' => $campaign->id,
+        'generation_metadata' => [
+            'generation_mode' => 'automatic',
+            'render_style' => 'Studio Product Still',
+            'aspect_ratio' => '9:16',
+        ],
+    ]);
+
+    $manualDesign = Design::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'campaign_id' => $campaign->id,
+        'generation_metadata' => [
+            'generation_mode' => 'manual',
+            'render_style' => 'Cinematic Marketing',
+            'aspect_ratio' => '1:1',
+        ],
+    ]);
+
+    expect($autoDesign->getGenerationSource())->toBe('Automatic')
+        ->and($manualDesign->getGenerationSource())->toBe('Manual');
+
+    $response = $this->actingAs($user)->get(route('campaigns.show', $campaign));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('campaigns/show')
+        ->has('campaign.designs', 2)
+        ->where('campaign.generation_summary.has_automatic', true)
+        ->where('campaign.generation_summary.has_manual', true)
+        ->where('campaign.generation_summary.automatic_count', 1)
+        ->where('campaign.generation_summary.manual_count', 1)
+        ->where('campaign.generation_summary.label', 'Automatic · Manual')
+        ->where('campaign.designs.0.generation_source', fn ($src) => in_array($src, ['Automatic', 'Manual'], true))
+        ->where('campaign.designs.1.generation_source', fn ($src) => in_array($src, ['Automatic', 'Manual'], true))
+    );
+});
+
+it('downloads all campaign visual assets in a zip file containing a folder named after the campaign', function () {
+    Storage::fake('public');
+
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'name' => 'Summer Mega Promo',
+    ]);
+
+    // Create 2 designs with stored images
+    $path1 = 'designs/summer-1.png';
+    $path2 = 'designs/summer-2.png';
+    Storage::disk('public')->put($path1, 'fake-png-content-1');
+    Storage::disk('public')->put($path2, 'fake-png-content-2');
+
+    Design::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'campaign_id' => $campaign->id,
+        'generated_image_path' => $path1,
+        'product_name' => 'Product Alpha',
+    ]);
+
+    Design::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'campaign_id' => $campaign->id,
+        'generated_image_path' => $path2,
+        'product_name' => 'Product Beta',
+    ]);
+
+    $response = $this->actingAs($user)->get(route('campaigns.download-all', $campaign));
+
+    $response->assertOk();
+    $response->assertHeader('content-type', 'application/zip');
+    expect($response->headers->get('content-disposition'))->toContain('summer-mega-promo-assets.zip');
+});
+
+it('redirects with error when downloading all assets from a campaign with no stored visuals', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'name' => 'Empty Campaign',
+    ]);
+
+    $response = $this->actingAs($user)->get(route('campaigns.download-all', $campaign));
+
+    $response->assertRedirect(route('campaigns.show', $campaign));
+    $response->assertSessionHas('error');
+});

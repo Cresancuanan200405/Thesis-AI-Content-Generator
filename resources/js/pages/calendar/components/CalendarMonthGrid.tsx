@@ -162,7 +162,7 @@ export function CalendarMonthGrid({
         });
     }, [weeks, campaignEvents]);
 
-    const trackHeightPx = 20; // Height per campaign line track
+    const trackHeightPx = 24; // Height per campaign line track
     const trackGapPx = 4;     // Gap between campaign lines
     const headerHeightPx = 32; // Height for day numbers header
 
@@ -310,21 +310,21 @@ export function CalendarMonthGrid({
                                                 className="pointer-events-auto group/line relative flex flex-col justify-center px-1 text-left cursor-pointer select-none focus:outline-hidden"
                                                 title={`${displayName} (${formatDateRange(evt.startDate, evt.endDate)})${isPast ? ' (Past Campaign)' : ''}`}
                                             >
-                                                {/* Thin clean horizontal line */}
-                                                <div className="w-full flex items-center h-[3px]">
+                                                {/* Thicker bolder horizontal line indicator */}
+                                                <div className="w-full flex items-center h-[6px]">
                                                     <div
-                                                        className={`w-full h-[3px] transition-all group-hover/line:h-[4px] ${lineColor} ${
-                                                            seg.isStartSegment ? 'rounded-l-full' : ''
-                                                        } ${seg.isEndSegment ? 'rounded-r-full' : ''}`}
+                                                        className={`w-full h-[6px] transition-all group-hover/line:h-[7px] ${lineColor} shadow-xs ${
+                                                            seg.isStartSegment ? 'rounded-l-sm' : ''
+                                                        } ${seg.isEndSegment ? 'rounded-r-sm' : ''}`}
                                                     />
                                                 </div>
 
                                                 {/* Restrained campaign title text */}
                                                 <span
-                                                    className={`truncate text-[10px] tracking-tight mt-0.5 leading-none transition-colors ${
+                                                    className={`truncate text-[10px] tracking-tight mt-1 leading-none transition-colors font-medium ${
                                                         isPast
                                                             ? 'text-muted-foreground/60 line-through'
-                                                            : 'text-foreground/80 group-hover/line:text-primary font-semibold'
+                                                            : 'text-foreground/90 group-hover/line:text-primary font-semibold'
                                                     }`}
                                                 >
                                                     {displayName}

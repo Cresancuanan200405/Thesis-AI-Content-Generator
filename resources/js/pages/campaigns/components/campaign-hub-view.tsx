@@ -3,10 +3,8 @@ import {
     Archive,
     ArchiveRestore,
     CalendarDays,
-    Check,
     CheckCircle2,
     Download,
-    FolderOpen,
     ImageIcon,
     Layers,
     LayoutGrid,
@@ -14,10 +12,13 @@ import {
     MoreVertical,
     Pencil,
     Plus,
+    Search,
     Sparkles,
     Tag,
     Trash2,
+    X,
 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 import { AppPagination } from '@/components/ui/app-pagination';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,14 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 interface CampaignHubViewProps {
     stats: {
@@ -45,7 +54,7 @@ interface CampaignHubViewProps {
     handleSetViewMode: (mode: 'grid' | 'list') => void;
     statusOptions: string[];
     statusDot: Record<string, string>;
-    statusGlow: Record<string, string>;
+    statusGlow?: Record<string, string>;
     statusIconColor: Record<
         string,
         { bg: string; text: string; dot: string; label: string }
@@ -68,9 +77,7 @@ export function CampaignHubView({
     changeStatusFilter,
     viewMode,
     handleSetViewMode,
-    statusOptions,
     statusDot,
-    statusGlow,
     statusIconColor,
     formatDateRange,
     openEditDialog,
@@ -82,13 +89,35 @@ export function CampaignHubView({
     currentPage,
     lastPage,
 }: CampaignHubViewProps) {
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const displayedCampaigns = useMemo(() => {
+        let list = sortedCampaigns;
+        if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase();
+            list = list.filter((c: any) => {
+                const matchesName = c.name?.toLowerCase().includes(q);
+                const matchesProduct = c.product_name?.toLowerCase().includes(q);
+                const matchesEvent = c.event_name?.toLowerCase().includes(q);
+                const matchesObjective = c.objective?.toLowerCase().includes(q);
+                return (
+                    matchesName ||
+                    matchesProduct ||
+                    matchesEvent ||
+                    matchesObjective
+                );
+            });
+        }
+        return list;
+    }, [sortedCampaigns, searchQuery]);
+
     return (
         <div className="space-y-6">
             {/* =====================================================
                 CAMPAIGN OVERVIEW / STATS
             ====================================================== */}
-            <div className="grid gap-3 sm:grid-cols-4">
-                <div className="rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-border/80">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-2xs transition-all hover:border-border">
                     <div className="flex items-center gap-2">
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                             <Layers className="h-3.5 w-3.5" />
@@ -97,10 +126,12 @@ export function CampaignHubView({
                             Total Campaigns
                         </span>
                     </div>
-                    <p className="mt-2 text-2xl font-semibold">{stats.total}</p>
+                    <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">
+                        {stats.total}
+                    </p>
                 </div>
 
-                <div className="rounded-2xl border border-emerald-500/20 bg-card p-4 shadow-sm transition-all hover:border-emerald-500/40">
+                <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-2xs transition-all hover:border-border">
                     <div className="flex items-center gap-2">
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                             <Sparkles className="h-3.5 w-3.5" />
@@ -109,12 +140,12 @@ export function CampaignHubView({
                             Active
                         </span>
                     </div>
-                    <p className="mt-2 text-2xl font-semibold text-emerald-600 dark:text-emerald-400">
+                    <p className="mt-2 text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
                         {stats.active}
                     </p>
                 </div>
 
-                <div className="rounded-2xl border border-blue-500/20 bg-card p-4 shadow-sm transition-all hover:border-blue-500/40">
+                <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-2xs transition-all hover:border-border">
                     <div className="flex items-center gap-2">
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
                             <CalendarDays className="h-3.5 w-3.5" />
@@ -123,215 +154,205 @@ export function CampaignHubView({
                             Scheduled
                         </span>
                     </div>
-                    <p className="mt-2 text-2xl font-semibold text-blue-600 dark:text-blue-400">
+                    <p className="mt-2 text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">
                         {stats.scheduled}
                     </p>
                 </div>
 
-                <div className="rounded-2xl border border-purple-500/20 bg-card p-4 shadow-sm transition-all hover:border-purple-500/40">
+                <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-2xs transition-all hover:border-border">
                     <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
                             <CheckCircle2 className="h-3.5 w-3.5" />
                         </div>
                         <span className="text-xs font-medium text-muted-foreground">
                             Completed
                         </span>
                     </div>
-                    <p className="mt-2 text-2xl font-semibold text-purple-600 dark:text-purple-400">
+                    <p className="mt-2 text-2xl font-bold tracking-tight text-violet-600 dark:text-violet-400">
                         {stats.completed ?? 0}
                     </p>
                 </div>
             </div>
 
             {/* =====================================================
-                TOOLBAR CARD (FILTERS, STATS, ARCHIVE & VIEW DROPDOWN)
+                STICKY FILTER TOOLBAR (SYSTEM DESIGN COMPATIBLE)
+                Responsive & Sticky across all zoom levels
             ====================================================== */}
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3 shadow-xs sm:p-4">
-                <div className="inline-flex flex-wrap gap-1 rounded-xl border border-border/70 bg-muted/30 p-1">
-                    {statusOptions.map((status) => {
-                        const active =
-                            statusFilter === (status === 'all' ? '' : status);
-
-                        return (
+            <div className="sticky top-11 z-30 mb-5 rounded-2xl border border-white/25 bg-card/95 p-2.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:p-3 dark:border-white/10 dark:bg-card/95">
+                <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+                    {/* Search Input */}
+                    <div className="relative min-w-0 flex-1">
+                        <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search campaigns by name, objective, or product..."
+                            className="h-8.5 border-input bg-background pr-8 pl-8.5 text-xs shadow-none focus-visible:ring-primary/30"
+                        />
+                        {searchQuery && (
                             <button
-                                key={status}
                                 type="button"
-                                onClick={() => changeStatusFilter(status)}
-                                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-all ${
-                                    active
-                                        ? 'bg-card font-semibold text-foreground shadow-xs'
-                                        : 'text-muted-foreground hover:bg-card/60 hover:text-foreground'
-                                } `}
+                                onClick={() => setSearchQuery('')}
+                                className="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer text-muted-foreground/60 transition-colors hover:text-foreground"
+                                aria-label="Clear search"
                             >
-                                {status !== 'all' && (
-                                    <span
-                                        className={`h-2 w-2 rounded-full ${statusDot[status]}`}
-                                    />
-                                )}
-
-                                {status === 'all' ? 'All Campaigns' : status}
+                                <X className="h-3.5 w-3.5" />
                             </button>
-                        );
-                    })}
-                </div>
-
-                <div className="flex items-center gap-2.5 sm:gap-3">
-                    <p className="text-xs font-medium text-muted-foreground">
-                        Showing {sortedCampaigns.length}{' '}
-                        {sortedCampaigns.length === 1
-                            ? 'campaign'
-                            : 'campaigns'}
-                    </p>
-
-                    {/* ARCHIVE FUNCTION BUTTON ICON (NO TEXT) */}
-                    <Button
-                        type="button"
-                        variant={
-                            statusFilter === 'archived' ? 'default' : 'outline'
-                        }
-                        size="sm"
-                        onClick={() =>
-                            changeStatusFilter(
-                                statusFilter === 'archived'
-                                    ? 'all'
-                                    : 'archived',
-                            )
-                        }
-                        title={
-                            statusFilter === 'archived'
-                                ? 'View Active Campaigns'
-                                : 'View Archived Campaigns'
-                        }
-                        aria-label="Toggle Archived Campaigns"
-                        className={`relative h-8 w-8 rounded-xl p-0 transition-all ${
-                            statusFilter === 'archived'
-                                ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
-                                : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                    >
-                        <Archive className="h-4 w-4" />
-                        {stats.archived > 0 && (
-                            <span
-                                className={`absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold ${
-                                    statusFilter === 'archived'
-                                        ? 'bg-destructive text-destructive-foreground'
-                                        : 'bg-primary text-primary-foreground'
-                                }`}
-                            >
-                                {stats.archived}
-                            </span>
                         )}
-                    </Button>
+                    </div>
 
-                    {/* VIEW FUNCTION DROPDOWN (SINGLE ICON - NO TEXT) */}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
+                    {/* Filter & View Controls */}
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                        {/* Status Select Dropdown (Clean, replaces capsule pill buttons) */}
+                        <div className="w-36 shrink-0 sm:w-40">
+                            <Select
+                                value={statusFilter || 'all'}
+                                onValueChange={(val) => changeStatusFilter(val)}
+                            >
+                                <SelectTrigger className="h-8.5 w-full rounded-xl bg-background text-xs font-medium">
+                                    <SelectValue placeholder="All Campaigns" />
+                                </SelectTrigger>
+                                <SelectContent align="end" className="rounded-xl border-border bg-popover">
+                                    <SelectItem value="all" className="text-xs">
+                                        All Campaigns ({stats.total})
+                                    </SelectItem>
+                                    <SelectItem value="active" className="text-xs">
+                                        <span className="flex items-center gap-2">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                            Active ({stats.active})
+                                        </span>
+                                    </SelectItem>
+                                    <SelectItem value="scheduled" className="text-xs">
+                                        <span className="flex items-center gap-2">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                                            Scheduled ({stats.scheduled})
+                                        </span>
+                                    </SelectItem>
+                                    <SelectItem value="completed" className="text-xs">
+                                        <span className="flex items-center gap-2">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
+                                            Completed ({stats.completed})
+                                        </span>
+                                    </SelectItem>
+                                    <SelectItem value="archived" className="text-xs">
+                                        <span className="flex items-center gap-2">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-zinc-500" />
+                                            Archived ({stats.archived})
+                                        </span>
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* View Mode Toggle (Grid / List) */}
+                        <div className="flex items-center rounded-xl border border-border/70 bg-muted/30 p-0.5">
+                            <button
                                 type="button"
-                                variant="outline"
-                                size="sm"
-                                className="h-8 w-8 rounded-xl p-0 text-muted-foreground shadow-none hover:text-foreground"
-                                aria-label="Switch view layout"
-                                title={`Switch view layout (current: ${viewMode} view)`}
-                            >
-                                {viewMode === 'grid' ? (
-                                    <LayoutGrid className="h-4 w-4" />
-                                ) : (
-                                    <List className="h-4 w-4" />
-                                )}
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                            align="end"
-                            className="w-32 rounded-xl p-1 shadow-md"
-                        >
-                            <DropdownMenuItem
                                 onClick={() => handleSetViewMode('grid')}
-                                className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
+                                title="Grid view"
+                                className={`flex h-7.5 w-7.5 items-center justify-center rounded-lg transition-all ${
                                     viewMode === 'grid'
-                                        ? 'bg-primary/10 font-semibold text-primary'
-                                        : 'text-foreground hover:bg-muted'
+                                        ? 'bg-card text-foreground shadow-2xs font-semibold'
+                                        : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
-                                <div className="flex items-center gap-2">
-                                    <LayoutGrid className="h-3.5 w-3.5" />
-                                    <span>Grid</span>
-                                </div>
-                                {viewMode === 'grid' && (
-                                    <Check className="h-3.5 w-3.5 text-primary" />
-                                )}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
+                                <LayoutGrid className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                                type="button"
                                 onClick={() => handleSetViewMode('list')}
-                                className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
+                                title="List view"
+                                className={`flex h-7.5 w-7.5 items-center justify-center rounded-lg transition-all ${
                                     viewMode === 'list'
-                                        ? 'bg-primary/10 font-semibold text-primary'
-                                        : 'text-foreground hover:bg-muted'
+                                        ? 'bg-card text-foreground shadow-2xs font-semibold'
+                                        : 'text-muted-foreground hover:text-foreground'
                                 }`}
                             >
-                                <div className="flex items-center gap-2">
-                                    <List className="h-3.5 w-3.5" />
-                                    <span>List</span>
-                                </div>
-                                {viewMode === 'list' && (
-                                    <Check className="h-3.5 w-3.5 text-primary" />
-                                )}
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                                <List className="h-3.5 w-3.5" />
+                            </button>
+                        </div>
 
-                    {/* Primary Create Campaign Button */}
-                    <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => setIsCreateOpen(true)}
-                        className="h-8 gap-1.5 rounded-xl px-3 text-xs font-semibold shadow-2xs"
-                    >
-                        <Plus className="h-3.5 w-3.5" />
-                        <span>Create Campaign</span>
-                    </Button>
+                        {/* Campaign Count */}
+                        <span className="hidden text-xs font-medium text-muted-foreground sm:inline-block pl-1">
+                            {displayedCampaigns.length}{' '}
+                            {displayedCampaigns.length === 1
+                                ? 'campaign'
+                                : 'campaigns'}
+                        </span>
+
+                        {/* Primary Create Campaign Button */}
+                        <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => setIsCreateOpen(true)}
+                            className="h-8.5 gap-1.5 rounded-xl px-3 text-xs font-semibold shadow-2xs"
+                        >
+                            <Plus className="h-3.5 w-3.5" />
+                            <span>Create Campaign</span>
+                        </Button>
+                    </div>
                 </div>
             </div>
 
             {/* =====================================================
                 CAMPAIGNS CARDS / LIST
             ====================================================== */}
-            {sortedCampaigns.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-16 text-center shadow-sm">
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-muted/60 text-muted-foreground">
-                        <FolderOpen className="h-6 w-6" />
+            {displayedCampaigns.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-16 text-center shadow-2xs">
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+                        <Layers className="h-6 w-6" />
                     </div>
 
-                    <h2 className="mt-4 text-base font-semibold">
-                        {statusFilter
-                            ? `No ${statusFilter} campaigns found`
-                            : 'No campaigns created yet'}
-                    </h2>
+                    <h3 className="mt-4 text-sm font-bold text-foreground">
+                        {searchQuery
+                            ? 'No Matching Campaigns Found'
+                            : statusFilter === 'archived'
+                              ? 'No Archived Campaigns'
+                              : 'No Campaigns Found'}
+                    </h3>
 
-                    <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-                        {statusFilter
-                            ? 'Try switching to another status filter or create a new campaign.'
-                            : 'Launch your first marketing campaign to organize and schedule your AI generated visuals.'}
+                    <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
+                        {searchQuery
+                            ? `No campaigns match "${searchQuery}". Try clearing your search.`
+                            : statusFilter === 'archived'
+                              ? 'Archived campaigns will appear here when you archive past campaigns.'
+                              : 'Create your first marketing campaign to generate AI assets, schedule events, and track creative performance.'}
                     </p>
 
-                    <Button
-                        className="mt-5 gap-2 shadow-sm"
-                        onClick={() => setIsCreateOpen(true)}
-                    >
-                        <Plus className="h-4 w-4" />
-                        Create Campaign
-                    </Button>
+                    <div className="mt-6 flex justify-center gap-3">
+                        {searchQuery ? (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSearchQuery('')}
+                                className="h-8.5 rounded-xl text-xs font-semibold"
+                            >
+                                Clear Search
+                            </Button>
+                        ) : (
+                            <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => setIsCreateOpen(true)}
+                                className="h-8.5 gap-1.5 rounded-xl text-xs font-semibold shadow-2xs"
+                            >
+                                <Plus className="h-3.5 w-3.5" />
+                                Create Campaign
+                            </Button>
+                        )}
+                    </div>
                 </div>
             ) : viewMode === 'grid' ? (
-                <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {sortedCampaigns.map((campaign: any) => {
+                /* GRID VIEW — Modern, clean, NO capsule tags, NO neon glow */
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {displayedCampaigns.map((campaign: any) => {
                         const status = campaign.status ?? 'active';
                         const designCount = Number(
                             campaign.design_count ||
                                 (campaign.designs?.length ?? 0),
                         );
-                        const currentGlow =
-                            statusGlow[status] ?? statusGlow.active;
                         const currentIcon =
                             statusIconColor[status] ?? statusIconColor.active;
 
@@ -354,17 +375,17 @@ export function CampaignHubView({
                                         );
                                     }
                                 }}
-                                className={`group relative flex min-h-[160px] cursor-pointer flex-col justify-between overflow-hidden rounded-xl border bg-card text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:ring-2 focus:ring-primary/40 focus:outline-none ${currentGlow} `}
+                                className="group relative flex min-h-[168px] cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-card text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus:ring-2 focus:ring-primary/30 focus:outline-none"
                             >
                                 {/* CARD TOP HEADER */}
-                                <div className="border-b border-border/50 p-3.5 sm:p-4">
+                                <div className="border-b border-border/50 p-4">
                                     <div className="flex items-start justify-between gap-2.5">
                                         <div className="flex min-w-0 flex-1 items-center gap-2.5">
                                             {/* CAMPAIGN ICON */}
                                             <div
-                                                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105 ${currentIcon.bg} ${currentIcon.text}`}
+                                                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-muted/60 text-foreground transition-transform duration-200 group-hover:scale-105`}
                                             >
-                                                <Layers className="h-4 w-4" />
+                                                <Layers className="h-4 w-4 text-primary" />
                                             </div>
 
                                             {/* NAME BESIDE ICON */}
@@ -372,18 +393,18 @@ export function CampaignHubView({
                                                 <h2 className="truncate text-sm font-semibold text-foreground transition-colors group-hover:text-primary">
                                                     {campaign.name}
                                                 </h2>
-                                                <div className="mt-0.5 flex items-center gap-1.5 text-[11px]">
+                                                <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                                                     <span
-                                                        className={`inline-block h-1.5 w-1.5 rounded-full ${currentIcon.dot}`}
+                                                        className={`h-1.5 w-1.5 rounded-full ${statusDot[status] || 'bg-muted-foreground'}`}
                                                     />
-                                                    <span className="font-medium text-muted-foreground capitalize">
-                                                        {currentIcon.label}
+                                                    <span className="capitalize font-medium">
+                                                        {status}
                                                     </span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* DOTTED HAMBURGER MENU */}
+                                        {/* ACTIONS MENU */}
                                         <div
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -397,7 +418,7 @@ export function CampaignHubView({
                                                             e.preventDefault();
                                                             e.stopPropagation();
                                                         }}
-                                                        className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:ring-2 focus:ring-primary/30 focus:outline-none"
+                                                        className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:ring-2 focus:ring-primary/30 focus:outline-none"
                                                         aria-label="Campaign actions"
                                                     >
                                                         <MoreVertical className="h-3.5 w-3.5" />
@@ -489,7 +510,7 @@ export function CampaignHubView({
                                 </div>
 
                                 {/* CARD BODY DETAILS */}
-                                <div className="flex flex-1 flex-col p-3.5 sm:p-4">
+                                <div className="flex flex-1 flex-col p-4">
                                     <div className="space-y-1.5 text-xs">
                                         <div className="flex items-center gap-2 text-muted-foreground">
                                             <CalendarDays className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
@@ -512,8 +533,8 @@ export function CampaignHubView({
                                     </div>
 
                                     {/* CARD FOOTER */}
-                                    <div className="mt-auto flex items-center justify-between border-t border-border/50 pt-2.5">
-                                        <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+                                    <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-3">
+                                        <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                                             <ImageIcon className="h-3.5 w-3.5 text-primary/70" />
                                             <span>
                                                 {designCount}{' '}
@@ -522,8 +543,8 @@ export function CampaignHubView({
                                                     : 'assets'}
                                             </span>
                                         </div>
-                                        <span className="text-[11px] font-medium text-primary group-hover:underline">
-                                            View Details →
+                                        <span className="text-xs font-semibold text-primary transition-colors group-hover:underline">
+                                            View Campaign →
                                         </span>
                                     </div>
                                 </div>
@@ -532,9 +553,9 @@ export function CampaignHubView({
                     })}
                 </div>
             ) : (
-                /* LIST VIEW */
+                /* LIST VIEW — Modern editorial row layout */
                 <div className="space-y-2">
-                    {sortedCampaigns.map((campaign: any) => {
+                    {displayedCampaigns.map((campaign: any) => {
                         const status = campaign.status ?? 'active';
                         const eventName =
                             campaign.event_name ?? 'No event selected';
@@ -542,8 +563,6 @@ export function CampaignHubView({
                             campaign.design_count ||
                                 (campaign.designs?.length ?? 0),
                         );
-                        const currentIcon =
-                            statusIconColor[status] ?? statusIconColor.active;
 
                         return (
                             <div
@@ -564,13 +583,13 @@ export function CampaignHubView({
                                         );
                                     }
                                 }}
-                                className="group flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-card p-2.5 shadow-xs transition-all duration-200 hover:border-primary/40 hover:shadow-sm sm:p-3"
+                                className="group flex cursor-pointer items-center gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-2xs transition-all duration-200 hover:border-primary/40 hover:shadow-sm"
                             >
                                 {/* Status Icon */}
                                 <div
-                                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${currentIcon.bg} ${currentIcon.text}`}
+                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-muted/60 text-foreground"
                                 >
-                                    <Layers className="h-4 w-4" />
+                                    <Layers className="h-4 w-4 text-primary" />
                                 </div>
 
                                 {/* Info */}
@@ -578,12 +597,12 @@ export function CampaignHubView({
                                     <p className="truncate text-xs font-semibold text-foreground transition-colors group-hover:text-primary sm:text-sm">
                                         {campaign.name}
                                     </p>
-                                    <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
+                                    <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
                                         <span
-                                            className={`h-1.5 w-1.5 rounded-full ${currentIcon.dot}`}
+                                            className={`h-1.5 w-1.5 rounded-full ${statusDot[status] || 'bg-muted-foreground'}`}
                                         />
                                         <span className="font-medium capitalize">
-                                            {currentIcon.label}
+                                            {status}
                                         </span>
                                         {eventName &&
                                             eventName !==
@@ -609,15 +628,15 @@ export function CampaignHubView({
                                         )}
                                     </p>
                                     {campaign.product_name && (
-                                        <p className="truncate text-[11px] text-muted-foreground/80">
+                                        <p className="truncate text-xs text-muted-foreground/80">
                                             {campaign.product_name}
                                         </p>
                                     )}
                                 </div>
 
                                 {/* Visuals count */}
-                                <div className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-muted/30 px-2 py-1 text-[11px] font-medium text-muted-foreground">
-                                    <ImageIcon className="h-3 w-3 text-primary/70" />
+                                <div className="flex items-center gap-1.5 rounded-xl border border-border/60 bg-muted/20 px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                                    <ImageIcon className="h-3.5 w-3.5 text-primary/70" />
                                     <span>{designCount}</span>
                                 </div>
 
@@ -628,7 +647,7 @@ export function CampaignHubView({
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
+                                                className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
                                                 aria-label="Actions"
                                             >
                                                 <MoreVertical className="h-3.5 w-3.5" />
@@ -636,7 +655,7 @@ export function CampaignHubView({
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent
                                             align="end"
-                                            className="w-48 rounded-xl border-border p-1.5 shadow-lg"
+                                            className="w-48 rounded-xl border border-border p-1.5 shadow-lg"
                                         >
                                             <DropdownMenuItem
                                                 onClick={(e) => {
@@ -644,11 +663,12 @@ export function CampaignHubView({
                                                     e.stopPropagation();
                                                     openEditDialog(campaign);
                                                 }}
-                                                className="cursor-pointer gap-2 text-xs font-medium"
+                                                className="cursor-pointer gap-2 rounded-lg text-xs font-medium"
                                             >
-                                                <Pencil className="h-3.5 w-3.5 text-muted-foreground" />{' '}
+                                                <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                                                 Edit Campaign
                                             </DropdownMenuItem>
+
                                             <DropdownMenuItem
                                                 onClick={(e) => {
                                                     e.preventDefault();
@@ -657,9 +677,9 @@ export function CampaignHubView({
                                                         campaign,
                                                     );
                                                 }}
-                                                className="cursor-pointer gap-2 text-xs font-medium"
+                                                className="cursor-pointer gap-2 rounded-lg text-xs font-medium"
                                             >
-                                                <Download className="h-3.5 w-3.5 text-muted-foreground" />{' '}
+                                                <Download className="h-3.5 w-3.5 text-muted-foreground" />
                                                 Download Assets
                                             </DropdownMenuItem>
 
@@ -672,9 +692,9 @@ export function CampaignHubView({
                                                             campaign,
                                                         );
                                                     }}
-                                                    className="cursor-pointer gap-2 text-xs font-medium"
+                                                    className="cursor-pointer gap-2 rounded-lg text-xs font-medium"
                                                 >
-                                                    <Archive className="h-3.5 w-3.5 text-muted-foreground" />{' '}
+                                                    <Archive className="h-3.5 w-3.5 text-muted-foreground" />
                                                     Archive Campaign
                                                 </DropdownMenuItem>
                                             ) : (
@@ -686,14 +706,15 @@ export function CampaignHubView({
                                                             campaign,
                                                         );
                                                     }}
-                                                    className="cursor-pointer gap-2 text-xs font-medium text-primary hover:bg-primary/10"
+                                                    className="cursor-pointer gap-2 rounded-lg text-xs font-medium text-primary hover:bg-primary/10"
                                                 >
-                                                    <ArchiveRestore className="h-3.5 w-3.5 text-primary" />{' '}
+                                                    <ArchiveRestore className="h-3.5 w-3.5 text-primary" />
                                                     Restore to Active
                                                 </DropdownMenuItem>
                                             )}
 
                                             <DropdownMenuSeparator className="my-1 border-border/60" />
+
                                             <DropdownMenuItem
                                                 onClick={(e) => {
                                                     e.preventDefault();
@@ -702,9 +723,9 @@ export function CampaignHubView({
                                                         campaign,
                                                     );
                                                 }}
-                                                className="cursor-pointer gap-2 text-xs font-medium text-destructive focus:bg-destructive/10 focus:text-destructive"
+                                                className="cursor-pointer gap-2 rounded-lg text-xs font-medium text-destructive hover:bg-destructive/10 focus:bg-destructive/10 focus:text-destructive"
                                             >
-                                                <Trash2 className="h-3.5 w-3.5" />{' '}
+                                                <Trash2 className="h-3.5 w-3.5" />
                                                 Delete Campaign
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
@@ -720,24 +741,29 @@ export function CampaignHubView({
                 PAGINATION
             ====================================================== */}
             {lastPage > 1 && (
-                <AppPagination
-                    currentPage={currentPage}
-                    lastPage={lastPage}
-                    onPageChange={(page) =>
-                        router.get(
-                            '/campaigns',
-                            {
-                                view: 'hub',
-                                page,
-                                status: statusFilter,
-                            },
-                            {
-                                preserveScroll: true,
-                            },
-                        )
-                    }
-                    className="mt-8"
-                />
+                <div className="pt-2">
+                    <AppPagination
+                        currentPage={currentPage}
+                        lastPage={lastPage}
+                        onPageChange={(page) => {
+                            router.get(
+                                '/campaigns',
+                                {
+                                    status:
+                                        statusFilter === 'all'
+                                            ? ''
+                                            : statusFilter,
+                                    view: 'hub',
+                                    page,
+                                },
+                                {
+                                    preserveScroll: true,
+                                    replace: true,
+                                },
+                            );
+                        }}
+                    />
+                </div>
             )}
         </div>
     );

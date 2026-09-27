@@ -104,6 +104,23 @@ export function UpcomingSidebar({
                             const styleKey = evt.category || evt.type || 'holiday';
                             const style = CATEGORY_STYLES[styleKey] || CATEGORY_STYLES.holiday;
 
+                            const leftBorderClass =
+                                styleKey === 'regular' || styleKey === 'holiday'
+                                    ? 'border-l-rose-600 dark:border-l-rose-500'
+                                    : styleKey === 'special_non_working'
+                                      ? 'border-l-amber-600 dark:border-l-amber-500'
+                                      : styleKey === 'special_working'
+                                        ? 'border-l-orange-600 dark:border-l-orange-500'
+                                        : styleKey === 'islamic'
+                                          ? 'border-l-emerald-600 dark:border-l-emerald-500'
+                                          : styleKey === 'commercial'
+                                            ? 'border-l-blue-600 dark:border-l-blue-500'
+                                            : styleKey === 'seasonal'
+                                              ? 'border-l-teal-600 dark:border-l-teal-500'
+                                              : styleKey === 'custom'
+                                                ? 'border-l-purple-600 dark:border-l-purple-500'
+                                                : 'border-l-primary';
+
                             return (
                                 <div
                                     key={evt.id}
@@ -112,34 +129,30 @@ export function UpcomingSidebar({
                                             onSelectEvent(fullEvent);
                                         }
                                     }}
-                                    className={`group rounded-2xl border ${style.border} ${style.bg} p-3 transition-all hover:brightness-105 cursor-pointer shadow-2xs space-y-2`}
+                                    className={`group rounded-xl border border-border border-l-[5px] ${leftBorderClass} bg-card p-3.5 transition-all hover:bg-muted/40 cursor-pointer shadow-xs space-y-2.5`}
                                 >
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="space-y-0.5 min-w-0">
-                                            <div className="flex items-center gap-1.5">
-                                                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${style.dot}`} />
-                                                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                                    {style.label}
-                                                </span>
-                                            </div>
+                                            <span className={`text-[10px] font-bold uppercase tracking-wider block ${style.text}`}>
+                                                {style.label}
+                                            </span>
                                             <h4 className="text-xs font-bold text-foreground truncate">
                                                 {evt.name}
                                             </h4>
                                         </div>
 
                                         {evt.days && (
-                                            <Badge
-                                                variant="outline"
-                                                className="border-primary/30 bg-primary/10 text-[9px] font-bold text-primary shrink-0"
+                                            <span
+                                                className={`shrink-0 rounded-sm px-2 py-0.5 font-mono text-[10px] font-bold ${style.solidBg || 'bg-primary'} ${style.solidText || 'text-white'}`}
                                             >
                                                 {evt.days}
-                                            </Badge>
+                                            </span>
                                         )}
                                     </div>
 
-                                    <div className="flex items-center justify-between pt-1 border-t border-border/50 text-[11px] text-muted-foreground">
-                                        <div className="flex items-center gap-1">
-                                            <CalendarDays className="h-3 w-3" />
+                                    <div className="flex items-center justify-between pt-1.5 border-t border-border/70 text-[11px] text-muted-foreground">
+                                        <div className="flex items-center gap-1.5 font-medium">
+                                            <CalendarDays className="h-3.5 w-3.5 text-foreground/70" />
                                             <span>
                                                 {fullEvent
                                                     ? formatDateRange(fullEvent.startDate, fullEvent.endDate, { shortMonth: true })
@@ -147,7 +160,7 @@ export function UpcomingSidebar({
                                             </span>
                                         </div>
 
-                                        <span className="text-[10px] font-medium text-muted-foreground group-hover:text-foreground">
+                                        <span className="text-[10px] font-semibold text-muted-foreground group-hover:text-primary transition-colors">
                                             View Details →
                                         </span>
                                     </div>

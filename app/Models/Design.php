@@ -121,6 +121,25 @@ class Design extends Model
     }
 
     /**
+     * Authoritatively resolve whether this design was generated via Automatic or Manual Studio.
+     */
+    public function getGenerationSource(): string
+    {
+        $mode = strtolower((string) (
+            $this->generation_metadata['generation_mode']
+            ?? $this->generation_metadata['mode']
+            ?? 'manual'
+        ));
+
+        return $mode === 'automatic' ? 'Automatic' : 'Manual';
+    }
+
+    public function getGenerationSourceAttribute(): string
+    {
+        return $this->getGenerationSource();
+    }
+
+    /**
      * @param  Builder<Design>  $query
      * @return Builder<Design>
      */
