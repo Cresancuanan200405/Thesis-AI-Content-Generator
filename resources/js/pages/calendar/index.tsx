@@ -2,6 +2,7 @@ import { Head } from '@inertiajs/react';
 import {
     Calendar as CalendarIcon,
     Check,
+    ChevronDown,
     ChevronLeft,
     ChevronRight,
     Filter,
@@ -252,33 +253,33 @@ export default function MarketingCalendarPage({
                     </div>
 
                     {/* =====================================================
-                        STICKY NAVIGATION & FILTER TOOLBAR (MATCHING MY DESIGNS)
+                        STICKY NAVIGATION & FILTER TOOLBAR (MATCHING SYSTEM TOOLBAR)
                     ====================================================== */}
-                    <div className="sticky top-11 z-30 mb-6 rounded-2xl border border-white/25 bg-card/95 p-2.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:p-3 dark:border-white/10 dark:bg-card/95">
+                    <div className="sticky top-11 z-30 mb-5 rounded-2xl border border-white/25 bg-card/95 px-2.5 py-1.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:px-3 sm:py-1.5 dark:border-white/10 dark:bg-card/95">
                         <div className="flex items-center justify-between gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-2.5">
                             {/* Navigation controls & Filters (Static left-anchored group) */}
-                            <div className="flex shrink-0 items-center gap-2">
+                            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
                                 {/* Prev / Next Buttons */}
-                                <div className="flex shrink-0 items-center rounded-xl border border-border bg-background p-0.5">
+                                <div className="flex shrink-0 items-center rounded-lg border border-border bg-background p-0.5 shadow-2xs">
                                     <Button
                                         type="button"
                                         variant="ghost"
                                         size="icon"
                                         onClick={prevMonth}
-                                        className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
+                                        className="h-7 w-7 rounded-md text-muted-foreground hover:bg-muted/40 hover:text-foreground"
                                         aria-label="Previous Month"
                                     >
-                                        <ChevronLeft className="h-4 w-4" />
+                                        <ChevronLeft className="h-3.5 w-3.5" />
                                     </Button>
                                     <Button
                                         type="button"
                                         variant="ghost"
                                         size="icon"
                                         onClick={nextMonth}
-                                        className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
+                                        className="h-7 w-7 rounded-md text-muted-foreground hover:bg-muted/40 hover:text-foreground"
                                         aria-label="Next Month"
                                     >
-                                        <ChevronRight className="h-4 w-4" />
+                                        <ChevronRight className="h-3.5 w-3.5" />
                                     </Button>
                                 </div>
 
@@ -287,7 +288,7 @@ export default function MarketingCalendarPage({
                                     value={String(currentMonth)}
                                     onValueChange={handleMonthChange}
                                 >
-                                    <SelectTrigger className="h-8.5 w-[115px] shrink-0 rounded-xl bg-background text-xs font-semibold shadow-none">
+                                    <SelectTrigger className="h-7 w-[108px] shrink-0 rounded-lg border-border bg-background px-2.5 text-xs font-semibold shadow-2xs">
                                         <SelectValue>
                                             {monthNames[currentMonth]}
                                         </SelectValue>
@@ -310,7 +311,7 @@ export default function MarketingCalendarPage({
                                     value={String(currentYear)}
                                     onValueChange={handleYearChange}
                                 >
-                                    <SelectTrigger className="h-8.5 w-[80px] shrink-0 rounded-xl bg-background text-xs font-semibold shadow-none">
+                                    <SelectTrigger className="h-7 w-[72px] shrink-0 rounded-lg border-border bg-background px-2 text-xs font-semibold shadow-2xs">
                                         <SelectValue>{currentYear}</SelectValue>
                                     </SelectTrigger>
                                     <SelectContent>
@@ -331,13 +332,13 @@ export default function MarketingCalendarPage({
                                     variant="outline"
                                     size="sm"
                                     onClick={jumpToToday}
-                                    className="h-8.5 shrink-0 rounded-xl bg-background px-3 text-xs font-medium shadow-none"
+                                    className="h-7 shrink-0 rounded-lg border-border bg-background px-2.5 text-xs font-semibold text-foreground shadow-2xs hover:bg-muted/40"
                                 >
                                     Today
                                 </Button>
 
                                 {/* Vertical Divider */}
-                                <div className="mx-1 h-5 w-px shrink-0 bg-border/80" />
+                                <div className="mx-0.5 h-4 w-px shrink-0 bg-border/80" />
 
                                 {/* Category Filter Selector */}
                                 <div className="w-36 shrink-0 sm:w-40">
@@ -346,13 +347,13 @@ export default function MarketingCalendarPage({
                                         onValueChange={setActiveFilter}
                                     >
                                         <SelectTrigger
-                                            className={`h-8.5 w-full min-w-0 gap-1.5 rounded-xl text-xs shadow-none ${
+                                            className={`h-7 w-full min-w-0 gap-1.5 rounded-lg text-xs shadow-2xs ${
                                                 activeFilter !== 'all'
                                                     ? 'border-primary/50 bg-primary/10 font-semibold text-primary'
-                                                    : 'bg-background'
+                                                    : 'border-border bg-background'
                                             }`}
                                         >
-                                            <Filter className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                            <Filter className="h-3 w-3 shrink-0 text-muted-foreground" />
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -373,9 +374,9 @@ export default function MarketingCalendarPage({
                                     size="sm"
                                     onClick={() => setActiveFilter('all')}
                                     disabled={activeFilter === 'all'}
-                                    className={`h-8.5 shrink-0 px-2.5 text-xs transition-opacity ${
+                                    className={`h-7 shrink-0 rounded-lg px-2 text-xs transition-opacity ${
                                         activeFilter !== 'all'
-                                            ? 'cursor-pointer text-muted-foreground opacity-100 hover:text-destructive'
+                                            ? 'cursor-pointer text-muted-foreground opacity-100 hover:bg-destructive/10 hover:text-destructive'
                                             : 'pointer-events-none opacity-0'
                                     }`}
                                 >
@@ -383,13 +384,13 @@ export default function MarketingCalendarPage({
                                 </Button>
 
                                 {/* Event Count */}
-                                <div className="hidden shrink-0 items-center px-1 text-xs font-medium text-muted-foreground sm:inline-flex">
+                                <span className="hidden items-center justify-center rounded-md bg-muted/60 px-2 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground sm:inline-flex">
                                     {filteredEvents.length}{' '}
                                     {filteredEvents.length === 1 ? 'event' : 'events'}
-                                </div>
+                                </span>
                             </div>
 
-                            {/* View Mode Switcher (Icon-only Dropdown matching My Designs) */}
+                            {/* View Mode Switcher (Clear Button with Label & Icon) */}
                             <div className="flex shrink-0 items-center pl-2">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -397,25 +398,26 @@ export default function MarketingCalendarPage({
                                             type="button"
                                             variant="outline"
                                             size="sm"
-                                            className="h-8.5 w-8.5 rounded-xl p-0 text-muted-foreground shadow-none hover:text-foreground shrink-0"
-                                            title={`Current view: ${
-                                                viewMode === 'grid'
-                                                    ? 'Month'
-                                                    : viewMode === 'agenda'
-                                                      ? 'Agenda'
-                                                      : 'Year'
-                                            }`}
+                                            className="h-7 shrink-0 gap-1.5 rounded-lg border-border bg-background px-2.5 text-xs font-semibold text-foreground shadow-2xs hover:bg-muted/40"
                                             aria-label="Toggle View Mode"
                                         >
                                             {viewMode === 'grid' && (
-                                                <LayoutGrid className="h-4 w-4" />
+                                                <LayoutGrid className="h-3 w-3 text-primary" />
                                             )}
                                             {viewMode === 'agenda' && (
-                                                <List className="h-4 w-4" />
+                                                <List className="h-3 w-3 text-primary" />
                                             )}
                                             {viewMode === 'year' && (
-                                                <CalendarIcon className="h-4 w-4" />
+                                                <CalendarIcon className="h-3 w-3 text-primary" />
                                             )}
+                                            <span>
+                                                {viewMode === 'grid'
+                                                    ? 'Month'
+                                                    : viewMode === 'agenda'
+                                                      ? 'Agenda'
+                                                      : 'Year'}
+                                            </span>
+                                            <ChevronDown className="h-3 w-3 opacity-60" />
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent

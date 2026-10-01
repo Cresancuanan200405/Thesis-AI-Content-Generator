@@ -168,7 +168,7 @@ class DesignController extends Controller
                 'download_url' => route('designs.download', $design),
                 'show_url' => route('designs.show', $design),
                 'generator_url' => route(
-                    (($design->generation_metadata['mode'] ?? null) === 'manual') ? 'generator.manual.index' : 'generator.automatic.index',
+                    ($design->getGenerationSource() === 'Automatic') ? 'generator.automatic.index' : 'generator.manual.index',
                     array_filter([
                         'campaign_id' => $design->campaign_id,
                         'draft_id' => $design->id,

@@ -10,7 +10,7 @@ export function ImageViewerPanel({ children }: ImageViewerPanelProps) {
 
     return (
         <aside
-            className={`flex flex-col min-h-0 overflow-hidden border-t border-border/80 bg-background/95 backdrop-blur-2xl transition-all duration-300 lg:h-full lg:w-[380px] xl:w-[420px] 2xl:w-[460px] lg:min-w-[360px] lg:max-w-[480px] lg:shrink-0 lg:border-t-0 lg:border-l lg:bg-card/95 ${
+            className={`flex flex-col min-h-0 overflow-hidden border-t border-border/80 bg-background/95 text-foreground backdrop-blur-2xl transition-all duration-300 lg:h-full lg:w-[380px] xl:w-[420px] 2xl:w-[460px] lg:min-w-[360px] lg:max-w-[480px] lg:shrink-0 lg:border-t-0 lg:border-l lg:bg-card/95 ${
                 isMobileExpanded
                     ? 'h-[75vh] max-h-[560px]'
                     : 'h-[200px] max-h-[220px] lg:h-full lg:max-h-none'

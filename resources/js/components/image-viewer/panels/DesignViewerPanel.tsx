@@ -112,11 +112,11 @@ export function DesignViewerPanel({
                             </Badge>
 
                             {isDraft ? (
-                                <span className="rounded border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider text-amber-400">
+                                <span className="rounded border border-amber-500/30 dark:border-amber-500/40 bg-amber-500/10 dark:bg-amber-500/15 px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider text-amber-700 dark:text-amber-400">
                                     STATUS: DRAFT
                                 </span>
                             ) : (
-                                <span className="rounded border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider text-emerald-400">
+                                <span className="rounded border border-emerald-500/30 dark:border-emerald-500/40 bg-emerald-500/10 dark:bg-emerald-500/15 px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider text-emerald-700 dark:text-emerald-400">
                                     STATUS: FINAL
                                 </span>
                             )}
@@ -136,7 +136,7 @@ export function DesignViewerPanel({
                                 onClick={() => onFavoriteToggle(design)}
                                 className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all ${
                                     favoriteActive
-                                        ? 'border border-rose-500/40 bg-rose-500/20 text-rose-400'
+                                        ? 'border border-rose-500/30 dark:border-rose-500/40 bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400'
                                         : 'border border-border/80 bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground'
                                 }`}
                                 title={favoriteActive ? 'Favorited' : 'Add to Favorites'}
@@ -269,7 +269,7 @@ export function DesignViewerPanel({
                             variant="outline"
                             size="sm"
                             onClick={() => onDownload?.(design, 'png')}
-                            className="h-8 w-full justify-center gap-1 border-border bg-card px-2 text-xs font-medium hover:bg-muted"
+                            className="h-8 w-full justify-center gap-1 border-border bg-card px-2 text-xs font-medium text-foreground hover:bg-muted"
                         >
                             <Download className="h-3 w-3 text-primary shrink-0" />
                             <span className="truncate">PNG</span>
@@ -279,7 +279,7 @@ export function DesignViewerPanel({
                             variant="outline"
                             size="sm"
                             onClick={() => onDownload?.(design, 'jpeg')}
-                            className="h-8 w-full justify-center gap-1 border-border bg-card px-2 text-xs font-medium hover:bg-muted"
+                            className="h-8 w-full justify-center gap-1 border-border bg-card px-2 text-xs font-medium text-foreground hover:bg-muted"
                         >
                             <Download className="h-3 w-3 text-blue-500 shrink-0" />
                             <span className="truncate">JPEG</span>
@@ -289,7 +289,7 @@ export function DesignViewerPanel({
                             variant="outline"
                             size="sm"
                             onClick={() => onDownload?.(design, 'svg')}
-                            className="h-8 w-full justify-center gap-1 border-border bg-card px-2 text-xs font-medium hover:bg-muted"
+                            className="h-8 w-full justify-center gap-1 border-border bg-card px-2 text-xs font-medium text-foreground hover:bg-muted"
                         >
                             <Download className="h-3 w-3 text-emerald-500 shrink-0" />
                             <span className="truncate">SVG</span>

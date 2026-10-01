@@ -175,10 +175,10 @@ export function CampaignHubView({
             </div>
 
             {/* =====================================================
-                STICKY FILTER TOOLBAR (SYSTEM DESIGN COMPATIBLE)
-                Responsive & Sticky across all zoom levels
+                FILTER TOOLBAR (SYSTEM DESIGN COMPATIBLE)
+                Responsive across all zoom levels
             ====================================================== */}
-            <div className="sticky top-11 z-30 mb-5 rounded-2xl border border-white/25 bg-card/95 p-2.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:p-3 dark:border-white/10 dark:bg-card/95">
+            <div className="relative z-20 mb-5 rounded-2xl border border-white/25 bg-card/95 p-2.5 shadow-md backdrop-blur-xl transition-all sm:p-3 dark:border-white/10 dark:bg-card/95">
                 <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
                     {/* Search Input */}
                     <div className="relative min-w-0 flex-1">

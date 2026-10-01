@@ -32,7 +32,16 @@ class DesignRegenerationService
 
         $business = $design->business ?? $user->business()->firstOrFail();
         $meta = (array) ($design->generation_metadata ?? []);
-        $generationMode = (string) ($meta['generation_mode'] ?? 'automatic');
+        $generationMode = strtolower($design->getGenerationSource());
+
+        $historicalPrices = [];
+        if (! empty($meta['prices']) && is_array($meta['prices'])) {
+            $historicalPrices = $meta['prices'];
+        } elseif (! empty($meta['authoritative_copy']['prices']) && is_array($meta['authoritative_copy']['prices'])) {
+            $historicalPrices = $meta['authoritative_copy']['prices'];
+        } elseif (! empty($meta['authoritative_text_layers']['prices']) && is_array($meta['authoritative_text_layers']['prices'])) {
+            $historicalPrices = $meta['authoritative_text_layers']['prices'];
+        }
 
         // 1. Recover Product Details & Reference Image
         $catalogProductIds = collect($meta['catalog_product_ids'] ?? [])
@@ -75,13 +84,19 @@ class DesignRegenerationService
         if ($includePrices) {
             if (! empty($meta['price'])) {
                 $priceForPrompt = (string) $meta['price'];
+            } elseif ($product && isset($historicalPrices[(string) $product->id]) && $historicalPrices[(string) $product->id] !== null && $historicalPrices[(string) $product->id] !== '') {
+                $rawHist = (string) $historicalPrices[(string) $product->id];
+                $priceForPrompt = is_numeric($rawHist) ? '₱'.number_format((float) $rawHist, 2, '.', ',') : $rawHist;
+            } elseif ($product && isset($historicalPrices[$product->name]) && $historicalPrices[$product->name] !== null && $historicalPrices[$product->name] !== '') {
+                $rawHist = (string) $historicalPrices[$product->name];
+                $priceForPrompt = is_numeric($rawHist) ? '₱'.number_format((float) $rawHist, 2, '.', ',') : $rawHist;
             } elseif ($numericPrice !== null && $numericPrice !== '') {
                 $priceForPrompt = '₱'.number_format((float) $numericPrice, 2, '.', ',');
             } elseif ($product && $product->price > 0) {
                 $priceForPrompt = '₱'.number_format((float) $product->price, 2, '.', ',');
             }
         }
-        $dbPrice = $numericPrice ?: ($product->price ?? ($priceForPrompt ? (float) preg_replace('/[^0-9.]/', '', $priceForPrompt) : null));
+        $dbPrice = $numericPrice ?: ($priceForPrompt ? (float) preg_replace('/[^0-9.]/', '', $priceForPrompt) : ($product->price ?? null));
 
         $referenceImagePath = $design->reference_image_path ?? $product->image_path ?? null;
         $referenceImagePaths = $catalogProducts
@@ -114,12 +129,17 @@ class DesignRegenerationService
         $campaignObjective = $campaign->objective ?? $meta['campaign_objective'] ?? $meta['marketing_goal'] ?? 'Refresh the existing marketing asset for this product';
 
         // 3. Recover Event Details
+        $eventId = $design->event_id ?? (isset($meta['event_id']) ? (int) $meta['event_id'] : null);
         /** @var Event|null $event */
         $event = null;
-        if ($design->event_id) {
-            $event = $design->event ?? Event::query()->where('id', $design->event_id)->first();
+        if ($eventId) {
+            $event = ($design->event_id === $eventId ? $design->event : null)
+                ?? Event::query()->where('id', $eventId)->first();
         }
         $eventName = $event->name ?? $meta['event_name'] ?? null;
+        $showEventText = array_key_exists('show_event_text', $meta)
+            ? filter_var($meta['show_event_text'], FILTER_VALIDATE_BOOLEAN)
+            : true;
 
         // 4. Recover Style, Brand Tone, Render Style & Visual Theme
         $brandTone = $this->normalizeList($design->brand_tone ?? $meta['brand_tone'] ?? []);
@@ -167,28 +187,19 @@ class DesignRegenerationService
         $totalSelectedProducts = $catalogProducts->count() + count($customProducts);
         $isMultiProduct = $totalSelectedProducts > 1;
 
-        $historicalPrices = [];
-        if (! empty($meta['prices']) && is_array($meta['prices'])) {
-            $historicalPrices = $meta['prices'];
-        } elseif (! empty($meta['authoritative_copy']['prices']) && is_array($meta['authoritative_copy']['prices'])) {
-            $historicalPrices = $meta['authoritative_copy']['prices'];
-        } elseif (! empty($meta['authoritative_text_layers']['prices']) && is_array($meta['authoritative_text_layers']['prices'])) {
-            $historicalPrices = $meta['authoritative_text_layers']['prices'];
-        }
-
         $resolveProductPrice = function (?Product $prod, ?string $prodName = null, ?int $idx = null) use ($historicalPrices, $numericPrice, $isMultiProduct): ?string {
-            // 1. Authoritative current product record price
-            if ($prod && $prod->price !== null && $prod->price !== '') {
-                return (string) $prod->price;
-            }
-            // 2. Persisted historical price by product ID
-            if ($prod && isset($historicalPrices[(string) $prod->id])) {
+            // 1. Authoritative persisted historical price by product ID
+            if ($prod && isset($historicalPrices[(string) $prod->id]) && $historicalPrices[(string) $prod->id] !== null && $historicalPrices[(string) $prod->id] !== '') {
                 return (string) $historicalPrices[(string) $prod->id];
             }
-            // 3. Persisted historical price by product name
+            // 2. Authoritative persisted historical price by product name
             $lookupName = $prod ? $prod->name : $prodName;
-            if ($lookupName && isset($historicalPrices[$lookupName])) {
+            if ($lookupName && isset($historicalPrices[$lookupName]) && $historicalPrices[$lookupName] !== null && $historicalPrices[$lookupName] !== '') {
                 return (string) $historicalPrices[$lookupName];
+            }
+            // 3. Current product record price fallback (only when no historical price exists)
+            if ($prod && $prod->price !== null && $prod->price !== '') {
+                return (string) $prod->price;
             }
             // 4. Fallback for single-product design only
             if (! $isMultiProduct && $numericPrice !== null && $numericPrice !== '') {
@@ -264,6 +275,19 @@ class DesignRegenerationService
             }
         }
 
+        $catalogProductsForOptions = $catalogProducts->map(function (Product $p) use ($resolveProductPrice) {
+            $cloned = clone $p;
+            $authoritativePrice = $resolveProductPrice($p, $p->name);
+            if ($authoritativePrice !== null && $authoritativePrice !== '') {
+                $cleanNumeric = preg_replace('/[^0-9.]/', '', (string) $authoritativePrice);
+                if ($cleanNumeric !== '') {
+                    $cloned->price = $cleanNumeric;
+                }
+            }
+
+            return $cloned;
+        });
+
         // 9. Derive Meaningful Visual Variation (Part S)
         // PRESERVE: selected products, copy settings, campaign/event relevance, manual controls, aspect ratio.
         // CHANGE: composition, camera, lighting, props, environmental arrangement.
@@ -328,12 +352,14 @@ class DesignRegenerationService
             'campaign_name' => $campaignName,
             'campaign_objective' => $campaignObjective,
             'event_name' => $eventName,
+            'event_id' => $eventId,
+            'show_event_text' => $showEventText,
             'price' => $isMultiProduct ? null : ($priceForPrompt ?? ($primaryPrice ? (is_numeric($primaryPrice) ? '₱'.number_format((float) $primaryPrice, 2, '.', ',') : (string) $primaryPrice) : null)),
             'include_prices' => $includePrices,
             'tagline' => $normalizedTagline,
             'include_tagline' => $includeTagline,
             'tagline_mode' => $taglineMode,
-            'catalog_products' => $catalogProducts,
+            'catalog_products' => $catalogProductsForOptions,
             'catalog_product_ids' => $catalogProductIds,
             'custom_products' => $customProducts,
             'primary_product' => $primaryProductContract,
@@ -377,7 +403,7 @@ class DesignRegenerationService
             'business_id' => $business->id,
             'campaign_id' => $design->campaign_id,
             'product_id' => $design->product_id,
-            'event_id' => $design->event_id,
+            'event_id' => $eventId,
             'product_name' => $productName,
             'marketing_goal' => $campaignObjective,
             'content_style' => $contentStyle,
@@ -418,7 +444,7 @@ class DesignRegenerationService
             'user_id' => $user->id,
             'business_id' => $business->id,
             'campaign_id' => $design->campaign_id,
-            'event_id' => $design->event_id,
+            'event_id' => $eventId,
             'product_id' => $design->product_id,
             'product_name' => $productName,
             'prompt' => $lastMeta['prompt'] ?? $prompt,
@@ -469,6 +495,9 @@ class DesignRegenerationService
                     'business_name' => $businessName,
                     'scene_prompt' => $scenePrompt,
                     'aspect_ratio' => $aspectRatio,
+                    'event_id' => $eventId,
+                    'event_name' => $eventName,
+                    'show_event_text' => $showEventText,
                     'include_prices' => $includePrices,
                     'catalog_product_ids' => $catalogProductIds,
                     'custom_products' => $customProducts,

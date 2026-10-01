@@ -801,3 +801,80 @@ export const resolveIndustryIcon = (
 };
 
 export const getIndustryIconComponent = resolveIndustryIcon;
+
+/**
+ * Safely normalizes an array, comma-separated string, or JSON-stringified list into string[].
+ */
+export function parseList(val: any): string[] {
+    if (Array.isArray(val)) {
+        return val.map((s) => String(s).trim()).filter(Boolean);
+    }
+    if (typeof val === 'string' && val.trim()) {
+        try {
+            const parsed = JSON.parse(val);
+            if (Array.isArray(parsed)) {
+                return parsed.map((s) => String(s).trim()).filter(Boolean);
+            }
+        } catch {
+            // Not a JSON string
+        }
+        return val.split(',').map((s) => s.trim()).filter(Boolean);
+    }
+    return [];
+}
+
+/**
+ * Restores catalog products from historical draft metadata and canonical catalog products.
+ * Preserves exact ordering, restores historical prices without mutating catalog products,
+ * and omits unavailable/deleted catalog items without fabricating fake live entities.
+ */
+export function restoreProductsFromDraft(
+    draft: any,
+    catalogProducts: ProductItem[] = [],
+): ProductItem[] {
+    if (!draft) return [];
+    const meta = draft.generation_metadata || {};
+    const restored: ProductItem[] = [];
+
+    if (Array.isArray(meta.catalog_product_ids) && meta.catalog_product_ids.length > 0) {
+        for (const rawId of meta.catalog_product_ids) {
+            const idStr = String(rawId);
+            const catalogProd = catalogProducts.find((p) => String(p.id) === idStr);
+            if (catalogProd) {
+                const historicalPrice =
+                    meta.prices && typeof meta.prices === 'object'
+                        ? (meta.prices[idStr] ?? meta.prices[catalogProd.name])
+                        : undefined;
+
+                restored.push({
+                    ...catalogProd,
+                    price:
+                        historicalPrice !== undefined &&
+                        historicalPrice !== null &&
+                        historicalPrice !== ''
+                            ? String(historicalPrice)
+                            : catalogProd.price,
+                });
+            }
+        }
+    }
+
+    if (restored.length === 0 && draft.product_id) {
+        const idStr = String(draft.product_id);
+        const catalogProd =
+            catalogProducts.find((p) => String(p.id) === idStr) ||
+            (draft.product_name
+                ? catalogProducts.find((p) => p.name === draft.product_name)
+                : null);
+
+        if (catalogProd) {
+            restored.push({
+                ...catalogProd,
+                price: draft.price ? String(draft.price) : catalogProd.price,
+            });
+        }
+    }
+
+    return restored;
+}
+

@@ -981,3 +981,165 @@ it('existing Philippine holiday can be viewed and linked to campaign without dup
     $createdCampaign = Campaign::where('user_id', $user->id)->where('name', 'Rizal Day Commemoration Campaign')->firstOrFail();
     expect($createdCampaign->event_id)->toBe($holiday->id);
 });
+
+it('cross-year multi-day event belongs to start year and does not appear in following year', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    $crossYearEvent = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => "New Year's Eve 2027",
+        'date' => '2027-12-31',
+        'end_date' => '2028-01-02',
+        'type' => 'custom',
+        'is_global' => false,
+    ]);
+
+    // When viewing 2027: appears
+    $response2027 = $this->actingAs($user)->get('/events?year=2027')->assertOk();
+    $response2027->assertInertia(fn (Assert $page) => $page
+        ->where('selected_year', '2027')
+    );
+    $pageEvents2027 = collect($response2027->original->getData()['page']['props']['events']);
+    $year2027Attributed = $pageEvents2027->filter(fn ($e) => substr($e['start_date'] ?? $e['date'], 0, 4) === '2027');
+    expect($year2027Attributed->pluck('id'))->toContain($crossYearEvent->id);
+
+    // When viewing 2028: does NOT appear
+    $response2028 = $this->actingAs($user)->get('/events?year=2028')->assertOk();
+    $response2028->assertInertia(fn (Assert $page) => $page
+        ->where('selected_year', '2028')
+    );
+    $pageEvents2028 = collect($response2028->original->getData()['page']['props']['events']);
+    $year2028Attributed = $pageEvents2028->filter(fn ($e) => substr($e['start_date'] ?? $e['date'], 0, 4) === '2028');
+    expect($year2028Attributed->pluck('id'))->not->toContain($crossYearEvent->id);
+});
+
+it('actual 2028 event appears exactly once in 2028 despite prior cross-year event', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    $crossYear2027 = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => "New Year's Eve 2027",
+        'date' => '2027-12-31',
+        'end_date' => '2028-01-02',
+        'type' => 'custom',
+        'is_global' => false,
+    ]);
+
+    $actual2028 = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => "New Year's Eve 2028",
+        'date' => '2028-12-31',
+        'end_date' => '2028-12-31',
+        'type' => 'custom',
+        'is_global' => false,
+    ]);
+
+    $response = $this->actingAs($user)->get('/events?year=2028')->assertOk();
+    $pageEvents = collect($response->original->getData()['page']['props']['events']);
+    $year2028Events = $pageEvents->filter(fn ($e) => substr($e['start_date'] ?? $e['date'], 0, 4) === '2028');
+
+    expect($year2028Events->where('id', $actual2028->id)->count())->toBe(1)
+        ->and($year2028Events->where('id', $crossYear2027->id)->count())->toBe(0);
+});
+
+it('annual recurring events all appear in All Years but only specific year appears when filtered', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    $xmas2025 = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Annual Christmas 2025',
+        'date' => '2025-12-25',
+        'type' => 'custom',
+        'is_global' => false,
+    ]);
+    $xmas2026 = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Annual Christmas 2026',
+        'date' => '2026-12-25',
+        'type' => 'custom',
+        'is_global' => false,
+    ]);
+    $xmas2027 = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Annual Christmas 2027',
+        'date' => '2027-12-25',
+        'type' => 'custom',
+        'is_global' => false,
+    ]);
+    $xmas2028 = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Annual Christmas 2028',
+        'date' => '2028-12-25',
+        'type' => 'custom',
+        'is_global' => false,
+    ]);
+
+    // All Years: all four appear
+    $allYearsResponse = $this->actingAs($user)->get('/events?year=all')->assertOk();
+    $allEvents = collect($allYearsResponse->original->getData()['page']['props']['events']);
+    expect($allEvents->pluck('id'))->toContain($xmas2025->id)
+        ->and($allEvents->pluck('id'))->toContain($xmas2026->id)
+        ->and($allEvents->pluck('id'))->toContain($xmas2027->id)
+        ->and($allEvents->pluck('id'))->toContain($xmas2028->id);
+
+    // 2026: only Christmas 2026 appears
+    $year2026Response = $this->actingAs($user)->get('/events?year=2026')->assertOk();
+    $events2026 = collect($year2026Response->original->getData()['page']['props']['events'])
+        ->filter(fn ($e) => substr($e['start_date'] ?? $e['date'], 0, 4) === '2026');
+
+    expect($events2026->pluck('id'))->toContain($xmas2026->id)
+        ->and($events2026->pluck('id'))->not->toContain($xmas2025->id)
+        ->and($events2026->pluck('id'))->not->toContain($xmas2027->id)
+        ->and($events2026->pluck('id'))->not->toContain($xmas2028->id);
+});
+
+it('controller stats correspond to selected year or all years', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    Event::factory()->create(['user_id' => $user->id, 'date' => '2025-05-01', 'type' => 'commercial', 'is_global' => false]);
+    Event::factory()->create(['user_id' => $user->id, 'date' => '2026-05-01', 'type' => 'custom', 'is_global' => false]);
+
+    // Specific Year (2026)
+    $response2026 = $this->actingAs($user)->get('/events?year=2026')->assertOk();
+    $response2026->assertInertia(fn (Assert $page) => $page
+        ->where('selected_year', '2026')
+        ->has('stats', fn (Assert $stats) => $stats
+            ->where('custom', fn ($count) => $count >= 1)
+            ->etc()
+        )
+    );
+    $stats2026 = $response2026->original->getData()['page']['props']['stats'];
+    $eventsIn2026 = collect($response2026->original->getData()['page']['props']['events'])
+        ->filter(fn ($e) => substr($e['start_date'] ?? $e['date'], 0, 4) === '2026');
+    expect($stats2026['total'])->toBe($eventsIn2026->count());
+
+    // All Years
+    $responseAll = $this->actingAs($user)->get('/events?year=all')->assertOk();
+    $statsAll = $responseAll->original->getData()['page']['props']['stats'];
+    $allEvents = collect($responseAll->original->getData()['page']['props']['events']);
+    expect($statsAll['total'])->toBe($allEvents->count())
+        ->and($statsAll['total'])->toBeGreaterThan($stats2026['total']);
+});
+
+it('multi-day event within same year appears and preserves date range without regression', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+
+    $multiDayEvent = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Mid-September Expo',
+        'date' => '2026-09-10',
+        'end_date' => '2026-09-14',
+        'type' => 'commercial',
+        'is_global' => false,
+    ]);
+
+    $response = $this->actingAs($user)->get('/events?year=2026')->assertOk();
+    $pageEvents = collect($response->original->getData()['page']['props']['events']);
+    $year2026Events = $pageEvents->filter(fn ($e) => substr($e['start_date'] ?? $e['date'], 0, 4) === '2026');
+
+    $found = $year2026Events->firstWhere('id', $multiDayEvent->id);
+    expect($found)->not->toBeNull()
+        ->and($found['start_date'])->toBe('2026-09-10')
+        ->and($found['end_date'])->toBe('2026-09-14')
+        ->and($found['type'])->toBe('commercial');
+});

@@ -83,6 +83,8 @@ import {
     ImageQuality,
     ProductItem,
     renderStyleOptions,
+    parseList,
+    restoreProductsFromDraft,
     Step,
     TaglineMode,
     toneOptions,
@@ -128,7 +130,12 @@ export default function ManualGenerator({
     const [currentStep, setCurrentStep] = useState<Step>(1);
     const [selectedCatalogProducts, setSelectedCatalogProducts] = useState<
         ProductItem[]
-    >(initialProduct ? [initialProduct] : []);
+    >(() => {
+        if (initial_draft) {
+            return restoreProductsFromDraft(initial_draft, products);
+        }
+        return initialProduct ? [initialProduct] : [];
+    });
     const [customProducts, setCustomProducts] = useState<CustomProductItem[]>([]);
     const [productTab, setProductTab] = useState<'catalog' | 'custom'>('catalog');
     const [inlineProductSearch, setInlineProductSearch] = useState('');
@@ -215,15 +222,40 @@ export default function ManualGenerator({
         if (!initial_draft) return;
 
         const meta = initial_draft.generation_metadata || {};
+        const restoredProducts = restoreProductsFromDraft(initial_draft, products);
+        setSelectedCatalogProducts(restoredProducts);
+
         if (initial_draft.prompt) setScenePrompt(initial_draft.prompt);
-        if (initial_draft.tagline) {
-            setTagline(initial_draft.tagline);
+
+        if (typeof meta.include_tagline === 'boolean') {
+            setIncludeTagline(meta.include_tagline);
+        } else if (initial_draft.tagline) {
             setIncludeTagline(true);
         }
-        if (initial_draft.tagline_mode) setTaglineMode(initial_draft.tagline_mode);
-        if (meta.render_style) setRenderStyle(meta.render_style);
-        if (Array.isArray(meta.content_style)) setContentStyle(meta.content_style);
-        if (Array.isArray(meta.brand_tone)) setBrandTone(meta.brand_tone);
+        if (initial_draft.tagline) {
+            setTagline(initial_draft.tagline);
+        }
+        if (initial_draft.tagline_mode || meta.tagline_mode) {
+            setTaglineMode(initial_draft.tagline_mode || meta.tagline_mode);
+        }
+        if (meta.render_style || initial_draft.render_style) {
+            setRenderStyle(meta.render_style || initial_draft.render_style);
+        }
+
+        const restoredThemes = parseList(
+            meta.content_style || meta.visual_theme || initial_draft.visual_theme || initial_draft.content_style
+        );
+        if (restoredThemes.length > 0) {
+            setContentStyle(restoredThemes);
+        }
+
+        const restoredTones = parseList(
+            meta.brand_tone || initial_draft.brand_tone
+        );
+        if (restoredTones.length > 0) {
+            setBrandTone(restoredTones);
+        }
+
         if (meta.design_treatment) setDesignTreatment(meta.design_treatment);
         if (meta.copy_emphasis) setCopyEmphasis(meta.copy_emphasis);
         if (meta.aspect_ratio || initial_draft.aspect_ratio) {
@@ -231,6 +263,15 @@ export default function ManualGenerator({
         }
         if (typeof meta.show_event_text === 'boolean') {
             setShowEventText(meta.show_event_text);
+        }
+        if (typeof meta.include_prices === 'boolean') {
+            setIncludePrices(meta.include_prices);
+        }
+        if (typeof meta.include_business_name === 'boolean') {
+            setIncludeBusinessName(meta.include_business_name);
+        }
+        if (meta.quality || meta.image_quality) {
+            setImageQuality(meta.quality || meta.image_quality);
         }
 
         if (Array.isArray(meta.custom_products) && meta.custom_products.length > 0) {
@@ -240,6 +281,9 @@ export default function ManualGenerator({
                 price: cp.price || '',
                 description: cp.description || '',
             })));
+            if (restoredProducts.length === 0) {
+                setProductTab('custom');
+            }
         }
 
         const draftIsDraft = initial_draft.status === 'draft';

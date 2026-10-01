@@ -236,7 +236,21 @@ export default function DesignsPage({
         params.set('image_quality', quality);
         params.set('include_business_name', includeBusiness);
 
-        return `/generator?${params.toString()}`;
+        const isAutomatic =
+            (
+                design.generation_source ||
+                meta.generation_mode ||
+                meta.mode ||
+                ''
+            ).toLowerCase() === 'automatic';
+        const routeBase = isAutomatic
+            ? '/generator/automatic'
+            : '/generator/manual';
+
+        params.set('draft_id', String(design.id));
+        params.set('origin', 'designs');
+
+        return `${routeBase}?${params.toString()}`;
     };
 
     const handleRegenerate = (design: any) => {
@@ -792,12 +806,12 @@ export default function DesignsPage({
                     ====================================================== */}
 
                     <div
-                        className={`sticky top-11 z-30 mb-6 rounded-2xl border border-white/25 bg-card/95 p-3 shadow-md backdrop-blur-xl transition-all sm:top-12 dark:border-white/10 dark:bg-card/95 ${isRegenerating ? 'hidden' : ''}`}
+                        className={`sticky top-11 z-30 mb-5 rounded-2xl border border-white/25 bg-card/95 px-2.5 py-1.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:px-3 sm:py-1.5 dark:border-white/10 dark:bg-card/95 ${isRegenerating ? 'hidden' : ''}`}
                     >
-                        <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
+                        <div className="flex items-center justify-between gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-2.5">
                             {/* Search */}
                             <div className="relative min-w-0 flex-1">
-                                <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                                <Search className="absolute top-1/2 left-2.5 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
                                 <Input
                                     value={filters.search ?? ''}
                                     onChange={(event) =>
@@ -806,7 +820,7 @@ export default function DesignsPage({
                                         })
                                     }
                                     placeholder="Search by product, tagline, or event..."
-                                    className="h-9 border-input bg-background pr-8 pl-8.5 text-xs shadow-none focus-visible:ring-primary/30"
+                                    className="h-7 border-border bg-background pr-7 pl-8 text-xs shadow-2xs focus-visible:ring-primary/30"
                                 />
                                 {filters.search && (
                                     <button
@@ -814,18 +828,18 @@ export default function DesignsPage({
                                         onClick={() =>
                                             updateFilters({ search: '' })
                                         }
-                                        className="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer text-muted-foreground/60 transition-colors hover:text-foreground"
+                                        className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer text-muted-foreground/60 transition-colors hover:text-foreground"
                                         aria-label="Clear search"
                                     >
-                                        <X className="h-3.5 w-3.5" />
+                                        <X className="h-3 w-3" />
                                     </button>
                                 )}
                             </div>
 
                             {/* Filter Controls Row */}
-                            <div className="flex flex-wrap items-center gap-2">
+                            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
                                 {/* Status Filter Dropdown (All / Drafts / Final) */}
-                                <div className="w-32 shrink-0 sm:w-36">
+                                <div className="w-28 shrink-0 sm:w-32">
                                     <Select
                                         value={
                                             filters.status === 'draft' || filters.status === 'drafts'
@@ -839,12 +853,12 @@ export default function DesignsPage({
                                         }
                                     >
                                         <SelectTrigger
-                                            className={`h-9 w-full gap-1.5 text-xs shadow-none ${
+                                            className={`h-7 w-full gap-1 rounded-lg border-border px-2 text-xs shadow-2xs ${
                                                 filters.status === 'draft' || filters.status === 'drafts'
                                                     ? 'border-amber-500/50 bg-amber-500/10 font-semibold text-amber-700 dark:text-amber-400'
                                                     : filters.status === 'final' || filters.status === 'finals'
                                                       ? 'border-emerald-500/50 bg-emerald-500/10 font-semibold text-emerald-700 dark:text-emerald-400'
-                                                      : ''
+                                                      : 'bg-background'
                                             }`}
                                         >
                                             <SelectValue placeholder="All Status" />
@@ -864,7 +878,7 @@ export default function DesignsPage({
                                 </div>
 
                                 {/* Time Period */}
-                                <div className="w-36 shrink-0 sm:w-40">
+                                <div className="w-28 shrink-0 sm:w-32">
                                     <Select
                                         value={filters.period || 'all'}
                                         onValueChange={(value) =>
@@ -877,13 +891,13 @@ export default function DesignsPage({
                                         }
                                     >
                                         <SelectTrigger
-                                            className={`h-9 w-full min-w-0 gap-1.5 text-xs shadow-none ${
+                                            className={`h-7 w-full min-w-0 gap-1 rounded-lg border-border px-2 text-xs shadow-2xs ${
                                                 filters.period && filters.period !== 'all'
                                                     ? 'border-primary/50 bg-primary/10 font-semibold text-primary'
-                                                    : ''
+                                                    : 'bg-background'
                                             }`}
                                         >
-                                            <Calendar className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                            <Calendar className="h-3 w-3 shrink-0 text-muted-foreground" />
                                             <SelectValue placeholder="All Time" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -928,14 +942,14 @@ export default function DesignsPage({
                                             : 'Show favorites'
                                     }
                                     aria-label="Filter by favorites"
-                                    className={`flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-xl p-0 shadow-none transition-all ${
+                                    className={`flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg border-border p-0 shadow-2xs transition-all ${
                                         filters.favorites
                                             ? 'border-rose-500 bg-rose-500 text-white shadow-[0_0_12px_rgba(244,63,94,0.3)] hover:bg-rose-600'
-                                            : 'text-muted-foreground hover:border-rose-300 hover:text-foreground dark:hover:border-rose-800'
+                                            : 'bg-background text-muted-foreground hover:border-rose-300 hover:text-foreground dark:hover:border-rose-800'
                                     }`}
                                 >
                                     <Heart
-                                        className={`h-4 w-4 shrink-0 ${
+                                        className={`h-3.5 w-3.5 shrink-0 ${
                                             filters.favorites
                                                 ? 'fill-white text-white'
                                                 : 'text-rose-500'
@@ -944,14 +958,14 @@ export default function DesignsPage({
                                 </Button>
 
                                 {/* Sort */}
-                                <div className="w-28 shrink-0 sm:w-32">
+                                <div className="w-24 shrink-0 sm:w-28">
                                     <Select
                                         value={filters.sort || 'newest'}
                                         onValueChange={(value) =>
                                             updateFilters({ sort: value })
                                         }
                                     >
-                                        <SelectTrigger className="h-9 w-full text-xs shadow-none">
+                                        <SelectTrigger className="h-7 w-full rounded-lg border-border bg-background px-2 text-xs font-semibold shadow-2xs">
                                             <SelectValue placeholder="Sort" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -965,15 +979,15 @@ export default function DesignsPage({
                                     </Select>
                                 </div>
 
-                                {/* Clear All (Fixed slot so toolbar never shifts when toggling filters) */}
+                                {/* Clear All */}
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={clearFilters}
                                     disabled={!hasFilters}
-                                    className={`h-9 shrink-0 px-2.5 text-xs transition-opacity ${
+                                    className={`h-7 shrink-0 rounded-lg px-2 text-xs transition-opacity ${
                                         hasFilters
-                                            ? 'cursor-pointer text-muted-foreground opacity-100 hover:text-destructive'
+                                            ? 'cursor-pointer text-muted-foreground opacity-100 hover:bg-destructive/10 hover:text-destructive'
                                             : 'pointer-events-none opacity-0'
                                     }`}
                                 >
@@ -981,12 +995,12 @@ export default function DesignsPage({
                                 </Button>
 
                                 {/* Visual Count */}
-                                <div className="hidden items-center px-1 text-xs font-medium text-muted-foreground sm:inline-flex">
+                                <span className="hidden items-center justify-center rounded-md bg-muted/60 px-2 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground sm:inline-flex">
                                     {designList.length}{' '}
                                     {designList.length === 1
                                         ? 'visual'
                                         : 'visuals'}
-                                </div>
+                                </span>
 
                                 {/* VIEW MODE DROPDOWN (ICON-ONLY BUTTON) */}
                                 <DropdownMenu>
@@ -995,7 +1009,7 @@ export default function DesignsPage({
                                             type="button"
                                             variant="outline"
                                             size="sm"
-                                            className="ml-auto h-8 w-8 rounded-xl p-0 text-muted-foreground shadow-none hover:text-foreground"
+                                            className="h-7 w-7 shrink-0 rounded-lg border-border bg-background p-0 text-muted-foreground shadow-2xs hover:bg-muted/40 hover:text-foreground"
                                             title={`Current view: ${
                                                 viewMode === 'grid'
                                                     ? 'Grid'
@@ -1004,9 +1018,9 @@ export default function DesignsPage({
                                             aria-label="Toggle View Mode"
                                         >
                                             {viewMode === 'grid' ? (
-                                                <LayoutGrid className="h-4 w-4" />
+                                                <LayoutGrid className="h-3.5 w-3.5" />
                                             ) : (
-                                                <List className="h-4 w-4" />
+                                                <List className="h-3.5 w-3.5" />
                                             )}
                                         </Button>
                                     </DropdownMenuTrigger>

@@ -162,7 +162,7 @@ export function CalendarMonthGrid({
         });
     }, [weeks, campaignEvents]);
 
-    const trackHeightPx = 24; // Height per campaign line track
+    const trackHeightPx = 28; // Height per campaign line track
     const trackGapPx = 4;     // Gap between campaign lines
     const headerHeightPx = 32; // Height for day numbers header
 
@@ -273,10 +273,10 @@ export function CalendarMonthGrid({
                                 })}
                             </div>
 
-                            {/* Campaign Timeline Lines Layer (Clean thin horizontal rule with restrained typography) */}
+                            {/* Campaign Timeline Lines Layer (Clean horizontal rule with restrained typography) */}
                             {week.segments.length > 0 && (
                                 <div
-                                    className="pointer-events-none absolute inset-x-0 top-8 z-10 px-1 pb-1 grid grid-cols-7 gap-x-1"
+                                    className="pointer-events-none absolute inset-x-0 top-8 z-10 pb-1 grid grid-cols-7"
                                     style={{
                                         gridAutoRows: `${trackHeightPx}px`,
                                         rowGap: `${trackGapPx}px`,
@@ -307,21 +307,19 @@ export function CalendarMonthGrid({
                                                     gridColumnEnd: seg.endCol + 2,
                                                     gridRowStart: seg.track + 1,
                                                 }}
-                                                className="pointer-events-auto group/line relative flex flex-col justify-center px-1 text-left cursor-pointer select-none focus:outline-hidden"
+                                                className="pointer-events-auto group/line relative flex flex-col justify-start text-left cursor-pointer select-none focus:outline-hidden"
                                                 title={`${displayName} (${formatDateRange(evt.startDate, evt.endDate)})${isPast ? ' (Past Campaign)' : ''}`}
                                             >
-                                                {/* Thicker bolder horizontal line indicator */}
-                                                <div className="w-full flex items-center h-[6px]">
+                                                {/* Pure rectangle horizontal line indicator spanning edge-to-edge */}
+                                                <div className="w-full">
                                                     <div
-                                                        className={`w-full h-[6px] transition-all group-hover/line:h-[7px] ${lineColor} shadow-xs ${
-                                                            seg.isStartSegment ? 'rounded-l-sm' : ''
-                                                        } ${seg.isEndSegment ? 'rounded-r-sm' : ''}`}
+                                                        className={`w-full h-2.5 transition-all ${lineColor} rounded-none shadow-xs group-hover/line:brightness-110`}
                                                     />
                                                 </div>
 
                                                 {/* Restrained campaign title text */}
                                                 <span
-                                                    className={`truncate text-[10px] tracking-tight mt-1 leading-none transition-colors font-medium ${
+                                                    className={`truncate text-[10px] tracking-tight mt-1 px-1.5 leading-none transition-colors font-medium ${
                                                         isPast
                                                             ? 'text-muted-foreground/60 line-through'
                                                             : 'text-foreground/90 group-hover/line:text-primary font-semibold'

@@ -196,36 +196,36 @@ export default function ProductsIndexPage({
                     </div>
 
                     {/* =====================================================
-                        STICKY FILTER TOOLBAR
+                        STICKY FILTER TOOLBAR (MATCHING SYSTEM TOOLBAR HEIGHT)
                     ====================================================== */}
-                    <div className="sticky top-11 z-30 mb-5 rounded-2xl border border-white/25 bg-card/95 p-2.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:p-3 dark:border-white/10 dark:bg-card/95">
-                        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+                    <div className="sticky top-11 z-30 mb-5 rounded-2xl border border-white/25 bg-card/95 px-2.5 py-1.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:px-3 sm:py-1.5 dark:border-white/10 dark:bg-card/95">
+                        <div className="flex items-center justify-between gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-2.5">
                             {/* Search */}
                             <div className="relative min-w-0 flex-1">
-                                <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                                <Search className="absolute top-1/2 left-2.5 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
                                 <Input
                                     value={filters.search ?? ''}
                                     onChange={(event) =>
                                         updateSearch(event.target.value)
                                     }
                                     placeholder="Search products by name or price..."
-                                    className="h-8.5 border-input bg-background pr-8 pl-8.5 text-xs shadow-none focus-visible:ring-primary/30"
+                                    className="h-7 border-border bg-background pr-7 pl-8 text-xs shadow-2xs focus-visible:ring-primary/30"
                                 />
                                 {filters.search && (
                                     <button
                                         type="button"
                                         onClick={() => updateSearch('')}
-                                        className="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer text-muted-foreground/60 transition-colors hover:text-foreground"
+                                        className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer text-muted-foreground/60 transition-colors hover:text-foreground"
                                         aria-label="Clear search"
                                     >
-                                        <X className="h-3.5 w-3.5" />
+                                        <X className="h-3 w-3" />
                                     </button>
                                 )}
                             </div>
 
                             {/* Controls Row */}
-                            <div className="flex shrink-0 items-center justify-between gap-2.5 sm:justify-end">
-                                <span className="text-xs font-medium text-muted-foreground">
+                            <div className="flex shrink-0 items-center gap-2">
+                                <span className="hidden items-center justify-center rounded-md bg-muted/60 px-2 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground sm:inline-flex">
                                     {count}{' '}
                                     {count === 1 ? 'product' : 'products'}
                                 </span>
@@ -237,7 +237,7 @@ export default function ProductsIndexPage({
                                             type="button"
                                             variant="outline"
                                             size="sm"
-                                            className="h-8 w-8 rounded-xl p-0 text-muted-foreground shadow-none hover:text-foreground"
+                                            className="h-7 w-7 rounded-lg border-border bg-background p-0 text-muted-foreground shadow-2xs hover:bg-muted/40 hover:text-foreground shrink-0"
                                             title={`Current view: ${
                                                 viewMode === 'grid'
                                                     ? 'Grid'
@@ -246,9 +246,9 @@ export default function ProductsIndexPage({
                                             aria-label="Toggle View Mode"
                                         >
                                             {viewMode === 'grid' ? (
-                                                <LayoutGrid className="h-4 w-4" />
+                                                <LayoutGrid className="h-3.5 w-3.5" />
                                             ) : (
-                                                <List className="h-4 w-4" />
+                                                <List className="h-3.5 w-3.5" />
                                             )}
                                         </Button>
                                     </DropdownMenuTrigger>

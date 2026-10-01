@@ -177,38 +177,22 @@ export function EventDetailModal({
                     )}
                 </div>
 
-                <DialogFooter className="mt-4 flex items-center justify-between">
-                    <div>
-                        {hasCampaign && event.campaign_id ? (
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                    onClose();
-                                    router.visit(`/campaigns/${event.campaign_id}`);
-                                }}
-                                className="text-xs font-semibold shadow-xs"
-                            >
-                                View Linked Campaign
-                            </Button>
-                        ) : (
-                            <span className="text-xs text-muted-foreground">
-                                Read-only schedule details
-                            </span>
-                        )}
-                    </div>
-
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={onClose}
-                        className="text-xs font-semibold"
-                    >
-                        Close
-                    </Button>
-                </DialogFooter>
+                {hasCampaign && event.campaign_id && (
+                    <DialogFooter className="mt-4 flex items-center justify-end">
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                                onClose();
+                                router.visit(`/campaigns/${event.campaign_id}`);
+                            }}
+                            className="text-xs font-semibold shadow-xs"
+                        >
+                            View Linked Campaign
+                        </Button>
+                    </DialogFooter>
+                )}
             </DialogContent>
         </Dialog>
     );

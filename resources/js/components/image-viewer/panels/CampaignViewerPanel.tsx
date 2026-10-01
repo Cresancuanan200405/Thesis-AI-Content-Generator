@@ -195,7 +195,7 @@ export function CampaignViewerPanel({
                             variant="outline"
                             size="sm"
                             onClick={() => onDownload?.(design, 'png')}
-                            className="h-8 w-full justify-center gap-1 border-border bg-card px-2 text-xs font-medium hover:bg-muted"
+                            className="h-8 w-full justify-center gap-1 border-border bg-card px-2 text-xs font-medium text-foreground hover:bg-muted"
                         >
                             <Download className="h-3 w-3 text-primary shrink-0" />
                             <span className="truncate">PNG</span>
@@ -205,7 +205,7 @@ export function CampaignViewerPanel({
                             variant="outline"
                             size="sm"
                             onClick={() => onDownload?.(design, 'jpeg')}
-                            className="h-8 w-full justify-center gap-1 border-border bg-card px-2 text-xs font-medium hover:bg-muted"
+                            className="h-8 w-full justify-center gap-1 border-border bg-card px-2 text-xs font-medium text-foreground hover:bg-muted"
                         >
                             <Download className="h-3 w-3 text-blue-500 shrink-0" />
                             <span className="truncate">JPEG</span>
@@ -215,7 +215,7 @@ export function CampaignViewerPanel({
                             variant="outline"
                             size="sm"
                             onClick={() => onDownload?.(design, 'svg')}
-                            className="h-8 w-full justify-center gap-1 border-border bg-card px-2 text-xs font-medium hover:bg-muted"
+                            className="h-8 w-full justify-center gap-1 border-border bg-card px-2 text-xs font-medium text-foreground hover:bg-muted"
                         >
                             <Download className="h-3 w-3 text-emerald-500 shrink-0" />
                             <span className="truncate">SVG</span>

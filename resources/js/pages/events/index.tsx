@@ -127,12 +127,6 @@ export default function EventManagementPage({
                     yearsSet.add(y);
                 }
             }
-            if (e.end_date) {
-                const y = String(e.end_date).substring(0, 4);
-                if (/^\d{4}$/.test(y)) {
-                    yearsSet.add(y);
-                }
-            }
         });
         yearsSet.add(dynamicCurrentYear);
         return Array.from(yearsSet).sort((a, b) => Number(b) - Number(a));
@@ -143,8 +137,7 @@ export default function EventManagementPage({
         if (selectedYear === 'all') return events;
         return events.filter((e) => {
             const startYear = String(e.start_date || e.date || '').substring(0, 4);
-            const endYear = String(e.end_date || '').substring(0, 4);
-            return startYear === selectedYear || endYear === selectedYear;
+            return startYear === selectedYear;
         });
     }, [events, selectedYear]);
 
@@ -323,29 +316,11 @@ export default function EventManagementPage({
                                 <Calendar className="h-5 w-5" />
                             </div>
                             <div>
-                                <div className="flex items-center gap-2.5">
-                                    <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
-                                        Event Bank
-                                    </h1>
-                                    {/* Prominent Current-Year Selector */}
-                                    <Select value={selectedYear} onValueChange={setSelectedYear}>
-                                        <SelectTrigger className="h-7 rounded-lg bg-muted/60 hover:bg-muted font-bold text-xs px-2.5 border-border/80 gap-1.5 text-primary">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent align="start">
-                                            {availableYears.map((yr) => (
-                                                <SelectItem key={yr} value={yr} className="text-xs font-semibold">
-                                                    {yr} {yr === dynamicCurrentYear && '(Current Year)'}
-                                                </SelectItem>
-                                            ))}
-                                            <SelectItem value="all" className="text-xs text-muted-foreground border-t border-border/60 mt-1">
-                                                All Years
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
+                                    Event Bank
+                                </h1>
                                 <p className="text-xs text-muted-foreground">
-                                    Manage your marketing occasions, business events, and Philippine holidays for {selectedYear === 'all' ? 'all time' : selectedYear}.
+                                    Manage your marketing occasions, business events, and Philippine holidays.
                                 </p>
                             </div>
                         </div>
@@ -449,37 +424,37 @@ export default function EventManagementPage({
                         </Card>
                     </div>
 
-                    {/* Sticky Filter Toolbar */}
-                    <div className="sticky top-11 z-30 mb-5 rounded-2xl border border-white/25 bg-card/95 p-2.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:p-3 dark:border-white/10 dark:bg-card/95">
-                        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+                    {/* Sticky Filter Toolbar (Matching System Toolbar Height) */}
+                    <div className="sticky top-11 z-30 mb-5 rounded-2xl border border-white/25 bg-card/95 px-2.5 py-1.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:px-3 sm:py-1.5 dark:border-white/10 dark:bg-card/95">
+                        <div className="flex items-center justify-between gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-2.5">
                             {/* Search */}
                             <div className="relative min-w-0 flex-1">
-                                <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                                <Search className="absolute top-1/2 left-2.5 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
                                 <Input
                                     type="text"
                                     placeholder="Search events by name or description..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="h-8.5 border-input bg-background pr-8 pl-8.5 text-xs shadow-none focus-visible:ring-primary/30"
+                                    className="h-7 border-border bg-background pr-7 pl-8 text-xs shadow-2xs focus-visible:ring-primary/30"
                                 />
                                 {searchQuery && (
                                     <button
                                         type="button"
                                         onClick={() => setSearchQuery('')}
-                                        className="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer text-muted-foreground/60 transition-colors hover:text-foreground"
+                                        className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer text-muted-foreground/60 transition-colors hover:text-foreground"
                                         aria-label="Clear search"
                                     >
-                                        <X className="h-3.5 w-3.5" />
+                                        <X className="h-3 w-3" />
                                     </button>
                                 )}
                             </div>
 
-                            <div className="flex shrink-0 flex-wrap items-center gap-2.5">
+                            <div className="flex shrink-0 items-center gap-2">
                                 {/* Year Filter */}
                                 <div className="flex items-center gap-1.5">
-                                    <span className="text-xs font-medium text-muted-foreground">Year:</span>
+                                    <span className="hidden text-xs font-medium text-muted-foreground sm:inline">Year:</span>
                                     <Select value={selectedYear} onValueChange={setSelectedYear}>
-                                        <SelectTrigger className="h-8.5 w-[110px] rounded-xl bg-background text-xs font-semibold">
+                                        <SelectTrigger className="h-7 w-[90px] rounded-lg border-border bg-background px-2 text-xs font-semibold shadow-2xs">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent align="end">
@@ -497,9 +472,9 @@ export default function EventManagementPage({
 
                                 {/* Type Filter */}
                                 <div className="flex items-center gap-1.5">
-                                    <span className="text-xs font-medium text-muted-foreground">Type:</span>
+                                    <span className="hidden text-xs font-medium text-muted-foreground sm:inline">Type:</span>
                                     <Select value={activeTypeFilter} onValueChange={setActiveTypeFilter}>
-                                        <SelectTrigger className="h-8.5 w-[140px] rounded-xl bg-background text-xs font-medium">
+                                        <SelectTrigger className="h-7 w-[125px] rounded-lg border-border bg-background px-2 text-xs font-medium shadow-2xs">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent align="end">
@@ -511,7 +486,8 @@ export default function EventManagementPage({
                                     </Select>
                                 </div>
 
-                                <span className="text-xs font-medium text-muted-foreground pl-1">
+                                {/* Event Count Badge */}
+                                <span className="hidden items-center justify-center rounded-md bg-muted/60 px-2 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground sm:inline-flex">
                                     {filteredEvents.length} {filteredEvents.length === 1 ? 'event' : 'events'}
                                 </span>
                             </div>
@@ -661,40 +637,52 @@ export default function EventManagementPage({
                                                         )}
                                                     </td>
 
-                                                    <td className="py-3.5 px-4 text-right">
+                                                    <td className="py-3 px-4 text-right">
                                                         <div
-                                                            className="flex items-center justify-end gap-1.5"
+                                                            className="flex items-center justify-end gap-1"
                                                             onClick={(e) => e.stopPropagation()}
                                                         >
-                                                            {evt.can_edit ? (
+                                                            {evt.can_edit && (
                                                                 <Button
-                                                                    variant="outline"
-                                                                    size="sm"
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         handleOpenEdit(evt);
                                                                     }}
-                                                                    className="h-7 px-2 text-xs"
+                                                                    className="h-7 w-7 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                                    title="Edit event"
+                                                                    aria-label={`Edit ${evt.name}`}
                                                                 >
-                                                                    <Edit3 className="mr-1 h-3 w-3" />
-                                                                    Edit
+                                                                    <Edit3 className="h-3.5 w-3.5" />
                                                                 </Button>
-                                                            ) : (
-                                                                <span className="text-[11px] text-muted-foreground/50 px-2 italic">Protected</span>
                                                             )}
 
                                                             {evt.can_delete && (
                                                                 <Button
+                                                                    type="button"
                                                                     variant="ghost"
-                                                                    size="sm"
+                                                                    size="icon"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         setDeletingEvent(evt);
                                                                     }}
-                                                                    className="h-7 px-2 text-xs text-muted-foreground hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400"
+                                                                    className="h-7 w-7 rounded-lg text-muted-foreground hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400"
+                                                                    title="Delete event"
+                                                                    aria-label={`Delete ${evt.name}`}
                                                                 >
-                                                                    <Trash2 className="h-3 w-3" />
+                                                                    <Trash2 className="h-3.5 w-3.5" />
                                                                 </Button>
+                                                            )}
+
+                                                            {!evt.can_edit && !evt.can_delete && (
+                                                                <span
+                                                                    className="inline-flex h-7 items-center px-1.5 text-[11px] font-medium text-muted-foreground/40 italic"
+                                                                    title="Protected event"
+                                                                >
+                                                                    Protected
+                                                                </span>
                                                             )}
                                                         </div>
                                                     </td>

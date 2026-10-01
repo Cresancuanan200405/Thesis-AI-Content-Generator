@@ -33,6 +33,7 @@ import {
     GenerationState,
     ImageQuality,
     ProductItem,
+    restoreProductsFromDraft,
     DesignSystemExport,
 } from './components/types';
 
@@ -73,7 +74,12 @@ export default function AutomaticGenerator({
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [selectedCatalogProducts, setSelectedCatalogProducts] = useState<
         ProductItem[]
-    >(initialProduct ? [initialProduct] : []);
+    >(() => {
+        if (initial_draft) {
+            return restoreProductsFromDraft(initial_draft, products);
+        }
+        return initialProduct ? [initialProduct] : [];
+    });
     const [customProducts, setCustomProducts] = useState<CustomProductItem[]>([]);
     const [productTab, setProductTab] = useState<'catalog' | 'custom'>('catalog');
     const [inlineProductSearch, setInlineProductSearch] = useState('');
@@ -133,9 +139,16 @@ export default function AutomaticGenerator({
         if (!initial_draft) return;
 
         const meta = initial_draft.generation_metadata || {};
+        const restoredProducts = restoreProductsFromDraft(initial_draft, products);
+        setSelectedCatalogProducts(restoredProducts);
+
+        if (typeof meta.include_tagline === 'boolean') {
+            setIncludeTagline(meta.include_tagline);
+        } else if (initial_draft.tagline) {
+            setIncludeTagline(true);
+        }
         if (initial_draft.tagline) {
             setTagline(initial_draft.tagline);
-            setIncludeTagline(true);
         }
         if (meta.creative_concept) setCreativeConcept(meta.creative_concept);
         if (meta.visual_strategy) setVisualStrategy(meta.visual_strategy);
@@ -148,6 +161,15 @@ export default function AutomaticGenerator({
         if (typeof meta.show_event_text === 'boolean') {
             setShowEventText(meta.show_event_text);
         }
+        if (typeof meta.include_prices === 'boolean') {
+            setIncludePrices(meta.include_prices);
+        }
+        if (typeof meta.include_business_name === 'boolean') {
+            setIncludeBusinessName(meta.include_business_name);
+        }
+        if (meta.quality || meta.image_quality) {
+            setImageQuality(meta.quality || meta.image_quality);
+        }
 
         if (Array.isArray(meta.custom_products) && meta.custom_products.length > 0) {
             setCustomProducts(meta.custom_products.map((cp: any, idx: number) => ({
@@ -156,6 +178,9 @@ export default function AutomaticGenerator({
                 price: cp.price || '',
                 description: cp.description || '',
             })));
+            if (restoredProducts.length === 0) {
+                setProductTab('custom');
+            }
         }
 
         const draftIsDraft = initial_draft.status === 'draft';

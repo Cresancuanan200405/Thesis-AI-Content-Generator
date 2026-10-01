@@ -372,17 +372,27 @@ class EventController extends Controller
             ];
         });
 
+        $selectedYear = $request->has('year') ? (string) $request->input('year') : (string) now()->year;
+
+        $statsEvents = $selectedYear !== 'all'
+            ? $events->filter(function (array $event) use ($selectedYear): bool {
+                $startYear = substr((string) ($event['start_date'] ?? $event['date'] ?? ''), 0, 4);
+
+                return $startYear === $selectedYear;
+            })
+            : $events;
+
         return Inertia::render('events/index', [
             'events' => $events->values()->all(),
             'filter' => $typeFilter,
             'current_year' => (int) now()->year,
-            'selected_year' => $request->has('year') ? (string) $request->input('year') : (string) now()->year,
+            'selected_year' => $selectedYear,
             'holiday_catalog' => [],
             'stats' => [
-                'total' => $events->count(),
-                'holidays' => $events->whereIn('type', ['holiday', 'seasonal'])->count(),
-                'commercial' => $events->where('type', 'commercial')->count(),
-                'custom' => $events->where('type', 'custom')->count(),
+                'total' => $statsEvents->count(),
+                'holidays' => $statsEvents->whereIn('type', ['holiday', 'seasonal'])->count(),
+                'commercial' => $statsEvents->where('type', 'commercial')->count(),
+                'custom' => $statsEvents->where('type', 'custom')->count(),
             ],
         ]);
     }

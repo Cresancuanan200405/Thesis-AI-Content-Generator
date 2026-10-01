@@ -870,7 +870,7 @@ export default function CampaignsPage({
             <div className="relative flex min-h-screen bg-background text-foreground">
                 <div className="min-w-0 flex-1 space-y-6 p-4 pb-20 md:p-6 lg:p-8">
                     {/* =====================================================
-                        PAGE HEADER & VIEW SWITCHER
+                        PAGE HEADER
                     ====================================================== */}
                     <div className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-2.5">
@@ -889,24 +889,59 @@ export default function CampaignsPage({
                             </div>
                         </div>
 
-                        {/* Header Actions: View Switcher & Create Campaign Button */}
-                        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
-                            <CampaignsViewSwitcher
-                                activeView={activeView}
-                                onViewChange={handleViewChange}
-                                campaignCount={stats.total}
-                                upcomingCount={upcomingList.length}
-                            />
-
+                        {/* Header Action: Create Campaign Button */}
+                        <div className="flex items-center gap-2 self-start sm:self-auto">
                             <Button
                                 type="button"
                                 size="sm"
                                 onClick={() => handleOpenGeneralCreate(true)}
-                                className="h-8.5 gap-1.5 rounded-xl px-3 text-xs font-semibold shadow-2xs"
+                                className="h-8 gap-1.5 rounded-xl px-3 text-xs font-semibold shadow-2xs"
                             >
                                 <Plus className="h-3.5 w-3.5" />
                                 <span>Create Campaign</span>
                             </Button>
+                        </div>
+                    </div>
+
+                    {/* =====================================================
+                        CAMPAIGNS TOOLBOX (MATCHING SYSTEM TOOLBAR)
+                    ====================================================== */}
+                    <div className="sticky top-11 z-30 mb-5 rounded-2xl border border-white/25 bg-card/95 px-2.5 py-1.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:px-3 sm:py-1.5 dark:border-white/10 dark:bg-card/95">
+                        <div className="flex items-center justify-between gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                            {/* Navigation / View Switcher Control */}
+                            <div className="flex shrink-0 items-center gap-2">
+                                <CampaignsViewSwitcher
+                                    activeView={activeView}
+                                    onViewChange={handleViewChange}
+                                    campaignCount={stats.total}
+                                    upcomingCount={upcomingList.length}
+                                />
+                            </div>
+
+                            {/* Semantic Color Legend (Matching Marketing Calendar) */}
+                            <div className="flex shrink-0 items-center gap-2.5 text-[11px] text-muted-foreground sm:gap-3">
+                                <span className="font-semibold text-foreground">Legend:</span>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="h-2.5 w-2.5 rounded-[2px] bg-rose-500" />
+                                    <span>Regular Holiday</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="h-2.5 w-2.5 rounded-[2px] bg-amber-500" />
+                                    <span>Special Non-Working</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="h-2.5 w-2.5 rounded-[2px] bg-emerald-500" />
+                                    <span>Islamic Holiday</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="h-2.5 w-2.5 rounded-[2px] bg-blue-500" />
+                                    <span>Retail Sale</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="h-2.5 w-2.5 rounded-[2px] bg-purple-500" />
+                                    <span>Custom Event</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

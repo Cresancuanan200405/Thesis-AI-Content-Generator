@@ -14,19 +14,19 @@ export function CampaignsViewSwitcher({
     upcomingCount = 0,
 }: CampaignsViewSwitcherProps) {
     return (
-        <div className="inline-flex w-full items-center rounded-xl border border-border/70 bg-muted/40 p-1 text-xs sm:w-auto">
+        <div className="inline-flex items-center rounded-lg border border-border bg-background p-0.5 shadow-2xs">
             {/* Opportunities Button */}
             <button
                 type="button"
                 onClick={() => onViewChange('opportunities')}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all sm:flex-initial ${
+                className={`flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold transition-all ${
                     activeView === 'opportunities'
-                        ? 'bg-background text-foreground shadow-2xs'
-                        : 'text-muted-foreground hover:text-foreground'
+                        ? 'bg-card text-foreground shadow-2xs'
+                        : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'
                 }`}
             >
                 <Sparkles
-                    className={`h-3.5 w-3.5 transition-colors ${
+                    className={`h-3 w-3 transition-colors ${
                         activeView === 'opportunities'
                             ? 'text-primary'
                             : 'text-muted-foreground'
@@ -34,8 +34,14 @@ export function CampaignsViewSwitcher({
                 />
                 <span>Opportunities</span>
                 {upcomingCount > 0 && (
-                    <span className="font-mono text-[11px] font-medium opacity-70">
-                        ({upcomingCount})
+                    <span
+                        className={`inline-flex items-center justify-center rounded px-1.5 py-0.2 font-mono text-[10px] font-semibold transition-colors ${
+                            activeView === 'opportunities'
+                                ? 'bg-primary/10 text-primary'
+                                : 'bg-muted text-muted-foreground'
+                        }`}
+                    >
+                        {upcomingCount}
                     </span>
                 )}
             </button>
@@ -44,14 +50,14 @@ export function CampaignsViewSwitcher({
             <button
                 type="button"
                 onClick={() => onViewChange('hub')}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all sm:flex-initial ${
+                className={`flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold transition-all ${
                     activeView === 'hub'
-                        ? 'bg-background text-foreground shadow-2xs'
-                        : 'text-muted-foreground hover:text-foreground'
+                        ? 'bg-card text-foreground shadow-2xs'
+                        : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'
                 }`}
             >
                 <Layers
-                    className={`h-3.5 w-3.5 transition-colors ${
+                    className={`h-3 w-3 transition-colors ${
                         activeView === 'hub'
                             ? 'text-primary'
                             : 'text-muted-foreground'
@@ -59,8 +65,14 @@ export function CampaignsViewSwitcher({
                 />
                 <span>Campaign Hub</span>
                 {campaignCount > 0 && (
-                    <span className="font-mono text-[11px] font-medium opacity-70">
-                        ({campaignCount})
+                    <span
+                        className={`inline-flex items-center justify-center rounded px-1.5 py-0.2 font-mono text-[10px] font-semibold transition-colors ${
+                            activeView === 'hub'
+                                ? 'bg-primary/10 text-primary'
+                                : 'bg-muted text-muted-foreground'
+                        }`}
+                    >
+                        {campaignCount}
                     </span>
                 )}
             </button>

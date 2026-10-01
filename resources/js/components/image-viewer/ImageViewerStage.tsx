@@ -104,7 +104,7 @@ export function ImageViewerStage({
                         {isLoading && (
                             <div className="absolute inset-0 z-10 flex items-center justify-center">
                                 <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/60 px-4 py-2 text-xs font-medium text-white/80 backdrop-blur-md">
-                                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                                    <Loader2 className="h-4 w-4 animate-spin text-white" />
                                     Loading visual...
                                 </div>
                             </div>

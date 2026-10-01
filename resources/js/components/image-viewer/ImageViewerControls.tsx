@@ -43,7 +43,7 @@ export function ImageViewerControls({
                 onClick={onReset100}
                 className={`min-w-[48px] rounded-full px-2 py-0.5 text-[11px] font-mono font-medium transition-all ${
                     zoomLevel === 1
-                        ? 'bg-primary text-primary-foreground font-bold'
+                        ? 'bg-white text-zinc-950 font-bold shadow-xs'
                         : 'text-white/80 hover:bg-white/15 hover:text-white'
                 }`}
                 title="Zoom to 100%"

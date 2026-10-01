@@ -143,7 +143,7 @@ export function ProductViewerPanel({
                             variant="outline"
                             size="sm"
                             disabled
-                            className="h-9 gap-1.5 border-border opacity-50"
+                            className="h-9 gap-1.5 border-border opacity-50 text-muted-foreground"
                         >
                             <Download className="h-3.5 w-3.5" />
                             No Visual

@@ -640,7 +640,7 @@ export function GeneratorViewerPanel({
                                     size="sm"
                                     onClick={onSaveAsDraft}
                                     disabled={isSavingDraft || isSavingDesign}
-                                    className="h-9 w-full justify-center gap-1.5 text-xs font-semibold hover:bg-muted"
+                                    className="h-9 w-full justify-center gap-1.5 text-xs font-semibold text-foreground hover:bg-muted"
                                 >
                                     {isSavingDraft ? (
                                         <>
