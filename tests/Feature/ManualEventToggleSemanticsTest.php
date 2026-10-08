@@ -154,9 +154,8 @@ test('B. selected event always reaches final production prompt in manual generat
 
     $response->assertOk();
     expect($finalImagePrompt)->not->toBeNull();
-    expect($finalImagePrompt)->toContain('EVENT / HOLIDAY VISUAL INFLUENCE:');
-    expect($finalImagePrompt)->toContain("National Teachers' Day");
-    expect($finalImagePrompt)->toContain('EVENT DIRECTION (CONTEXTUAL)');
+    expect($finalImagePrompt)->toContain("Event: National Teachers' Day");
+    expect($finalImagePrompt)->toContain('Event visibility: Allowed');
 });
 
 // C. show_event_text=false still retains event visual influence
@@ -211,11 +210,8 @@ test('C. show_event_text=false still retains event visual influence in final pro
     ]);
 
     $response->assertOk();
-    expect($finalPrompt)->toContain('EVENT / HOLIDAY VISUAL INFLUENCE:');
-    expect($finalPrompt)->toContain('Mother’s Day Celebration');
-    expect($finalPrompt)->toContain('EVENT DIRECTION (CONTEXTUAL):');
-    expect($finalPrompt)->toContain('• Visual Influence Rule: The event/holiday ALWAYS directs scene mood, environment, atmosphere, props, materials, lighting, and visual storytelling');
-    expect($finalPrompt)->toContain('EVENT TEXT VISIBILITY: FORBIDDEN');
+    expect($finalPrompt)->toContain('Event: Mother’s Day Celebration');
+    expect($finalPrompt)->toContain('Event visibility: Hidden');
 });
 
 // D. show_event_text=false forbids literal event text
@@ -255,10 +251,8 @@ test('D. show_event_text=false strictly forbids literal event text from appearin
     ]);
 
     $response->assertOk();
-    expect($finalPrompt)->toContain('EVENT TEXT VISIBILITY: FORBIDDEN');
-    expect($finalPrompt)->toContain('EVENT TEXT: FORBIDDEN');
-    expect($finalPrompt)->toContain('STRICT TEXT BAN: The event/holiday name ("National Teachers\' Day")');
-    expect($finalPrompt)->toContain('STRICT FORBIDDEN TEXT: Do NOT render "National Teachers\' Day"');
+    expect($finalPrompt)->toContain('Event visibility: Hidden');
+    expect($finalPrompt)->toContain('Do not render event name "National Teachers\' Day"');
 });
 
 // E. show_event_text=true allows exact event name
@@ -298,10 +292,8 @@ test('E. show_event_text=true allows exact event name as visible typography', fu
     ]);
 
     $response->assertOk();
-    expect($finalPrompt)->toContain('EVENT TEXT VISIBILITY: ALLOWED');
-    expect($finalPrompt)->toContain('EVENT TEXT (OPTIONAL COMMERCIAL TYPOGRAPHY): ALLOWED');
-    expect($finalPrompt)->toContain('• The exact selected event/holiday name "National Teachers\' Day" may appear as visible typography');
-    expect($finalPrompt)->toContain('• Visibility: Permitted when fitting composition and negative space, but not mandatory.');
+    expect($finalPrompt)->toContain('Event visibility: Allowed');
+    expect($finalPrompt)->toContain('Event name "National Teachers\' Day" may appear in typography');
 });
 
 // F. No invented event slogans are generated
@@ -330,8 +322,8 @@ test('F. instructions forbid invented event slogans regardless of toggle state',
         ],
         business: $business
     );
-    expect($promptOff)->toContain('event-derived slogans are STRICTLY FORBIDDEN');
-    expect($promptOff)->toContain('STRICT FORBIDDEN TEXT: Do NOT render "Independence Day"');
+    expect($promptOff)->toContain('Event visibility: Hidden');
+    expect($promptOff)->toContain('Do not render event name "Independence Day" or event slogans as visible text');
 
     // When show_event_text is true
     $promptOn = $orchestrator->orchestrate(
@@ -344,8 +336,8 @@ test('F. instructions forbid invented event slogans regardless of toggle state',
         ],
         business: $business
     );
-    expect($promptOn)->toContain('Do NOT invent additional event slogans, alternate shortened names, or marketing headlines.');
-    expect($promptOn)->toContain('Do not invent event slogans or alternate headlines.');
+    expect($promptOn)->toContain('Event visibility: Allowed');
+    expect($promptOn)->toContain('Do not invent event slogans');
 });
 
 // G. Event does not override user scene direction
@@ -380,9 +372,8 @@ test('G. user scene direction has strict priority over event visual influence', 
     // Section 1 Core Direction MUST reflect user scene verbatim
     expect($prompt)->toContain($userScene);
 
-    // Prompt instructions must enforce priority hierarchy
-    expect($prompt)->toContain('Product preservation > Explicit Manual user scene direction > Explicit Manual creative controls > Event visual influence');
-    expect($prompt)->toContain('Event visual influence must complement and harmonize with the user\'s scene direction without overriding');
+    // Compact prompt rules require model to follow user creative direction
+    expect($prompt)->toContain('Follow the user\'s creative direction, keeping the product as the hero while adapting naturally to the campaign, event, render style, and aspect ratio.');
 });
 
 // H. Custom events behave identically
@@ -425,12 +416,9 @@ test('H. custom user-created events behave identically with toggle semantics', f
     ]);
 
     $response->assertOk();
-    expect($finalPrompt)->toContain('EVENT / HOLIDAY VISUAL INFLUENCE:');
-    expect($finalPrompt)->toContain('Teacher Appreciation Week');
-    expect($finalPrompt)->toContain('EVENT TEXT VISIBILITY: FORBIDDEN');
-    expect($finalPrompt)->toContain('EVENT TEXT: FORBIDDEN');
-    expect($finalPrompt)->toContain('STRICT TEXT BAN: The event/holiday name ("Teacher Appreciation Week")');
-    expect($finalPrompt)->toContain('STRICT FORBIDDEN TEXT: Do NOT render "Teacher Appreciation Week"');
+    expect($finalPrompt)->toContain('Event: Teacher Appreciation Week');
+    expect($finalPrompt)->toContain('Event visibility: Hidden');
+    expect($finalPrompt)->toContain('Do not render event name "Teacher Appreciation Week"');
 });
 
 // I. Event influence works with multiple products
@@ -475,7 +463,7 @@ test('I. event visual influence works cleanly with multiple products', function 
     expect($finalPrompt)->toContain('Holiday Candle');
     expect($finalPrompt)->toContain('Pine Reed Diffuser');
     expect($finalPrompt)->toContain('Christmas Gala Sale');
-    expect($finalPrompt)->toContain('EVENT TEXT VISIBILITY: FORBIDDEN');
+    expect($finalPrompt)->toContain('Event visibility: Hidden');
 });
 
 // J. Event influence works with different industries
@@ -522,7 +510,7 @@ test('J. event visual influence adapts across different industries', function ()
         expect($prompt)->toContain('Summer Solstice Festival');
         expect($prompt)->toContain($industry);
         expect($prompt)->toContain($prodName);
-        expect($prompt)->toContain('EVENT TEXT VISIBILITY: FORBIDDEN');
+        expect($prompt)->toContain('Event visibility: Hidden');
     }
 });
 
@@ -557,12 +545,11 @@ test('K. user tagline remains strictly separate from event text', function () {
     );
 
     // Tagline must appear in its dedicated section
-    expect($prompt)->toContain('TAGLINE:');
+    expect($prompt)->toContain('Tagline:');
     expect($prompt)->toContain("\"{$userTagline}\"");
     // Event text must remain forbidden
-    expect($prompt)->toContain('EVENT TEXT VISIBILITY: FORBIDDEN');
-    expect($prompt)->toContain('EVENT TEXT: FORBIDDEN');
-    expect($prompt)->toContain('STRICT TEXT BAN: The event/holiday name ("Valentine’s Day Special")');
+    expect($prompt)->toContain('Event visibility: Hidden');
+    expect($prompt)->toContain('Do not render event name "Valentine’s Day Special"');
 });
 
 // L. Product names/prices remain separate from event text
@@ -593,13 +580,12 @@ test('L. product names and prices remain strictly separate from event text', fun
         business: $business
     );
 
-    // Product and Price in Section 16
-    expect($prompt)->toContain('PRODUCT NAME:');
-    expect($prompt)->toContain('"Spiced Pumpkin Jam"');
-    expect($prompt)->toContain('PRICE:');
+    // Product and Price in dedicated section
+    expect($prompt)->toContain('Products:');
+    expect($prompt)->toContain('Spiced Pumpkin Jam');
     expect($prompt)->toContain('280.00');
 
     // Event text is in its own distinct section
-    expect($prompt)->toContain('EVENT TEXT (OPTIONAL COMMERCIAL TYPOGRAPHY): ALLOWED');
+    expect($prompt)->toContain('Event visibility: Allowed');
     expect($prompt)->toContain('Autumn Harvest Week');
 });

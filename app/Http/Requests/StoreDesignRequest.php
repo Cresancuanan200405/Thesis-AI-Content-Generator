@@ -45,6 +45,9 @@ class StoreDesignRequest extends FormRequest
             }
         }
 
+        if ($this->has('include_product_name')) {
+            $merges['include_product_name'] = filter_var($this->input('include_product_name'), FILTER_VALIDATE_BOOLEAN);
+        }
         if ($this->has('include_prices')) {
             $merges['include_prices'] = filter_var($this->input('include_prices'), FILTER_VALIDATE_BOOLEAN);
         }
@@ -102,6 +105,7 @@ class StoreDesignRequest extends FormRequest
             'content_style.*' => ['string', 'max:255'],
             'tagline' => ['nullable', 'string', 'max:255'],
             'tagline_mode' => ['nullable', 'string', 'max:50'],
+            'include_product_name' => ['nullable', 'boolean'],
             'include_tagline' => ['nullable', 'boolean'],
             'include_prices' => ['nullable', 'boolean'],
             'image_model' => ['nullable', 'string', 'max:50'],

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Business;
+use App\Models\Campaign;
 use Illuminate\Support\Str;
 
 class ModularPromptOrchestrator
@@ -16,6 +17,17 @@ class ModularPromptOrchestrator
     }
 
     /**
+     * Alias for orchestrate() to support prompt building interface.
+     *
+     * @param  array<string, mixed>  $options
+     * @param  array<string, mixed>|null  $visionBlueprint
+     */
+    public function buildSystemPrompt(array $options, ?Business $business = null, ?array $visionBlueprint = null): string
+    {
+        return $this->orchestrate($options, $business, $visionBlueprint);
+    }
+
+    /**
      * Build a structured, modular prompt respecting strict priority rules and aspect-ratio composition profiles.
      * Follows the 20-step production prompt structure for complete final marketing designs in GPT Image 2.
      *
@@ -23,6 +35,26 @@ class ModularPromptOrchestrator
      * @param  array<string, mixed>|null  $visionBlueprint
      */
     public function orchestrate(array $options, ?Business $business = null, ?array $visionBlueprint = null): string
+    {
+        $generationMode = $options['generation_mode'] ?? null;
+        if ($generationMode === 'manual') {
+            return $this->orchestrateManualCampaignBrief($options, $business, $visionBlueprint);
+        }
+
+        if ($generationMode === 'automatic') {
+            return $this->orchestrateAutomaticCampaignBrief($options, $business, $visionBlueprint);
+        }
+
+        return $this->orchestrateLegacyModules($options, $business, $visionBlueprint);
+    }
+
+    /**
+     * Legacy orchestrator retaining technical 20-module expansion.
+     *
+     * @param  array<string, mixed>  $options
+     * @param  array<string, mixed>|null  $visionBlueprint
+     */
+    protected function orchestrateLegacyModules(array $options, ?Business $business = null, ?array $visionBlueprint = null): string
     {
         $modules = [];
         $aspectRatio = $options['aspect_ratio'] ?? '1:1';
@@ -32,6 +64,7 @@ class ModularPromptOrchestrator
 
         $imageModel = $options['image_model'] ?? 'gpt-image-2';
         $isFlagship = $imageModel === 'gpt-image-2';
+        $renderStyle = $options['render_style'] ?? $options['content_style'] ?? 'Studio Product Still';
 
         $catalogProducts = $options['catalog_products'] ?? [];
         $customProducts = $options['custom_products'] ?? [];
@@ -66,6 +99,12 @@ class ModularPromptOrchestrator
                 } else {
                     $userScenePrompt = null;
                 }
+            } elseif (Str::startsWith($raw, 'Create a marketing image')) {
+                if (preg_match('/Creative direction:\s*\n(.+?)(?=\n\n|\n[A-Z]|$)/s', $raw, $matches)) {
+                    $userScenePrompt = trim($matches[1]);
+                } else {
+                    $userScenePrompt = null;
+                }
             } else {
                 $userScenePrompt = $raw;
             }
@@ -80,14 +119,12 @@ class ModularPromptOrchestrator
         // ---------------------------------------------------------------------
         $taskLines = [
             'FINAL MARKETING DESIGN TASK (FINAL OUTPUT OBJECTIVE):',
-            '• MANDATE: Create the complete final advertising artwork, including the visual scene and all enabled marketing typography.',
             '• COMPLETE DESIGN MANDATE: GPT Image 2 is the final visual and typographic designer. Generate the complete finished artwork directly, seamlessly integrating all enabled marketing copy elements (Product Name, Price, Tagline, Business Name) into the final visual composition.',
         ];
         if ($isManualWithPrompt) {
             $taskLines[] = "• SUPREME USER CREATIVE AUTHORITY: In Manual Mode, the user's explicit creative direction in Section 4 is the supreme authority for scene, environment, materials, atmosphere, lighting, composition, camera viewpoint, and props. It strictly takes precedence over generic studio conventions, default centered layouts, or softbox lighting.";
         }
         $taskLines[] = '• STRICT LOGO RESTRICTION: Do not generate, invent, draw, or add any logo, emblem, icon, brand mark, watermark, cup logo, bean logo, café emblem, crown, badge, or decorative brand symbol anywhere in the artwork.';
-        $taskLines[] = '• FINISHED COMMERCIAL FINISH: Deliver a finished, polished commercial advertisement ready for immediate marketing publication. Do NOT produce a raw template, empty mockup background, or editing canvas.';
         $modules[] = implode("\n", $taskLines);
 
         // ---------------------------------------------------------------------
@@ -99,6 +136,8 @@ class ModularPromptOrchestrator
             foreach ($catalogProducts as $prod) {
                 $pName = is_array($prod) ? ($prod['name'] ?? 'Product') : $prod->name;
                 $imgPath = is_array($prod) ? ($prod['image_path'] ?? null) : $prod->image_path;
+                $pId = is_array($prod) ? ($prod['id'] ?? null) : ($prod->id ?? null);
+                $pPrice = is_array($prod) ? ($prod['price'] ?? null) : ($prod->price ?? null);
 
                 $hasImg = false;
                 if (! empty($imgPath)) {
@@ -111,9 +150,21 @@ class ModularPromptOrchestrator
                 }
 
                 if ($hasImg) {
+                    $rawPStr = ($pPrice !== null && $pPrice !== '') ? trim((string) $pPrice) : null;
+                    $fmtPrice = $rawPStr !== null ? (is_numeric($rawPStr) ? '₱'.number_format((float) $rawPStr, 2) : (str_starts_with($rawPStr, '₱') ? $rawPStr : '₱'.ltrim($rawPStr))) : null;
+
+                    $physicalDetails = $this->resolveProductPhysicalCharacteristics(
+                        $prod,
+                        $imgPath,
+                        count($imageIndexedProducts) === 0 ? ($options['vision_blueprint'] ?? null) : null
+                    );
+
                     $imageIndexedProducts[] = [
+                        'id' => $pId,
                         'name' => $pName,
+                        'price' => $fmtPrice,
                         'role' => count($imageIndexedProducts) === 0 ? 'Primary catalog product' : 'Secondary catalog product',
+                        'physical_details' => $physicalDetails,
                     ];
                 }
             }
@@ -132,12 +183,25 @@ class ModularPromptOrchestrator
                 $productRefLines[] = 'PRIMARY & REFERENCE PRODUCT IMAGES:';
                 foreach ($imageIndexedProducts as $i => $item) {
                     $imgNum = $i + 1;
-                    $productRefLines[] = "REFERENCE IMAGE {$imgNum}:\nREFERENCE IMAGE {$imgNum} = {$item['name']} ({$item['role']})";
+                    $pPriceStr = $item['price'] ? " | Exact Price: {$item['price']}" : '';
+                    $pIdStr = $item['id'] ? " [Catalog ID: {$item['id']}]" : '';
+                    $phys = $item['physical_details'] ?? 'Authentic physical appearance as shown in catalog reference image';
+                    $productRefLines[] = "REFERENCE IMAGE {$imgNum}:\n"
+                        ."REFERENCE IMAGE {$imgNum} = {$item['name']}{$pIdStr} ({$item['role']}{$pPriceStr})\n"
+                        ."• Authoritative Identity Anchor: The physical product shown in Reference Image {$imgNum} is strictly \"{$item['name']}\".\n"
+                        ."• PRODUCT VISUAL IDENTITY BINDING:\n"
+                        ."  - Product Name: {$item['name']}\n"
+                        .'  - Exact Price: '.($item['price'] ?? 'N/A')."\n"
+                        .'  - Catalog ID: '.($item['id'] ?? 'N/A')."\n"
+                        ."  - Concrete Physical Characteristics: {$phys}\n"
+                        ."  - Exclusive Copy Binding: The product name \"{$item['name']}\" and exact price \"".($item['price'] ?? 'N/A').'" belong EXCLUSIVELY to this physical appearance.';
                 }
                 $productRefLines[] = "• MULTI-IMAGE COMPOSITION DIRECTIVE:\nUse all provided product images as the visual references for the selected products. Preserve the recognizable identity, packaging, proportions, colors, and physical characteristics of each product. Arrange the products together as a cohesive commercial composition. Do not replace, omit, or invent a different product for any supplied reference image.";
+                $productRefLines[] = "• AUTHORITATIVE PRODUCT IDENTITY BINDING (CRITICAL RULE):\n  - Every catalog reference image is an independent, immutable product identity record.\n  - NEVER infer product identity or copy from canvas position, prominence, or size (\"looks larger, so must be Product 1\").\n  - Presentation freedom is NOT identity freedom: camera perspective, lighting, and staging may change freely, but Reference Image 1 remains strictly bound to Product 1's copy, and Reference Image 2 to Product 2's copy. No identity swapping under any circumstances.";
             } else {
                 $productRefLines[] = "PRIMARY PRODUCT IMAGE:\nUse the supplied catalog product image as the primary visual source of truth for {$productName}. (REFERENCE PRODUCT PRESERVATION MODE)";
             }
+            $productRefLines[] = "• PRODUCT IDENTITY VS. CAMERA PRESENTATION ROLE:\nThe supplied catalog product image is the authoritative reference for PRODUCT IDENTITY (what the product is: physical form, container, packaging, labels, branding, colors, and physical markings). The catalog image is NOT a mandatory camera angle, framing, or composition reference.";
         } else {
             $productRefLines[] = "PRODUCT SOURCE & HANDLING (GENERATIVE PRODUCT & COMPLETE SCENE MODE):\n• Reference Image Available: NO (Generative Commercial Scene Mode)\n• Target Product: {$productName}".($productDesc ? " — {$productDesc}" : '').($category ? " (Category: {$category})" : '')."\n• GENERATIVE SCENE DIRECTIVE: Synthesize an authentic, photorealistic commercial product representation of {$productName} integrated naturally as the centerpiece of a COMPLETE MARKETING ADVERTISEMENT SCENE. Do NOT generate an isolated product cutout or plain empty background. Render the full environment, background, atmospheric lighting, contextual props, and commercial visual storytelling as directed by the creative brief below.";
         }
@@ -187,15 +251,72 @@ class ModularPromptOrchestrator
             }
         }
 
-        if (count($imageIndexedProducts) > 1 || ! empty($secondaryCatalog) || ! empty($validCustom)) {
-            $multiLines = ["MULTI-PRODUCT COMPOSITION:\nCO-FEATURED PRODUCTS & SERVICES:\n• All selected catalog products must appear together in the same final marketing scene.\n• Preserve each supplied catalog product as a distinct physical item.\n• Do not omit secondary selected products.\n• Do not merge two products into one.\n• Do not substitute one selected product for another.\n• Do not create a generic replacement for a referenced product."];
-            $multiLines[] = "• Primary Hero Product: {$productName} (Dominant focal centerpiece of the composition)";
+        $totalProductCount = 1 + count($secondaryCatalog) + count($validCustom);
+        $isMultiProduct = ($totalProductCount > 1 || count($imageIndexedProducts) > 1);
+
+        $arrangementData = $this->designSystem->resolveProductArrangementStrategy(
+            $totalProductCount,
+            $renderStyle,
+            $aspectRatio,
+            $options['product_arrangement'] ?? null
+        );
+        $strategyName = $arrangementData['strategy'];
+        $strategyDesc = $arrangementData['description'];
+        $strategyGuidance = $arrangementData['guidance'];
+
+        if ($isMultiProduct) {
+            $multiLines = [
+                "MULTI-PRODUCT COMPOSITION:\nCO-FEATURED PRODUCTS & SERVICES:\n• All selected catalog products must appear together in the same final marketing scene.\n• Preserve each supplied catalog product as a distinct physical item.",
+                '• DISTINCT PHYSICAL PRODUCT INTEGRITY:',
+                '  - Every selected product is an immutable, distinct physical item with its own container, form, and labels.',
+                '  - Do NOT merge two or more products into a single combined item.',
+                '  - Do NOT swap packaging, containers, labels, or branding between products.',
+                '  - Do NOT omit any selected product from the composition.',
+                '  - Do NOT duplicate one product to replace another.',
+                '  - Avoid floating callout boxes, leader lines, dots, or UI cards pointing to products. Products must exist naturally as physical commercial objects.',
+            ];
+
+            // Product Hierarchy Breakdown (semantic roles without hardcoded positions)
+            $multiLines[] = "• Primary Hero Product: {$productName}";
+            $multiLines[] = '• PRODUCT HIERARCHY & ROLES:';
+            $multiLines[] = "  - Primary / Hero Product: \"{$productName}\" — Commercial anchor product. Maintain natural relative scale and realistic proportions without forcing artificial physical size or dominance over companion items; allow visual composition to choose prominence naturally while preserving identity → copy mapping.";
+
+            if ($totalProductCount === 2) {
+                $secondName = ! empty($secondaryCatalog) ? $secondaryCatalog[0]['name'] : $validCustom[0]['name'];
+                $secondDesc = ! empty($secondaryCatalog) ? ($secondaryCatalog[0]['description'] ?? null) : ($validCustom[0]['description'] ?? null);
+                $descSuffix = $secondDesc ? " ({$secondDesc})" : '';
+                $multiLines[] = "  - Secondary / Supporting Product: \"{$secondName}\"{$descSuffix} — Staged in deliberate visual dialogue with the hero, providing complementary commercial support with clear physical separation.";
+            } elseif ($totalProductCount >= 3) {
+                // Secondary
+                $secondName = ! empty($secondaryCatalog) ? $secondaryCatalog[0]['name'] : ($validCustom[0]['name'] ?? 'Secondary Item');
+                $secondDesc = ! empty($secondaryCatalog) ? ($secondaryCatalog[0]['description'] ?? null) : ($validCustom[0]['description'] ?? null);
+                $descSuffix2 = $secondDesc ? " ({$secondDesc})" : '';
+                $multiLines[] = "  - Secondary / Supporting Product: \"{$secondName}\"{$descSuffix2} — Supporting visual tier flanking, stepped, or layered in depth relative to the hero.";
+
+                // Tertiary
+                $thirdName = count($secondaryCatalog) > 1
+                    ? $secondaryCatalog[1]['name']
+                    : (! empty($validCustom) ? (count($secondaryCatalog) === 1 ? $validCustom[0]['name'] : ($validCustom[1]['name'] ?? 'Tertiary Item')) : 'Tertiary Item');
+                $thirdDesc = count($secondaryCatalog) > 1
+                    ? ($secondaryCatalog[1]['description'] ?? null)
+                    : (! empty($validCustom) ? (count($secondaryCatalog) === 1 ? ($validCustom[0]['description'] ?? null) : ($validCustom[1]['description'] ?? null)) : null);
+                $descSuffix3 = $thirdDesc ? " ({$thirdDesc})" : '';
+                $multiLines[] = "  - Tertiary / Supporting Product: \"{$thirdName}\"{$descSuffix3} — Complementary supporting tier completing the commercial grouping with intentional depth and balance.";
+
+                // Any additional (4+)
+                $remainingItems = array_slice($secondaryCatalog, 2);
+                foreach ($remainingItems as $remItem) {
+                    $rDesc = ! empty($remItem['description']) ? " ({$remItem['description']})" : '';
+                    $multiLines[] = "  - Additional Supporting Product: \"{$remItem['name']}\"{$rDesc} — Harmoniously integrated into the supporting product arrangement.";
+                }
+            }
+
             if (! empty($secondaryCatalog)) {
                 $multiLines[] = '• Co-Featured Catalog Products:';
                 foreach ($secondaryCatalog as $sProd) {
                     $sLine = "  - {$sProd['name']}";
                     if (! empty($sProd['description'])) {
-                        $sLine .= " — {$sProd['description']}";
+                        $sLine .= ' — '.Str::limit($sProd['description'], 100);
                     }
                     $multiLines[] = $sLine;
                 }
@@ -210,15 +331,27 @@ class ModularPromptOrchestrator
                     $multiLines[] = $cLine;
                 }
             }
-            $multiLines[] = '• CO-PRESENCE MANDATE: All selected products and offerings listed above must be actively represented together in the commercial scene (e.g., grouped harmoniously on the countertop, table, or display surface as a cohesive commercial offering). Do not omit or substitute any selected item.';
 
-            $productArrangement = $options['product_arrangement'] ?? null;
-            if (! empty($productArrangement)) {
-                $arrDesc = MarketingDesignSystem::PRODUCT_ARRANGEMENTS[$productArrangement] ?? $productArrangement;
-                $multiLines[] = "• MULTI-PRODUCT SPATIAL COMPOSITION STRATEGY: {$productArrangement} ({$arrDesc})\n• STAGING MANDATE: DO NOT align products in a flat side-by-side row or generic horizontal line. Stage all selected products together using an explicit {$productArrangement} spatial relationship (e.g., primary hero product in sharp foreground focus, companion items layered at deliberate depths or stepped pedestals).";
-            } else {
-                $multiLines[] = '• MULTI-PRODUCT SPATIAL COMPOSITION: Arrange all selected products with a deliberate spatial hierarchy and depth. STAGING MANDATE: DO NOT align products in a flat side-by-side row or generic horizontal line.';
-            }
+            // Semantic Composition Strategy
+            $multiLines[] = "• MULTI-PRODUCT SPATIAL COMPOSITION STRATEGY: {$strategyName} ({$strategyDesc})";
+            $multiLines[] = "• STAGING MANDATE: DO NOT align products in a flat side-by-side row or generic horizontal line. STAGING MANDATE: DO NOT align products in a flat side-by-side row, generic horizontal line, or rigid grid. Stage all selected products together using an explicit {$strategyName} spatial relationship (e.g., primary hero product commanding foreground focus, companion items layered at deliberate depths or stepped pedestals with realistic contact shadows).";
+            $multiLines[] = "• COMPOSITION GUIDANCE: {$strategyGuidance}";
+            $multiLines[] = '• NATURAL COMPOSITION PROMINENCE: Allow the visual composition to choose prominence naturally between products according to realistic commercial scale. Do NOT force the smaller product to be an artificially dominant physical object merely because it is Product 1. Preserve the identity → copy mapping regardless of which product is larger, closer, or more prominent on the canvas.';
+
+            // Canvas & Aspect Ratio Responsiveness (No Hardcoded Positions)
+            $aspectRatioGuidance = match ($aspectRatio) {
+                '9:16', '4:5' => 'For vertical canvas, utilize vertical depth planes, tiered surface heights, and foreground-to-background layering to showcase all items with distinct clearance rather than cramping them into a narrow horizontal line.',
+                '16:9', '4:3' => 'For horizontal canvas, utilize lateral negative space, diagonal depth, and staggered staging to create a balanced commercial spread with generous breathing room, avoiding vertical stacking.',
+                default => 'For square canvas, utilize a balanced, cohesive focal grouping with intentional depth layers, stepped surfaces, and comfortable spatial clearance around all items.',
+            };
+            $multiLines[] = "• CANVAS & ASPECT RATIO RESPONSIVENESS (NO HARDCODED POSITIONS): Do NOT hardcode fixed pixel coordinates, permanent left/center/right assignments, or rigid percentage boundaries. The composition must adapt organically to the {$aspectRatio} canvas: {$aspectRatioGuidance} The image model determines the best commercial arrangement within these creative parameters.";
+
+            // User Composition Direction Precedence
+            $multiLines[] = '• USER COMPOSITION DIRECTION PRECEDENCE: When the user\'s explicit creative direction in Section 4 specifies a spatial arrangement, product placement, or camera composition (e.g., "closest to camera", "triangular grouping", "staged on wooden blocks", "flat-lay overhead"), follow that directive as supreme creative authority over the system\'s default arrangement strategy. The system strategy serves as the structured fallback when user direction is open-ended.';
+
+            // Phase A Identity vs Presentation in Multi-Product Staging
+            $multiLines[] = '• PRODUCT IDENTITY VS. PRESENTATION IN MULTI-PRODUCT STAGING: Each referenced product\'s catalog image is the authoritative identity reference for WHAT that product is (physical form, container, packaging, labels, branding, colors, and markings). However, the catalog image does NOT dictate camera angle or isolated composition. Each product may be creatively rotated, reoriented, angled (e.g., three-quarter or eye-level), and staged with realistic contact shadows and depth relative to companion items.';
+            $multiLines[] = '• MULTI-PRODUCT IDENTITY-TO-COPY INTEGRITY: Reference Image 1 remains bound to Product 1\'s copy, and Reference Image 2 to Product 2\'s copy without swapping.';
 
             $productRefLines[] = implode("\n", $multiLines);
         }
@@ -231,7 +364,11 @@ class ModularPromptOrchestrator
         $preservationLines = [
             "PRODUCT PRESERVATION REQUIREMENTS:\nPRODUCT PRESERVATION:",
             '• PRESERVATION RULE: Preserve the recognizable identity of the actual supplied product, including when applicable: shape, proportions, container, glassware, packaging, labels, visible branding, colors, distinctive textures, liquid layers, toppings, and physical accessories. Do not reconstruct or invent a replacement product. Creative changes should primarily affect the environment, lighting, atmosphere, background, props, composition, and campaign presentation surrounding the product.',
-            '• STRICT PRESERVATION FIDELITY: The supplied product image is the immutable physical product. Maintain exact container geometry, liquid layering, branding, and label details. Do NOT redraw, restyle, distort, or re-render the catalog item into an invented generic alternative.',
+            '• PRODUCT IDENTITY VS. PRODUCT PRESENTATION (CONTROLLED CAMERA FREEDOM):',
+            '  - Authoritative Identity Anchor (What the product is): The catalog image is the authoritative anchor for physical product type, packaging structure, container form, labels, branding, colors, and physical markings. It represents the actual product being advertised, not generic inspiration. Do NOT substitute, redesign, merge, or replace the product with a generic alternative.',
+            '  - Controlled Presentation Freedom (How the product is presented): The catalog photograph is an identity reference, not a mandatory camera or composition reference. Unless the user explicitly requests the source perspective or changing perspective would materially compromise recognition of the product, do NOT literally copy flat-lay or awkward overhead catalog viewpoints. When appropriate, present the product from a more attractive commercial perspective (such as an eye-level, slightly elevated, or three-quarter product-photography view).',
+            '  - Creative Presentation Scope: While keeping product identity strictly faithful, you are encouraged to create an intentional commercial viewpoint, commercial depth, believable staging, authentic reflections, realistic contact shadows, and refined lighting.',
+            '• USER CAMERA DIRECTION PRECEDENCE: When the user\'s explicit creative direction in Section 4 specifies a camera angle or viewpoint (e.g., eye-level, low-angle hero, flat-lay), follow that user directive with high authority. When no camera angle is specified by the user, select an attractive commercial product perspective rather than defaulting to the catalog photograph\'s raw camera angle.',
         ];
         $modules[] = implode("\n", $preservationLines);
 
@@ -379,8 +516,12 @@ class ModularPromptOrchestrator
             $compLines = [
                 "COMPOSITION:\nCAMERA, LIGHTING & SCENE GEOMETRY:",
                 "• Composition Geometry: DERIVE FROM PRIMARY USER SCENE DIRECTION. Follow the user's framing, subject placement, and layout directives (e.g., asymmetric, off-center, diagonal, or unusual geometry) with priority over standard centered layouts.",
-                "• Focal Dominance: {$productName} remains the recognizable hero product, positioned in accordance with the user's spatial and compositional instructions. Distribute negative space intentionally to support marketing typography and natural depth.",
             ];
+            if ($isMultiProduct) {
+                $compLines[] = "• Multi-Product Staging Strategy: {$strategyName} ({$strategyDesc}) — deliberate spatial composition avoiding flat side-by-side arrangement, creating believable commercial depth and clear product separation.";
+                $compLines[] = '• User Placement Precedence: Honor any specific product placement or grouping requested in the user scene prompt over default staging.';
+            }
+            $compLines[] = "• Focal Dominance: {$productName} remains the recognizable hero product, positioned in accordance with the user's spatial and compositional instructions. Distribute negative space intentionally to support marketing typography and natural depth.";
         } else {
             $rawComp = ! empty($options['composition_type']) ? trim((string) $options['composition_type']) : null;
             $compositionType = ! empty($options['composition_type'])
@@ -397,6 +538,8 @@ class ModularPromptOrchestrator
             $compLines[] = "• Composition Geometry: {$compositionType} ({$compDesc})";
             if (! empty($options['product_arrangement'])) {
                 $compLines[] = "• Multi-Product Staging: {$options['product_arrangement']} — deliberate spatial composition avoiding flat side-by-side arrangement.";
+            } elseif ($isMultiProduct) {
+                $compLines[] = "• Multi-Product Staging: {$strategyName} — deliberate spatial composition avoiding flat side-by-side arrangement, creating believable commercial depth and clear product separation.";
             }
             $compLines[] = "• Focal Dominance: {$productName} commands primary visual authority. Negative space is deliberately distributed to support marketing typography and natural depth.";
         }
@@ -408,7 +551,7 @@ class ModularPromptOrchestrator
         if ($isManualWithPrompt && empty($options['camera_viewpoint'])) {
             $camLines = [
                 'CAMERA:',
-                '• Camera Perspective: DERIVE FROM PRIMARY USER SCENE DIRECTION. Adopt the camera angle, viewpoint, or lens perspective specified or implied by the user\'s scene prompt (e.g., eye-level, low-angle, top-down, or dynamic perspective) rather than a rigid studio three-quarter default.',
+                '• Camera Perspective: DERIVE FROM PRIMARY USER SCENE DIRECTION. Adopt the camera angle, viewpoint, or lens perspective specified by the user\'s scene prompt (e.g., eye-level, low-angle hero, or dynamic perspective). If the user prompt does not specify a camera angle, present the product from an attractive commercial advertising perspective (such as eye-level or three-quarter product view) that showcases its packaging, label, and form, rather than inheriting an awkward or flat-lay catalog camera angle.',
             ];
         } else {
             $rawCam = ! empty($options['camera_viewpoint']) ? trim((string) $options['camera_viewpoint']) : null;
@@ -609,6 +752,14 @@ class ModularPromptOrchestrator
         $priceStyleDesc = MarketingDesignSystem::PRICE_STYLES[$priceStyle] ?? 'Integrated commercial price typography.';
         $taglineStyleDesc = MarketingDesignSystem::TAGLINE_STYLES[$taglineStyle] ?? 'Impactful marketing headline typography.';
 
+        $renderStyleTypoGuidance = match (strtolower(trim($renderStyle))) {
+            'studio_product_still', 'studio product still' => '• Render Style Typography Art Direction: Premium, restrained, polished commercial product typography with clean lines, high-end editorial hierarchy, and clear physical product association.',
+            'cinematic_marketing', 'cinematic marketing' => '• Render Style Typography Art Direction: Stronger campaign-style hierarchy and dramatic advertising typography integrated organically with scene depth, lighting, and narrative atmosphere while preserving product readability.',
+            'lifestyle_capture', 'lifestyle capture' => '• Render Style Typography Art Direction: Editorial lifestyle typography integrated into natural negative space, authentic contextual layout, and complete avoidance of plain unstyled metadata or artificial UI-like labels.',
+            'minimalist_graphic', 'minimalist graphic', 'minimalist graphic vec' => '• Render Style Typography Art Direction: Clean, deliberate, highly controlled typographic system with generous whitespace, strong alignment, and restrained graphic advertising treatment without becoming a dashboard, app UI, or wireframe.',
+            default => '• Render Style Typography Art Direction: Refined commercial advertising typography with intentional hierarchy and natural visual association with the physical product.',
+        };
+
         $typoArtLines = [
             "TYPOGRAPHIC ART DIRECTION:\nTYPOGRAPHY / COPY PLACEMENT (FINAL ARTWORK DESIGN):",
             '• COMPLETE DESIGN MANDATE: GPT Image 2 is the final visual and typographic designer. Determine the final typography, typographic personality, and layout hierarchy based on:',
@@ -624,17 +775,25 @@ class ModularPromptOrchestrator
             "• Tagline Typographic Style: {$taglineStyle} ({$taglineStyleDesc})",
             '• Composition-Aware Placement: Dynamically place typography in available negative-space regions relative to the product silhouette, lighting, and aspect ratio.',
             '• Do NOT place text arbitrarily or cover the primary product, packaging, or labels.',
-            '• Typographic Hierarchy & Spacing: Maintain intentional visual rhythm and scale distinction between Headline/Tagline, Business Name, and Price.',
-            '• Prevent typography elements from colliding or stacking into an unreadable block.',
-            '• Contrast & Readability: Ensure crisp legibility against the scene environment using natural tonal contrast, soft contact shadows, or subtle dimensional separation without generic UI boxes.',
-            '• Typographic Personality & Contrast: Use commercial advertising typography tailored to the brand tone and industry. Ensure crisp, high-contrast legibility against the scene background without generic UI boxes.',
-            '• Spacing & Visual Rhythm: Prevent typography elements from colliding or stacking into an unreadable block. Keep comfortable breathing room between headline, price, and product.',
+            '• Typographic Hierarchy & Spacing: Maintain intentional visual rhythm and scale distinction between Headline/Tagline, Business Name, and Price, keeping comfortable breathing room between text and product without stacking into an unreadable block.',
+            '• Contrast & Readability: Ensure crisp legibility and high contrast against the scene background using commercial advertising typography tailored to the brand tone and industry, soft contact shadows, or subtle dimensional separation without generic UI boxes.',
+            '• DESIGNED ADVERTISING TYPOGRAPHY (NEVER PLAIN METADATA OR DATABASE LABELS): Product names and prices must NEVER look like plain metadata or database labels. Treat all enabled copy as intentional advertising typography designed with typographic scale, weight contrast, and visual rhythm without altering authoritative wording, digits, or currency.',
+            '• COHERENT NAME + PRICE TYPOGRAPHIC UNIT: For each product, its name and price must form a visually coherent typographic unit placed together in nearby negative space, establishing the commercial relationship with the physical item.',
+            '• POSITIVE TYPOGRAPHY GROUNDING & PRODUCT-COPY ASSOCIATION: Integrate copy naturally into the commercial composition so each item is clearly associated through proximity, alignment, scale, and negative space without arbitrary floating. Communicate the natural commercial relationship: Physical Product ↕ Product Name ↕ Price.',
+            '• ZERO CONNECTOR GRAPHICS: Never use leader lines, pointer lines, arrows, anchor dots, callout stems, or connection strokes between products and copy. The relationship is strictly [Product ↔ nearby copy through visual composition], NEVER [Product ↔ graphical connector ↔ copy].',
+            '• NO FIXED COORDINATES / NO UI CALLOUTS: Do not use fixed pixel coordinates, rigid percentage locations, permanent left/right assignments, or hardcoded text boxes. Do NOT draw leader lines, pointer arrows, connector lines, anchor dots, callout cards, UI panels, dashboard labels, or floating badges (unless a selected render style explicitly calls for a tasteful graphic treatment, which must remain polished advertising, not an app interface). Ground copy through visual composition, proximity, and typographic hierarchy.',
+            $renderStyleTypoGuidance,
+            '• Product Name & Price Typographic Hierarchy: Where both product name and price are displayed, establish an intentional typographic hierarchy (e.g., PRODUCT NAME paired comfortably with its corresponding price) through proximity, visual grouping, and alignment without forcing rigid coordinates or fixed stacking order.',
         ];
         $modules[] = implode("\n", $typoArtLines);
 
         // ---------------------------------------------------------------------
         // 16. COPY CONTENT
         // ---------------------------------------------------------------------
+        $includeProductName = array_key_exists('include_product_name', $options)
+            ? filter_var($options['include_product_name'], FILTER_VALIDATE_BOOLEAN)
+            : true;
+
         $includePrices = array_key_exists('include_prices', $options)
             ? filter_var($options['include_prices'], FILTER_VALIDATE_BOOLEAN)
             : true;
@@ -647,15 +806,22 @@ class ModularPromptOrchestrator
 
         $copyBlockLines = [
             "COPY CONTENT:\nMARKETING COPY:\nMARKETING COPY — FINAL DESIGN TEXT:\nFINAL MARKETING COPY — MUST APPEAR VISIBLY IN THE IMAGE:\n",
-            "PRODUCT NAME:\n\"{$productName}\"",
-            "• Hero Product: \"{$productName}\"",
-            "• Hero Product: {$productName}",
         ];
 
-        if (! empty($secondaryCatalog)) {
-            foreach ($secondaryCatalog as $sc) {
-                $copyBlockLines[] = "• Co-Featured Product: \"{$sc['name']}\"";
+        if ($includeProductName) {
+            $copyBlockLines[] = "PRODUCT NAME:\n\"{$productName}\"";
+            $copyBlockLines[] = "• Hero Product: \"{$productName}\"";
+            $copyBlockLines[] = "• Hero Product: {$productName}";
+            $copyBlockLines[] = "• Product Name Grounding: The product name \"{$productName}\" must be visually grounded with the physical hero product through intentional proximity, scale, and alignment, feeling like an authentic commercial title rather than disconnected floating text.";
+
+            if (! empty($secondaryCatalog)) {
+                foreach ($secondaryCatalog as $sc) {
+                    $copyBlockLines[] = "• Co-Featured Product: \"{$sc['name']}\"";
+                    $copyBlockLines[] = "  - Visually ground \"{$sc['name']}\" with its physical companion product in the composition.";
+                }
             }
+        } else {
+            $copyBlockLines[] = "INCLUDE PRODUCT NAME = FALSE:\n• PRODUCT NAME: Disabled.\nDo not render the product name as visible marketing text typography.\nThe physical product itself MUST remain visually present as the hero subject, but its name should not be intentionally rendered as visible copy.";
         }
 
         // PRICE BLOCK
@@ -663,7 +829,7 @@ class ModularPromptOrchestrator
             $allProducts = [];
 
             if (! empty($options['catalog_products'])) {
-                foreach ($options['catalog_products'] as $prod) {
+                foreach ($options['catalog_products'] as $idx => $prod) {
                     $pId = is_array($prod) ? ($prod['id'] ?? null) : ($prod->id ?? null);
                     $pName = is_array($prod) ? ($prod['name'] ?? 'Product') : $prod->name;
                     $pPrice = is_array($prod) ? ($prod['price'] ?? null) : $prod->price;
@@ -677,10 +843,30 @@ class ModularPromptOrchestrator
                         }
                     }
 
+                    $pImgPath = null;
+                    if (isset($options['reference_image_paths'][$idx])) {
+                        $pImgPath = $options['reference_image_paths'][$idx];
+                    } elseif ($idx === 0 && ! empty($options['reference_image_path'])) {
+                        $pImgPath = $options['reference_image_path'];
+                    } elseif ($idx === 0 && ! empty($options['product_image_url'])) {
+                        $pImgPath = $options['product_image_url'];
+                    } elseif (is_array($prod) && ! empty($prod['image_path'])) {
+                        $pImgPath = $prod['image_path'];
+                    } elseif (is_object($prod) && ! empty($prod->image_path)) {
+                        $pImgPath = $prod->image_path;
+                    }
+
+                    $physicalDetails = $this->resolveProductPhysicalCharacteristics(
+                        $prod,
+                        $pImgPath,
+                        $idx === 0 ? ($options['vision_blueprint'] ?? null) : null
+                    );
+
                     $allProducts[] = [
                         'id' => $pId,
                         'name' => $pName,
                         'price' => $pPrice,
+                        'physical_details' => $physicalDetails,
                     ];
                 }
             }
@@ -689,6 +875,7 @@ class ModularPromptOrchestrator
                 foreach ($options['custom_products'] as $cIdx => $cProd) {
                     $cName = is_array($cProd) ? ($cProd['name'] ?? null) : ($cProd->name ?? null);
                     $cPrice = is_array($cProd) ? ($cProd['price'] ?? null) : ($cProd->price ?? null);
+                    $cDesc = is_array($cProd) ? ($cProd['description'] ?? null) : ($cProd->description ?? null);
                     if (! empty($cName)) {
                         if (($cPrice === null || $cPrice === '') && ! empty($options['prices']) && is_array($options['prices'])) {
                             if (isset($options['prices']["custom_{$cIdx}"])) {
@@ -701,6 +888,7 @@ class ModularPromptOrchestrator
                             'id' => "custom_{$cIdx}",
                             'name' => $cName,
                             'price' => $cPrice,
+                            'physical_details' => ! empty($cDesc) ? trim((string) $cDesc) : null,
                         ];
                     }
                 }
@@ -708,10 +896,16 @@ class ModularPromptOrchestrator
 
             // If no catalog/custom products array, fallback to primary product
             if (empty($allProducts)) {
+                $physicalDetails = $this->resolveProductPhysicalCharacteristics(
+                    null,
+                    $options['reference_image_path'] ?? ($options['product_image_url'] ?? null),
+                    $options['vision_blueprint'] ?? null
+                );
                 $allProducts[] = [
                     'id' => null,
                     'name' => $productName,
                     'price' => $options['price'] ?? null,
+                    'physical_details' => $physicalDetails,
                 ];
             }
 
@@ -721,16 +915,31 @@ class ModularPromptOrchestrator
                 // MULTI-PRODUCT PRICING (Exact indexed product-price mapping)
                 $multiPriceLines = [];
                 $multiPriceSummary = [];
+                $associationPairs = [];
+                $bindingLines = [];
                 foreach ($allProducts as $idx => $item) {
                     $num = $idx + 1;
                     $pName = $item['name'];
                     $rawP = $item['price'];
+                    $fmt = 'N/A';
                     if ($rawP !== null && $rawP !== '') {
                         $rawPStr = trim((string) $rawP);
                         $fmt = is_numeric($rawPStr) ? '₱'.number_format((float) $rawPStr, 2) : (str_starts_with($rawPStr, '₱') ? $rawPStr : '₱'.ltrim($rawPStr));
                         $multiPriceLines[] = "• Product {$num} (\"{$pName}\"):\n  Exact price: {$fmt}";
                         $multiPriceSummary[] = "Product {$num} (\"{$pName}\"): {$fmt}";
+                        $associationPairs[] = "Product {$num} (\"{$pName}\") ↔ {$fmt}";
+                    } else {
+                        $associationPairs[] = "Product {$num} (\"{$pName}\")";
                     }
+
+                    $pIdVal = $item['id'] ?? "product_{$num}";
+                    $phys = $item['physical_details'] ?? 'Authentic physical appearance as shown in catalog reference image';
+                    $bindingLines[] = "• Product {$num} Visual Identity Binding:\n"
+                        ."  - Product Name: {$pName}\n"
+                        ."  - Exact Price: {$fmt}\n"
+                        ."  - Catalog ID: {$pIdVal}\n"
+                        ."  - Concrete Physical Characteristics: {$phys}\n"
+                        ."  - Exclusive Copy Binding: The product name \"{$pName}\" and price \"{$fmt}\" belong EXCLUSIVELY to this physical appearance.";
                 }
 
                 $copyBlockLines[] = '';
@@ -742,7 +951,19 @@ class ModularPromptOrchestrator
                     ."• Do NOT merge, sum, or combine prices.\n"
                     ."• Do NOT omit any selected product's price.\n"
                     ."• Do NOT substitute one product's price for another.\n"
-                    .'• NO LEADER LINES / NO CALLOUT POINTERS: Do NOT draw leader lines, pointer arrows, connector lines, anchor dots, or floating callout lines between products and prices. Render prices as clean typographic labels placed directly beside or beneath their respective products.';
+                    .'• NO LEADER LINES / NO CALLOUT POINTERS: Do NOT draw leader lines, pointer arrows, connector lines, anchor dots, or floating callout lines between products and prices. Render prices as clean typographic labels placed directly beside or beneath their respective products through spatial proximity and typography.';
+
+                $copyBlockLines[] = "MULTI-PRODUCT NAME & PRICE ASSOCIATION (1-TO-1 MAPPING):\n"
+                    .'• Explicit Product-to-Copy Pairs: '.implode(' | ', $associationPairs)."\n"
+                    ."• PRODUCT VISUAL IDENTITY BINDINGS:\n".implode("\n", $bindingLines)."\n"
+                    ."• Ground each product's copy directly with its specific physical product in the composition (e.g., Product A ↔ Name A ↔ Price A; Product B ↔ Name B ↔ Price B; Product C ↔ Name C ↔ Price C).\n"
+                    ."• Authoritative Identity-to-Copy Binding: The physical item corresponding to Reference Image 1 MUST be bound to Product 1's name and price. The physical item corresponding to Reference Image 2 MUST be bound to Product 2's name and price. Never determine a product's name or price from its generated size, prominence, or canvas position. The catalog reference image is the immutable identity anchor.\n"
+                    ."• Natural Composition Prominence: Allow visual composition to balance products naturally by authentic commercial scale without forcing smaller items into artificial dominance. The identity-to-copy mapping remains absolute regardless of which product is larger or more prominent.\n"
+                    ."• Spatial & Typographic Association Only (Zero Connector Graphics): Visually associate each product's copy through proximity, typography, and negative space without any connector lines, dots, or divider lines.\n"
+                    ."• Do NOT assign Product A's price to Product B, nor place Product B's name beside Product A.\n"
+                    ."• Do NOT merge multiple prices into one generic price or create an unattached floating price stack.\n"
+                    ."• Do NOT invent a shared price that doesn't belong to a specific product.\n"
+                    ."• Do NOT omit any selected product's required copy when its visibility setting is enabled.";
             } else {
                 // SINGLE-PRODUCT PRICING (Strict backward compatibility)
                 $primaryPriceDisplay = null;
@@ -761,6 +982,7 @@ class ModularPromptOrchestrator
                     $copyBlockLines[] = "• Price: {$primaryPriceDisplay}";
                     $copyBlockLines[] = '• Product price data is authoritative.';
                     $copyBlockLines[] = "• Price Requirement: MUST appear visibly in the image with crisp, legible typography maintaining the exact currency symbol and digits ({$primaryPriceDisplay})";
+                    $copyBlockLines[] = "• Single Product Price Grounding: Visually ground the exact price ({$primaryPriceDisplay}) with {$productName} using intentional proximity, scale, alignment, and whitespace, avoiding generic floating placement.";
                 }
             }
         } else {
@@ -797,15 +1019,10 @@ class ModularPromptOrchestrator
             $copyBlockLines[] = "• Business / Shop: {$brandName}";
             $copyBlockLines[] = "• Exact Spelling: \"{$brandName}\"";
             $copyBlockLines[] = '• Business Name Requirement: MUST appear visibly in the generated image as clean, readable commercial typography';
-            $copyBlockLines[] = '• Designed Brand Typography: Render as professionally designed commercial brand typography';
-            $copyBlockLines[] = '• NEVER render as unstyled plain body text, default browser text, or tiny metadata.';
-            $copyBlockLines[] = '• Typography Only: Render as readable text typography. DO NOT transform into a logo, emblem, badge, cup/bean icon, watermark, or brand symbol.';
-            $copyBlockLines[] = '• Composition-Aware Brand Placement: Position the business name in an intentional negative-space zone';
+            $copyBlockLines[] = '• Creative Typographic Integration: Visually integrate the name into the creative design using elegant, bold, modern, premium, playful, handwritten, editorial, or stylized typography.';
             $copyBlockLines[] = "BRAND IDENTITY:\n• BUSINESS / SHOP: \"{$brandName}\"{$categorySuffix}";
             $copyBlockLines[] = "• Render the exact business name \"{$brandName}\" as visible text integrated naturally into the overall advertisement composition.";
-            $copyBlockLines[] = '• Creative Typographic Integration: Visually integrate the name into the creative design using elegant, bold, modern, premium, playful, handwritten, editorial, or stylized typography matching the design treatment and tone.';
-            $copyBlockLines[] = '• STRICT TYPOGRAPHY ONLY (NO LOGO/EMBLEM/SYMBOL): The business name must remain TYPOGRAPHY ONLY. DO NOT create a logo or emblem for the business name.';
-            $copyBlockLines[] = '• DO NOT create a coffee cup logo, coffee bean logo, café icon, crown, badge, seal, crest, monogram, mascot, watermark, or brand symbol.';
+            $copyBlockLines[] = '• STRICT TYPOGRAPHY ONLY (NO LOGO/EMBLEM/SYMBOL): The business name must remain TYPOGRAPHY ONLY. DO NOT create a logo or emblem for the business name. DO NOT create a coffee cup logo, coffee bean logo, café icon, crown, badge, seal, crest, monogram, mascot, watermark, or brand symbol.';
         } else {
             $copyBlockLines[] = '';
             $copyBlockLines[] = "INCLUDE BUSINESS NAME = FALSE:\n• BUSINESS / SHOP NAME: Disabled. Do not render any business name, logo, or brand mark in the image.\nDo not render the business/shop name.";
@@ -835,19 +1052,16 @@ class ModularPromptOrchestrator
         $copyBlockLines[] = '';
         $copyBlockLines[] = "• COPY RENDERING RULES:\n"
             ."• All enabled copy elements above MUST be visibly rendered in the final image as integrated commercial typography.\n"
+            ."• Visual Grounding Rule: Ground each enabled text element with its corresponding physical product through proximity, alignment, and scale without connector lines or anchor dots.\n"
             .(! empty($options['event_name']) && ! (array_key_exists('show_event_text', $options) ? filter_var($options['show_event_text'], FILTER_VALIDATE_BOOLEAN) : true) ? "• FORBIDDEN EVENT TEXT: Do not render the event/holiday name as visible text.\n" : '')
-            ."• Do not omit, duplicate, or hallucinate additional copy.\n"
-            ."• Place copy in the designated copy zones inside the invisible safe area.\n"
+            ."• Place copy in the designated copy zones inside the safe area.\n"
             ."• Render each enabled text element exactly as provided.\n"
             ."• Preserve spelling exactly.\n"
             ."• Preserve digits exactly.\n"
             ."• Preserve currency exactly.\n"
-            ."• Do not paraphrase.\n"
-            ."• Do not abbreviate.\n"
-            ."• Do not invent alternative wording.\n"
+            ."• Do not paraphrase or abbreviate.\n"
             ."• Do not duplicate any text element.\n"
-            ."• Do not generate additional marketing copy.\n"
-            .'• Do not generate logos, emblems, badges, or watermarks.';
+            .'• Do not generate additional marketing copy, logos, or watermarks.';
 
         $modules[] = implode("\n", $copyBlockLines);
 
@@ -857,10 +1071,27 @@ class ModularPromptOrchestrator
         $copyEmphasis = $this->designSystem->validateCopyEmphasis($options['copy_emphasis'] ?? 'Balanced');
         $emphasisDesc = $this->designSystem->resolveCopyEmphasisSpec($copyEmphasis);
 
+        $normKey = strtolower(str_replace(['-', ' '], '_', $copyEmphasis));
+        if ($normKey === 'tagline' && ! $includeTagline) {
+            $emphasisDirective = '• Copy Hierarchy Directive (Tagline Disabled): Tagline is disabled by visibility setting. Do NOT render any tagline. Commercial hierarchy defaults to balanced hero product focus.';
+        } elseif ($normKey === 'price' && ! $includePrices) {
+            $emphasisDirective = '• Copy Hierarchy Directive (Price Disabled): Price is disabled by visibility setting. Do NOT render any price. Commercial hierarchy defaults to balanced hero product focus.';
+        } elseif ($normKey === 'product' && ! $includeProductName) {
+            $emphasisDirective = '• Copy Hierarchy Directive (Product Name Disabled): Product Name copy is disabled by visibility setting. Do NOT render the product name as text copy. Maintain visual focus on the physical hero product itself.';
+        } else {
+            $emphasisDirective = match ($normKey) {
+                'product', 'product_first', 'product_focused' => '• Copy Hierarchy Directive (Product Dominance): PRIMARY VISUAL ANCHOR: Product identity and name. The physical products receive the strongest visual emphasis. The physical product itself commands primary visual authority through scale, focus, depth, lighting, placement, and contrast. Product typography and price remain clearly grounded, readable, and supportive of the physical product rather than oversized text replacing the product.',
+                'price', 'price_first', 'price_focused' => '• Copy Hierarchy Directive (Price Prominence): PRIMARY VISUAL ANCHOR: Pricing callout. The authoritative catalog price commands prominent visual scale, bold weight, and high-contrast hierarchy, serving as a primary conversion hook without altering digits or currency. Prices may become visually prominent, but must remain associated with their corresponding physical products through composition rather than connector graphics. Each price must remain visually grounded and clearly associated with its respective physical product through proximity, grouping, alignment, and whitespace (avoiding detached floating price stacks).',
+                'tagline', 'tagline_first', 'headline_first' => '• Copy Hierarchy Directive (Tagline Prominence): PRIMARY VISUAL ANCHOR: Tagline headline. The authoritative marketing tagline commands bold typographic scale and narrative hierarchy, leading the advertising hook without altering wording or breaking product/name/price visual relationships. The tagline may receive stronger expressive typography, but must not visually disconnect from the overall product advertisement.',
+                default => '• Copy Hierarchy Directive (Balanced): EQUAL WEIGHT HIERARCHY: Equal visual weight across product name, tagline, and pricing. Balanced hierarchy means: physical products remain the primary visual focus; product names provide clear product recognition; price and tagline support the advertisement; no text element should unnecessarily overpower the physical product (do NOT interpret Balanced as equal visual weight for every text element). Harmonious commercial balance between physical product presentation, marketing tagline, price, and business branding without any single copy element overpowering the layout, maintaining clear visual grounding between products and copy.',
+            };
+        }
+
         $hierarchyLines = [
             "TEXT HIERARCHY:\nCOPY EMPHASIS:",
             "• Selected Emphasis: {$copyEmphasis}",
             "• Canonical Specification: {$emphasisDesc}",
+            $emphasisDirective,
             '• Relative Text Scale & Hierarchy: Establish intentional scale hierarchy distinguishing Product Name, Tagline/Headline, Price, and Business Name according to '.$copyEmphasis.'.',
             "• Visual Hierarchy Rule: {$productName} acts as the primary visual anchor. Typography reinforces commercial intent without overpowering the product.",
         ];
@@ -890,7 +1121,7 @@ class ModularPromptOrchestrator
             '• Maintain visual hierarchy: Product as primary focal centerpiece, environmental styling and props subordinate.',
             '• Composition-Aware Typographic Placement: Intelligently anchor typography into negative space regions corresponding to the aspect ratio format. Prevent text from covering the physical product, packaging labels, faces, or essential scene details.',
         ];
-        $modules[] = "RESPONSIVE COMPOSITION:\nASPECT RATIO & RESPONSIVE COMPOSITION:\nCOMPOSITION & SAFE MARGINS (INVISIBLE SAFE AREA & OUTPUT CLEANLINESS):\n".implode("\n", $compLines);
+        $modules[] = "RESPONSIVE COMPOSITION:\nCOMPOSITION & SAFE MARGINS (INVISIBLE SAFE AREA & OUTPUT CLEANLINESS):\n".implode("\n", $compLines);
 
         // ---------------------------------------------------------------------
         // 20. NEGATIVE CONSTRAINTS
@@ -899,7 +1130,7 @@ class ModularPromptOrchestrator
             ? 'The supplied catalog product image is the primary visual source of truth. Product preservation overrides lower-priority styling. Do not replace the supplied product with a newly invented product.'
             : 'Fulfill the full commercial advertising scene with product fidelity and user scene direction prioritized over subordinate styling.';
 
-        $modules[] = "NEGATIVE CONSTRAINTS:\nNEGATIVE / EXCLUSION RULES (OUTPUT & SAFETY RULES):\nOUTPUT & SAFETY RULES:\n"
+        $modules[] = "NEGATIVE CONSTRAINTS:\nOUTPUT & SAFETY RULES:\n"
             ."• STRICT LOGO RESTRICTION: Do not generate, invent, draw, or add any logo, emblem, icon, brand mark, watermark, cup logo, bean logo, café emblem, crown, badge, or decorative brand symbol anywhere in the artwork.\n"
             ."• INVISIBLE SAFE AREA: The 20% safe margin is an internal, invisible layout constraint only. Keep all important visual subjects, focal elements, and textual regions comfortably inside the designated inner safe area.\n"
             ."• OUTPUT CLEANLINESS & FORBIDDEN ELEMENTS (CRITICAL): The safe margin must NEVER appear in the final artwork. DO NOT render safe-margin boundaries, dotted or dashed borders, frames, guides, grids, rulers, crop marks, alignment marks, measurement indicators, percentage labels, technical annotations, \"20% SAFE MARGIN\", \"SAFE MARGIN\", or any production/layout instructions.\n"
@@ -908,10 +1139,6 @@ class ModularPromptOrchestrator
             ."• FINISHED COMMERCIAL ADVERTISEMENT: The final image must look like a finished professional commercial advertisement, not a design template, production proof, wireframe, or editing canvas.\n\n"
             ."FINAL QUALITY RULES:\n"
             ."• Framing: Format intentionally for {$aspectRatio} canvas.\n"
-            ."• Invisible Safe Area: Compose key visual and text regions inside the designated safe area with negative space along borders, without rendering visible lines or border guides.\n"
-            ."• Composition-Aware Typography: Professionally design Business Name and Tagline typography with deliberate negative-space placement, high contrast, and clear visual hierarchy without covering the product or using unstyled plain body text.\n"
-            ."• Composition-Aware Typography: Professionally design Business Name, Product Name, Price, and Tagline typography directly as integrated commercial design elements.\n"
-            ."• Output Cleanliness: Deliver a pristine, finished professional commercial advertisement with zero template artifacts, wireframes, or annotations.\n"
             ."• No Logos/Emblems: No logos, emblems, badges, or invented branding symbols.\n"
             ."• PRIORITY ENFORCEMENT: {$priorityEnforcement}";
 
@@ -1026,10 +1253,544 @@ class ModularPromptOrchestrator
     }
 
     /**
+     * Resolve concrete physical characteristics for a product from existing product or vision metadata.
+     * Do not invent physical descriptions from product names.
+     */
+    protected function resolveProductPhysicalCharacteristics(mixed $prod, ?string $imagePath = null, ?array $visionBlueprint = null): ?string
+    {
+        if (! empty($visionBlueprint['product_physical_details'])) {
+            return trim((string) $visionBlueprint['product_physical_details']);
+        }
+        if (! empty($visionBlueprint['product_identity'])) {
+            return trim((string) $visionBlueprint['product_identity']);
+        }
+
+        if (! empty($imagePath) && class_exists(ReferenceImageAnalyzer::class)) {
+            try {
+                $analyzer = app(ReferenceImageAnalyzer::class);
+                $analysis = $analyzer->analyze($imagePath);
+                if (! empty($analysis['product_physical_details'])) {
+                    return trim((string) $analysis['product_physical_details']);
+                }
+                if (! empty($analysis['product_identity'])) {
+                    return trim((string) $analysis['product_identity']);
+                }
+            } catch (\Throwable $e) {
+                // Silently ignore
+            }
+        }
+
+        $desc = is_array($prod) ? ($prod['description'] ?? null) : ($prod->description ?? null);
+        if (! empty($desc)) {
+            return trim((string) $desc);
+        }
+
+        return null;
+    }
+
+    /**
      * Resolve strict specification for the selected render style via MarketingDesignSystem.
      */
     protected function resolveRenderStyleSpec(string $renderStyle): string
     {
         return $this->designSystem->resolveRenderStyleSpec($renderStyle);
+    }
+
+    /**
+     * Build a concise, compact Manual Campaign Brief (Small Manual Brief) for Manual Studio generation.
+     * Generates an authoritative ~4,500–6,000 character brief providing OpenAI with actual product images,
+     * factual business/product data, and user creative direction without redundant 20-section expansions.
+     *
+     * @param  array<string, mixed>  $options
+     * @param  array<string, mixed>|null  $visionBlueprint
+     */
+    public function orchestrateManualCampaignBrief(array $options, ?Business $business = null, ?array $visionBlueprint = null): string
+    {
+        $aspectRatio = $options['aspect_ratio'] ?? '1:1';
+        $productName = $options['product_name'] ?? 'Product';
+        $rawStyle = $options['render_style'] ?? $options['content_style'] ?? 'Studio Product Still';
+        $normalizedStyle = $this->designSystem->validateRenderStyle($rawStyle);
+        $renderStyle = (! empty($rawStyle) && ! in_array(strtolower(trim((string) $rawStyle)), ['unknown', 'unknown_style', 'default', ''], true) && $normalizedStyle === 'Studio Product Still' && strtolower(trim((string) $rawStyle)) !== 'studio product still' && strtolower(trim((string) $rawStyle)) !== 'studio_product_still')
+            ? (string) $rawStyle
+            : $normalizedStyle;
+        $copyEmphasis = $this->designSystem->validateCopyEmphasis($options['copy_emphasis'] ?? 'Balanced');
+        $designTreatment = ! empty($options['design_treatment']) ? $this->designSystem->validateDesignTreatment($options['design_treatment']) : null;
+
+        $catalogProducts = $options['catalog_products'] ?? [];
+        $customProducts = $options['custom_products'] ?? [];
+
+        // Auto-resolve event_name from event model/array or campaign if missing
+        if (empty($options['event_name'])) {
+            if (! empty($options['event'])) {
+                $options['event_name'] = is_array($options['event']) ? ($options['event']['name'] ?? null) : ($options['event']->name ?? null);
+            } elseif (! empty($options['campaign']) && is_object($options['campaign']) && ! empty($options['campaign']->event)) {
+                $options['event_name'] = $options['campaign']->event->name;
+            }
+        }
+
+        // Resolve user prompt
+        $userScenePrompt = null;
+        if (! empty($options['scene_prompt'])) {
+            $userScenePrompt = trim((string) $options['scene_prompt']);
+        } elseif (! empty($options['image_prompt'])) {
+            $userScenePrompt = trim((string) $options['image_prompt']);
+        } elseif (! empty($options['prompt'])) {
+            $userScenePrompt = trim((string) $options['prompt']);
+        } elseif (! empty($options['user_prompt'])) {
+            $raw = trim((string) $options['user_prompt']);
+            if (Str::contains($raw, 'PROMOTIONAL ADVERTISEMENT BRIEF:')) {
+                if (preg_match('/• Specific User Instructions:\s*(.+)$/m', $raw, $matches)) {
+                    $userScenePrompt = trim($matches[1]);
+                }
+            } elseif (Str::startsWith($raw, 'FINAL MARKETING DESIGN TASK')) {
+                if (preg_match('/• PRIMARY USER SCENE DIRECTION:\s*(.+)$/m', $raw, $matches)) {
+                    $userScenePrompt = trim($matches[1]);
+                }
+            } elseif (Str::startsWith($raw, 'Create a marketing image')) {
+                if (preg_match('/Creative direction:\s*\n(.+?)(?=\n\n|\n[A-Z]|$)/s', $raw, $matches)) {
+                    $userScenePrompt = trim($matches[1]);
+                }
+            } else {
+                $userScenePrompt = $raw;
+            }
+        } elseif (! empty($options['notes'])) {
+            $userScenePrompt = trim((string) $options['notes']);
+        }
+
+        // Visibility Toggles
+        $includeProductName = array_key_exists('include_product_name', $options)
+            ? filter_var($options['include_product_name'], FILTER_VALIDATE_BOOLEAN) : true;
+        $includePrices = array_key_exists('include_prices', $options)
+            ? filter_var($options['include_prices'], FILTER_VALIDATE_BOOLEAN) : true;
+        $includeTagline = array_key_exists('include_tagline', $options)
+            ? filter_var($options['include_tagline'], FILTER_VALIDATE_BOOLEAN) : (($options['tagline_mode'] ?? null) !== 'none');
+        $includeBusinessName = array_key_exists('include_business_name', $options)
+            ? filter_var($options['include_business_name'], FILTER_VALIDATE_BOOLEAN) : true;
+
+        $normalizedTagline = $includeTagline ? TaglineNormalizationService::normalize($options['tagline'] ?? null) : null;
+
+        $brandName = null;
+        if ($includeBusinessName) {
+            $brandName = ! empty($options['business_name']) ? trim((string) $options['business_name']) : ($business->name ?? null);
+        }
+
+        // Assemble indexed products
+        $allProducts = [];
+        $attachedImages = (array) ($options['reference_image_paths'] ?? []);
+        if (empty($attachedImages) && ! empty($options['reference_image_path'])) {
+            $attachedImages = [$options['reference_image_path']];
+        }
+
+        if (! empty($catalogProducts)) {
+            foreach ($catalogProducts as $idx => $prod) {
+                $pId = is_array($prod) ? ($prod['id'] ?? null) : ($prod->id ?? null);
+                $pName = is_array($prod) ? ($prod['name'] ?? 'Product') : $prod->name;
+                $pPrice = is_array($prod) ? ($prod['price'] ?? null) : $prod->price;
+                $imgPath = is_array($prod) ? ($prod['image_path'] ?? null) : ($prod->image_path ?? null);
+                $pDesc = $this->resolveProductPhysicalCharacteristics(
+                    $prod,
+                    $imgPath,
+                    $idx === 0 ? ($visionBlueprint ?? ($options['vision_blueprint'] ?? null)) : null
+                ) ?: (is_array($prod) ? ($prod['description'] ?? null) : $prod->description);
+
+                $allProducts[] = [
+                    'id' => $pId,
+                    'name' => $pName,
+                    'price' => $pPrice,
+                    'description' => $pDesc,
+                    'ref_index' => $idx + 1,
+                ];
+            }
+        }
+        foreach ($customProducts as $cIdx => $cProd) {
+            $cName = is_array($cProd) ? ($cProd['name'] ?? null) : ($cProd->name ?? null);
+            $cPrice = is_array($cProd) ? ($cProd['price'] ?? null) : ($cProd->price ?? null);
+            $cDesc = is_array($cProd) ? ($cProd['description'] ?? null) : ($cProd->description ?? null);
+            if (! empty($cName)) {
+                $allProducts[] = [
+                    'id' => "custom_{$cIdx}",
+                    'name' => $cName,
+                    'price' => $cPrice,
+                    'description' => $cDesc,
+                    'ref_index' => null,
+                ];
+            }
+        }
+
+        if (empty($allProducts)) {
+            $allProducts[] = [
+                'id' => null,
+                'name' => $productName,
+                'price' => $options['price'] ?? null,
+                'description' => $options['product_description'] ?? null,
+                'ref_index' => 1,
+            ];
+        }
+
+        $industry = $options['business_industry'] ?? $business->industry ?? 'General';
+        $category = $options['product_category'] ?? $options['business_category'] ?? $business->category ?? $industry;
+
+        // 1. Business Context
+        $bizHeader = 'Create a marketing image';
+        if ($includeBusinessName && ! empty($brandName)) {
+            $bizHeader .= " for {$brandName}";
+        }
+        $bizHeader .= ", {$industry} / {$category}.";
+        if (! $includeBusinessName) {
+            $bizHeader .= ' (Do not include business/shop name or branding text).';
+        }
+
+        $lines = [$bizHeader];
+
+        $bizDesc = $options['business_description'] ?? $business?->description ?? null;
+        if (! empty($bizDesc)) {
+            $lines[] = 'Business context: '.trim((string) $bizDesc);
+        }
+
+        // 2. Campaign Context
+        $campaignName = ! empty($options['campaign_name'])
+            ? (string) $options['campaign_name']
+            : ($options['campaign']->name ?? null);
+        if (empty($campaignName) && ! empty($options['campaign_id'])) {
+            $campaignModel = Campaign::query()->find($options['campaign_id']);
+            if ($campaignModel) {
+                $campaignName = $campaignModel->name;
+                if (empty($options['event_name']) && $campaignModel->event) {
+                    $options['event_name'] = $campaignModel->event->name;
+                }
+            }
+        }
+        if (! empty($campaignName)) {
+            $lines[] = "Campaign: {$campaignName}";
+        }
+
+        // 3. Event / Holiday Context
+        $eventName = ! empty($options['event_name'])
+            ? (string) $options['event_name']
+            : ($options['event']->name ?? null);
+        if (empty($eventName) && ! empty($options['campaign']) && is_object($options['campaign']) && ! empty($options['campaign']->event)) {
+            $eventName = $options['campaign']->event->name;
+        }
+
+        if (! empty($eventName)) {
+            $eventName = (string) $eventName;
+            $showEventText = array_key_exists('show_event_text', $options)
+                ? filter_var($options['show_event_text'], FILTER_VALIDATE_BOOLEAN) : true;
+            $lines[] = "Event: {$eventName}";
+            if ($showEventText) {
+                $lines[] = "Event visibility: Allowed (Event name \"{$eventName}\" may appear in typography. Do not invent event slogans).";
+            } else {
+                $lines[] = "Event visibility: Hidden (FORBIDDEN EVENT TEXT: Do not render event name \"{$eventName}\" or event slogans as visible text).";
+            }
+        } elseif (! empty($campaignName)) {
+            $lines[] = 'Event: None';
+            $lines[] = 'Event visibility: Hidden';
+        }
+
+        // 4. Products & Exact Prices
+        $prodLines = ['Products:'];
+        foreach ($allProducts as $idx => $item) {
+            $num = $idx + 1;
+            $pName = $item['name'];
+            $pPrice = $item['price'];
+            $fmtPrice = null;
+            if ($pPrice !== null && $pPrice !== '') {
+                $rawPStr = trim((string) $pPrice);
+                $fmtPrice = is_numeric($rawPStr) ? '₱'.number_format((float) $rawPStr, 2) : (str_starts_with($rawPStr, '₱') ? $rawPStr : '₱'.ltrim($rawPStr));
+            }
+
+            $refNum = ! empty($item['ref_index']) ? $item['ref_index'] : $num;
+            $pDesc = "REFERENCE IMAGE {$refNum} = {$pName}";
+            if ($fmtPrice) {
+                $pDesc .= " — {$fmtPrice}";
+            }
+            $prodLines[] = "• {$pDesc}";
+        }
+
+        if (count($allProducts) > 1) {
+            $prodLines[] = '• Rule: All selected products must appear together naturally in the final marketing scene.';
+        }
+        if (! $includePrices) {
+            $prodLines[] = '• Do not render prices.';
+        }
+        if (! $includeProductName) {
+            $prodLines[] = '• Do not render product names as visible text.';
+        }
+        $lines[] = implode("\n", $prodLines);
+
+        // 5. Creative Direction
+        $userScenePrompt = trim((string) ($options['scene_prompt'] ?? $options['user_prompt'] ?? ''));
+        if ($userScenePrompt !== '') {
+            $lines[] = "Creative direction:\n{$userScenePrompt}";
+        }
+
+        // 6. Creative Controls (Concise Inputs Only)
+        $ctrlLines = [];
+        $ctrlLines[] = "Render style: {$renderStyle}";
+
+        $copyEmphasis = $this->designSystem->validateCopyEmphasis($options['copy_emphasis'] ?? null);
+        $ctrlLines[] = "Copy emphasis: {$copyEmphasis}";
+
+        $includeTagline = array_key_exists('include_tagline', $options)
+            ? filter_var($options['include_tagline'], FILTER_VALIDATE_BOOLEAN) : true;
+        $tagline = $options['tagline'] ?? null;
+        $normalizedTagline = $tagline ? TaglineNormalizationService::normalize($tagline) : null;
+        if ($includeTagline && $normalizedTagline) {
+            $ctrlLines[] = "Tagline: \"{$normalizedTagline}\"";
+        } elseif (! $includeTagline) {
+            $ctrlLines[] = 'Tagline: Disabled';
+        }
+
+        $aspectRatio = $options['aspect_ratio'] ?? '1:1';
+        $ctrlLines[] = "Aspect ratio: {$aspectRatio}";
+        $lines[] = implode("\n", $ctrlLines);
+
+        // 7. Authoritative Hard Rules
+        $rules = [
+            'RULES:',
+            '• Use the provided product image(s) as the authoritative visual reference. Preserve the actual products and exact product-name/price pairings.',
+            '• Follow the user\'s creative direction, keeping the product as the hero while adapting naturally to the campaign, event, render style, and aspect ratio.',
+            '• Respect event visibility. If allowed, integrate the event naturally as supporting campaign text; if hidden, do not display the event name.',
+            '• Do not create logos, badges, or watermarks.',
+        ];
+
+        $includeBusinessName = array_key_exists('include_business_name', $options)
+            ? (bool) $options['include_business_name']
+            : (! array_key_exists('business_name', $options) || ! empty($options['business_name']));
+        if (! $includeBusinessName) {
+            $rules[] = '• Business Branding: Disabled. Do not include any business/shop name or branding text in the artwork.';
+        }
+
+        $lines[] = implode("\n", $rules);
+
+        return implode("\n\n", $lines);
+    }
+
+    /**
+     * Build a concise, compact Automatic Campaign Brief for Automatic AI Studio generation.
+     * Generates an authoritative compact brief providing OpenAI with actual product images,
+     * factual business/product data, and automatic creative direction without legacy art-direction bloat.
+     *
+     * @param  array<string, mixed>  $options
+     * @param  array<string, mixed>|null  $visionBlueprint
+     */
+    public function orchestrateAutomaticCampaignBrief(array $options, ?Business $business = null, ?array $visionBlueprint = null): string
+    {
+        $aspectRatio = $options['aspect_ratio'] ?? '1:1';
+        $productName = $options['product_name'] ?? 'Product';
+        $rawStyle = $options['render_style'] ?? $options['content_style'] ?? 'Studio Product Still';
+        $normalizedStyle = $this->designSystem->validateRenderStyle($rawStyle);
+        $renderStyle = (! empty($rawStyle) && ! in_array(strtolower(trim((string) $rawStyle)), ['unknown', 'unknown_style', 'default', ''], true) && $normalizedStyle === 'Studio Product Still' && strtolower(trim((string) $rawStyle)) !== 'studio product still' && strtolower(trim((string) $rawStyle)) !== 'studio_product_still')
+            ? (string) $rawStyle
+            : $normalizedStyle;
+        $copyEmphasis = $this->designSystem->validateCopyEmphasis($options['copy_emphasis'] ?? 'Balanced');
+
+        $catalogProducts = $options['catalog_products'] ?? [];
+        $customProducts = $options['custom_products'] ?? [];
+
+        // Auto-resolve event_name from event model/array or campaign if missing
+        if (empty($options['event_name'])) {
+            if (! empty($options['event'])) {
+                $options['event_name'] = is_array($options['event']) ? ($options['event']['name'] ?? null) : ($options['event']->name ?? null);
+            } elseif (! empty($options['campaign']) && is_object($options['campaign']) && ! empty($options['campaign']->event)) {
+                $options['event_name'] = $options['campaign']->event->name;
+            }
+        }
+
+        // Visibility Toggles
+        $includeProductName = array_key_exists('include_product_name', $options)
+            ? filter_var($options['include_product_name'], FILTER_VALIDATE_BOOLEAN) : true;
+        $includePrices = array_key_exists('include_prices', $options)
+            ? filter_var($options['include_prices'], FILTER_VALIDATE_BOOLEAN) : true;
+        $includeTagline = array_key_exists('include_tagline', $options)
+            ? filter_var($options['include_tagline'], FILTER_VALIDATE_BOOLEAN) : (($options['tagline_mode'] ?? null) !== 'none');
+        $includeBusinessName = array_key_exists('include_business_name', $options)
+            ? filter_var($options['include_business_name'], FILTER_VALIDATE_BOOLEAN) : true;
+
+        $brandName = null;
+        if ($includeBusinessName) {
+            $brandName = ! empty($options['business_name']) ? trim((string) $options['business_name']) : ($business->name ?? null);
+        }
+
+        // Assemble indexed products
+        $allProducts = [];
+        if (! empty($catalogProducts)) {
+            foreach ($catalogProducts as $idx => $prod) {
+                $pId = is_array($prod) ? ($prod['id'] ?? null) : ($prod->id ?? null);
+                $pName = is_array($prod) ? ($prod['name'] ?? 'Product') : $prod->name;
+                $pPrice = is_array($prod) ? ($prod['price'] ?? null) : $prod->price;
+
+                $allProducts[] = [
+                    'id' => $pId,
+                    'name' => $pName,
+                    'price' => $pPrice,
+                    'ref_index' => $idx + 1,
+                ];
+            }
+        }
+        foreach ($customProducts as $cIdx => $cProd) {
+            $cName = is_array($cProd) ? ($cProd['name'] ?? null) : ($cProd->name ?? null);
+            $cPrice = is_array($cProd) ? ($cProd['price'] ?? null) : ($cProd->price ?? null);
+            if (! empty($cName)) {
+                $allProducts[] = [
+                    'id' => "custom_{$cIdx}",
+                    'name' => $cName,
+                    'price' => $cPrice,
+                    'ref_index' => null,
+                ];
+            }
+        }
+
+        if (empty($allProducts)) {
+            $allProducts[] = [
+                'id' => null,
+                'name' => $productName,
+                'price' => $options['price'] ?? null,
+                'ref_index' => 1,
+            ];
+        }
+
+        $lines = [];
+
+        // 1. Business Context
+        $bizName = ! empty($options['business_name']) ? trim((string) $options['business_name']) : ($business->name ?? null);
+        if ($includeBusinessName && ! empty($bizName)) {
+            $lines[] = "Business:\n{$bizName}";
+        } elseif (! $includeBusinessName) {
+            $lines[] = "Business:\n".(! empty($bizName) ? "{$bizName} (Factual context only. Do not render business name as visible copy)" : '(Do not include business/shop name or branding text)');
+        }
+
+        $bizDesc = $options['business_description'] ?? $business?->description ?? null;
+        if (! empty($bizDesc)) {
+            $lines[] = "Business context:\n".trim((string) $bizDesc);
+        }
+
+        // 2. Campaign Context
+        $campaignName = ! empty($options['campaign_name'])
+            ? (string) $options['campaign_name']
+            : ($options['campaign']->name ?? null);
+        if (empty($campaignName) && ! empty($options['campaign_id'])) {
+            $campaignModel = Campaign::query()->find($options['campaign_id']);
+            if ($campaignModel) {
+                $campaignName = $campaignModel->name;
+                if (empty($options['event_name']) && $campaignModel->event) {
+                    $options['event_name'] = $campaignModel->event->name;
+                }
+            }
+        }
+        if (! empty($campaignName)) {
+            $lines[] = "Campaign:\n{$campaignName}";
+        }
+
+        // 3. Event / Holiday Context
+        $eventName = ! empty($options['event_name'])
+            ? (string) $options['event_name']
+            : ($options['event']->name ?? null);
+        if (empty($eventName) && ! empty($options['campaign']) && is_object($options['campaign']) && ! empty($options['campaign']->event)) {
+            $eventName = $options['campaign']->event->name;
+        }
+
+        if (! empty($eventName)) {
+            $eventName = (string) $eventName;
+            $showEventText = array_key_exists('show_event_text', $options)
+                ? filter_var($options['show_event_text'], FILTER_VALIDATE_BOOLEAN) : true;
+            $lines[] = "Event:\n{$eventName}";
+            $lines[] = "Event visibility:\n".($showEventText ? 'Allowed' : 'Hidden');
+        } elseif (! empty($campaignName)) {
+            $lines[] = "Event:\nNone";
+            $lines[] = "Event visibility:\nHidden";
+        }
+
+        // 4. Products & Exact Prices
+        $prodLines = ['Products:'];
+        foreach ($allProducts as $idx => $item) {
+            $num = $idx + 1;
+            $pName = $item['name'];
+            $pPrice = $item['price'];
+            $fmtPrice = null;
+            if ($pPrice !== null && $pPrice !== '') {
+                $rawPStr = trim((string) $pPrice);
+                $fmtPrice = is_numeric($rawPStr) ? '₱'.number_format((float) $rawPStr, 2) : (str_starts_with($rawPStr, '₱') ? $rawPStr : '₱'.ltrim($rawPStr));
+            }
+
+            $refNum = ! empty($item['ref_index']) ? $item['ref_index'] : $num;
+            $pDesc = "• REFERENCE IMAGE {$refNum} = {$pName}";
+            if ($fmtPrice) {
+                $pDesc .= " — {$fmtPrice}";
+            }
+            $prodLines[] = $pDesc;
+        }
+
+        if (count($allProducts) > 1) {
+            $prodLines[] = '• Rule: All selected products must appear together naturally in the final marketing scene.';
+        }
+        if (! $includePrices) {
+            $prodLines[] = '• Do not render prices.';
+        }
+        if (! $includeProductName) {
+            $prodLines[] = '• Do not render product names as visible text.';
+        }
+        $lines[] = implode("\n", $prodLines);
+
+        // 5. Creative Direction
+        $creativeDirection = trim((string) ($options['scene_prompt'] ?? $options['visual_prompt'] ?? $options['user_prompt'] ?? ''));
+        if (empty($creativeDirection) && ! empty($options['creative_concept'])) {
+            $creativeDirection = trim((string) $options['creative_concept']);
+            if (! empty($options['visual_strategy'])) {
+                $creativeDirection .= '. '.trim((string) $options['visual_strategy']);
+            }
+        }
+        if ($creativeDirection !== '') {
+            $lines[] = "Creative direction:\n{$creativeDirection}";
+        }
+
+        // 6. Creative Controls
+        $ctrlLines = [];
+        $ctrlLines[] = "Render style:\n{$renderStyle}";
+        $ctrlLines[] = "Copy emphasis:\n{$copyEmphasis}";
+
+        $tagline = $options['tagline'] ?? null;
+        $normalizedTagline = $tagline ? TaglineNormalizationService::normalize($tagline) : null;
+        if ($includeTagline && $normalizedTagline) {
+            $ctrlLines[] = "Tagline:\n\"{$normalizedTagline}\"";
+        } elseif (! $includeTagline) {
+            $ctrlLines[] = "Tagline:\nDisabled";
+        }
+
+        $ctrlLines[] = "Aspect ratio:\n{$aspectRatio}";
+        $lines[] = implode("\n\n", $ctrlLines);
+
+        // 7. Copy Controls
+        $copyCtrlLines = [
+            'Copy controls:',
+            'Product name: '.($includeProductName ? 'Allowed' : 'Hidden'),
+            'Product price: '.($includePrices ? 'Allowed' : 'Hidden'),
+            'Business name: '.($includeBusinessName ? 'Allowed' : 'Hidden'),
+            'Tagline: '.($includeTagline ? 'Allowed' : 'Hidden'),
+        ];
+        $lines[] = implode("\n", $copyCtrlLines);
+
+        // 8. Concise Hard Constraints
+        $rules = [
+            'Use the provided product image(s) as the authoritative visual reference.',
+            'Preserve the actual products and exact product-name/price pairings.',
+            'Follow the creative direction naturally.',
+            'Respect event visibility.',
+            'Do not create logos, badges, or watermarks.',
+        ];
+
+        if (! $includeProductName) {
+            $rules[] = 'Do not render product names as visible text.';
+        }
+        if (! $includePrices) {
+            $rules[] = 'Do not render prices as visible copy.';
+        }
+        if (! $includeBusinessName) {
+            $rules[] = 'Do not include business/shop name or branding text.';
+        }
+
+        $lines[] = implode("\n", $rules);
+
+        return implode("\n\n", $lines);
     }
 }

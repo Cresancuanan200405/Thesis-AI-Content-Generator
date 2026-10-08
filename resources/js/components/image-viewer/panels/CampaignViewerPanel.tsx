@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from '@inertiajs/react';
 import {
-    Sparkles,
     Check,
     Download,
+    Edit3,
     Trash2,
     Tag,
     Layers,
@@ -94,7 +94,7 @@ export function CampaignViewerPanel({
                             variant="outline"
                             className="border-primary/30 bg-primary/10 font-mono text-[10px] font-semibold text-primary"
                         >
-                            <Sparkles className="mr-1 inline h-2.5 w-2.5" />
+                            <Cpu className="mr-1 inline h-2.5 w-2.5" />
                             {modelName}
                         </Badge>
                         <Badge
@@ -104,7 +104,7 @@ export function CampaignViewerPanel({
                             {aspectRatio}
                         </Badge>
                         {design.price && (
-                            <span className="ml-1 text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
+                            <span className="ml-1 text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
                                 ₱{design.price}
                             </span>
                         )}
@@ -135,7 +135,7 @@ export function CampaignViewerPanel({
                                     className="h-8.5 gap-1.5 bg-primary font-bold text-primary-foreground shadow-xs transition-all hover:bg-primary/90 active:scale-[0.99]"
                                 >
                                     <Link href={resumeDraftUrl} className="flex items-center justify-center gap-1.5 w-full">
-                                        <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                                        <Edit3 className="h-3.5 w-3.5 shrink-0" />
                                         <span className="truncate">Resume Draft</span>
                                     </Link>
                                 </Button>
@@ -161,8 +161,8 @@ export function CampaignViewerPanel({
                                 className="w-full h-9 gap-2 bg-primary font-bold text-primary-foreground shadow-xs transition-all hover:bg-primary/90 active:scale-[0.99]"
                             >
                                 <Link href={editInStudioUrl} className="flex items-center justify-center gap-1.5 w-full">
-                                    <Sparkles className="h-4 w-4 shrink-0" />
-                                    <span className="truncate">Edit in AI Studio</span>
+                                    <Edit3 className="h-4 w-4 shrink-0" />
+                                    <span className="truncate">Edit in Studio</span>
                                 </Link>
                             </Button>
 

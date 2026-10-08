@@ -6,9 +6,12 @@ use App\Models\Event;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\ModularPromptOrchestrator;
+use App\Services\OpenAIImageService;
+use App\Services\ReferenceImageAnalyzer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
     Cache::flush();
@@ -17,7 +20,7 @@ beforeEach(function () {
     Config::set('services.openai.budget_limit', 20.00);
 });
 
-test('A & J: Manual Suggest Prompt uses product context including multi-product spatial arrangement directive', function () {
+test('A: Manual Suggest Prompt includes featured products context cleanly without rigid spatial arrangement directives', function () {
     $user = User::factory()->create(['onboarding_completed' => true]);
     $business = Business::factory()->create([
         'user_id' => $user->id,
@@ -47,12 +50,12 @@ test('A & J: Manual Suggest Prompt uses product context including multi-product 
         'https://api.openai.com/v1/responses' => function ($request) {
             $data = $request->data();
 
-            // Verify product context was sent
+            // Verify product context was sent cleanly without rigid spatial directives
             expect($data['input'])->toContain('Lotion Pump Dispenser')
                 ->and($data['input'])->toContain('Glow Serum Bottle')
-                ->and($data['input'])->toContain('Total Product Count: 2')
-                ->and($data['input'])->toContain('MULTI-PRODUCT DIRECTIVE')
-                ->and($data['input'])->toContain('NEVER place them in a flat side-by-side row');
+                ->and($data['input'])->toContain('PRODUCTS:')
+                ->and($data['input'])->not->toContain('MULTI-PRODUCT DIRECTIVE')
+                ->and($data['input'])->not->toContain('NEVER place them in a flat side-by-side row');
 
             return Http::response([
                 'id' => 'resp-manual-test-a',
@@ -173,7 +176,7 @@ test('B & C: Manual Suggest Prompt uses business, industry, campaign, and event 
         ]);
 });
 
-test('D, E, F, G, H, I: Creative controls (Design Treatment, Copy Emphasis, Render Style, Themes, Tones, Aspect Ratio) are accurately passed into context', function () {
+test('D: Render Style is passed as visual treatment constraint while avoiding legacy prompt-expansion systems', function () {
     $user = User::factory()->create(['onboarding_completed' => true]);
     $business = Business::factory()->create(['user_id' => $user->id]);
     $campaign = Campaign::factory()->create([
@@ -186,16 +189,12 @@ test('D, E, F, G, H, I: Creative controls (Design Treatment, Copy Emphasis, Rend
         'https://api.openai.com/v1/responses' => function ($request) {
             $data = $request->data();
 
-            expect($data['input'])->toContain('- Design Treatment: Bold Promo')
-                ->and($data['input'])->toContain('- Copy Emphasis: Price-First')
-                ->and($data['input'])->toContain('- Render Style: Cinematic Marketing')
-                ->and($data['input'])->toContain('- Visual Theme: Cyberpunk, Neon Glow')
-                ->and($data['input'])->toContain('- Brand Tone: Energetic, Edgy')
-                ->and($data['input'])->toContain('- Aspect Ratio: 9:16');
-
-            // Copy emphasis negative space guidance
-            expect($data['input'])->toContain('Price Display: Enabled (reserve clear negative space for price element)')
-                ->and($data['instructions'])->toContain('PRICE-FIRST');
+            expect($data['input'])->toContain('RENDER STYLE:')
+                ->and($data['input'])->toContain('Cinematic Marketing')
+                ->and($data['input'])->not->toContain('- Design Treatment:')
+                ->and($data['input'])->not->toContain('- Copy Emphasis:')
+                ->and($data['input'])->not->toContain('- Visual Theme:')
+                ->and($data['input'])->not->toContain('- Brand Tone:');
 
             return Http::response([
                 'output' => [
@@ -205,8 +204,8 @@ test('D, E, F, G, H, I: Creative controls (Design Treatment, Copy Emphasis, Rend
                                 'type' => 'output_text',
                                 'text' => json_encode([
                                     'creative_concept' => 'Midnight Luminescence',
-                                    'visual_strategy' => 'Dramatic side rim light on dark reflective surface with open foreground for price placement.',
-                                    'visual_prompt' => 'An obsidian timepiece angled dynamically on a wet slate pedestal under moody violet and cyan rim lights. Deep atmospheric fog fills the background while the lower third remains uncluttered with dark reflective water.',
+                                    'visual_strategy' => 'Dramatic side rim light on dark reflective surface with cinematic mood.',
+                                    'visual_prompt' => 'An obsidian timepiece angled dynamically on a wet slate pedestal under moody violet and cyan rim lights. Deep atmospheric fog fills the background while maintaining a sleek, modern visual aesthetic.',
                                 ]),
                             ],
                         ],
@@ -289,7 +288,7 @@ test('K & L: Produces a concise natural-language visual scene prompt without tec
         ->and($prompt)->not->toContain('taxonomy');
 });
 
-test('M: User-authored seed prompt in user_instruction is authoritative and treated as seed to refine', function () {
+test('M: User-authored seed prompt in user_instruction is authoritative and treated as seed concept', function () {
     $user = User::factory()->create(['onboarding_completed' => true]);
     $business = Business::factory()->create(['user_id' => $user->id]);
     $campaign = Campaign::factory()->create(['user_id' => $user->id, 'business_id' => $business->id]);
@@ -301,9 +300,9 @@ test('M: User-authored seed prompt in user_instruction is authoritative and trea
         'https://api.openai.com/v1/responses' => function ($request) use ($userSeedPrompt) {
             $data = $request->data();
 
-            expect($data['input'])->toContain('USER EXPLICIT SCENE DIRECTION (AUTHORITATIVE SEED):')
+            expect($data['input'])->toContain('USER CREATIVE DIRECTION (AUTHORITATIVE CONCEPT):')
                 ->and($data['input'])->toContain($userSeedPrompt)
-                ->and($data['input'])->toContain('Refine, enhance, and creatively expand this exact artistic direction');
+                ->and($data['input'])->toContain('Preserve this core visual idea and translate it into a concise visual concept (40–90 words)');
 
             return Http::response([
                 'output' => [
@@ -629,4 +628,347 @@ test('Section 20: Sequential suggestions with identical inputs explore distinct 
     }
 
     expect(count($accumulatedHistory))->toBe(5);
+});
+
+test('Suggest Visual Prompt generates concise creative visual concept for Kapekol 10.10 coffee campaign without over-designed poster elements', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Kapekol',
+        'industry' => 'Food & Beverage',
+        'category' => 'Coffee & Café',
+    ]);
+    $event = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => '10.10 Perfect 10 Shopping Festival',
+        'description' => 'Annual mega shopping festival with special coffee treats and seasonal brews.',
+    ]);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event->id,
+        'name' => '10.10 Perfect 10 Shopping Festival',
+    ]);
+    $product = Product::factory()->create([
+        'business_id' => $business->id,
+        'name' => 'South Indian Kaapi',
+        'price' => 180.00,
+        'description' => 'Traditional frothed chicory-blended filter coffee in brass tumbler and dabarah.',
+    ]);
+
+    $userCreativeDirection = 'Create a bold, premium 10.10 coffee campaign with a warm, modern café atmosphere and subtle festive energy.';
+
+    $conciseVisualPrompt = 'A steaming brass tumbler of South Indian Kaapi rests upon a warm, matte walnut café surface bathed in rich amber morning light. Subtle warm festive bokeh and deep espresso tones introduce a celebratory spirit, styled with clean graphic minimalism, elegant negative space, and refined modern café tranquility.';
+
+    Http::fake([
+        'https://api.openai.com/v1/responses' => function ($request) use ($userCreativeDirection, $conciseVisualPrompt) {
+            $data = $request->data();
+
+            // Verify concise assistant instructions
+            expect($data['instructions'])->toContain('You are a visual concept assistant for a marketing image generator.')
+                ->and($data['instructions'])->toContain('Do not write headlines, slogans, product claims, feature copy, prices, product names, event text, typography instructions')
+                ->and($data['instructions'])->toContain('Do not invent marketing claims or promotional elements')
+                ->and($data['instructions'])->toContain('approximately 40');
+
+            // Verify clean contextual payload
+            expect($data['input'])->toContain('Kapekol')
+                ->and($data['input'])->toContain('South Indian Kaapi')
+                ->and($data['input'])->toContain('10.10 Perfect 10 Shopping Festival')
+                ->and($data['input'])->toContain('Minimalist Graphic')
+                ->and($data['input'])->toContain($userCreativeDirection)
+                ->and($data['input'])->not->toContain('- Design Treatment:')
+                ->and($data['input'])->not->toContain('- Copy Emphasis:')
+                ->and($data['input'])->not->toContain('MULTI-PRODUCT DIRECTIVE')
+                ->and($data['input'])->not->toContain('gift boxes')
+                ->and($data['input'])->not->toContain('shopping bags');
+
+            return Http::response([
+                'output' => [
+                    [
+                        'content' => [
+                            [
+                                'type' => 'output_text',
+                                'text' => json_encode([
+                                    'creative_concept' => 'Warm Festive Café Atmosphere',
+                                    'visual_strategy' => 'Steaming brass coffee tumbler on matte walnut counter with subtle celebratory warm bokeh.',
+                                    'visual_prompt' => $conciseVisualPrompt,
+                                ]),
+                            ],
+                        ],
+                    ],
+                ],
+                'usage' => ['total_tokens' => 210],
+            ], 200);
+        },
+        'https://api.openai.com/v1/organization/*' => Http::response(['data' => []], 200),
+    ]);
+
+    $response = $this->actingAs($user)->postJson(route('generator.prompt'), [
+        'generation_mode' => 'manual',
+        'campaign_id' => $campaign->id,
+        'catalog_product_ids' => [$product->id],
+        'user_instruction' => $userCreativeDirection,
+        'render_style' => 'Minimalist Graphic',
+        'copy_emphasis' => 'Balanced',
+        'aspect_ratio' => '1:1',
+        'tagline' => 'Make Your 10.10 Perfectly Brewed',
+    ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'success' => true,
+            'creative_concept' => 'Warm Festive Café Atmosphere',
+        ]);
+
+    $suggestedPrompt = $response->json('visual_prompt');
+
+    // 1. Output size target: approximately 40-90 words
+    $wordCount = str_word_count($suggestedPrompt);
+    expect($wordCount)->toBeGreaterThanOrEqual(35)
+        ->and($wordCount)->toBeLessThanOrEqual(95);
+
+    // 2. Contains no invented poster elements, badges, claims, or shopping bags
+    expect($suggestedPrompt)->not->toContain('shopping bag')
+        ->and($suggestedPrompt)->not->toContain('gift box')
+        ->and($suggestedPrompt)->not->toContain('badge')
+        ->and($suggestedPrompt)->not->toContain('10.10 PERFECT 10 SHOPPING FESTIVAL')
+        ->and($suggestedPrompt)->not->toContain('split background')
+        ->and($suggestedPrompt)->not->toContain('metallic discs');
+
+    // 3. Verify downstream orchestration leaves it concise and does not re-expand it
+    $orchestrator = app(ModularPromptOrchestrator::class);
+    $finalPrompt = $orchestrator->orchestrate([
+        'generation_mode' => 'manual',
+        'scene_prompt' => $suggestedPrompt,
+        'user_prompt' => $suggestedPrompt,
+        'catalog_products' => [$product],
+        'render_style' => 'Minimalist Graphic',
+        'copy_emphasis' => 'Balanced',
+        'aspect_ratio' => '1:1',
+        'tagline' => 'Make Your 10.10 Perfectly Brewed',
+        'show_event_text' => false,
+        'product_name' => 'South Indian Kaapi',
+        'price' => 180.00,
+        'include_prices' => true,
+        'include_business_name' => true,
+        'business_name' => 'Kapekol',
+    ], $business);
+
+    expect($finalPrompt)->toContain($suggestedPrompt)
+        ->and($finalPrompt)->toContain('Kapekol')
+        ->and($finalPrompt)->toContain('South Indian Kaapi')
+        ->and($finalPrompt)->toContain('₱180')
+        ->and($finalPrompt)->not->toContain('safe margins')
+        ->and($finalPrompt)->not->toContain('MULTI-PRODUCT COMPOSITION');
+});
+
+test('1-8: Suggest Visual Prompt connects Campaign, Event, Product Name, and actual Product Image without inventing unsupported details', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Kapekol',
+        'industry' => 'Food & Beverage',
+        'category' => 'Coffee & Café',
+    ]);
+    $event = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => '10.10 Perfect 10 Shopping Festival',
+        'description' => 'Festive coffee promotion celebrating 10.10.',
+    ]);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event->id,
+        'name' => '10.10 Perfect 10 Shopping Festival',
+    ]);
+    $product = Product::factory()->create([
+        'business_id' => $business->id,
+        'name' => 'South Indian Kaapi',
+        'price' => 180.00,
+        'description' => 'Chicory-infused filter coffee.',
+        'image_path' => 'products/south_indian_kaapi.jpg',
+    ]);
+
+    Storage::fake('public');
+    Storage::disk('public')->put('products/south_indian_kaapi.jpg', 'fake-product-image-binary-bytes');
+
+    $analyzer = Mockery::mock(ReferenceImageAnalyzer::class);
+    $analyzer->shouldReceive('analyze')
+        ->with('products/south_indian_kaapi.jpg')
+        ->once()
+        ->andReturn([
+            'product_identity' => 'Traditional brass tumbler and dabarah saucer with rich foaming coffee',
+            'product_physical_details' => 'Handcrafted cylindrical brass cup inside wide dabarah bowl with thick frothy crema',
+            'is_product_photo' => true,
+        ]);
+    $this->app->instance(ReferenceImageAnalyzer::class, $analyzer);
+
+    $userCreativeDirection = 'Create a bold, premium 10.10 coffee campaign with a warm, modern café atmosphere and subtle festive energy.';
+
+    Http::fake([
+        'https://api.openai.com/v1/responses' => function ($request) use ($userCreativeDirection) {
+            $data = $request->data();
+
+            // 1. Campaign influences visual suggestion
+            expect($data['input'])->toContain('CAMPAIGN:')
+                ->and($data['input'])->toContain('10.10 Perfect 10 Shopping Festival');
+
+            // 2. Event influences visual suggestion
+            expect($data['input'])->toContain('EVENT / OCCASION:')
+                ->and($data['input'])->toContain('10.10 Perfect 10 Shopping Festival');
+
+            // 3. Product name influences visual suggestion
+            expect($data['input'])->toContain('South Indian Kaapi');
+
+            // 4. Actual product image is supplied to suggestion-analysis step
+            expect($data['input'])->toContain('products/south_indian_kaapi.jpg')
+                ->and($data['input'])->toContain('Traditional brass tumbler and dabarah saucer with rich foaming coffee');
+
+            // 5. Suggestion does not invent unsupported physical product details
+            expect($data['input'])->toContain('Do NOT invent containers, cups, bottles, packaging, steam, ingredients, materials, shapes, props, or accessories');
+
+            // 6. User creative direction remains represented
+            expect($data['input'])->toContain('USER CREATIVE DIRECTION (AUTHORITATIVE CONCEPT):')
+                ->and($data['input'])->toContain($userCreativeDirection);
+
+            // 8. No composition/typography/camera instructions are generated
+            expect($data['instructions'])->toContain('Do NOT generate exact layout instructions, text zones, pricing zones, headline areas, negative-space instructions, left/right/top/bottom coordinates, exact product positioning, split backgrounds, camera angles, lenses, apertures, photography recipes, or typography systems');
+
+            return Http::response([
+                'output' => [
+                    [
+                        'content' => [
+                            [
+                                'type' => 'output_text',
+                                'text' => json_encode([
+                                    'creative_concept' => 'Festive Brass Kaapi Sanctuary',
+                                    'visual_strategy' => 'Traditional brass tumbler staged on rich walnut surface bathed in amber morning sunlight.',
+                                    'visual_prompt' => 'The traditional brass tumbler of South Indian Kaapi rests upon a warm walnut counter bathed in amber morning sunlight. Soft festive bokeh and deep espresso tones introduce celebratory warmth, styled with clean graphic minimalism and refined modern café tranquility.',
+                                ]),
+                            ],
+                        ],
+                    ],
+                ],
+                'usage' => ['total_tokens' => 200],
+            ], 200);
+        },
+        'https://api.openai.com/v1/organization/*' => Http::response(['data' => []], 200),
+    ]);
+
+    $response = $this->actingAs($user)->postJson(route('generator.prompt'), [
+        'generation_mode' => 'manual',
+        'campaign_id' => $campaign->id,
+        'catalog_product_ids' => [$product->id],
+        'user_instruction' => $userCreativeDirection,
+        'render_style' => 'Minimalist Graphic',
+        'copy_emphasis' => 'Balanced',
+        'aspect_ratio' => '1:1',
+    ]);
+
+    $response->assertOk();
+    $suggestedPrompt = $response->json('visual_prompt');
+
+    // 7. Suggestion remains approximately 40–90 words
+    $wordCount = str_word_count($suggestedPrompt);
+    expect($wordCount)->toBeGreaterThanOrEqual(35)
+        ->and($wordCount)->toBeLessThanOrEqual(95);
+
+    // Verify it doesn't contain composition/typography recipes or badges
+    expect($suggestedPrompt)->not->toContain('safe margin')
+        ->and($suggestedPrompt)->not->toContain('camera angle')
+        ->and($suggestedPrompt)->not->toContain('split background')
+        ->and($suggestedPrompt)->not->toContain('badge');
+});
+
+test('9-14: Final Manual prompt contains Campaign, Event, Event visibility, exact products, and sends product binary to /v1/images/edits', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Kapekol',
+        'industry' => 'Food & Beverage',
+        'category' => 'Coffee & Café',
+    ]);
+    $event = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => '10.10 Perfect 10 Shopping Festival',
+    ]);
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event->id,
+        'name' => '10.10 Perfect 10 Shopping Festival',
+    ]);
+    $product = Product::factory()->create([
+        'business_id' => $business->id,
+        'name' => 'South Indian Kaapi',
+        'price' => 180.00,
+        'image_path' => 'products/south_indian_kaapi.jpg',
+    ]);
+
+    Storage::fake('public');
+    Storage::disk('public')->put('products/south_indian_kaapi.jpg', 'authoritative-product-image-binary-12345');
+
+    $orchestrator = app(ModularPromptOrchestrator::class);
+
+    $finalPrompt = $orchestrator->orchestrateManualCampaignBrief([
+        'generation_mode' => 'manual',
+        'campaign_id' => $campaign->id,
+        'event_id' => $event->id,
+        'show_event_text' => false,
+        'catalog_products' => [$product],
+        'product_name' => 'South Indian Kaapi',
+        'price' => 180.00,
+        'scene_prompt' => 'A steaming brass tumbler of South Indian Kaapi on walnut surface.',
+        'render_style' => 'Minimalist Graphic',
+        'copy_emphasis' => 'Balanced',
+        'tagline' => 'Make Your 10.10 Perfectly Brewed',
+        'aspect_ratio' => '1:1',
+    ], $business, [$product]);
+
+    // 9. Final Manual prompt contains Campaign
+    expect($finalPrompt)->toContain('Campaign: 10.10 Perfect 10 Shopping Festival');
+
+    // 10. Final Manual prompt contains Event
+    expect($finalPrompt)->toContain('Event: 10.10 Perfect 10 Shopping Festival');
+
+    // 11. Final Manual prompt contains Event visibility
+    expect($finalPrompt)->toContain('Event visibility: Hidden');
+
+    // 12. Exact product name/price remains unchanged
+    expect($finalPrompt)->toContain('• REFERENCE IMAGE 1 = South Indian Kaapi — ₱180.00');
+
+    // 14. No legacy prompt sections return
+    expect($finalPrompt)->not->toContain('VISUAL THEME:')
+        ->and($finalPrompt)->not->toContain('BRAND TONE:')
+        ->and($finalPrompt)->not->toContain('CAMERA VIEWPOINT:')
+        ->and($finalPrompt)->not->toContain('LIGHTING PROFILE:')
+        ->and($finalPrompt)->not->toContain('Safe Margin')
+        ->and($finalPrompt)->not->toContain('MULTI-PRODUCT COMPOSITION');
+
+    // 13. Actual product binary is still sent to /v1/images/edits
+    $capturedRequest = null;
+    Http::fake([
+        'https://api.openai.com/v1/images/edits' => function ($request) use (&$capturedRequest) {
+            $capturedRequest = $request;
+
+            return Http::response([
+                'data' => [
+                    ['b64_json' => base64_encode('generated-image-result')],
+                ],
+            ], 200);
+        },
+    ]);
+
+    $imageService = app(OpenAIImageService::class);
+    $result = $imageService->generate($finalPrompt, [
+        'generation_mode' => 'manual',
+        'reference_image_paths' => ['products/south_indian_kaapi.jpg'],
+        'aspect_ratio' => '1:1',
+    ]);
+
+    expect($capturedRequest)->not->toBeNull();
+    expect($capturedRequest->isMultipart())->toBeTrue();
+    // Verify the actual product image binary was attached
+    $body = (string) $capturedRequest->body();
+    expect($body)->toContain('authoritative-product-image-binary-12345');
 });

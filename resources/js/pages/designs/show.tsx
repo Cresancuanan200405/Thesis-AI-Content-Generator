@@ -17,12 +17,12 @@ import {
     ImageIcon,
     Landmark,
     Plane,
+    Plus,
     RefreshCw,
     ShieldCheck,
     Shirt,
     ShoppingBag,
     ShoppingBasket,
-    Sparkles,
     Trash2,
     Utensils,
     UtensilsCrossed,
@@ -53,7 +53,7 @@ const resolveIndustryIcon = (
     const raw = `${industry || ''} ${category || ''}`.toLowerCase().trim();
 
     if (!raw) {
-        return Sparkles;
+        return Building2;
     }
 
     if (
@@ -102,7 +102,7 @@ const resolveIndustryIcon = (
         raw.includes('skincare') ||
         raw.includes('salon')
     ) {
-        return Sparkles;
+        return HeartPulse;
     }
 
     if (
@@ -207,7 +207,7 @@ const resolveIndustryIcon = (
         return Landmark;
     }
 
-    return Sparkles;
+    return Building2;
 };
 
 const regenerationStatusPhrases = [
@@ -429,7 +429,7 @@ export default function DesignShowPage({ design }: any) {
 
             <div className="space-y-6 p-4 md:p-6">
                 {/* Page Header */}
-                <div className="flex flex-col gap-5 rounded-2xl border border-border/80 bg-card/80 p-5 shadow-[0_8px_30px_rgba(15,23,42,0.06)] backdrop-blur-xl md:p-6">
+                <div className="flex flex-col gap-5 rounded-card border border-border/80 bg-card/80 p-5 shadow-[0_8px_30px_rgba(15,23,42,0.06)] backdrop-blur-xl md:p-6">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div className="flex items-center gap-3">
                             <Button
@@ -503,9 +503,9 @@ export default function DesignShowPage({ design }: any) {
                                     : 'Regenerate Design'}
                             </Button>
 
-                            <Button asChild className="gap-2">
+                            <Button asChild className="gap-2 rounded-md font-semibold">
                                 <Link href="/generator">
-                                    <Sparkles className="h-4 w-4" />
+                                    <Plus className="h-4 w-4" />
                                     Create Another Design
                                 </Link>
                             </Button>
@@ -554,7 +554,7 @@ export default function DesignShowPage({ design }: any) {
                                 open={isRegenerateModalOpen}
                                 onOpenChange={setIsRegenerateModalOpen}
                             >
-                                <DialogContent className="rounded-3xl sm:max-w-md">
+                                <DialogContent className="rounded-card sm:max-w-md">
                                     <DialogHeader>
                                         <DialogTitle className="text-lg font-bold">
                                             Regenerate Creative Design?
@@ -630,7 +630,7 @@ export default function DesignShowPage({ design }: any) {
                                 ) : (
                                     <div className="flex min-h-[520px] items-center justify-center bg-muted/40 text-muted-foreground">
                                         <div className="flex flex-col items-center gap-3">
-                                            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-background/70">
+                                            <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-border bg-background/70">
                                                 <ImageIcon className="h-8 w-8" />
                                             </div>
 
@@ -1001,7 +1001,7 @@ export default function DesignShowPage({ design }: any) {
                             <img
                                 src={design.image_url}
                                 alt={design.product_name || 'Generated design'}
-                                className={`rounded-2xl object-contain shadow-2xl drop-shadow-2xl transition-all duration-300 ${
+                                className={`rounded-card object-contain shadow-2xl drop-shadow-2xl transition-all duration-300 ${
                                     isPreviewZoomed
                                         ? 'h-auto max-h-none w-auto max-w-none'
                                         : 'h-auto max-h-[calc(100vh-140px)] w-auto max-w-[calc(100vw-32px)] scale-100 sm:max-w-[calc(100vw-64px)]'
@@ -1029,7 +1029,7 @@ export default function DesignShowPage({ design }: any) {
                 <div
                     className={`fixed top-11 right-0 bottom-0 left-0 z-20 flex items-center justify-center overflow-hidden bg-background/80 p-4 backdrop-blur-2xl motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in sm:top-12 sm:p-6 ${sidebarState === 'collapsed' ? 'md:left-[var(--sidebar-width-icon)]' : 'md:left-[var(--sidebar-width)]'}`}
                 >
-                    <div className="relative flex max-h-full w-full max-w-lg flex-col items-center justify-between gap-5 overflow-hidden rounded-3xl border border-border/80 bg-card/95 p-6 shadow-2xl backdrop-blur-2xl sm:p-8">
+                    <div className="relative flex max-h-full w-full max-w-lg flex-col items-center justify-between gap-5 overflow-hidden rounded-card border border-border/80 bg-card/95 p-6 shadow-2xl backdrop-blur-2xl sm:p-8">
                         {/* Ambient Background Studio Aura */}
                         <div className="pointer-events-none absolute -top-16 left-1/2 h-36 w-36 -translate-x-1/2 rounded-full bg-primary/15 blur-3xl motion-reduce:hidden" />
                         <div className="pointer-events-none absolute -bottom-16 left-1/2 h-36 w-36 -translate-x-1/2 rounded-full bg-emerald-500/15 blur-3xl motion-reduce:hidden" />
@@ -1066,8 +1066,8 @@ export default function DesignShowPage({ design }: any) {
                             <div className="pointer-events-none absolute h-28 w-28 rounded-full bg-primary/20 blur-2xl motion-safe:animate-pulse motion-reduce:hidden" />
 
                             {/* Glassmorphic Industry Emblem Pedestal */}
-                            <div className="relative flex h-28 w-28 flex-col items-center justify-center rounded-3xl border border-primary/25 bg-gradient-to-b from-primary/15 via-primary/5 to-muted/40 shadow-xl ring-1 shadow-primary/10 ring-primary/20 backdrop-blur-xl transition-all sm:h-32 sm:w-32">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-xs ring-1 ring-primary/25 sm:h-14 sm:w-14">
+                            <div className="relative flex h-28 w-28 flex-col items-center justify-center rounded-card border border-primary/25 bg-gradient-to-b from-primary/15 via-primary/5 to-muted/40 shadow-xl ring-1 shadow-primary/10 ring-primary/20 backdrop-blur-xl transition-all sm:h-32 sm:w-32">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/15 text-primary shadow-xs ring-1 ring-primary/25 sm:h-14 sm:w-14">
                                     {createElement(
                                         resolveIndustryIcon(activeIndustry),
                                         {
@@ -1088,7 +1088,7 @@ export default function DesignShowPage({ design }: any) {
                         <div className="relative w-full space-y-3">
                             {/* Dynamic Creative Phase Message */}
                             <div className="flex items-center justify-center gap-1.5 text-center">
-                                <Sparkles className="h-3.5 w-3.5 text-primary motion-safe:animate-pulse motion-reduce:hidden" />
+                                <RefreshCw className="h-3.5 w-3.5 text-primary animate-spin" />
                                 <p className="text-xs font-semibold text-foreground transition-opacity duration-500 sm:text-sm">
                                     {currentStatusMessage}
                                 </p>

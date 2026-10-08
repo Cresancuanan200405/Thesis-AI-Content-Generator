@@ -273,7 +273,7 @@ export default function ProductForm({
 
     return (
         <div className="mx-auto w-full max-w-xl">
-            <Card className="overflow-hidden rounded-3xl border-border bg-card shadow-sm">
+            <Card className="overflow-hidden rounded-card border-border bg-card shadow-sm">
                 {/* Header */}
                 <div className="border-b border-border/60 p-6 sm:p-7">
                     <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
@@ -300,7 +300,7 @@ export default function ProductForm({
 
                             {imagePreview ? (
                                 <div className="space-y-3">
-                                    <div className="relative flex aspect-4/3 w-full items-center justify-center overflow-hidden rounded-2xl border border-border/70 bg-muted/20 p-4 transition-all sm:aspect-16/10">
+                                    <div className="relative flex aspect-4/3 w-full items-center justify-center overflow-hidden rounded-card border border-border/70 bg-muted/20 p-4 transition-all sm:aspect-16/10">
                                         <img
                                             src={imagePreview}
                                             alt="Product preview"
@@ -341,12 +341,12 @@ export default function ProductForm({
                                     onDrop={handleDrop}
                                     onDragOver={handleDragOver}
                                     onDragLeave={handleDragLeave}
-                                    className={`group flex aspect-4/3 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-all duration-200 sm:aspect-16/10 ${isDragging
+                                    className={`group flex aspect-4/3 w-full cursor-pointer flex-col items-center justify-center rounded-card border-2 border-dashed p-6 text-center transition-all duration-200 sm:aspect-16/10 ${isDragging
                                         ? 'scale-[0.99] border-primary bg-primary/10'
                                         : 'border-border/80 bg-muted/15 hover:border-primary/50 hover:bg-primary/5'
                                         }`}
                                 >
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-2xs transition-transform duration-200 group-hover:scale-105">
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-2xs transition-transform duration-200 group-hover:scale-105">
                                         <ImagePlus className="h-6 w-6" />
                                     </div>
                                     <p className="mt-3 text-sm font-bold text-foreground">

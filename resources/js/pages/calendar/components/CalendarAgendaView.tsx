@@ -36,7 +36,7 @@ export function CalendarAgendaView({
     });
 
     return (
-        <Card className="space-y-4 rounded-3xl border-border bg-card p-6 shadow-xs">
+        <Card className="space-y-4 rounded-card border-border bg-card p-6 shadow-xs">
             <div className="flex items-center justify-between border-b border-border pb-3">
                 <h3 className="text-sm font-bold text-foreground">
                     Schedule for {monthNames[currentMonth]} {currentYear}
@@ -61,7 +61,7 @@ export function CalendarAgendaView({
                             <div
                                 key={evt.id}
                                 onClick={() => onSelectEvent(evt)}
-                                className={`group flex flex-col gap-2 rounded-2xl border p-3.5 transition-all cursor-pointer sm:flex-row sm:items-center sm:justify-between ${
+                                className={`group flex flex-col gap-2 rounded-card border p-3.5 transition-all cursor-pointer sm:flex-row sm:items-center sm:justify-between ${
                                     isPast
                                         ? 'border-border/60 bg-muted/20 opacity-80 hover:opacity-100 hover:bg-muted/40'
                                         : `${baseStyle.bg} ${baseStyle.border} hover:brightness-105 shadow-2xs`

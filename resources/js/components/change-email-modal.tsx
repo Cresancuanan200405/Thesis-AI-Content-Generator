@@ -406,7 +406,7 @@ export function ChangeEmailModal({
                 )}
             </DialogTrigger>
 
-            <DialogContent className="rounded-3xl p-6 sm:max-w-md">
+            <DialogContent className="rounded-card p-6 sm:max-w-md">
                 {/* Flow Step Progress Indicator */}
                 {step !== 'success' && (
                     <div className="mb-2 flex items-center justify-between border-b border-border/60 pb-3">

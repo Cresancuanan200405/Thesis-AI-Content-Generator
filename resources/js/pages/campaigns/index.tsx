@@ -7,7 +7,6 @@ import {
     Pencil,
     Plus,
     Search,
-    Sparkles,
     Trash2,
     X,
 } from 'lucide-react';
@@ -872,21 +871,22 @@ export default function CampaignsPage({
                     {/* =====================================================
                         PAGE HEADER
                     ====================================================== */}
-                    <div className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-2.5">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                <Layers className="h-4 w-4" />
+                    <div className="flex flex-col gap-3 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="h-2 w-2 rounded-full bg-fuchsia-500 shadow-xs" />
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                                    Campaigns Hub
+                                </span>
                             </div>
-                            <div>
-                                <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
-                                    Campaigns
-                                </h1>
-                                <p className="text-xs text-muted-foreground">
-                                    {activeView === 'opportunities'
-                                        ? 'Discover upcoming promotional opportunities, seasonal holidays, and marketing windows.'
-                                        : 'Organize and manage your active, scheduled, and completed marketing campaigns.'}
-                                </p>
-                            </div>
+                            <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                                Marketing Campaigns
+                            </h1>
+                            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                                {activeView === 'opportunities'
+                                    ? 'Discover upcoming promotional opportunities, seasonal holidays, and marketing windows.'
+                                    : 'Organize, schedule, and track creative assets across all your marketing campaigns.'}
+                            </p>
                         </div>
 
                         {/* Header Action: Create Campaign Button */}
@@ -895,9 +895,9 @@ export default function CampaignsPage({
                                 type="button"
                                 size="sm"
                                 onClick={() => handleOpenGeneralCreate(true)}
-                                className="h-8 gap-1.5 rounded-xl px-3 text-xs font-semibold shadow-2xs"
+                                className="h-9 gap-1.5 rounded-full bg-foreground px-4 text-xs font-bold text-background shadow-md transition-all hover:opacity-95 hover:scale-[1.02] active:scale-95"
                             >
-                                <Plus className="h-3.5 w-3.5" />
+                                <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
                                 <span>Create Campaign</span>
                             </Button>
                         </div>
@@ -906,7 +906,7 @@ export default function CampaignsPage({
                     {/* =====================================================
                         CAMPAIGNS TOOLBOX (MATCHING SYSTEM TOOLBAR)
                     ====================================================== */}
-                    <div className="sticky top-11 z-30 mb-5 rounded-2xl border border-white/25 bg-card/95 px-2.5 py-1.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:px-3 sm:py-1.5 dark:border-white/10 dark:bg-card/95">
+                    <div className="sticky top-11 z-30 mb-5 rounded-card border border-border/70 bg-card/95 px-3 py-2 shadow-sm backdrop-blur-xl transition-all sm:top-12 dark:bg-card/90">
                         <div className="flex items-center justify-between gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                             {/* Navigation / View Switcher Control */}
                             <div className="flex shrink-0 items-center gap-2">
@@ -998,7 +998,7 @@ export default function CampaignsPage({
                     }
                 }}
             >
-                <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden rounded-3xl border-border bg-card p-0 shadow-2xl sm:max-w-lg">
+                <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden rounded-card border-border bg-card p-0 shadow-2xl sm:max-w-lg">
                     <form onSubmit={handleCreateCampaign} className="flex min-h-0 flex-1 flex-col">
                         <DialogHeader className="shrink-0 border-b border-border/80 bg-muted/20 p-5 sm:p-6 pb-4">
                             <div className="flex items-center gap-2">
@@ -1304,7 +1304,7 @@ export default function CampaignsPage({
             ============================================================= */}
 
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="overflow-hidden rounded-3xl border-border bg-card p-0 shadow-2xl sm:max-w-lg">
+                <DialogContent className="overflow-hidden rounded-card border-border bg-card p-0 shadow-2xl sm:max-w-lg">
                     <form onSubmit={handleEditCampaign}>
                         <DialogHeader className="border-b border-border/80 bg-muted/20 p-6 pb-4">
                             <div className="flex items-center gap-2">
@@ -1451,7 +1451,7 @@ export default function CampaignsPage({
             ============================================================= */}
 
             <Dialog open={isEventModalOpen} onOpenChange={setIsEventModalOpen}>
-                <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden rounded-3xl border-border bg-card p-0 shadow-2xl sm:max-w-4xl">
+                <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden rounded-card border-border bg-card p-0 shadow-2xl sm:max-w-4xl">
                     <DialogHeader className="shrink-0 border-b border-border bg-muted/20 p-4 sm:p-5">
                         <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -1640,7 +1640,7 @@ export default function CampaignsPage({
                     }
                 }}
             >
-                <DialogContent className="rounded-3xl border-border bg-card p-6 shadow-2xl sm:max-w-md">
+                <DialogContent className="rounded-card border-border bg-card p-6 shadow-2xl sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold text-foreground">
                             Delete Campaign?

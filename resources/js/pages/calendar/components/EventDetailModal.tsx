@@ -3,7 +3,6 @@ import {
     CalendarDays,
     Clock,
     FileText,
-    Sparkles,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -44,7 +43,7 @@ export function EventDetailModal({
 
     return (
         <Dialog open={!!event} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="rounded-3xl border-border bg-card p-6 shadow-xl sm:max-w-md">
+            <DialogContent className="rounded-card border-border bg-card p-6 shadow-xl sm:max-w-md">
                 <DialogHeader className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
                         <Badge
@@ -148,18 +147,18 @@ export function EventDetailModal({
 
                     {/* Description */}
                     {event.description ? (
-                        <div className="rounded-2xl border border-border bg-muted/20 p-3.5 leading-relaxed text-muted-foreground">
+                        <div className="rounded-lg border border-border bg-muted/20 p-3.5 leading-relaxed text-muted-foreground">
                             {event.description}
                         </div>
                     ) : (
-                        <div className="rounded-2xl border border-border/60 bg-muted/10 p-3 text-[11px] text-muted-foreground italic">
+                        <div className="rounded-lg border border-border/60 bg-muted/10 p-3 text-[11px] text-muted-foreground italic">
                             No additional description provided.
                         </div>
                     )}
 
                     {/* Status Highlights */}
                     {isMissed && (
-                        <div className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-3.5 text-xs text-muted-foreground">
+                        <div className="rounded-lg border border-amber-500/25 bg-amber-500/5 p-3.5 text-xs text-muted-foreground">
                             <span className="font-semibold text-foreground">
                                 Missed Promotional Opportunity:
                             </span>{' '}
@@ -168,7 +167,7 @@ export function EventDetailModal({
                     )}
 
                     {hasCampaign && event.campaign_name && (
-                        <div className="rounded-2xl border border-primary/25 bg-primary/5 p-3.5 text-xs text-muted-foreground">
+                        <div className="rounded-lg border border-primary/25 bg-primary/5 p-3.5 text-xs text-muted-foreground">
                             <span className="font-semibold text-foreground">
                                 Campaign Active:
                             </span>{' '}

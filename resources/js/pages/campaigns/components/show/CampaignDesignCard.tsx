@@ -2,9 +2,9 @@ import { Link } from '@inertiajs/react';
 import {
     Check,
     Download,
+    Edit3,
     ImageIcon,
     MoreVertical,
-    Sparkles,
     Trash2,
 } from 'lucide-react';
 import React from 'react';
@@ -184,7 +184,7 @@ export function CampaignDesignCard({
                                 <>
                                     <DropdownMenuItem asChild className="cursor-pointer gap-2 text-xs">
                                         <Link href={resumeDraftUrl}>
-                                            <Sparkles className="h-3.5 w-3.5 text-primary" />
+                                            <Edit3 className="h-3.5 w-3.5 text-foreground" />
                                             Resume Draft
                                         </Link>
                                     </DropdownMenuItem>
@@ -201,8 +201,8 @@ export function CampaignDesignCard({
                             ) : (
                                 <DropdownMenuItem asChild className="cursor-pointer gap-2 text-xs">
                                     <Link href={editInStudioUrl}>
-                                        <Sparkles className="h-3.5 w-3.5 text-primary" />
-                                        Edit in AI Studio
+                                        <Edit3 className="h-3.5 w-3.5 text-foreground" />
+                                        Edit in Studio
                                     </Link>
                                 </DropdownMenuItem>
                             )}

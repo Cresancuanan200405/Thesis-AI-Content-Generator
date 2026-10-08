@@ -5,12 +5,12 @@ import {
     ChevronDown,
     Download,
     Edit3,
+    ImageIcon,
     LayoutGrid,
     List,
     MoreVertical,
     Plus,
     Search,
-    Sparkles,
     Tag,
     Trash2,
     X,
@@ -163,33 +163,28 @@ export default function ProductsIndexPage({
                     {/* =====================================================
                         PAGE HEADER & CREATE ACTION
                     ====================================================== */}
-                    <div className="flex flex-col gap-3 border-b border-border/60 pb-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-2.5">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                <Tag className="h-4 w-4" />
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
-                                        My Products
-                                    </h1>
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                    Manage, preview, and organize your product
-                                    offerings.
-                                </p>
-                            </div>
+                    <div className="flex flex-col gap-3 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                                Product Catalog
+                            </span>
+                            <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                                Products
+                            </h1>
+                            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                                Maintain your products, inventory pricing, and image assets for marketing creative campaigns.
+                            </p>
                         </div>
 
                         <div className="flex items-center gap-2 self-start sm:self-auto">
                             <Button
                                 asChild
                                 size="sm"
-                                className="h-8 gap-1.5 text-xs font-semibold shadow-2xs"
+                                className="h-9 gap-1.5 rounded-md bg-foreground px-4 text-xs font-semibold text-background shadow-xs transition-all hover:opacity-95"
                             >
                                 <Link href="/products/create">
-                                    <Plus className="h-3.5 w-3.5" />
-                                    Add Product
+                                    <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                                    <span>Add Product</span>
                                 </Link>
                             </Button>
                         </div>
@@ -198,7 +193,7 @@ export default function ProductsIndexPage({
                     {/* =====================================================
                         STICKY FILTER TOOLBAR (MATCHING SYSTEM TOOLBAR HEIGHT)
                     ====================================================== */}
-                    <div className="sticky top-11 z-30 mb-5 rounded-2xl border border-white/25 bg-card/95 px-2.5 py-1.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:px-3 sm:py-1.5 dark:border-white/10 dark:bg-card/95">
+                    <div className="sticky top-11 z-30 mb-5 rounded-card border border-border/70 bg-card/95 px-3 py-2 shadow-sm backdrop-blur-xl transition-all sm:top-12 dark:bg-card/90">
                         <div className="flex items-center justify-between gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-2.5">
                             {/* Search */}
                             <div className="relative min-w-0 flex-1">
@@ -302,7 +297,7 @@ export default function ProductsIndexPage({
                         PRODUCTS CONTENT (GRID OR LIST)
                     ====================================================== */}
                     {productList.length === 0 ? (
-                        <div className="rounded-3xl border border-dashed border-border bg-card/60 p-12 text-center shadow-xs">
+                        <div className="rounded-card border border-dashed border-border bg-card/60 p-12 text-center shadow-xs">
                             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
                                 <Tag className="h-7 w-7 opacity-60" />
                             </div>
@@ -349,7 +344,7 @@ export default function ProductsIndexPage({
                                                 );
                                             }
                                         }}
-                                        className="group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-xl border border-border bg-card text-left shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus:ring-2 focus:ring-primary/30 focus:outline-none"
+                                        className="group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-card border border-border bg-card text-left shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus:ring-2 focus:ring-primary/30 focus:outline-none dark:border-white/[0.08] dark:bg-[#161820]"
                                     >
                                         {/* Product Image Container (Full Actual Image View) */}
                                         <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden border-b border-border/50 bg-muted/20 p-1.5">
@@ -403,8 +398,8 @@ export default function ProductsIndexPage({
                                                             }}
                                                             className="cursor-pointer gap-2 text-xs font-medium"
                                                         >
-                                                            <Sparkles className="h-3.5 w-3.5 text-primary" />
-                                                            Generate AI Visuals
+                                                            <ImageIcon className="h-3.5 w-3.5" />
+                                                            Create Design
                                                         </DropdownMenuItem>
 
                                                         <DropdownMenuItem
@@ -471,7 +466,7 @@ export default function ProductsIndexPage({
                                                         'Catalog Item'}
                                                 </span>
                                                 {product.price && (
-                                                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                                                    <span className="font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
                                                         ₱
                                                         {Number(
                                                             product.price,
@@ -506,7 +501,7 @@ export default function ProductsIndexPage({
                                                 );
                                             }
                                         }}
-                                        className="group flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-border bg-card p-2.5 shadow-2xs transition-all duration-200 hover:border-primary/40 hover:shadow-xs"
+                                        className="group flex cursor-pointer items-center justify-between gap-3 rounded-card border border-border bg-card p-2.5 shadow-2xs transition-all duration-200 hover:border-primary/40 hover:shadow-xs dark:border-white/[0.08] dark:bg-[#161820]"
                                     >
                                         <div className="flex min-w-0 items-center gap-2.5">
                                             {/* Thumbnail (Full Image View) */}
@@ -529,7 +524,7 @@ export default function ProductsIndexPage({
                                                         {product.name}
                                                     </h3>
                                                     {product.price && (
-                                                        <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                        <span className="text-[11px] font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
                                                             ₱
                                                             {Number(
                                                                 product.price,
@@ -557,8 +552,8 @@ export default function ProductsIndexPage({
                                                 <Link
                                                     href={`/generator?product_id=${product.id}&product_name=${encodeURIComponent(product.name)}&price=${encodeURIComponent(product.price || '')}`}
                                                 >
-                                                    <Sparkles className="mr-1 h-3 w-3 text-primary" />
-                                                    Generate
+                                                    <ImageIcon className="mr-1.5 h-3 w-3" />
+                                                    Create Design
                                                 </Link>
                                             </Button>
 
@@ -673,7 +668,7 @@ export default function ProductsIndexPage({
                     }
                 }}
             >
-                <DialogContent className="rounded-3xl border-border bg-card p-6 shadow-xl sm:max-w-md">
+                <DialogContent className="rounded-card border-border bg-card p-6 shadow-xl sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold text-foreground">
                             Delete Product?

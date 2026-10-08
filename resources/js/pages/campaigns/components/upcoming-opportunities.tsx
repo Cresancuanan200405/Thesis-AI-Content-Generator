@@ -1,11 +1,11 @@
 import { Link } from '@inertiajs/react';
 import {
+    CalendarDays,
     CheckCircle2,
     ChevronDown,
     ChevronUp,
     Clock,
     Plus,
-    Sparkles,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -34,11 +34,11 @@ export function UpcomingOpportunities({
     }, [upcomingList, isExpanded]);
 
     return (
-        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-2xs sm:p-5">
+        <div className="rounded-card border border-border/70 bg-card p-4 shadow-2xs sm:p-5">
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                        <Sparkles className="h-4 w-4" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <CalendarDays className="h-4 w-4" />
                     </div>
                     <div>
                         <h2 className="text-sm font-bold tracking-tight text-foreground">

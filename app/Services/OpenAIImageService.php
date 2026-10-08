@@ -25,8 +25,11 @@ class OpenAIImageService
         protected ReferenceImageAnalyzer $referenceAnalyzer,
         protected OpenAIModelRegistry $modelRegistry,
         protected ModularPromptOrchestrator $promptOrchestrator,
-        protected ImageCompositorService $compositor
-    ) {}
+        protected ImageCompositorService $compositor,
+        protected ?OutputValidationService $outputValidator = null
+    ) {
+        $this->outputValidator = $outputValidator ?? app(OutputValidationService::class);
+    }
 
     /**
      * Generate a marketing visual using the Product-First OpenAI pipeline.
@@ -155,7 +158,11 @@ class OpenAIImageService
         }
 
         // 3. Modular Prompt Orchestration with strict priority (Exact Single Pass Guard)
-        $isAlreadyOrchestrated = Str::startsWith($userPrompt, 'FINAL MARKETING DESIGN TASK');
+        $isPromptFinal = ! empty($options['prompt_is_final']);
+        $isAlreadyOrchestrated = $isPromptFinal
+            || Str::startsWith($userPrompt, 'FINAL MARKETING DESIGN TASK')
+            || Str::startsWith($userPrompt, 'Create a marketing image')
+            || Str::startsWith($userPrompt, 'Business:');
         if ($isAlreadyOrchestrated) {
             $fullPrompt = $userPrompt;
         } else {
@@ -290,6 +297,14 @@ class OpenAIImageService
             $binary = $this->extractBinaryFromResponse($response->json());
             $generationMethod = $fallbackUsed ? 'text_to_image_fallback' : 'text_to_image_fidelity';
         }
+
+        // Deterministic Output Validation (Phase 1)
+        $validationResult = $this->outputValidator->validate(
+            binary: $binary,
+            options: $options,
+            requestedSize: $size,
+            requestedAspectRatio: $aspectRatio
+        );
 
         if (empty($binary)) {
             throw new RuntimeException('Failed to process image data from OpenAI response.');
@@ -439,6 +454,7 @@ class OpenAIImageService
             'fallback_state' => $compositorResult['fallback_state'] ?? 'none',
             'deterministic_text_composited' => (bool) ($compositorResult['raster_modified'] ?? false),
             'compositor_result' => $compositorResult,
+            'validation' => $validationResult->toArray(),
             'duration_seconds' => $duration,
             'status' => 'completed',
             'timestamp' => now()->toIso8601String(),

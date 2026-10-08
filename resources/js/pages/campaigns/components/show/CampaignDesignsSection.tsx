@@ -2,8 +2,8 @@ import { Link } from '@inertiajs/react';
 import {
     FolderPlus,
     ImageIcon,
+    Plus,
     Search,
-    Sparkles,
     X,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
@@ -22,6 +22,7 @@ import { CampaignData, CampaignDesign } from './types';
 interface CampaignDesignsSectionProps {
     campaign: CampaignData;
     hasAvailableDesigns: boolean;
+    onCreateDesign?: () => void;
     onOpenAttachExisting: () => void;
     onOpenViewer: (design: CampaignDesign) => void;
     onFinalize: (designId: number) => void;
@@ -33,6 +34,7 @@ interface CampaignDesignsSectionProps {
 export function CampaignDesignsSection({
     campaign,
     hasAvailableDesigns,
+    onCreateDesign,
     onOpenAttachExisting,
     onOpenViewer,
     onFinalize,
@@ -243,16 +245,28 @@ export function CampaignDesignsSection({
                             </Button>
                         )}
 
-                        <Button
-                            asChild
-                            size="sm"
-                            className="h-8 text-xs cursor-pointer shadow-none gap-1.5 font-semibold"
-                        >
-                            <Link href={campaign.generator_url}>
-                                <Sparkles className="h-3.5 w-3.5" />
-                                Create Design in AI Studio
-                            </Link>
-                        </Button>
+                        {onCreateDesign ? (
+                            <Button
+                                type="button"
+                                size="sm"
+                                onClick={onCreateDesign}
+                                className="h-8 text-xs cursor-pointer shadow-none gap-1.5 font-semibold"
+                            >
+                                <Plus className="h-3.5 w-3.5" />
+                                Create Marketing Design
+                            </Button>
+                        ) : (
+                            <Button
+                                asChild
+                                size="sm"
+                                className="h-8 text-xs cursor-pointer shadow-none gap-1.5 font-semibold"
+                            >
+                                <Link href={campaign.generator_url}>
+                                    <Plus className="h-3.5 w-3.5" />
+                                    Create Marketing Design
+                                </Link>
+                            </Button>
+                        )}
                     </div>
                 </div>
             ) : filteredDesigns.length === 0 ? (

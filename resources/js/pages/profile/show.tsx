@@ -14,7 +14,6 @@ import {
     Save,
     Settings,
     Shield,
-    Sparkles,
     Store,
     Tag,
 } from 'lucide-react';
@@ -236,7 +235,7 @@ export default function ProfileShowPage({
                             <Button
                                 asChild
                                 variant="outline"
-                                className="h-10 gap-2 rounded-xl border-border bg-card text-xs font-semibold text-muted-foreground shadow-xs hover:bg-muted hover:text-foreground"
+                                className="h-10 gap-2 rounded-md border-border bg-card text-xs font-semibold text-muted-foreground shadow-xs hover:bg-muted hover:text-foreground"
                             >
                                 <Link href="/settings/profile">
                                     <Settings className="h-3.5 w-3.5" />
@@ -245,10 +244,10 @@ export default function ProfileShowPage({
                             </Button>
                             <Button
                                 asChild
-                                className="h-10 gap-2 rounded-xl text-xs font-semibold shadow-xs"
+                                className="h-10 gap-2 rounded-md text-xs font-semibold shadow-xs"
                             >
                                 <Link href="/generator">
-                                    <Sparkles className="h-3.5 w-3.5" />
+                                    <ArrowUpRight className="h-3.5 w-3.5" />
                                     Open Studio
                                 </Link>
                             </Button>
@@ -261,7 +260,7 @@ export default function ProfileShowPage({
                             {/* Left Column (8 cols): Primary Business Information Inputs */}
                             <div className="space-y-6 lg:col-span-8">
                                 {/* Card 1: Core Business Identity */}
-                                <Card className="overflow-hidden rounded-3xl border-border/80 bg-card p-6 shadow-xs md:p-7">
+                                <Card className="overflow-hidden rounded-card border-border/80 bg-card p-6 shadow-xs md:p-7">
                                     <div className="flex items-center gap-3 border-b border-border/60 pb-5">
                                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                                             <Building2 className="h-5 w-5" />
@@ -400,7 +399,7 @@ export default function ProfileShowPage({
                                 </Card>
 
                                 {/* Card 2: Business Description & Craft Details */}
-                                <Card className="overflow-hidden rounded-3xl border-border/80 bg-card p-6 shadow-xs md:p-7">
+                                <Card className="overflow-hidden rounded-card border-border/80 bg-card p-6 shadow-xs md:p-7">
                                     <div className="flex items-center justify-between border-b border-border/60 pb-5">
                                         <div className="flex items-center gap-3">
                                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -480,7 +479,7 @@ export default function ProfileShowPage({
                                 </Card>
 
                                 {/* Action Buttons Footer (Desktop & Tablet) */}
-                                <div className="flex items-center justify-between rounded-2xl border border-border/80 bg-card/60 p-4 shadow-xs">
+                                <div className="flex items-center justify-between rounded-card border border-border/80 bg-card/60 p-4 shadow-xs">
                                     <div className="flex items-center gap-2">
                                         {hasUnsavedChanges && (
                                             <Button
@@ -522,7 +521,7 @@ export default function ProfileShowPage({
                             {/* Right Column (4 cols): Context Overview & Account Summary */}
                             <div className="space-y-6 lg:col-span-4">
                                 {/* Card 3: Business Information Preview & Status */}
-                                <Card className="overflow-hidden rounded-3xl border-border/80 bg-card p-6 shadow-xs">
+                                <Card className="overflow-hidden rounded-card border-border/80 bg-card p-6 shadow-xs">
                                     <div className="flex items-center gap-2.5 border-b border-border/60 pb-4">
                                         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
                                             <Store className="h-4 w-4" />
@@ -591,7 +590,7 @@ export default function ProfileShowPage({
                                 </Card>
 
                                 {/* Card 4: Account Security & Credentials */}
-                                <Card className="overflow-hidden rounded-3xl border-border/80 bg-card p-6 shadow-xs">
+                                <Card className="overflow-hidden rounded-card border-border/80 bg-card p-6 shadow-xs">
                                     <div className="flex items-center gap-2.5 border-b border-border/60 pb-4">
                                         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted text-foreground">
                                             <Shield className="h-4 w-4 text-muted-foreground" />

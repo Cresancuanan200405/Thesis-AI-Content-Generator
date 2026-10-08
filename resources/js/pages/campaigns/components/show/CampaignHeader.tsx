@@ -5,7 +5,7 @@ import {
     Download,
     Edit3,
     MoreVertical,
-    Sparkles,
+    Plus,
     Trash2,
 } from 'lucide-react';
 import React from 'react';
@@ -27,6 +27,7 @@ import { CampaignData } from './types';
 
 interface CampaignHeaderProps {
     campaign: CampaignData;
+    onCreateDesign?: () => void;
     onEdit: () => void;
     onDownloadAll: () => void;
     onArchive: () => void;
@@ -44,6 +45,7 @@ const statusLabels: Record<string, string> = {
 
 export function CampaignHeader({
     campaign,
+    onCreateDesign,
     onEdit,
     onDownloadAll,
     onArchive,
@@ -77,16 +79,28 @@ export function CampaignHeader({
 
                 {/* Header Actions: Create Design (Text Button) + Kanban / Overflow Menu */}
                 <div className="flex items-center gap-2 shrink-0">
-                    <Button
-                        asChild
-                        size="sm"
-                        className="h-8 gap-1.5 px-3 text-xs font-semibold shadow-2xs cursor-pointer"
-                    >
-                        <Link href={campaign.generator_url}>
-                            <Sparkles className="h-3.5 w-3.5" />
+                    {onCreateDesign ? (
+                        <Button
+                            type="button"
+                            size="sm"
+                            onClick={onCreateDesign}
+                            className="h-8 gap-1.5 px-3 text-xs font-semibold shadow-2xs cursor-pointer"
+                        >
+                            <Plus className="h-3.5 w-3.5" />
                             <span>Create Design</span>
-                        </Link>
-                    </Button>
+                        </Button>
+                    ) : (
+                        <Button
+                            asChild
+                            size="sm"
+                            className="h-8 gap-1.5 px-3 text-xs font-semibold shadow-2xs cursor-pointer"
+                        >
+                            <Link href={campaign.generator_url}>
+                                <Plus className="h-3.5 w-3.5" />
+                                <span>Create Design</span>
+                            </Link>
+                        </Button>
+                    )}
 
                     <TooltipProvider>
                         <DropdownMenu>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
 import {
-    Sparkles,
+    ImageIcon,
     Edit3,
     Trash2,
     Download,
@@ -61,7 +61,7 @@ export function ProductViewerPanel({
                     </h1>
 
                     <div className="mt-2 flex items-baseline gap-2">
-                        <span className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
+                        <span className="text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
                             {formattedPrice}
                         </span>
                         <span className="text-xs font-medium text-muted-foreground uppercase">
@@ -78,12 +78,12 @@ export function ProductViewerPanel({
                         className="w-full gap-2 bg-primary font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-lg active:scale-[0.99]"
                     >
                         <Link href={generateUrl}>
-                            <Sparkles className="h-4 w-4" />
-                            Generate AI Visuals
+                            <ImageIcon className="h-4 w-4" />
+                            Create Marketing Design
                         </Link>
                     </Button>
                     <p className="text-center text-[11px] text-muted-foreground">
-                        Create AI marketing designs featuring this product
+                        Create campaign marketing designs featuring this product
                     </p>
                 </div>
 

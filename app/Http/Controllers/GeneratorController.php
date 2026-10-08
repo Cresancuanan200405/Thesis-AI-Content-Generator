@@ -442,6 +442,7 @@ class GeneratorController extends Controller
                 'brand_tone' => $request->input('brand_tone'),
                 'aspect_ratio' => $request->input('aspect_ratio', '1:1'),
                 'tagline' => $request->input('tagline'),
+                'include_product_name' => $request->has('include_product_name') ? filter_var($request->input('include_product_name'), FILTER_VALIDATE_BOOLEAN) : null,
                 'include_tagline' => $request->has('include_tagline') ? filter_var($request->input('include_tagline'), FILTER_VALIDATE_BOOLEAN) : null,
                 'include_prices' => $request->has('include_prices') ? filter_var($request->input('include_prices'), FILTER_VALIDATE_BOOLEAN) : null,
                 'include_business_name' => $request->input('include_business_name', true),
@@ -451,12 +452,23 @@ class GeneratorController extends Controller
                 'show_event_text' => $showEventText,
             ]);
 
+            $promptData = [
+                'visual_prompt' => $result['visual_prompt'],
+                'suggested_scene' => $result['visual_prompt'],
+                'creative_concept' => $result['creative_concept'],
+                'visual_strategy' => $result['visual_strategy'],
+                'render_style' => $result['render_style'] ?? null,
+                'tagline' => $result['tagline'] ?? null,
+            ];
+
             return response()->json([
                 'success' => true,
                 'tagline' => $result['tagline'] ?? null,
                 'visual_prompt' => $result['visual_prompt'],
                 'creative_concept' => $result['creative_concept'],
                 'visual_strategy' => $result['visual_strategy'],
+                'render_style' => $result['render_style'] ?? null,
+                'prompt' => $promptData,
                 'model' => $result['model'],
                 'usage' => $result['usage'],
                 'message' => 'Visual prompt generated successfully.',

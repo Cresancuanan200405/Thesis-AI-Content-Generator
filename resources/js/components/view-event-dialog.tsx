@@ -87,7 +87,7 @@ export function ViewEventDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[85vh] flex flex-col overflow-hidden rounded-3xl border-border bg-card p-0 shadow-2xl sm:max-w-lg">
+            <DialogContent className="max-h-[85vh] flex flex-col overflow-hidden rounded-card border-border bg-card p-0 shadow-2xl sm:max-w-lg">
                 <DialogHeader className="shrink-0 border-b border-border bg-muted/20 p-5 sm:p-6 pb-4">
                     <div className="flex items-center gap-2.5 min-w-0 pr-6">
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">

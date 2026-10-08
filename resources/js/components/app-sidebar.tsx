@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import {
+    Bell,
     Calendar,
     CalendarDays,
     Images,
@@ -7,6 +8,7 @@ import {
     Megaphone,
     Package,
     Plus,
+    Settings,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
@@ -58,11 +60,11 @@ const mainNavItems: NavItem[] = [
 
 export function AppSidebar() {
     return (
-        <Sidebar collapsible="icon" variant="sidebar">
+        <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader className="gap-3 pb-3">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
+                        <SidebarMenuButton size="lg" asChild className="rounded-xl transition-colors hover:bg-muted/50">
                             <Link href="/dashboard" prefetch>
                                 <AppLogo />
                             </Link>
@@ -73,7 +75,7 @@ export function AppSidebar() {
                 <div className="px-2 group-data-[collapsible=icon]:hidden">
                     <Button
                         asChild
-                        className="w-full justify-start gap-2 rounded-xl bg-foreground font-semibold text-background shadow-sm transition-all hover:bg-foreground/90 active:scale-[0.98]"
+                        className="w-full justify-start gap-2 rounded-xl bg-foreground font-semibold text-background shadow-xs transition-all hover:bg-foreground/90 active:scale-[0.98]"
                         size="sm"
                     >
                         <Link href="/campaigns?create=true">
@@ -88,7 +90,22 @@ export function AppSidebar() {
                 <NavMain items={mainNavItems} />
             </SidebarContent>
 
-            <SidebarFooter>
+            <SidebarFooter className="gap-1 p-2">
+                <SidebarMenu className="gap-1">
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            asChild
+                            tooltip={{ children: 'Settings' }}
+                            className="h-9 rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        >
+                            <Link href="/settings/profile">
+                                <Settings className="h-4 w-4 stroke-[2.2]" />
+                                <span className="text-xs font-semibold">Settings</span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

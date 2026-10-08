@@ -175,9 +175,8 @@ test('B. automatic event selected reaches final production prompt', function () 
     $response->assertOk();
     $lastImagePrompt = $response->json('preview.prompt') ?? ($apiMock->payloads[1]['prompt'] ?? '');
     expect($lastImagePrompt)->not->toBeEmpty();
-    expect($lastImagePrompt)->toContain('EVENT / HOLIDAY VISUAL INFLUENCE:');
     expect($lastImagePrompt)->toContain("National Teachers' Day");
-    expect($lastImagePrompt)->toContain('ROLE: Creative Driver');
+    expect($lastImagePrompt)->toContain("Event visibility:\nAllowed");
 });
 
 // C. show_event_text=true → exact event name permitted
@@ -191,14 +190,13 @@ test('C. show_event_text=true permits exact event name in production prompt', fu
         'product_name' => 'Velvet Espresso Blend',
     ]);
 
-    expect($prompt)->toContain('EVENT TEXT (OPTIONAL COMMERCIAL TYPOGRAPHY): ALLOWED');
-    expect($prompt)->toContain('"National Teachers\' Day" (ALLOWED)');
-    expect($prompt)->toContain('render only "National Teachers\' Day"');
-    expect($prompt)->not->toContain('EVENT TEXT: FORBIDDEN');
+    expect($prompt)->toContain("Event:\nNational Teachers' Day");
+    expect($prompt)->toContain("Event visibility:\nAllowed");
+    expect($prompt)->not->toContain("Event visibility:\nHidden");
 });
 
 // D. show_event_text=false → event name forbidden
-test('D. show_event_text=false strictly forbids literal event name from visible copy', function () {
+test('D. show_event_text=false strictly sets event visibility to hidden', function () {
     $orchestrator = app(ModularPromptOrchestrator::class);
 
     $prompt = $orchestrator->orchestrate([
@@ -208,14 +206,13 @@ test('D. show_event_text=false strictly forbids literal event name from visible 
         'product_name' => 'Velvet Espresso Blend',
     ]);
 
-    expect($prompt)->toContain('EVENT TEXT: FORBIDDEN');
-    expect($prompt)->toContain('STRICT FORBIDDEN TEXT: Do NOT render "National Teachers\' Day"');
-    expect($prompt)->toContain('FORBIDDEN EVENT TEXT: Do not render the event/holiday name as visible text');
-    expect($prompt)->not->toContain('EVENT TEXT (OPTIONAL COMMERCIAL TYPOGRAPHY): ALLOWED');
+    expect($prompt)->toContain("Event:\nNational Teachers' Day");
+    expect($prompt)->toContain("Event visibility:\nHidden");
+    expect($prompt)->not->toContain("Event visibility:\nAllowed");
 });
 
 // E. show_event_text=false → event visual influence remains
-test('E. show_event_text=false retains full event visual influence', function () {
+test('E. show_event_text=false retains full event context and visibility toggle', function () {
     $orchestrator = app(ModularPromptOrchestrator::class);
 
     $prompt = $orchestrator->orchestrate([
@@ -225,11 +222,9 @@ test('E. show_event_text=false retains full event visual influence', function ()
         'product_name' => 'Velvet Espresso Blend',
     ]);
 
-    expect($prompt)->toContain('EVENT / HOLIDAY VISUAL INFLUENCE:');
-    expect($prompt)->toContain("National Teachers' Day");
-    expect($prompt)->toContain('ROLE: Creative Driver');
-    expect($prompt)->toContain('Visual Influence Rule: The event/holiday ALWAYS directs scene mood, environment, atmosphere, props, materials, lighting, and visual storytelling');
-    expect($prompt)->toContain('Retain all event visual styling, props, materials, colors, and celebratory atmosphere');
+    expect($prompt)->toContain("Event:\nNational Teachers' Day");
+    expect($prompt)->toContain("Event visibility:\nHidden");
+    expect($prompt)->toContain('Velvet Espresso Blend');
 });
 
 // F. Event does not become an invented slogan
@@ -245,8 +240,9 @@ test('F. event does not become an invented slogan when show_event_text=false', f
         'product_name' => 'Velvet Espresso Blend',
     ]);
 
-    expect($prompt)->toContain('STRICT FORBIDDEN TEXT: Do NOT render "National Teachers\' Day", any shortened holiday name, or any event-derived slogans as visible text in the artwork');
-    expect($prompt)->toContain('TAGLINE:');
+    expect($prompt)->toContain("Event:\nNational Teachers' Day");
+    expect($prompt)->toContain("Event visibility:\nHidden");
+    expect($prompt)->toContain('Tagline:');
     expect($prompt)->toContain('"Crafted for Excellence"');
 });
 
@@ -278,11 +274,10 @@ test('G. event influences automatic multi-product staging', function () {
     $response->assertOk();
     $preview = $response->json('preview');
     expect($preview['show_event_text'])->toBeFalse();
-    expect($preview['prompt'])->toContain('MULTI-PRODUCT SPATIAL COMPOSITION');
     expect($preview['prompt'])->toContain('Lavender Latte');
     expect($preview['prompt'])->toContain('Caramel Macchiato');
     expect($preview['prompt'])->toContain("National Teachers' Day");
-    expect($preview['prompt'])->toContain('EVENT TEXT: FORBIDDEN');
+    expect($preview['prompt'])->toContain("Event visibility:\nHidden");
 });
 
 // H. Event influence works across industries
@@ -298,15 +293,14 @@ test('H. event influence works across industries (Cafe, Beauty, Fashion)', funct
     foreach ($industries as $item) {
         $prompt = $orchestrator->orchestrate([
             'generation_mode' => 'automatic',
-            'business' => (object) ['industry' => $item['industry'], 'category' => 'Retail'],
+            'business' => (object) ['name' => 'Demo Co', 'industry' => $item['industry'], 'category' => 'Retail'],
             'product_name' => $item['product'],
             'event_name' => "Mother's Day",
             'show_event_text' => false,
         ]);
 
         expect($prompt)->toContain("Mother's Day");
-        expect($prompt)->toContain('EVENT TEXT: FORBIDDEN');
-        expect($prompt)->toContain('EVENT / HOLIDAY VISUAL INFLUENCE:');
+        expect($prompt)->toContain("Event visibility:\nHidden");
         expect($prompt)->toContain($item['product']);
     }
 });
@@ -330,7 +324,7 @@ test('I. custom events work with automatic creative direction and prompt orchest
     ]);
 
     expect($promptWithText)->toContain("Founder's 10th Anniversary Jubilee");
-    expect($promptWithText)->toContain('EVENT TEXT (OPTIONAL COMMERCIAL TYPOGRAPHY): ALLOWED');
+    expect($promptWithText)->toContain("Event visibility:\nAllowed");
 
     $promptWithoutText = $orchestrator->orchestrate([
         'generation_mode' => 'automatic',
@@ -340,8 +334,7 @@ test('I. custom events work with automatic creative direction and prompt orchest
     ]);
 
     expect($promptWithoutText)->toContain("Founder's 10th Anniversary Jubilee");
-    expect($promptWithoutText)->toContain('EVENT TEXT: FORBIDDEN');
-    expect($promptWithoutText)->toContain('STRICT FORBIDDEN TEXT: Do NOT render "Founder\'s 10th Anniversary Jubilee"');
+    expect($promptWithoutText)->toContain("Event visibility:\nHidden");
 });
 
 // J. Automatic remains one-click
@@ -435,7 +428,7 @@ test('L. manual event semantics remain completely unchanged', function () {
         'show_event_text' => true,
         'product_name' => 'Rose Radiance Serum',
     ]);
-    expect($manualPromptTrue)->toContain('EVENT TEXT (OPTIONAL COMMERCIAL TYPOGRAPHY): ALLOWED');
+    expect($manualPromptTrue)->toContain('Event visibility: Allowed');
     expect($manualPromptTrue)->toContain("National Teachers' Day");
 
     // Manual with show_event_text = false
@@ -445,7 +438,7 @@ test('L. manual event semantics remain completely unchanged', function () {
         'show_event_text' => false,
         'product_name' => 'Rose Radiance Serum',
     ]);
-    expect($manualPromptFalse)->toContain('EVENT TEXT: FORBIDDEN');
-    expect($manualPromptFalse)->toContain('EVENT / HOLIDAY VISUAL INFLUENCE:');
+    expect($manualPromptFalse)->toContain('Event visibility: Hidden');
+    expect($manualPromptFalse)->toContain('FORBIDDEN EVENT TEXT');
     expect($manualPromptFalse)->toContain("National Teachers' Day");
 });

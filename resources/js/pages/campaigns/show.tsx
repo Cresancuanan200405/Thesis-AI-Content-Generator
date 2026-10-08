@@ -12,6 +12,7 @@ import { AttachExistingDesignsModal } from './components/show/AttachExistingDesi
 import { CampaignCompactContext } from './components/show/CampaignCompactContext';
 import { CampaignDesignsSection } from './components/show/CampaignDesignsSection';
 import { CampaignHeader } from './components/show/CampaignHeader';
+import { CreateDesignSelectionModal } from './components/show/CreateDesignSelectionModal';
 import { DeleteCampaignModal } from './components/show/DeleteCampaignModal';
 import { DeleteDesignModal } from './components/show/DeleteDesignModal';
 import { EditCampaignModal } from './components/show/EditCampaignModal';
@@ -36,6 +37,7 @@ export default function CampaignShowPage({
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [isAttachExistingOpen, setIsAttachExistingOpen] = useState(false);
+    const [isCreateDesignOpen, setIsCreateDesignOpen] = useState(false);
 
     // Image Viewer & Design Action states
     const [previewDesign, setPreviewDesign] = useState<CampaignDesign | null>(null);
@@ -178,6 +180,7 @@ export default function CampaignShowPage({
                     {/* 1. CAMPAIGN HEADER */}
                     <CampaignHeader
                         campaign={campaign}
+                        onCreateDesign={() => setIsCreateDesignOpen(true)}
                         onEdit={() => setIsEditOpen(true)}
                         onDownloadAll={handleDownloadAll}
                         onArchive={handleArchive}
@@ -192,6 +195,7 @@ export default function CampaignShowPage({
                     <CampaignDesignsSection
                         campaign={campaign}
                         hasAvailableDesigns={available_designs.length > 0}
+                        onCreateDesign={() => setIsCreateDesignOpen(true)}
                         onOpenAttachExisting={() => setIsAttachExistingOpen(true)}
                         onOpenViewer={openPreview}
                         onFinalize={handleFinalize}
@@ -271,6 +275,12 @@ export default function CampaignShowPage({
                 onClose={() => setIsAttachExistingOpen(false)}
                 campaign={campaign}
                 availableDesigns={available_designs}
+            />
+
+            <CreateDesignSelectionModal
+                isOpen={isCreateDesignOpen}
+                onClose={() => setIsCreateDesignOpen(false)}
+                campaign={campaign}
             />
         </>
     );

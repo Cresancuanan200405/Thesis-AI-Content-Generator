@@ -10,10 +10,10 @@ import {
     Coins,
     Cpu,
     Hash,
+    ImageIcon,
     Info,
     Monitor,
     Moon,
-    Sparkles,
     Sun,
 } from 'lucide-react';
 import * as React from 'react';
@@ -195,7 +195,7 @@ export function AppSidebarHeader({
     const CurrentIcon = currentTheme.icon;
 
     return (
-        <header className="sticky top-0 z-30 flex h-11 items-center justify-between gap-3 border-b border-border/60 bg-background/65 px-3 backdrop-blur-xl transition-[width,height] ease-linear sm:h-12 sm:px-5 dark:bg-background/55">
+        <header className="sticky top-0 z-40 flex h-11 items-center justify-between gap-3 border-b border-border/80 bg-background/90 px-3 backdrop-blur-xl transition-[width,height] ease-linear sm:h-12 sm:px-5 dark:bg-background/90 md:rounded-t-[22px]">
             {/* =============================================================
                 LEFT SIDE
             ============================================================= */}
@@ -363,13 +363,13 @@ export function AppSidebarHeader({
                             {/* 4. AI ACTIVITY (3 Compact Metrics) */}
                             <div className="space-y-1.5">
                                 <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
-                                    AI Activity
+                                    Creative Activity
                                 </span>
                                 <div className="grid grid-cols-3 gap-2">
                                     <div className="rounded-xl border border-border/70 bg-muted/20 p-2.5 text-center">
                                         <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground">
-                                            <Sparkles className="h-3 w-3 text-primary" />
-                                            <span>AI Images</span>
+                                            <ImageIcon className="h-3 w-3 text-primary" />
+                                            <span>Designs</span>
                                         </div>
                                         <p className="mt-1 font-mono text-xs font-bold text-foreground">
                                             {totalGenerations}
@@ -445,7 +445,7 @@ export function AppSidebarHeader({
                             <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 p-3">
                                 <div className="flex items-center gap-2.5">
                                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                        <Sparkles className="h-3.5 w-3.5" />
+                                        <Cpu className="h-3.5 w-3.5" />
                                     </div>
                                     <div>
                                         <span className="text-[10px] font-semibold text-muted-foreground">

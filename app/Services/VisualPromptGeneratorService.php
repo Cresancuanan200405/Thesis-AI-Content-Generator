@@ -21,9 +21,11 @@ class VisualPromptGeneratorService
         protected OpenAIModelRegistry $modelRegistry,
         protected ?IndustryCategoryArtDirectionService $artDirectionService = null,
         protected ?MarketingDesignSystem $designSystem = null,
+        protected ?ReferenceImageAnalyzer $referenceAnalyzer = null,
     ) {
         $this->artDirectionService = $artDirectionService ?? app(IndustryCategoryArtDirectionService::class);
         $this->designSystem = $designSystem ?? app(MarketingDesignSystem::class);
+        $this->referenceAnalyzer = $referenceAnalyzer ?? app(ReferenceImageAnalyzer::class);
     }
 
     /**
@@ -110,7 +112,7 @@ class VisualPromptGeneratorService
                     ],
                     'visual_prompt' => [
                         'type' => 'string',
-                        'description' => 'The complete, production-ready visual marketing prompt describing product staging, scene lighting, composition, environment, festive/campaign accents, and atmosphere for image generation.',
+                        'description' => 'A concise (40–90 words) commercial creative visual concept describing the setting, atmosphere, mood, and visual world around the product. Connects Campaign, Event, Product, and product visual identity without camera/lens instructions, lighting recipes, exact composition, text zones, or invented product features.',
                     ],
                 ];
 
@@ -127,7 +129,7 @@ class VisualPromptGeneratorService
                     ],
                     'visual_prompt' => [
                         'type' => 'string',
-                        'description' => 'The complete, production-ready visual marketing prompt describing product staging, scene lighting, composition, environment, festive/campaign accents, and atmosphere for image generation.',
+                        'description' => 'A concise (40–90 words) commercial creative visual concept describing the setting, atmosphere, mood, and visual world around the product. Connects Campaign, Event, Product, and product visual identity without camera/lens instructions, lighting recipes, exact composition, text zones, or invented product features.',
                     ],
                 ];
 
@@ -221,24 +223,49 @@ class VisualPromptGeneratorService
             $requiredFields = array_merge($requiredFields, array_keys($designProperties));
         } else {
             // MANUAL MODE: AI Creative Director for the VISUAL SCENE only.
+            $visionBlueprint = $options['vision_blueprint'] ?? null;
+            if (! $visionBlueprint && $this->referenceAnalyzer) {
+                $imagePathToAnalyze = $options['reference_image_path'] ?? null;
+                if (! $imagePathToAnalyze && ! empty($options['catalog_products'])) {
+                    foreach ($options['catalog_products'] as $p) {
+                        $imgPath = is_array($p) ? ($p['image_path'] ?? null) : ($p->image_path ?? null);
+                        if (! empty($imgPath)) {
+                            $imagePathToAnalyze = $imgPath;
+                            break;
+                        }
+                    }
+                }
+                if (! $imagePathToAnalyze && ! empty($options['product']) && is_object($options['product'])) {
+                    $imagePathToAnalyze = $options['product']->image_path ?? null;
+                }
+                if ($imagePathToAnalyze) {
+                    $visionBlueprint = $this->referenceAnalyzer->analyze($imagePathToAnalyze);
+                }
+            }
+
             $systemInstructions = $this->buildManualSystemInstructions($options, $requiresAiTagline);
-            $userContext = $this->buildManualContextPayload($campaign, $business, $options, $previousConcepts);
+            $userContext = $this->buildManualContextPayload($campaign, $business, $options, $previousConcepts, $visionBlueprint);
 
             $schemaProperties = [
                 'creative_concept' => [
                     'type' => 'string',
-                    'description' => 'A clear, evocative title of the core creative idea (e.g., "Travertine Gift Sanctuary", "Minimalist Pastel Harmony").',
+                    'description' => 'A clear, evocative title of the core creative idea (3–6 words).',
                 ],
                 'visual_strategy' => [
                     'type' => 'string',
-                    'description' => 'Concise explanation (1-2 sentences) of how the composition, lighting, and materials stage the product and reflect the design treatment.',
+                    'description' => 'Concise 1-sentence summary of the visual atmosphere and mood.',
                 ],
                 'visual_prompt' => [
                     'type' => 'string',
-                    'description' => 'A concise (60-130 words) natural-language visual scene prompt describing the environment, materials, multi-product spatial arrangement, composition, lighting, and atmosphere. Does not include raw prices, taglines, business names, or technical prompt syntax.',
+                    'description' => 'A concise (40–90 words) creative visual concept describing the setting, atmosphere, mood, and visual environment. Does not include headlines, slogans, claims, prices, typography instructions, badges, or exact layout coordinates.',
+                ],
+                'render_style' => [
+                    'type' => 'string',
+                    'enum' => MarketingDesignSystem::RENDER_STYLES,
+                    'description' => 'The recommended canonical commercial render style for this visual scene: Studio Product Still, Cinematic Marketing, Lifestyle Capture, or Minimalist Graphic.',
                 ],
             ];
-            $requiredFields = ['creative_concept', 'visual_strategy', 'visual_prompt'];
+            $requiredFields = ['creative_concept', 'visual_strategy', 'visual_prompt', 'render_style'];
 
             if ($requiresAiTagline) {
                 $schemaProperties['tagline'] = [
@@ -749,7 +776,7 @@ AUTOMATIC CREATIVE DECISION HIERARCHY (STRICT PRIORITY):
 5. PRODUCT / SERVICE (AUTHORITATIVE): The selected product/service is authoritative. Ground the scene in its physical reality without hallucinating fake claims, invented prices, fake certifications, or unsupported discounts.
 6. CREATIVE CONCEPT: Formulate a genuine advertising idea and title (e.g., "The Gratitude Desk", "Morning Radiance Awakening"), not merely repeating the holiday name.
 7. VISUAL STRATEGY: Explain how the event, campaign objective, industry conventions, lighting, and composition visually express the concept.
-8. PRODUCTION VISUAL PROMPT: Formulate the complete, high-fidelity visual scene description for image generation.
+8. PRODUCTION VISUAL PROMPT: Formulate a concise creative visual concept (40–90 words) describing the visual world, atmosphere, and setting around the product without technical art-direction recipes (no camera/lens recipes, no text zones, no exact coordinates).
 9. ASPECT RATIO & CANVAS: Adapt composition, spatial depth, and safe areas to the requested aspect ratio format.
 
 SHARED CREATIVE SYSTEM DIRECTIVES:
@@ -784,7 +811,7 @@ Output Format:
 You must return a JSON object adhering to the schema with three keys:
 1. "creative_concept": A clear, evocative title and summary of the core creative idea (e.g., "Quiet Café Morning Appreciation").
 2. "visual_strategy": The rationale explaining how the event, industry conventions, lighting, and composition elevate the hero product.
-3. "visual_prompt": The complete, high-fidelity visual prompt for commercial image generation.
+3. "visual_prompt": A concise (40–90 words) creative visual concept describing the setting, atmosphere, and visual world around the product.
 Do not include commentary or Markdown formatting outside the JSON object.
 INSTRUCTIONS;
         }
@@ -804,7 +831,7 @@ AUTOMATIC CREATIVE DECISION HIERARCHY (STRICT PRIORITY):
 6. ORIGINAL CAMPAIGN TAGLINE: Formulate an original, punchy, commercially viable, and event-aware tagline.
 7. CREATIVE CONCEPT: Formulate a genuine advertising idea and title (e.g., "The Gratitude Desk", "Morning Radiance Awakening"), not merely repeating the holiday name.
 8. VISUAL STRATEGY: Explain how the event, campaign objective, industry conventions, lighting, and composition visually express the concept.
-9. PRODUCTION VISUAL PROMPT: Formulate the complete, high-fidelity visual scene description for image generation.
+9. PRODUCTION VISUAL PROMPT: Formulate a concise creative visual concept (40–90 words) describing the visual world, atmosphere, and setting around the product without technical art-direction recipes (no camera/lens recipes, no text zones, no exact coordinates).
 10. ASPECT RATIO & CANVAS: Adapt composition, spatial depth, and safe areas to the requested aspect ratio format.
 
 SHARED CREATIVE SYSTEM DIRECTIVES:
@@ -845,7 +872,7 @@ You must return a JSON object adhering to the schema with four keys:
 1. "tagline": The concise, original marketing tagline.
 2. "creative_concept": A clear, evocative title and summary of the core creative idea (e.g., "Quiet Café Morning Appreciation").
 3. "visual_strategy": The rationale explaining how the event, industry conventions, lighting, and composition elevate the hero product.
-4. "visual_prompt": The complete, high-fidelity visual prompt for commercial image generation.
+4. "visual_prompt": A concise (40–90 words) creative visual concept describing the setting, atmosphere, and visual world around the product.
 Do not include commentary or Markdown formatting outside the JSON object.
 INSTRUCTIONS;
         }
@@ -900,95 +927,33 @@ INSTRUCTIONS;
      *
      * @param  array<string, mixed>  $options
      */
-    public function buildManualSystemInstructions(array $options, bool $requiresAiTagline = false): string
+    public function buildManualSystemInstructions(array $options = [], bool $requiresAiTagline = false): string
     {
         $instructions = <<<'INSTRUCTIONS'
-You are MarketPilot's AI Creative Director for Manual Mode Visual Scene Staging.
+You are a visual concept assistant for a marketing image generator. Your role is to generate a concise creative visual concept (approximately 40–90 words) that connects:
+1. Campaign
+2. Campaign Event / Holiday / Occasion (when present)
+3. Selected Product Name
+4. Actual Selected Product Image (observed visual identity)
+5. Optional User Creative Direction (if supplied)
 
-OBJECTIVE:
-Your sole role is to conceive a concise, evocative, natural-language VISUAL SCENE PROMPT (approximately 60–130 words) describing the physical visual world for downstream commercial marketing image generation.
+Core question to answer: "What kind of visual world should this campaign create around the supplied product?"
 
-You are directing the VISUAL SCENE ONLY. You are NOT generating a technical production prompt or final layout rules.
+Create a concise visual concept from the supplied business, product, campaign, event, render style, and user direction. Describe the atmosphere, setting, and overall visual idea. Treat the user's direction as a concept, not a rigid layout. Do not write headlines, slogans, product claims, feature copy, prices, product names, event text, typography instructions, camera specifications, or exact layout instructions. Do not invent marketing claims or promotional elements. Give the image model creative freedom to execute the strongest composition. Keep the result concise.
 
-CORE MARKETPILOT CONSTRAINTS:
-- PRESERVE PRODUCT IDENTITY: The supplied product image and identity are authoritative. Describe environmental staging, lighting, composition, and festive/promotional atmosphere around the product without reconstructing or altering the product itself.
-- STRICT LOGO RESTRICTION: Do NOT generate, invent, draw, or add any logo, emblem, brand mark, icon, watermark, cup logo, café emblem, crown, badge, fake certification mark, or social media badge anywhere in the artwork.
-- BUSINESS NAME AS TYPOGRAPHY ONLY: If business name is enabled, it is handled downstream as typography only. Never describe it as a logo or inside an invented brand mark.
-
-TARGET VISUAL SCENE OUTPUT FORMAT & VOICE:
-- Length: approximately 60–130 words.
-- Structure: A single, beautifully crafted natural-language paragraph reading like an inspiring commercial art-director brief.
-- Tone: Professional commercial photography / advertising creative direction.
-- Focus strictly on: scene world, environment setting, background materials/surfaces, multi-product spatial arrangement, composition, lighting, festive/event props, and overall atmosphere.
-- FORBIDDEN IN THE OUTPUT:
-  * NO raw prices, currency symbols, or discount percentages (e.g., do NOT say "₱180" or "$50").
-  * NO tagline slogans, quotes, or marketing claims (handled downstream).
-  * NO business name, shop name, or logo descriptions (handled downstream).
-  * NO technical prompt syntax, aspect ratio codes, resolution metrics, quality keywords, or camera lens specs (e.g., do NOT write "1:1", "--ar", "8k", "safe margins").
-  * NO taxonomy IDs, JSON, internal system terminology, or validation rules.
-
-CREATIVE PRINCIPLES & DIMENSIONS:
-
-1. TRANSLATE DESIGN TREATMENT INTO CONCRETE VISUAL DECISIONS:
-   - MINIMAL: Clean geometry, restrained architectural props, ample negative space, simple matte materials, and uncluttered composition.
-   - EDITORIAL: Asymmetry, magazine-like styling, sophisticated surfaces, unusual scale relationships, artful cropping, and elevated spatial hierarchy.
-   - BOLD PROMO: Stronger contrast, dynamic color blocking, energetic diagonals, and clear negative space structured for promotional impact.
-   - PREMIUM: Refined luxury materials (polished marble, travertine, brass, crystal glass), controlled sculptural highlights, elegant staging, and sophisticated atmosphere.
-   - CLASSIC: Balanced, timeless commercial setting, polished pedestal surfaces, harmonious lighting, and restrained visual language.
-
-2. TRANSLATE COPY EMPHASIS INTO SPATIAL COMPOSITION:
-   - PRICE-FIRST: Stage the scene to provide clear, high-contrast negative space or a clean foreground surface where price elements can easily live without crowding the product.
-   - PRODUCT-FIRST: Give the product dominant central scale and focal authority, keeping environmental elements supportive and subordinate.
-   - TAGLINE-FIRST: Provide generous upper or background negative space (e.g. clean architectural wall or open sky/gradient) suitable for a prominent headline.
-   - BALANCED: Establish comfortable visual harmony with balanced breathing room around the product and negative space zones.
-
-3. TRANSLATE RENDER STYLE INTO VISUAL LANGUAGE:
-   - Studio Product Still: Controlled studio product photography, clean backdrop, flawless reflections, precision commercial lighting.
-   - Cinematic Marketing: Dramatic atmospheric depth, volumetric light shafts, directional shadows, cinematic mood.
-   - Editorial Campaign: Magazine spread visual language, artful composition, curated styling, contemporary textures.
-   - Lifestyle Commercial: Contextual real-world environment, authentic physical setting, lived-in warmth.
-
-4. TRANSLATE VISUAL THEMES AND BRAND TONES:
-   - Ground abstract tones into physical materials:
-     * Premium/Luxury → marble, travertine, translucent glass, polished stone, velvet, controlled caustics.
-     * Modern/Minimalist → smooth concrete, architectural curves, geometric pedestals, clean acrylic.
-     * Natural/Organic → untreated timber, river stones, botanical greenery, dewy moss, linen.
-     * Bold/Vibrant → saturated color blocking, stark shadows, dynamic backdrops.
-     * Warm/Approachable → soft morning sunlight, warm terracotta, blonde wood, cozy ambiance.
-
-5. MULTI-PRODUCT SPATIAL RELATIONSHIPS (CRITICAL):
-   - When 2 or more products are selected, NEVER generate a plain side-by-side row (do NOT say "products arranged side by side").
-   - Explicitly establish a dynamic spatial relationship between the products:
-     * Hero + supporting: One primary hero product elevated on a raised block while secondary products flank or rest on a lower tier.
-     * Staggered depth: Primary product in crisp foreground focus with companion items layered behind at differing depths.
-     * Diagonal progression: Products arranged along a dynamic diagonal line on stepped pedestals.
-     * Tiered pedestals / multi-level blocks: Varied surface heights giving each item distinct vertical clearance.
-     * Asymmetric or clustered grouping: Natural, editorial grouping with deliberate spacing and breathing room.
-
-6. EVENT / HOLIDAY AS VISUAL STORYTELLING:
-   - The selected event/holiday ALWAYS influences visual storytelling (atmosphere, props, materials, festive styling, lighting).
-   - The toggle "Show Event/Holiday Text" controls ONLY whether the event name may appear as visible typography.
-   - Even when event text is hidden (show_event_text = false), the event's visual influence, props, and mood MUST remain fully active.
-   - Use the linked campaign event/holiday as creative inspiration for atmospheric props, seasonal textures, and mood (e.g., rolled diploma with satin ribbon for Teachers' Day; botanical blossoms for Spring; gift boxes and festive lights for Holidays).
-   - NEVER turn the event name into visible headline copy or banner text in the scene description.
-
-7. VISUAL DIVERSITY & ANTI-REPETITION:
-   - Each suggestion must feel like a fresh creative exploration.
-   - Actively vary combinations of background styles (clean white, full black, dark gradient, dual-tone split, pastel color block, monochrome, translucent architectural, textured stone, botanical, sunlit interior, cinematic dark), compositions, lighting moods, and prop profiles.
-   - Review the provided PREVIOUS SUGGESTIONS and intentionally explore an alternative visual direction.
-
-8. RESPECT USER-AUTHORED SEED PROMPTS:
-   - If the user provides an explicit creative direction, honour their vision! Refine and elevate their specific scene, materials, and lighting rather than reverting to a generic studio default.
-
-OUTPUT SCHEMA REQUIREMENT:
-Return a valid JSON object strictly matching the schema with:
-- "creative_concept": Short evocative concept title (3–6 words).
-- "visual_strategy": 1–2 sentences summarizing the visual hierarchy, lighting approach, and event integration.
-- "visual_prompt": The concise 60–130 word natural-language visual scene prompt.
+CORE RULES:
+• Meaningful Campaign & Event Connection: The visual concept MUST be meaningfully related to the campaign and, when present, its event. Do NOT produce generic visual concepts that could apply to any campaign. The campaign and event must influence the atmosphere, creative context, mood, or visual character.
+• Event Visibility Semantics: The toggle "Show Event/Holiday Text" controls typography. When Event visibility is Hidden, do NOT display the event name or slogans as visible text; let the event influence only the visual atmosphere and festive mood. When Event visibility is Allowed, event typography is permitted downstream. NEVER turn the event name into visible headline copy or promotional artwork.
+• Product Image Fidelity & Anti-Hallucination: The actual product image is the primary visual reference; the product name is semantic/contextual information. You may analyze the supplied product image to understand its visible visual identity, but you must NEVER invent physical product characteristics that are not supported by the image or factual product data. Do NOT invent containers, cups, bottles, packaging, steam, ingredients, materials, shapes, props, or product accessories unless they are clearly visible in the supplied product image or explicitly requested by the user.
+• Creative Direction: If the user supplied a creative direction, preserve their core idea faithfully. Do not replace it and do not expand it into technical art direction.
+• Composition: Do NOT generate exact layout instructions, text zones, pricing zones, headline areas, negative-space instructions, left/right/top/bottom coordinates, exact product positioning, split backgrounds, camera angles, lenses, apertures, photography recipes, or typography systems.
+• Render Style: Do NOT duplicate or redefine Render Style. Render Style is supplied separately to the image generator.
+• Marketing Copy: Do NOT invent marketing claims, promotional slogans, feature badges, icons, or additional copy.
+• Output Size: Approximately 40–90 words.
 INSTRUCTIONS;
 
         if ($requiresAiTagline) {
-            $instructions .= "\n- \"tagline\": A concise, punchy marketing tagline (3-8 words) aligned with the business and event context.";
+            $instructions .= "\n- \"tagline\": A concise, punchy marketing tagline (3-8 words) aligned with the business and event context. Do not invent fake claims or discounts.";
         }
 
         return $instructions;
@@ -999,183 +964,140 @@ INSTRUCTIONS;
      *
      * @param  array<string, mixed>  $options
      * @param  array<int, string>  $previousConcepts
+     * @param  array<string, mixed>|null  $visionBlueprint
      */
     public function buildManualContextPayload(
         Campaign $campaign,
         ?Business $business,
         array $options,
-        array $previousConcepts = []
+        array $previousConcepts = [],
+        ?array $visionBlueprint = null
     ): string {
         $sections = [];
 
-        // 1. Business Profile Context
+        // 1. Business
         if ($business) {
             $bizLines = [
-                'BUSINESS CONTEXT:',
-                '- Business Name: '.$business->name,
-                '- Industry: '.($business->industry ?: 'Commercial'),
-                '- Category: '.($business->category ?: 'General'),
+                'BUSINESS:',
+                '- Name: '.$business->name,
+                '- Industry & Category: '.($business->industry ?: 'General').' / '.($business->category ?: 'General'),
             ];
             if (! empty($business->description)) {
-                $bizLines[] = '- Business Summary: '.$business->description;
-            }
-            if (! empty($business->unique_selling_point)) {
-                $bizLines[] = '- USP: '.$business->unique_selling_point;
-            }
-            if (! empty($business->target_audience)) {
-                $bizLines[] = '- Target Audience: '.$business->target_audience;
+                $bizLines[] = '- Character: '.trim($business->description);
             }
             $sections[] = implode("\n", $bizLines);
         }
 
-        // 2. Campaign Context
+        // 2. Campaign
         $campaignLines = [
-            'CAMPAIGN CONTEXT:',
-            '- Campaign Name: '.$campaign->name,
-            '- Campaign Objective: '.($campaign->objective ?: 'Product Promotion and Brand Engagement'),
+            'CAMPAIGN:',
+            '- Name: '.$campaign->name,
         ];
-        if (! empty($campaign->target_audience)) {
-            $campaignLines[] = '- Campaign Target Audience: '.$campaign->target_audience;
+        if (! empty($campaign->objective)) {
+            $campaignLines[] = '- Objective: '.$campaign->objective;
         }
         $sections[] = implode("\n", $campaignLines);
 
-        // 3. Linked Campaign Event / Holiday (Visual Influence is ALWAYS ACTIVE)
+        // 3. Event / Holiday Context (Contextual Inspiration Only)
         $event = $options['event'] ?? (! empty($options['event_id']) ? Event::query()->where('id', $options['event_id'])->first() : $campaign->event);
-        $eventLines = ['CAMPAIGN EVENT / OCCASION:'];
         if ($event) {
             $showEventText = array_key_exists('show_event_text', $options)
                 ? filter_var($options['show_event_text'], FILTER_VALIDATE_BOOLEAN)
                 : true;
 
-            $eventLines[] = '- Event Name: '.$event->name;
-            if ($event->date) {
-                $eventLines[] = '- Event Date: '.$event->date->format('F d, Y');
+            $eventLines = [
+                'EVENT / OCCASION:',
+                "- Name: {$event->name}",
+            ];
+            if ($event->description || $event->long_weekend_details) {
+                $eventLines[] = '- Context: '.($event->description ?: $event->long_weekend_details);
             }
-            if ($event->type) {
-                $eventLines[] = '- Event Type: '.$event->type;
-            }
-            if ($event->long_weekend_details || $event->description) {
-                $eventLines[] = '- Event Atmosphere / Visual Context: '.($event->long_weekend_details ?: $event->description);
-            }
-            $eventLines[] = '• Visual Influence: ALWAYS ACTIVE. The event ALWAYS inspires the visual scene, atmosphere, props, materials, color direction, and festive storytelling around the product.';
+            $eventLines[] = '• Visual Influence: ALWAYS ACTIVE. Use for subtle atmospheric mood and festive energy only.';
             if (! $showEventText) {
-                $eventLines[] = '• Show Event Text: FALSE (Event name text is FORBIDDEN). Focus purely on atmospheric visual storytelling and thematic props (e.g. stationery, ribbons, diploma scrolls for Teachers\' Day) without including or describing the event title as visible text.';
+                $eventLines[] = '• Show Event Text: FALSE (Event name text is FORBIDDEN). Focus purely on atmospheric visual storytelling without visible event text, badges, shopping bags, or banners.';
             } else {
-                $eventLines[] = '• Show Event Text: TRUE (Event name typography is ALLOWED downstream if suitable). Focus scene prompt on visual world and props.';
+                $eventLines[] = '• Show Event Text: TRUE (Event name typography is ALLOWED downstream if suitable). Do not invent slogans.';
             }
-            $eventLines[] = '• Visual Guidance: Use this occasion for thematic props, subtle festive styling, and celebratory mood. Do NOT use the event name as headline copy.';
+            $eventLines[] = '• Guidance: Do NOT use the event name as headline copy.';
+            $sections[] = implode("\n", $eventLines);
         } else {
-            $eventLines[] = '- None linked. Focus purely on timeless brand and product aesthetics.';
+            $sections[] = "EVENT / OCCASION:\n- Name: None\n• Event visibility: Hidden";
         }
-        $sections[] = implode("\n", $eventLines);
 
-        // 4. Products Context (With Explicit Product Count and Multi-Product Arrangement Guidance)
-        $productLines = ['PRODUCTS TO STAGE IN THE SCENE:'];
+        // 4. Products & Product Image
         $catalogProducts = $options['catalog_products'] ?? [];
         $customProducts = $options['custom_products'] ?? [];
-
-        $totalProductCount = (is_countable($catalogProducts) ? count($catalogProducts) : 0)
-            + (is_countable($customProducts) ? count($customProducts) : 0);
-
-        if ($totalProductCount === 0 && ! empty($options['product_name'])) {
-            $totalProductCount = 1;
-        }
-
-        $productLines[] = "- Total Product Count: {$totalProductCount}";
+        $productLines = ['PRODUCTS:'];
+        $hasImageReference = false;
 
         if (! empty($catalogProducts)) {
-            $productLines[] = '• Selected Catalog Products:';
             foreach ($catalogProducts as $prod) {
                 $pName = is_array($prod) ? ($prod['name'] ?? 'Product') : $prod->name;
                 $pDesc = is_array($prod) ? ($prod['description'] ?? null) : $prod->description;
-                $pPrice = is_array($prod) ? ($prod['price'] ?? null) : $prod->price;
+                $imgPath = is_array($prod) ? ($prod['image_path'] ?? null) : ($prod->image_path ?? null);
 
-                $line = "  - {$pName}";
-                if ($pPrice !== null && $pPrice !== '') {
-                    $formattedPrice = is_numeric($pPrice) ? '₱'.number_format((float) $pPrice, 2) : (string) $pPrice;
-                    $line .= " (Catalog Price: {$formattedPrice})";
-                }
+                $line = "- {$pName}";
                 if (! empty($pDesc)) {
-                    $line .= " — {$pDesc}";
+                    $line .= " ({$pDesc})";
                 }
                 $productLines[] = $line;
-            }
-        }
 
-        if (! empty($customProducts) && is_array($customProducts)) {
-            $productLines[] = '• Custom Products:';
-            foreach ($customProducts as $cProd) {
-                if (! empty($cProd['name'])) {
-                    $cLine = "  - {$cProd['name']}";
-                    if (! empty($cProd['price'])) {
-                        $cLine .= " (Price: {$cProd['price']})";
-                    }
-                    $productLines[] = $cLine;
+                if (! empty($imgPath)) {
+                    $hasImageReference = true;
+                    $productLines[] = "  • Product Image: Attached reference image ({$imgPath})";
                 }
             }
         }
-
-        if ($totalProductCount === 0) {
-            $productLines[] = '• Featured Product: '.(is_string($options['product_name'] ?? null) ? $options['product_name'] : 'Featured Product');
+        if (! empty($customProducts) && is_array($customProducts)) {
+            foreach ($customProducts as $cProd) {
+                if (! empty($cProd['name'])) {
+                    $productLines[] = "- {$cProd['name']}";
+                }
+            }
+        }
+        if (count($productLines) === 1) {
+            $singleProd = is_string($options['product_name'] ?? null) ? $options['product_name'] : 'Featured Product';
+            $productLines[] = "- {$singleProd}";
         }
 
-        if ($totalProductCount > 1) {
-            $productLines[] = '• MULTI-PRODUCT DIRECTIVE: You MUST describe a deliberate, tiered, staggered, or asymmetric spatial arrangement for all selected products. NEVER place them in a flat side-by-side row.';
+        if (! empty($visionBlueprint['product_identity']) || ! empty($visionBlueprint['product_physical_details'])) {
+            $observed = trim(($visionBlueprint['product_identity'] ?? '').' '.($visionBlueprint['product_physical_details'] ?? ''));
+            $productLines[] = "• Observed Visual Identity from Product Image:\n  \"{$observed}\"";
+            $productLines[] = '• Product Image Rule: The supplied product image is the primary visual reference. Only depict physical characteristics visible in the image or factual product data. Do NOT invent containers, cups, bottles, packaging, steam, ingredients, materials, shapes, props, or accessories not present in the image or explicitly requested by the user.';
+        } elseif ($hasImageReference) {
+            $productLines[] = '• Product Image Rule: An authoritative product image is attached. Use the image as the primary visual source of truth. Do NOT invent physical containers, packaging, or accessories not supported by the product image.';
+        } else {
+            $productLines[] = '• Product Fidelity Rule: Only depict physical characteristics supported by the factual product data. Do NOT invent unsupported containers, cups, bottles, packaging, steam, or accessories.';
         }
 
         $sections[] = implode("\n", $productLines);
 
-        // 5. Manual Creative Controls
-        $ctrlLines = ['MANUAL CREATIVE CONTROLS:'];
-        $ctrlLines[] = '- Design Treatment: '.($options['design_treatment'] ?? 'Classic');
-        $ctrlLines[] = '- Copy Emphasis: '.($options['copy_emphasis'] ?? 'Balanced');
-        $ctrlLines[] = '- Render Style: '.($options['render_style'] ?? 'Studio Product Still');
+        // 5. Render Style
+        $renderStyle = $options['render_style'] ?? 'Studio Product Still';
+        $sections[] = "RENDER STYLE:\n- {$renderStyle}";
 
-        if (! empty($options['visual_theme'])) {
-            $themes = is_array($options['visual_theme']) ? implode(', ', $options['visual_theme']) : (string) $options['visual_theme'];
-            $ctrlLines[] = '- Visual Theme: '.$themes;
+        // 6. User Creative Direction
+        $userInstruction = trim((string) ($options['user_instruction'] ?? ''));
+        $isSeedFromPriorSuggestion = ! empty($userInstruction) && in_array($userInstruction, $previousConcepts, true);
+
+        if (! empty($userInstruction) && ! $isSeedFromPriorSuggestion) {
+            $sections[] = "USER CREATIVE DIRECTION (AUTHORITATIVE CONCEPT):\n\"{$userInstruction}\"\nPreserve this core visual idea and translate it into a concise visual concept (40–90 words). Do not turn it into an elaborate poster layout, promotional graphic, or badge design.";
+        } elseif ($isSeedFromPriorSuggestion) {
+            $sections[] = "USER ACTION: Requesting an ALTERNATIVE visual direction from the prior suggestion (\"{$userInstruction}\").\nConceive a fresh, distinct visual setting and mood.";
+        } else {
+            $sections[] = "USER CREATIVE DIRECTION:\nNone provided. Conceive a concise, tasteful visual concept (40–90 words) tailored to the product and setting.";
         }
-        if (! empty($options['brand_tone'])) {
-            $tones = is_array($options['brand_tone']) ? implode(', ', $options['brand_tone']) : (string) $options['brand_tone'];
-            $ctrlLines[] = '- Brand Tone: '.$tones;
-        }
-        $ctrlLines[] = '- Aspect Ratio: '.($options['aspect_ratio'] ?? '1:1');
-        $sections[] = implode("\n", $ctrlLines);
 
-        // 6. Marketing Copy Space Awareness (For Negative-Space Staging)
-        $copyLines = ['MARKETING COPY SPACE AWARENESS:'];
-        $includePrices = array_key_exists('include_prices', $options) ? filter_var($options['include_prices'], FILTER_VALIDATE_BOOLEAN) : true;
-        $includeTagline = array_key_exists('include_tagline', $options) ? filter_var($options['include_tagline'], FILTER_VALIDATE_BOOLEAN) : true;
-        $includeBiz = array_key_exists('include_business_name', $options) ? filter_var($options['include_business_name'], FILTER_VALIDATE_BOOLEAN) : true;
-
-        $copyLines[] = '- Price Display: '.($includePrices ? 'Enabled (reserve clear negative space for price element)' : 'Disabled');
-        $copyLines[] = '- Headline / Tagline Display: '.($includeTagline ? 'Enabled (reserve open space for headline typography)' : 'Disabled');
-        $copyLines[] = '- Business Branding: '.($includeBiz ? 'Enabled' : 'Disabled');
-        $copyLines[] = '• Rule: Do NOT include literal price numbers or tagline quotes in the scene prompt. Simply ensure the physical composition offers natural breathing room for them.';
-        $sections[] = implode("\n", $copyLines);
-
-        // 7. Recent Suggestions & Anti-Repetition
+        // 7. Anti-Repetition (if previous suggestions provided)
         if (! empty($previousConcepts)) {
             $antiRepLines = [
                 'PREVIOUS VISUAL SUGGESTIONS (DO NOT REPEAT):',
-                'The user was already shown the following concepts. Formulate a distinctly DIFFERENT visual world, background, lighting, and product staging:',
+                'Formulate a distinctly DIFFERENT visual world and setting from:',
             ];
             foreach ($previousConcepts as $idx => $concept) {
                 $antiRepLines[] = ($idx + 1).'. "'.$concept.'"';
             }
             $sections[] = implode("\n", $antiRepLines);
-        }
-
-        // 8. User Seed Creative Instruction
-        $userInstruction = trim((string) ($options['user_instruction'] ?? ''));
-        $isSeedFromPriorSuggestion = ! empty($userInstruction) && in_array($userInstruction, $previousConcepts, true);
-
-        if (! empty($userInstruction) && ! $isSeedFromPriorSuggestion) {
-            $sections[] = "USER EXPLICIT SCENE DIRECTION (AUTHORITATIVE SEED):\n\"{$userInstruction}\"\nRefine, enhance, and creatively expand this exact artistic direction with rich sensory textures, lighting, and composition without replacing it with an unrelated concept.";
-        } elseif ($isSeedFromPriorSuggestion) {
-            $sections[] = "USER ACTION: Requesting a DIFFERENT visual angle from the previous suggestion (\"{$userInstruction}\").\nConceive a completely fresh visual world, new background style, alternate lighting, and new product arrangement.";
-        } else {
-            $sections[] = "USER SCENE DIRECTION:\nNone provided. Synthesize an original, high-performing commercial visual scene prompt tailored to the products, event, and creative controls.";
         }
 
         return implode("\n\n", $sections);
@@ -1383,6 +1305,15 @@ INSTRUCTIONS;
             $creativeLines[] = '- Tagline Directive: DISABLED (Do NOT formulate, suggest, or include any tagline, headline, slogan, or visible promotional copy in this visual)';
         }
 
+        $includeProductName = array_key_exists('include_product_name', $options)
+            ? filter_var($options['include_product_name'], FILTER_VALIDATE_BOOLEAN)
+            : true;
+        if ($includeProductName) {
+            $creativeLines[] = '- Product Name Display: ENABLED (Authoritative product name may appear as visible typography)';
+        } else {
+            $creativeLines[] = '- Product Name Display: DISABLED (Do not render product name as visible text typography. Hero physical product must remain visually present)';
+        }
+
         $includePrices = array_key_exists('include_prices', $options)
             ? filter_var($options['include_prices'], FILTER_VALIDATE_BOOLEAN)
             : true;
@@ -1498,6 +1429,8 @@ INSTRUCTIONS;
             }
             if (isset($decoded['visual_prompt']) && is_string($decoded['visual_prompt'])) {
                 $prompt = trim($decoded['visual_prompt']);
+            } elseif (isset($decoded['suggested_scene']) && is_string($decoded['suggested_scene'])) {
+                $prompt = trim($decoded['suggested_scene']);
             }
             if (isset($decoded['creative_concept']) && is_string($decoded['creative_concept'])) {
                 $concept = trim($decoded['creative_concept']);

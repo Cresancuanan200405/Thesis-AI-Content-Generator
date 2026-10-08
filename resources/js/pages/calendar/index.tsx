@@ -236,26 +236,27 @@ export default function MarketingCalendarPage({
                     {/* =====================================================
                         PAGE HEADER: STATIC SCHEDULE VIEWER
                     ====================================================== */}
-                    <div className="flex flex-col gap-3 border-b border-border/60 pb-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-2.5">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                <CalendarIcon className="h-4 w-4" />
+                    <div className="flex flex-col gap-3 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="h-2 w-2 rounded-full bg-cyan-500 shadow-xs" />
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                                    Schedule & Planning
+                                </span>
                             </div>
-                            <div>
-                                <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
-                                    Marketing Calendar
-                                </h1>
-                                <p className="text-xs text-muted-foreground">
-                                    Static read-only schedule viewer and multi-day marketing campaign planner.
-                                </p>
-                            </div>
+                            <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                                Marketing Calendar
+                            </h1>
+                            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                                Multi-day marketing campaigns, Philippine national holidays, and commercial opportunities.
+                            </p>
                         </div>
                     </div>
 
                     {/* =====================================================
                         STICKY NAVIGATION & FILTER TOOLBAR (MATCHING SYSTEM TOOLBAR)
                     ====================================================== */}
-                    <div className="sticky top-11 z-30 mb-5 rounded-2xl border border-white/25 bg-card/95 px-2.5 py-1.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:px-3 sm:py-1.5 dark:border-white/10 dark:bg-card/95">
+                    <div className="sticky top-11 z-30 mb-5 rounded-card border border-border/70 bg-card/95 px-3 py-2 shadow-sm backdrop-blur-xl transition-all sm:top-12 dark:bg-card/90">
                         <div className="flex items-center justify-between gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-2.5">
                             {/* Navigation controls & Filters (Static left-anchored group) */}
                             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">

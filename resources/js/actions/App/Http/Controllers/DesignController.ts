@@ -134,7 +134,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     store.form = storeForm
 /**
 * @see \App\Http\Controllers\DesignController::bulkDestroy
- * @see app/Http/Controllers/DesignController.php:798
+ * @see app/Http/Controllers/DesignController.php:803
  * @route '/designs/bulk-delete'
  */
 export const bulkDestroy = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -149,7 +149,7 @@ bulkDestroy.definition = {
 
 /**
 * @see \App\Http\Controllers\DesignController::bulkDestroy
- * @see app/Http/Controllers/DesignController.php:798
+ * @see app/Http/Controllers/DesignController.php:803
  * @route '/designs/bulk-delete'
  */
 bulkDestroy.url = (options?: RouteQueryOptions) => {
@@ -158,7 +158,7 @@ bulkDestroy.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\DesignController::bulkDestroy
- * @see app/Http/Controllers/DesignController.php:798
+ * @see app/Http/Controllers/DesignController.php:803
  * @route '/designs/bulk-delete'
  */
 bulkDestroy.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -168,7 +168,7 @@ bulkDestroy.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\DesignController::bulkDestroy
- * @see app/Http/Controllers/DesignController.php:798
+ * @see app/Http/Controllers/DesignController.php:803
  * @route '/designs/bulk-delete'
  */
     const bulkDestroyForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -178,7 +178,7 @@ bulkDestroy.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\DesignController::bulkDestroy
- * @see app/Http/Controllers/DesignController.php:798
+ * @see app/Http/Controllers/DesignController.php:803
  * @route '/designs/bulk-delete'
  */
         bulkDestroyForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -189,7 +189,7 @@ bulkDestroy.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     bulkDestroy.form = bulkDestroyForm
 /**
 * @see \App\Http\Controllers\DesignController::show
- * @see app/Http/Controllers/DesignController.php:667
+ * @see app/Http/Controllers/DesignController.php:672
  * @route '/designs/{design}'
  */
 export const show = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -204,7 +204,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\DesignController::show
- * @see app/Http/Controllers/DesignController.php:667
+ * @see app/Http/Controllers/DesignController.php:672
  * @route '/designs/{design}'
  */
 show.url = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -237,7 +237,7 @@ show.url = (args: { design: number | { id: number } } | [design: number | { id: 
 
 /**
 * @see \App\Http\Controllers\DesignController::show
- * @see app/Http/Controllers/DesignController.php:667
+ * @see app/Http/Controllers/DesignController.php:672
  * @route '/designs/{design}'
  */
 show.get = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -246,7 +246,7 @@ show.get = (args: { design: number | { id: number } } | [design: number | { id: 
 })
 /**
 * @see \App\Http\Controllers\DesignController::show
- * @see app/Http/Controllers/DesignController.php:667
+ * @see app/Http/Controllers/DesignController.php:672
  * @route '/designs/{design}'
  */
 show.head = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -256,7 +256,7 @@ show.head = (args: { design: number | { id: number } } | [design: number | { id:
 
     /**
 * @see \App\Http\Controllers\DesignController::show
- * @see app/Http/Controllers/DesignController.php:667
+ * @see app/Http/Controllers/DesignController.php:672
  * @route '/designs/{design}'
  */
     const showForm = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -266,7 +266,7 @@ show.head = (args: { design: number | { id: number } } | [design: number | { id:
 
             /**
 * @see \App\Http\Controllers\DesignController::show
- * @see app/Http/Controllers/DesignController.php:667
+ * @see app/Http/Controllers/DesignController.php:672
  * @route '/designs/{design}'
  */
         showForm.get = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -275,7 +275,7 @@ show.head = (args: { design: number | { id: number } } | [design: number | { id:
         })
             /**
 * @see \App\Http\Controllers\DesignController::show
- * @see app/Http/Controllers/DesignController.php:667
+ * @see app/Http/Controllers/DesignController.php:672
  * @route '/designs/{design}'
  */
         showForm.head = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -291,7 +291,7 @@ show.head = (args: { design: number | { id: number } } | [design: number | { id:
     show.form = showForm
 /**
 * @see \App\Http\Controllers\DesignController::toggleFavorite
- * @see app/Http/Controllers/DesignController.php:648
+ * @see app/Http/Controllers/DesignController.php:653
  * @route '/designs/{design}/favorite'
  */
 export const toggleFavorite = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -306,7 +306,7 @@ toggleFavorite.definition = {
 
 /**
 * @see \App\Http\Controllers\DesignController::toggleFavorite
- * @see app/Http/Controllers/DesignController.php:648
+ * @see app/Http/Controllers/DesignController.php:653
  * @route '/designs/{design}/favorite'
  */
 toggleFavorite.url = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -339,7 +339,7 @@ toggleFavorite.url = (args: { design: number | { id: number } } | [design: numbe
 
 /**
 * @see \App\Http\Controllers\DesignController::toggleFavorite
- * @see app/Http/Controllers/DesignController.php:648
+ * @see app/Http/Controllers/DesignController.php:653
  * @route '/designs/{design}/favorite'
  */
 toggleFavorite.post = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -349,7 +349,7 @@ toggleFavorite.post = (args: { design: number | { id: number } } | [design: numb
 
     /**
 * @see \App\Http\Controllers\DesignController::toggleFavorite
- * @see app/Http/Controllers/DesignController.php:648
+ * @see app/Http/Controllers/DesignController.php:653
  * @route '/designs/{design}/favorite'
  */
     const toggleFavoriteForm = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -359,7 +359,7 @@ toggleFavorite.post = (args: { design: number | { id: number } } | [design: numb
 
             /**
 * @see \App\Http\Controllers\DesignController::toggleFavorite
- * @see app/Http/Controllers/DesignController.php:648
+ * @see app/Http/Controllers/DesignController.php:653
  * @route '/designs/{design}/favorite'
  */
         toggleFavoriteForm.post = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -370,7 +370,7 @@ toggleFavorite.post = (args: { design: number | { id: number } } | [design: numb
     toggleFavorite.form = toggleFavoriteForm
 /**
 * @see \App\Http\Controllers\DesignController::finalize
- * @see app/Http/Controllers/DesignController.php:579
+ * @see app/Http/Controllers/DesignController.php:584
  * @route '/designs/{design}/finalize'
  */
 export const finalize = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -385,7 +385,7 @@ finalize.definition = {
 
 /**
 * @see \App\Http\Controllers\DesignController::finalize
- * @see app/Http/Controllers/DesignController.php:579
+ * @see app/Http/Controllers/DesignController.php:584
  * @route '/designs/{design}/finalize'
  */
 finalize.url = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -418,7 +418,7 @@ finalize.url = (args: { design: number | { id: number } } | [design: number | { 
 
 /**
 * @see \App\Http\Controllers\DesignController::finalize
- * @see app/Http/Controllers/DesignController.php:579
+ * @see app/Http/Controllers/DesignController.php:584
  * @route '/designs/{design}/finalize'
  */
 finalize.post = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -428,7 +428,7 @@ finalize.post = (args: { design: number | { id: number } } | [design: number | {
 
     /**
 * @see \App\Http\Controllers\DesignController::finalize
- * @see app/Http/Controllers/DesignController.php:579
+ * @see app/Http/Controllers/DesignController.php:584
  * @route '/designs/{design}/finalize'
  */
     const finalizeForm = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -438,7 +438,7 @@ finalize.post = (args: { design: number | { id: number } } | [design: number | {
 
             /**
 * @see \App\Http\Controllers\DesignController::finalize
- * @see app/Http/Controllers/DesignController.php:579
+ * @see app/Http/Controllers/DesignController.php:584
  * @route '/designs/{design}/finalize'
  */
         finalizeForm.post = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -449,7 +449,7 @@ finalize.post = (args: { design: number | { id: number } } | [design: number | {
     finalize.form = finalizeForm
 /**
 * @see \App\Http\Controllers\DesignController::attachCampaign
- * @see app/Http/Controllers/DesignController.php:602
+ * @see app/Http/Controllers/DesignController.php:607
  * @route '/designs/{design}/attach-campaign'
  */
 export const attachCampaign = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -464,7 +464,7 @@ attachCampaign.definition = {
 
 /**
 * @see \App\Http\Controllers\DesignController::attachCampaign
- * @see app/Http/Controllers/DesignController.php:602
+ * @see app/Http/Controllers/DesignController.php:607
  * @route '/designs/{design}/attach-campaign'
  */
 attachCampaign.url = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -497,7 +497,7 @@ attachCampaign.url = (args: { design: number | { id: number } } | [design: numbe
 
 /**
 * @see \App\Http\Controllers\DesignController::attachCampaign
- * @see app/Http/Controllers/DesignController.php:602
+ * @see app/Http/Controllers/DesignController.php:607
  * @route '/designs/{design}/attach-campaign'
  */
 attachCampaign.post = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -507,7 +507,7 @@ attachCampaign.post = (args: { design: number | { id: number } } | [design: numb
 
     /**
 * @see \App\Http\Controllers\DesignController::attachCampaign
- * @see app/Http/Controllers/DesignController.php:602
+ * @see app/Http/Controllers/DesignController.php:607
  * @route '/designs/{design}/attach-campaign'
  */
     const attachCampaignForm = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -517,7 +517,7 @@ attachCampaign.post = (args: { design: number | { id: number } } | [design: numb
 
             /**
 * @see \App\Http\Controllers\DesignController::attachCampaign
- * @see app/Http/Controllers/DesignController.php:602
+ * @see app/Http/Controllers/DesignController.php:607
  * @route '/designs/{design}/attach-campaign'
  */
         attachCampaignForm.post = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -528,7 +528,7 @@ attachCampaign.post = (args: { design: number | { id: number } } | [design: numb
     attachCampaign.form = attachCampaignForm
 /**
 * @see \App\Http\Controllers\DesignController::download
- * @see app/Http/Controllers/DesignController.php:695
+ * @see app/Http/Controllers/DesignController.php:700
  * @route '/designs/{design}/download'
  */
 export const download = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -543,7 +543,7 @@ download.definition = {
 
 /**
 * @see \App\Http\Controllers\DesignController::download
- * @see app/Http/Controllers/DesignController.php:695
+ * @see app/Http/Controllers/DesignController.php:700
  * @route '/designs/{design}/download'
  */
 download.url = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -576,7 +576,7 @@ download.url = (args: { design: number | { id: number } } | [design: number | { 
 
 /**
 * @see \App\Http\Controllers\DesignController::download
- * @see app/Http/Controllers/DesignController.php:695
+ * @see app/Http/Controllers/DesignController.php:700
  * @route '/designs/{design}/download'
  */
 download.get = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -585,7 +585,7 @@ download.get = (args: { design: number | { id: number } } | [design: number | { 
 })
 /**
 * @see \App\Http\Controllers\DesignController::download
- * @see app/Http/Controllers/DesignController.php:695
+ * @see app/Http/Controllers/DesignController.php:700
  * @route '/designs/{design}/download'
  */
 download.head = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -595,7 +595,7 @@ download.head = (args: { design: number | { id: number } } | [design: number | {
 
     /**
 * @see \App\Http\Controllers\DesignController::download
- * @see app/Http/Controllers/DesignController.php:695
+ * @see app/Http/Controllers/DesignController.php:700
  * @route '/designs/{design}/download'
  */
     const downloadForm = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -605,7 +605,7 @@ download.head = (args: { design: number | { id: number } } | [design: number | {
 
             /**
 * @see \App\Http\Controllers\DesignController::download
- * @see app/Http/Controllers/DesignController.php:695
+ * @see app/Http/Controllers/DesignController.php:700
  * @route '/designs/{design}/download'
  */
         downloadForm.get = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -614,7 +614,7 @@ download.head = (args: { design: number | { id: number } } | [design: number | {
         })
             /**
 * @see \App\Http\Controllers\DesignController::download
- * @see app/Http/Controllers/DesignController.php:695
+ * @see app/Http/Controllers/DesignController.php:700
  * @route '/designs/{design}/download'
  */
         downloadForm.head = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -630,7 +630,7 @@ download.head = (args: { design: number | { id: number } } | [design: number | {
     download.form = downloadForm
 /**
 * @see \App\Http\Controllers\DesignController::regenerate
- * @see app/Http/Controllers/DesignController.php:709
+ * @see app/Http/Controllers/DesignController.php:714
  * @route '/designs/{design}/regenerate'
  */
 export const regenerate = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -645,7 +645,7 @@ regenerate.definition = {
 
 /**
 * @see \App\Http\Controllers\DesignController::regenerate
- * @see app/Http/Controllers/DesignController.php:709
+ * @see app/Http/Controllers/DesignController.php:714
  * @route '/designs/{design}/regenerate'
  */
 regenerate.url = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -678,7 +678,7 @@ regenerate.url = (args: { design: number | { id: number } } | [design: number | 
 
 /**
 * @see \App\Http\Controllers\DesignController::regenerate
- * @see app/Http/Controllers/DesignController.php:709
+ * @see app/Http/Controllers/DesignController.php:714
  * @route '/designs/{design}/regenerate'
  */
 regenerate.post = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -688,7 +688,7 @@ regenerate.post = (args: { design: number | { id: number } } | [design: number |
 
     /**
 * @see \App\Http\Controllers\DesignController::regenerate
- * @see app/Http/Controllers/DesignController.php:709
+ * @see app/Http/Controllers/DesignController.php:714
  * @route '/designs/{design}/regenerate'
  */
     const regenerateForm = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -698,7 +698,7 @@ regenerate.post = (args: { design: number | { id: number } } | [design: number |
 
             /**
 * @see \App\Http\Controllers\DesignController::regenerate
- * @see app/Http/Controllers/DesignController.php:709
+ * @see app/Http/Controllers/DesignController.php:714
  * @route '/designs/{design}/regenerate'
  */
         regenerateForm.post = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -709,7 +709,7 @@ regenerate.post = (args: { design: number | { id: number } } | [design: number |
     regenerate.form = regenerateForm
 /**
 * @see \App\Http\Controllers\DesignController::destroy
- * @see app/Http/Controllers/DesignController.php:785
+ * @see app/Http/Controllers/DesignController.php:790
  * @route '/designs/{design}'
  */
 export const destroy = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -724,7 +724,7 @@ destroy.definition = {
 
 /**
 * @see \App\Http\Controllers\DesignController::destroy
- * @see app/Http/Controllers/DesignController.php:785
+ * @see app/Http/Controllers/DesignController.php:790
  * @route '/designs/{design}'
  */
 destroy.url = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -757,7 +757,7 @@ destroy.url = (args: { design: number | { id: number } } | [design: number | { i
 
 /**
 * @see \App\Http\Controllers\DesignController::destroy
- * @see app/Http/Controllers/DesignController.php:785
+ * @see app/Http/Controllers/DesignController.php:790
  * @route '/designs/{design}'
  */
 destroy.delete = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -767,7 +767,7 @@ destroy.delete = (args: { design: number | { id: number } } | [design: number | 
 
     /**
 * @see \App\Http\Controllers\DesignController::destroy
- * @see app/Http/Controllers/DesignController.php:785
+ * @see app/Http/Controllers/DesignController.php:790
  * @route '/designs/{design}'
  */
     const destroyForm = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -782,7 +782,7 @@ destroy.delete = (args: { design: number | { id: number } } | [design: number | 
 
             /**
 * @see \App\Http\Controllers\DesignController::destroy
- * @see app/Http/Controllers/DesignController.php:785
+ * @see app/Http/Controllers/DesignController.php:790
  * @route '/designs/{design}'
  */
         destroyForm.delete = (args: { design: number | { id: number } } | [design: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

@@ -12,12 +12,12 @@ import {
     Hash,
     Info,
     Layers,
+    ImageIcon,
     Mail,
     Maximize2,
     Package,
     Shield,
     ShieldCheck,
-    Sparkles,
     Type,
     Zap,
 } from 'lucide-react';
@@ -74,8 +74,8 @@ export default function SubscriptionsIndexPage({
 
     const features: PlanFeature[] = [
         {
-            icon: Sparkles,
-            title: 'AI Image Generation Engine',
+            icon: ImageIcon,
+            title: 'Marketing Image Generation Engine',
             description:
                 'Generate high-fidelity marketing visuals using OpenAI-powered image synthesis tailored for commercial creatives.',
             tag: 'Core Engine',
@@ -266,7 +266,7 @@ export default function SubscriptionsIndexPage({
                             </span>
                         </div>
 
-                        <Card className="relative overflow-hidden rounded-3xl border border-border/80 bg-gradient-to-br from-card via-card to-primary/[0.03] p-6 shadow-xs transition-all sm:p-8">
+                        <Card className="relative overflow-hidden rounded-card border border-border/80 bg-gradient-to-br from-card via-card to-primary/[0.03] p-6 shadow-xs transition-all sm:p-8">
                             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
                                 <div className="max-w-2xl space-y-3">
                                     <div className="flex flex-wrap items-center gap-2.5">
@@ -308,7 +308,7 @@ export default function SubscriptionsIndexPage({
                                 </div>
 
                                 <div className="flex flex-row items-center justify-between gap-4 border-t border-border/60 pt-4 lg:flex-col lg:items-end lg:border-t-0 lg:pt-0">
-                                    <div className="rounded-2xl border border-border/70 bg-muted/30 px-4 py-3 text-left lg:text-right">
+                                    <div className="rounded-xl border border-border/70 bg-muted/30 px-4 py-3 text-left lg:text-right">
                                         <div className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
                                             Workspace Tier
                                         </div>
@@ -339,7 +339,7 @@ export default function SubscriptionsIndexPage({
                                 </span>
                             </div>
 
-                            <Card className="space-y-4 rounded-3xl border-border/80 bg-card p-6 shadow-xs">
+                            <Card className="space-y-4 rounded-card border-border/80 bg-card p-6 shadow-xs">
                                 <p className="text-xs text-muted-foreground">
                                     The following verified features are fully
                                     active and included in your workspace plan:
@@ -352,7 +352,7 @@ export default function SubscriptionsIndexPage({
                                         return (
                                             <div
                                                 key={index}
-                                                className="group relative flex flex-col justify-between rounded-2xl border border-border/60 bg-muted/15 p-4 transition-all duration-200 hover:border-primary/40 hover:bg-muted/30 hover:shadow-xs"
+                                                className="group relative flex flex-col justify-between rounded-card border border-border/60 bg-muted/15 p-4 transition-all duration-200 hover:border-primary/40 hover:bg-muted/30 hover:shadow-xs"
                                             >
                                                 <div className="space-y-2">
                                                     <div className="flex items-center justify-between">
@@ -399,7 +399,7 @@ export default function SubscriptionsIndexPage({
                                 </span>
                             </div>
 
-                            <Card className="space-y-4 rounded-3xl border-border/80 bg-card p-6 shadow-xs">
+                            <Card className="space-y-4 rounded-card border-border/80 bg-card p-6 shadow-xs">
                                 <p className="text-xs text-muted-foreground">
                                     System permission and capability status
                                     across your workspace modules:
@@ -467,7 +467,7 @@ export default function SubscriptionsIndexPage({
                             </span>
                         </div>
 
-                        <Card className="space-y-6 rounded-3xl border-border/80 bg-card p-6 shadow-xs sm:p-8">
+                        <Card className="space-y-6 rounded-card border-border/80 bg-card p-6 shadow-xs sm:p-8">
                             <div className="flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <h3 className="text-base font-bold text-foreground">
@@ -503,7 +503,7 @@ export default function SubscriptionsIndexPage({
                                         </span>
                                         <Coins className="h-3.5 w-3.5 text-primary/80" />
                                     </div>
-                                    <p className="text-2xl font-black tracking-tight text-foreground">
+                                    <p className="text-2xl font-bold tabular-nums tracking-tight text-foreground">
                                         {totalSpent}
                                     </p>
                                     <p className="text-[10px] text-muted-foreground">
@@ -519,7 +519,7 @@ export default function SubscriptionsIndexPage({
                                         </span>
                                         <Gauge className="h-3.5 w-3.5 text-muted-foreground" />
                                     </div>
-                                    <p className="text-2xl font-black tracking-tight text-foreground">
+                                    <p className="text-2xl font-bold tabular-nums tracking-tight text-foreground">
                                         {configuredLimit}
                                     </p>
                                     <p className="text-[10px] text-muted-foreground">
@@ -535,7 +535,7 @@ export default function SubscriptionsIndexPage({
                                         </span>
                                         <Zap className="h-3.5 w-3.5 text-emerald-500" />
                                     </div>
-                                    <p className="text-2xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">
+                                    <p className="text-2xl font-bold tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">
                                         {remainingLimit}
                                     </p>
                                     <p className="text-[10px] text-muted-foreground">
@@ -551,7 +551,7 @@ export default function SubscriptionsIndexPage({
                                         </span>
                                         <Cpu className="h-3.5 w-3.5 text-muted-foreground" />
                                     </div>
-                                    <p className="text-2xl font-black tracking-tight text-foreground">
+                                    <p className="text-2xl font-bold tabular-nums tracking-tight text-foreground">
                                         {inputTokens}
                                     </p>
                                     <p className="text-[10px] text-muted-foreground">
@@ -567,7 +567,7 @@ export default function SubscriptionsIndexPage({
                                         </span>
                                         <Hash className="h-3.5 w-3.5 text-muted-foreground" />
                                     </div>
-                                    <p className="text-2xl font-black tracking-tight text-foreground">
+                                    <p className="text-2xl font-bold tabular-nums tracking-tight text-foreground">
                                         {totalRequests}
                                     </p>
                                     <p className="text-[10px] text-muted-foreground">
@@ -610,7 +610,7 @@ export default function SubscriptionsIndexPage({
                             </span>
                         </div>
 
-                        <Card className="rounded-3xl border-border/80 bg-card p-6 shadow-xs sm:p-7">
+                        <Card className="rounded-card border-border/80 bg-card p-6 shadow-xs sm:p-7">
                             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="max-w-xl space-y-1.5">
                                     <div className="flex items-center gap-2">
@@ -640,7 +640,7 @@ export default function SubscriptionsIndexPage({
 
                                 <div className="flex flex-wrap items-center gap-4">
                                     <div className="text-right">
-                                        <div className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">
+                                        <div className="text-2xl font-bold tabular-nums tracking-tight text-foreground sm:text-3xl">
                                             {creditBalance}
                                         </div>
                                         <div className="text-[11px] text-muted-foreground">
@@ -673,7 +673,7 @@ export default function SubscriptionsIndexPage({
                     {/* =========================================================
                         6. IMPORTANT INFORMATION NOTICE
                     ========================================================== */}
-                    <Card className="rounded-3xl border border-border/80 bg-muted/20 p-6 shadow-xs">
+                    <Card className="rounded-card border border-border/80 bg-muted/20 p-6 shadow-xs">
                         <div className="flex items-start gap-4">
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                                 <Info className="h-4.5 w-4.5" />
@@ -714,7 +714,7 @@ export default function SubscriptionsIndexPage({
                     {/* =========================================================
                         7. WORKSPACE INQUIRIES / SUPPORT
                     ========================================================== */}
-                    <Card className="rounded-3xl border border-border/70 bg-card p-6 shadow-xs">
+                    <Card className="rounded-card border border-border/70 bg-card p-6 shadow-xs">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div className="max-w-xl space-y-1">
                                 <h3 className="text-xs font-bold tracking-wider text-foreground uppercase">

@@ -310,19 +310,20 @@ export default function EventManagementPage({
             <div className="min-h-screen bg-background pb-24 text-foreground">
                 <div className="space-y-6 p-4 md:p-6 lg:p-8">
                     {/* Header */}
-                    <div className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-2.5">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                <Calendar className="h-5 w-5" />
+                    <div className="flex flex-col gap-3 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="h-2 w-2 rounded-full bg-amber-500 shadow-xs" />
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                                    Calendar & Events
+                                </span>
                             </div>
-                            <div>
-                                <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
-                                    Event Bank
-                                </h1>
-                                <p className="text-xs text-muted-foreground">
-                                    Manage your marketing occasions, business events, and Philippine holidays.
-                                </p>
-                            </div>
+                            <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                                Marketing Event Bank
+                            </h1>
+                            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                                Curate promotional milestones, business events, and official Philippine holidays.
+                            </p>
                         </div>
 
                         <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -330,11 +331,11 @@ export default function EventManagementPage({
                                 variant="outline"
                                 size="sm"
                                 asChild
-                                className="h-8 gap-1.5 rounded-xl text-xs font-semibold shadow-2xs"
+                                className="h-9 gap-1.5 rounded-full border-border/80 px-4 text-xs font-semibold hover:bg-muted"
                             >
                                 <Link href="/calendar">
                                     <CalendarDays className="h-3.5 w-3.5" />
-                                    View Calendar
+                                    <span>View Calendar</span>
                                 </Link>
                             </Button>
 
@@ -353,19 +354,20 @@ export default function EventManagementPage({
                                     setIsCreateOpen(true);
                                 }}
                                 size="sm"
-                                className="h-8 gap-1.5 rounded-xl bg-primary text-xs font-semibold text-primary-foreground shadow-2xs hover:bg-primary/90"
+                                className="h-9 gap-1.5 rounded-full bg-foreground px-4 text-xs font-bold text-background shadow-md transition-all hover:opacity-95 hover:scale-[1.02] active:scale-95"
                             >
-                                <Plus className="h-3.5 w-3.5" />
-                                Add Event
+                                <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                                <span>Add Event</span>
                             </Button>
                         </div>
                     </div>
+
 
                     {/* Metric Summary Cards Scoped to Selected Year */}
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         <Card
                             onClick={() => setActiveTypeFilter('all')}
-                            className={`cursor-pointer rounded-2xl border border-border/70 bg-card p-4 shadow-2xs transition-all hover:bg-muted/30 ${
+                            className={`cursor-pointer rounded-card border border-border/70 bg-card p-4 shadow-2xs transition-all hover:bg-muted/30 ${
                                 activeTypeFilter === 'all' ? 'ring-2 ring-primary/40 bg-primary/5' : ''
                             }`}
                             role="button"
@@ -380,7 +382,7 @@ export default function EventManagementPage({
 
                         <Card
                             onClick={() => setActiveTypeFilter(activeTypeFilter === 'holiday' ? 'all' : 'holiday')}
-                            className={`cursor-pointer rounded-2xl border border-border/70 bg-card p-4 shadow-2xs transition-all hover:bg-rose-500/5 ${
+                            className={`cursor-pointer rounded-card border border-border/70 bg-card p-4 shadow-2xs transition-all hover:bg-rose-500/5 ${
                                 activeTypeFilter === 'holiday' ? 'ring-2 ring-rose-500/50 bg-rose-500/10' : ''
                             }`}
                             role="button"
@@ -395,7 +397,7 @@ export default function EventManagementPage({
 
                         <Card
                             onClick={() => setActiveTypeFilter(activeTypeFilter === 'commercial' ? 'all' : 'commercial')}
-                            className={`cursor-pointer rounded-2xl border border-border/70 bg-card p-4 shadow-2xs transition-all hover:bg-blue-500/5 ${
+                            className={`cursor-pointer rounded-card border border-border/70 bg-card p-4 shadow-2xs transition-all hover:bg-blue-500/5 ${
                                 activeTypeFilter === 'commercial' ? 'ring-2 ring-blue-500/50 bg-blue-500/10' : ''
                             }`}
                             role="button"
@@ -410,7 +412,7 @@ export default function EventManagementPage({
 
                         <Card
                             onClick={() => setActiveTypeFilter(activeTypeFilter === 'custom' ? 'all' : 'custom')}
-                            className={`cursor-pointer rounded-2xl border border-border/70 bg-card p-4 shadow-2xs transition-all hover:bg-purple-500/5 ${
+                            className={`cursor-pointer rounded-card border border-border/70 bg-card p-4 shadow-2xs transition-all hover:bg-purple-500/5 ${
                                 activeTypeFilter === 'custom' ? 'ring-2 ring-purple-500/50 bg-purple-500/10' : ''
                             }`}
                             role="button"
@@ -425,7 +427,7 @@ export default function EventManagementPage({
                     </div>
 
                     {/* Sticky Filter Toolbar (Matching System Toolbar Height) */}
-                    <div className="sticky top-11 z-30 mb-5 rounded-2xl border border-white/25 bg-card/95 px-2.5 py-1.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:px-3 sm:py-1.5 dark:border-white/10 dark:bg-card/95">
+                    <div className="sticky top-11 z-30 mb-5 rounded-card border border-white/25 bg-card/95 px-2.5 py-1.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:px-3 sm:py-1.5 dark:border-white/10 dark:bg-card/95">
                         <div className="flex items-center justify-between gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-2.5">
                             {/* Search */}
                             <div className="relative min-w-0 flex-1">
@@ -495,7 +497,7 @@ export default function EventManagementPage({
                     </div>
 
                     {/* Events Table / List */}
-                    <Card className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs">
+                    <Card className="overflow-hidden rounded-card border border-border/70 bg-card shadow-xs">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-xs">
                                 <thead className="border-b border-border/60 bg-muted/30 text-[11px] font-semibold text-muted-foreground">
@@ -715,7 +717,7 @@ export default function EventManagementPage({
                 ADD EVENT MODAL (USER-MANAGED EVENTS ONLY)
             ====================================================== */}
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                <DialogContent className="max-h-[90vh] flex flex-col overflow-hidden rounded-3xl border-border bg-card p-0 shadow-2xl sm:max-w-lg">
+                <DialogContent className="max-h-[90vh] flex flex-col overflow-hidden rounded-card border-border bg-card p-0 shadow-2xl sm:max-w-lg">
                     <form onSubmit={handleCreateSubmit} className="flex flex-col min-h-0 h-full">
                         <DialogHeader className="shrink-0 border-b border-border bg-muted/20 p-5 sm:p-6 pb-4">
                             <div className="flex items-center gap-2.5">
@@ -894,7 +896,7 @@ export default function EventManagementPage({
                 EDIT EVENT MODAL
             ====================================================== */}
             <Dialog open={!!editingEvent} onOpenChange={(open) => !open && setEditingEvent(null)}>
-                <DialogContent className="max-h-[90vh] flex flex-col overflow-hidden rounded-3xl border-border bg-card p-0 shadow-2xl sm:max-w-lg">
+                <DialogContent className="max-h-[90vh] flex flex-col overflow-hidden rounded-card border-border bg-card p-0 shadow-2xl sm:max-w-lg">
                     <form onSubmit={handleEditSubmit} className="flex min-h-0 flex-1 flex-col">
                         <DialogHeader className="shrink-0 border-b border-border bg-muted/20 p-5 sm:p-6 pb-4">
                             <div className="flex items-center gap-2">
@@ -1004,7 +1006,7 @@ export default function EventManagementPage({
                 DELETE CONFIRMATION DIALOG
             ====================================================== */}
             <Dialog open={!!deletingEvent} onOpenChange={(open) => !open && setDeletingEvent(null)}>
-                <DialogContent className="rounded-3xl border-border bg-card p-6 shadow-2xl sm:max-w-md">
+                <DialogContent className="rounded-card border-border bg-card p-6 shadow-2xl sm:max-w-md">
                     <DialogHeader className="space-y-2">
                         <DialogTitle className="text-base font-bold text-foreground">
                             Delete Event

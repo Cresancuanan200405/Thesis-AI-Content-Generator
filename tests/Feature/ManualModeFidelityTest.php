@@ -119,7 +119,7 @@ test('manual mode attaches both catalog product images in exact order A then B w
     // 5. No second product image is omitted before dispatch
     expect($promptSent)->toContain('Blueberry Muffin')
         ->toContain('Iced Latte')
-        ->toContain('CO-FEATURED PRODUCTS & SERVICES');
+        ->toContain('Products:');
 });
 
 test('manual mode returns HTTP 422 with metadata and refuses silent downgrade if multi-image edit fails', function () {
@@ -208,37 +208,24 @@ test('modular prompt orchestrator builds complete canonical commercial architect
         'aspect_ratio' => '1:1',
     ], $business);
 
-    // Verify all required blocks exist
-    expect($prompt)->toContain('PRODUCT FIDELITY & ANCHOR INTEGRATION')
-        ->toContain('USER SCENE DIRECTION:')
-        ->toContain('MARKETING COPY:')
-        ->toContain('CAMPAIGN / EVENT CONTEXT:')
-        ->toContain('INDUSTRY & CATEGORY ART DIRECTION:')
-        ->toContain('BRAND IDENTITY:')
-        ->toContain('RENDER STYLE:')
-        ->toContain('VISUAL THEME:')
-        ->toContain('BRAND TONE:')
-        ->toContain('DESIGN TREATMENT:')
-        ->toContain('COPY EMPHASIS:')
-        ->toContain('CAMERA:')
-        ->toContain('LIGHTING:')
-        ->toContain('COMPOSITION:')
-        ->toContain('OUTPUT & SAFETY RULES:');
+    // Verify all required blocks exist in compact manual architecture
+    expect($prompt)->toContain('Create a marketing image')
+        ->toContain('Business context:')
+        ->toContain('Campaign: Heritage Coffee Month')
+        ->toContain('Event: Philippine Independence Day')
+        ->toContain('Product')
+        ->toContain('Creative direction')
+        ->toContain('RULES:');
 
-    // Verify canonical specifications are expanded
-    expect($prompt)->toContain('Selected Treatment: Bold Commercial')
-        ->toContain('Selected Emphasis: Headline-First')
-        ->toContain('Camera Perspective: eye-level')
-        ->toContain('Lighting Profile: golden hour')
-        ->toContain('Product-focused: Laser-focused presentation isolating the product with clean backdrop')
-        ->toContain('Bold: High-impact, assertive, confident, and dramatic contrast that commands attention.')
+    // Verify creative controls are present in compact manual architecture
+    expect($prompt)->toContain('Copy emphasis: Headline-First')
         ->toContain('Editorial Lifestyle Campaign');
 
     // Verify business branding rule: disabled when include_business_name is false
-    expect($prompt)->toContain('Business Branding: Disabled. Do not include the business/shop name, logo, emblem, or any business branding in the artwork.');
+    expect($prompt)->toContain('Business Branding: Disabled. Do not include any business/shop name or branding text in the artwork.');
 
-    // Verify safe margin cleanliness rule
-    expect($prompt)->toContain('OUTPUT CLEANLINESS & FORBIDDEN ELEMENTS (CRITICAL): The safe margin must NEVER appear in the final artwork. DO NOT render safe-margin boundaries, dotted or dashed borders, frames, guides, grids, rulers, crop marks, alignment marks, measurement indicators, percentage labels, technical annotations, "20% SAFE MARGIN", "SAFE MARGIN", or any production/layout instructions.');
+    // Verify cleanliness rule
+    expect($prompt)->toContain('Do not create logos, badges, or watermarks.');
 });
 
 test('manual generation preserves all explicit creative controls and all selected catalog references', function () {
@@ -250,16 +237,17 @@ test('manual generation preserves all explicit creative controls and all selecte
         'category' => 'Specialty Coffee',
     ]);
 
-    $campaign = Campaign::factory()->create([
-        'user_id' => $user->id,
-        'business_id' => $business->id,
-        'name' => 'Artisan Reserve 2026',
-        'objective' => 'Celebrate specialty craft harvest',
-    ]);
-
     $event = Event::factory()->create([
         'user_id' => $user->id,
         'name' => 'Philippine Coffee Day',
+    ]);
+
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $event->id,
+        'name' => 'Artisan Reserve 2026',
+        'objective' => 'Celebrate specialty craft harvest',
     ]);
 
     Storage::disk('public')->put('products/ethiopia_single_origin.png', 'binary-ethiopia-roast');
@@ -338,32 +326,21 @@ test('manual generation preserves all explicit creative controls and all selecte
     // Both products indexed and co-present
     expect($promptSent)->toContain('REFERENCE IMAGE 1 = Ethiopia Yirgacheffe')
         ->toContain('REFERENCE IMAGE 2 = Colombia Supremo')
-        ->toContain('MULTI-PRODUCT COMPOSITION:')
-        ->toContain('All selected catalog products must appear together in the same final marketing scene');
+        ->toContain('Products:')
+        ->toContain('All selected products must appear together naturally in the final marketing scene');
 
     // Distinctive scene prompt
     expect($promptSent)->toContain('Sunlit mahogany tasting bar with hand-turned ceramic dripper and spilled green coffee beans');
 
-    // Canonical design treatment and copy emphasis
-    expect($promptSent)->toContain('Selected Treatment: Editorial')
-        ->toContain('Selected Emphasis: Price-Focused');
-
-    // Non-default render style with canonical spec
-    expect($promptSent)->toContain('Cinematic Marketing')
-        ->toContain('Volumetric atmospheric rim lighting and rich color grading');
-
-    // 2 Visual Themes expanded with canonical specs
-    expect($promptSent)->toContain('Lifestyle: Authentic lived-in context')
-        ->toContain('Storytelling: Rich narrative visual depth');
-
-    // 2 Brand Tones expanded with canonical specs
-    expect($promptSent)->toContain('Luxury: Exclusive, prestigious, sophisticated')
-        ->toContain('Inspiring: Uplifting, aspirational, visionary');
+    // Canonical copy emphasis and render style
+    expect($promptSent)->toContain('Copy emphasis: Price-Focused')
+        ->toContain('Cinematic Marketing');
 
     // Tagline, Prices, Business Name, Campaign, Event, Aspect Ratio
-    expect($promptSent)->toContain('TAGLINE: "Mastery in Every Single Pour"')
-        ->toContain('BUSINESS / SHOP NAME: "Artisan Roasters PH"')
-        ->toContain('MARKETING PRICE DISPLAY:')
+    expect($promptSent)->toContain('Tagline: "Mastery in Every Single Pour"')
+        ->toContain('Artisan Roasters PH')
+        ->toContain('Ethiopia Yirgacheffe — ₱280.00')
+        ->toContain('Colombia Supremo — ₱250.00')
         ->toContain('Artisan Reserve 2026')
         ->toContain('Philippine Coffee Day')
         ->toContain('16:9');
@@ -389,7 +366,7 @@ test('manual generation preserves all explicit creative controls and all selecte
         ->and($meta['authoritative_text_layers']['price'])->toContain('₱280.00');
 });
 
-test('a manual design treatment cannot be replaced by an automatic default', function () {
+test('a manual prompt does not inject bloated design treatment essays', function () {
     $orchestrator = new ModularPromptOrchestrator;
     $business = Business::factory()->create();
 
@@ -399,8 +376,8 @@ test('a manual design treatment cannot be replaced by an automatic default', fun
         'design_treatment' => 'Editorial',
     ], $business);
 
-    expect($prompt)->toContain('Selected Treatment: Editorial')
-        ->not()->toContain('Selected Treatment: Classic');
+    expect($prompt)->not()->toContain('Selected Treatment:')
+        ->toContain('Single Origin');
 });
 
 test('a manual render style cannot be replaced by an automatic default', function () {
@@ -414,11 +391,10 @@ test('a manual render style cannot be replaced by an automatic default', functio
     ], $business);
 
     expect($prompt)->toContain('Cinematic Marketing')
-        ->toContain('Volumetric atmospheric rim lighting')
         ->not()->toContain('Studio Product Still');
 });
 
-test('a manual brand tone cannot disappear', function () {
+test('a manual prompt does not inject bloated brand tone essays', function () {
     $orchestrator = new ModularPromptOrchestrator;
     $business = Business::factory()->create();
 
@@ -428,12 +404,13 @@ test('a manual brand tone cannot disappear', function () {
         'brand_tone' => ['Luxury', 'Playful'],
     ], $business);
 
-    expect($prompt)->toContain('BRAND TONE:')
-        ->toContain('Luxury: Exclusive, prestigious')
-        ->toContain('Playful: Vibrant, whimsical');
+    expect($prompt)->not()->toContain('BRAND TONE:')
+        ->not()->toContain('Luxury: Exclusive, prestigious')
+        ->not()->toContain('Playful: Vibrant, whimsical')
+        ->toContain('Single Origin');
 });
 
-test('a manual visual theme cannot disappear', function () {
+test('a manual prompt does not inject bloated visual theme essays', function () {
     $orchestrator = new ModularPromptOrchestrator;
     $business = Business::factory()->create();
 
@@ -443,9 +420,10 @@ test('a manual visual theme cannot disappear', function () {
         'visual_theme' => ['Seasonal', 'Storytelling'],
     ], $business);
 
-    expect($prompt)->toContain('VISUAL THEME:')
-        ->toContain('Seasonal: Thematic seasonal props')
-        ->toContain('Storytelling: Rich narrative visual depth');
+    expect($prompt)->not()->toContain('VISUAL THEME:')
+        ->not()->toContain('Seasonal: Thematic seasonal props')
+        ->not()->toContain('Storytelling: Rich narrative visual depth')
+        ->toContain('Single Origin');
 });
 
 test('a manual scene prompt cannot disappear', function () {
@@ -460,7 +438,7 @@ test('a manual scene prompt cannot disappear', function () {
         'scene_prompt' => $distinctiveInstruction,
     ], $business);
 
-    expect($prompt)->toContain('USER SCENE DIRECTION:')
+    expect($prompt)->toContain('Creative direction:')
         ->toContain($distinctiveInstruction);
 });
 
@@ -765,4 +743,106 @@ test('multi-product compositor contract supports primary product, co-featured pr
         ->and($singleManifest['co_featured_products'])->toBeEmpty()
         ->and($singleManifest['exact_content']['product_name'])->toBe('Single Espresso')
         ->and($singleManifest['exact_content']['price'])->toBe('₱100.00');
+});
+
+test('campaign linked event is authoritative and unrelated request event_id cannot override it', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'The Learning Corner PH',
+        'industry' => 'Education & Books',
+        'category' => 'Educational Supplies',
+    ]);
+
+    $teachersDay = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => "National Teachers' Day",
+    ]);
+
+    $newYearsDay = Event::factory()->create([
+        'user_id' => $user->id,
+        'name' => "New Year's Day",
+    ]);
+
+    $campaign = Campaign::factory()->create([
+        'user_id' => $user->id,
+        'business_id' => $business->id,
+        'event_id' => $teachersDay->id,
+        'name' => "National Teachers' Day Campaign",
+    ]);
+
+    $product = Product::factory()->create([
+        'business_id' => $business->id,
+        'name' => 'Gratitude Journal Gift Set',
+        'price' => 450.00,
+        'image_path' => 'products/journal.png',
+    ]);
+    Storage::disk('public')->put('products/journal.png', 'binary-journal');
+
+    $interceptedRequest = null;
+    Http::fake([
+        'https://api.openai.com/v1/images/edits' => function (ClientRequest $request) use (&$interceptedRequest) {
+            $interceptedRequest = $request;
+
+            return Http::response([
+                'data' => [
+                    ['b64_json' => base64_encode('fake-generated-image')],
+                ],
+            ], 200);
+        },
+    ]);
+
+    // Send request with mismatched event_id pointing to New Year's Day
+    $response = $this->actingAs($user)->postJson(route('generator.manual'), [
+        'campaign_id' => $campaign->id,
+        'event_id' => $newYearsDay->id,
+        'product_name' => 'Gratitude Journal Gift Set',
+        'catalog_product_ids' => [$product->id],
+        'aspect_ratio' => '1:1',
+        'render_style' => 'Studio Product Still',
+        'scene_prompt' => 'Show the journal beside a handcrafted wooden pen on a desk',
+    ]);
+
+    $response->assertOk();
+
+    expect($interceptedRequest)->not()->toBeNull();
+    $body = $interceptedRequest->body();
+    $promptSent = preg_match('/name="prompt"\r?\n\r?\n(.*?)\r?\n--/s', $body, $matches) ? $matches[1] : $body;
+
+    // Must contain the campaign's linked event "National Teachers' Day"
+    expect($promptSent)->toContain("Event: National Teachers' Day")
+        // MUST NOT contain the unrelated requested event "New Year's Day"
+        ->not()->toContain("New Year's Day");
+});
+
+test('user creative prompt remains direct and is not expanded into camera or lighting essays', function () {
+    $orchestrator = app(ModularPromptOrchestrator::class);
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create([
+        'user_id' => $user->id,
+        'name' => 'Artisan Roasters PH',
+    ]);
+
+    $userDirection = 'Show the coffee beside a warm pastry on a rustic cafe table.';
+
+    $prompt = $orchestrator->orchestrate([
+        'generation_mode' => 'manual',
+        'product_name' => 'Pour-Over Reserve',
+        'scene_prompt' => $userDirection,
+        'render_style' => 'Studio Product Still',
+        'copy_emphasis' => 'Balanced',
+        'aspect_ratio' => '1:1',
+    ], $business);
+
+    // Creative direction contains user's exact input
+    expect($prompt)->toContain('Creative direction')
+        ->toContain($userDirection)
+        // Must NOT contain technical camera, lighting, or composition bloat
+        ->not()->toContain('f/2.8')
+        ->not()->toContain('50mm lens')
+        ->not()->toContain('three-point lighting')
+        ->not()->toContain('golden ratio grid')
+        ->not()->toContain('depth of field calculation')
+        ->not()->toContain('VISUAL THEME:')
+        ->not()->toContain('BRAND TONE:');
 });

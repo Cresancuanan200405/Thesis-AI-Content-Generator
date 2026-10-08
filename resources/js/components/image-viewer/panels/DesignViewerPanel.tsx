@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from '@inertiajs/react';
 import {
-    Sparkles,
     Check,
+    Cpu,
+    Edit3,
     RefreshCw,
     Download,
     Trash2,
@@ -14,7 +15,6 @@ import {
     ChevronUp,
     Eye,
     Palette,
-    Cpu,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -107,7 +107,7 @@ export function DesignViewerPanel({
                                 variant="outline"
                                 className="font-mono text-[10px] font-bold border-primary/30 bg-primary/10 text-primary"
                             >
-                                <Sparkles className="mr-1 h-2.5 w-2.5" />
+                                <Cpu className="mr-1 h-2.5 w-2.5" />
                                 {modelName}
                             </Badge>
 
@@ -191,7 +191,7 @@ export function DesignViewerPanel({
                                     className="h-9 w-full justify-center cursor-pointer gap-1.5 bg-primary font-semibold text-primary-foreground shadow-xs shadow-primary/20 transition-all hover:bg-primary/90"
                                 >
                                     <Link href={studioUrl} className="flex items-center justify-center gap-1.5 w-full">
-                                        <Sparkles className="h-4 w-4 shrink-0" />
+                                        <Edit3 className="h-4 w-4 shrink-0" />
                                         <span className="truncate">Resume Draft</span>
                                     </Link>
                                 </Button>
@@ -205,7 +205,7 @@ export function DesignViewerPanel({
                             >
                                 <Link href={viewCreativeUrl} className="flex items-center justify-center gap-1.5 w-full">
                                     <Eye className="h-3.5 w-3.5 shrink-0" />
-                                    <span className="truncate">View in Generator Studio</span>
+                                    <span className="truncate">View in Creative Studio</span>
                                 </Link>
                             </Button>
                         </>
@@ -218,7 +218,7 @@ export function DesignViewerPanel({
                                     className="h-9 w-full justify-center cursor-pointer gap-1.5 bg-primary font-semibold text-primary-foreground shadow-xs shadow-primary/20 transition-all hover:bg-primary/90"
                                 >
                                     <Link href={studioUrl} className="flex items-center justify-center gap-1.5 w-full">
-                                        <Sparkles className="h-4 w-4 shrink-0" />
+                                        <Edit3 className="h-4 w-4 shrink-0" />
                                         <span className="truncate">Edit in Studio</span>
                                     </Link>
                                 </Button>

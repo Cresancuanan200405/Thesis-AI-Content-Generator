@@ -5,6 +5,7 @@ import {
     Check,
     Compass,
     Cpu,
+    FileText,
     ImageIcon,
     Layers,
     Package,
@@ -12,7 +13,6 @@ import {
     PanelRightOpen,
     PenTool,
     ShieldCheck,
-    Sparkles,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -51,6 +51,7 @@ interface StudioBriefSummaryProps {
     imageQuality?: ImageQuality;
     includeBusinessName?: boolean;
     isAutomaticMode?: boolean;
+    includeProductName?: boolean;
     includeTagline?: boolean;
     includePrices?: boolean;
     showEventText?: boolean;
@@ -81,6 +82,7 @@ export function StudioBriefSummary({
     imageQuality = 'medium',
     includeBusinessName = true,
     isAutomaticMode = false,
+    includeProductName = true,
     includeTagline = true,
     includePrices = true,
 }: StudioBriefSummaryProps) {
@@ -101,7 +103,7 @@ export function StudioBriefSummary({
                         onToggleCollapse(false);
                     }
                 }}
-                className="group sticky top-11 z-20 flex h-[calc(100vh-2.75rem)] w-11 shrink-0 cursor-pointer flex-col items-center justify-between border-l border-border/80 bg-card/60 py-4 backdrop-blur-xl transition-all duration-200 select-none hover:bg-muted/40 sm:top-12 sm:h-[calc(100vh-3rem)] lg:w-12"
+                className="group sticky top-11 z-30 flex h-[calc(100vh-2.75rem)] w-11 shrink-0 cursor-pointer flex-col items-center justify-between border-l border-border/80 bg-card/60 py-4 backdrop-blur-xl transition-all duration-200 select-none hover:bg-muted/40 sm:top-12 sm:h-[calc(100vh-3rem)] lg:w-12"
                 title="Open Brief Summary"
             >
                 <div className="flex flex-col items-center gap-5">
@@ -126,20 +128,20 @@ export function StudioBriefSummary({
                 </div>
 
                 <div className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors group-hover:text-foreground">
-                    <Sparkles className="h-3.5 w-3.5" />
+                    <FileText className="h-3.5 w-3.5" />
                 </div>
             </aside>
         );
     }
 
     return (
-        <aside className="sticky top-11 z-20 flex h-[calc(100vh-2.75rem)] w-72 shrink-0 flex-col justify-between overflow-y-auto border-l border-border/80 bg-card/80 p-3.5 backdrop-blur-2xl transition-all duration-300 sm:top-12 sm:h-[calc(100vh-3rem)] sm:w-80 lg:w-[300px] xl:w-[320px] dark:bg-card/90">
+        <aside className="sticky top-11 z-30 flex h-[calc(100vh-2.75rem)] w-72 shrink-0 flex-col justify-between overflow-y-auto border-l border-border/80 bg-card/80 p-3.5 backdrop-blur-2xl transition-all duration-300 sm:top-12 sm:h-[calc(100vh-3rem)] sm:w-80 lg:w-[300px] xl:w-[320px] dark:bg-card/90">
             <div className="space-y-3.5">
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-border/60 pb-3">
                     <div className="flex items-center gap-2.5">
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary shadow-2xs border border-primary/20">
-                            <Sparkles className="h-3.5 w-3.5" />
+                            <FileText className="h-3.5 w-3.5" />
                         </div>
                         <div>
                             <span className="text-xs font-bold tracking-tight text-foreground block">
@@ -176,7 +178,7 @@ export function StudioBriefSummary({
                 </div>
 
                 {/* Section 1: Canvas Proportions & Engine */}
-                <div className="space-y-2 rounded-2xl border border-border/70 bg-card/60 p-3 shadow-2xs">
+                <div className="space-y-2 rounded-card border border-border/70 bg-card/60 p-3 shadow-2xs">
                     <div className="flex items-center justify-between text-[11px] font-bold tracking-wide text-foreground uppercase">
                         <span className="flex items-center gap-1.5">
                             <Layers className="h-3.5 w-3.5 text-primary" />
@@ -217,7 +219,7 @@ export function StudioBriefSummary({
                 </div>
 
                 {/* Section 2: Promoting Offering */}
-                <div className="space-y-2 rounded-2xl border border-border/70 bg-card/60 p-3 shadow-2xs">
+                <div className="space-y-2 rounded-card border border-border/70 bg-card/60 p-3 shadow-2xs">
                     <div className="flex items-center justify-between text-[11px] font-bold tracking-wide text-foreground uppercase">
                         <span className="flex items-center gap-1.5">
                             <Package className="h-3.5 w-3.5 text-primary" />
@@ -294,7 +296,7 @@ export function StudioBriefSummary({
 
                 {/* Section 3: Campaign & Event Context */}
                 {(activeCampaign || selectedEvent) && (
-                    <div className="space-y-2 rounded-2xl border border-border/70 bg-card/60 p-3 shadow-2xs">
+                    <div className="space-y-2 rounded-card border border-border/70 bg-card/60 p-3 shadow-2xs">
                         <span className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-foreground uppercase">
                             <Compass className="h-3.5 w-3.5 text-primary" />
                             Campaign & Event
@@ -336,7 +338,7 @@ export function StudioBriefSummary({
                 )}
 
                 {/* Section 4: Creative Direction & Presets */}
-                <div className="space-y-2 rounded-2xl border border-border/70 bg-card/60 p-3 shadow-2xs">
+                <div className="space-y-2 rounded-card border border-border/70 bg-card/60 p-3 shadow-2xs">
                     <div className="flex items-center justify-between text-[11px] font-bold tracking-wide text-foreground uppercase">
                         <span className="flex items-center gap-1.5">
                             <Camera className="h-3.5 w-3.5 text-primary" />
@@ -416,13 +418,19 @@ export function StudioBriefSummary({
                 </div>
 
                 {/* Section 5: Marketing Copy Settings */}
-                <div className="space-y-2 rounded-2xl border border-border/70 bg-card/60 p-3 shadow-2xs">
+                <div className="space-y-2 rounded-card border border-border/70 bg-card/60 p-3 shadow-2xs">
                     <span className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-foreground uppercase">
                         <PenTool className="h-3.5 w-3.5 text-primary" />
                         Marketing Copy
                     </span>
 
                     <div className="space-y-1 text-xs">
+                        <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1 text-[11px]">
+                            <span className="text-muted-foreground">Product Name:</span>
+                            <span className={`font-semibold ${includeProductName ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
+                                {includeProductName ? 'ON (Included)' : 'OFF (Excluded)'}
+                            </span>
+                        </div>
                         <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1 text-[11px]">
                             <span className="text-muted-foreground">Tagline Headline:</span>
                             <span

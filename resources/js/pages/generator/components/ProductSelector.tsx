@@ -64,7 +64,7 @@ export function ProductSelector({
         <div className="space-y-3.5">
             {/* Top Toolbar: Full-Width Evenly Centered Tab Switcher */}
             <div className="w-full">
-                <div className="grid grid-cols-2 rounded-2xl border border-border/80 bg-muted/25 p-1.5 shadow-2xs gap-1.5">
+                <div className="grid grid-cols-2 rounded-card border border-border/80 bg-muted/25 p-1.5 shadow-2xs gap-1.5">
                     <button
                         type="button"
                         onClick={() => onSelectTab('catalog')}
@@ -174,7 +174,7 @@ export function ProductSelector({
 
                     {/* Catalog Product Interactive Grid */}
                     {products.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-border/80 bg-muted/15 p-6 text-center">
+                        <div className="rounded-card border border-dashed border-border/80 bg-muted/15 p-6 text-center">
                             <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
                                 <Package className="h-5 w-5" />
                             </div>
@@ -206,7 +206,7 @@ export function ProductSelector({
                             </div>
                         </div>
                     ) : displayedCatalog.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-border/80 bg-muted/10 p-5 text-center text-xs text-muted-foreground">
+                        <div className="rounded-card border border-dashed border-border/80 bg-muted/10 p-5 text-center text-xs text-muted-foreground">
                             No catalog items match "{inlineProductSearch}".
                         </div>
                     ) : (
@@ -221,7 +221,7 @@ export function ProductSelector({
                                     <div
                                         key={prod.id}
                                         onClick={() => onToggleCatalogProduct(prod)}
-                                        className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border text-left transition-all duration-200 ${isSelected
+                                        className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-card border text-left transition-all duration-200 ${isSelected
                                                 ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-md ring-2 ring-emerald-500/40'
                                                 : 'border-border/80 bg-background hover:border-emerald-500/50 hover:bg-muted/20 hover:shadow-xs'
                                             }`}
@@ -324,7 +324,7 @@ export function ProductSelector({
                             {customProducts.map((item, index) => (
                                 <div
                                     key={item.id}
-                                    className="space-y-2.5 rounded-2xl border border-border/80 bg-background/90 p-3.5 shadow-2xs transition-all"
+                                    className="space-y-2.5 rounded-card border border-border/80 bg-background/90 p-3.5 shadow-2xs transition-all"
                                 >
                                     <div className="flex items-center justify-between">
                                         <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
@@ -399,7 +399,7 @@ export function ProductSelector({
                             )}
                         </div>
                     ) : (
-                        <div className="rounded-2xl border border-dashed border-border/80 bg-muted/15 p-5 text-center">
+                        <div className="rounded-card border border-dashed border-border/80 bg-muted/15 p-5 text-center">
                             <Edit3 className="mx-auto mb-1.5 h-6 w-6 text-muted-foreground/50" />
                             <p className="text-xs font-bold text-foreground">
                                 No custom products added yet

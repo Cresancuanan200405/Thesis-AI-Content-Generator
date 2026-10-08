@@ -1,10 +1,10 @@
 import { Link } from '@inertiajs/react';
 import {
     CalendarDays,
+    ImageIcon,
     Megaphone,
     Moon,
     Package,
-    Sparkles,
     Sun,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -61,7 +61,7 @@ export default function AuthSimpleLayout({
                 <div className="absolute -bottom-32 -left-32 h-[450px] w-[450px] rounded-full bg-purple-500/12 blur-[130px] dark:bg-purple-500/15" />
             </div>
 
-            <div className="mx-auto grid w-full max-w-5xl overflow-hidden rounded-3xl border border-white/25 bg-card/85 shadow-2xl backdrop-blur-2xl lg:grid-cols-[0.95fr_1.05fr] dark:border-white/10 dark:bg-card/85">
+            <div className="mx-auto grid w-full max-w-5xl overflow-hidden rounded-card border border-white/25 bg-card/85 shadow-2xl backdrop-blur-2xl lg:grid-cols-[0.95fr_1.05fr] dark:border-white/10 dark:bg-card/85">
                 {/* ============================================================
                     LEFT PANEL — Hero-matched Glassmorphic Overview Panel
                 ============================================================= */}
@@ -111,26 +111,21 @@ export default function AuthSimpleLayout({
                                 <AppLogoIcon className="size-full rounded-lg object-contain" />
                                 <div className="absolute inset-0 -z-10 rounded-xl bg-primary/25 opacity-70 blur-sm transition-all group-hover:opacity-100 group-hover:blur-md" />
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm font-extrabold tracking-tight text-white">
-                                    MarketPilot
-                                </span>
-                                <span className="inline-flex items-center gap-1 rounded-full border border-blue-400/30 bg-blue-500/15 px-2 py-0.5 text-[10px] font-bold text-blue-300">
-                                    <Sparkles className="h-2.5 w-2.5 text-blue-400" />
-                                    AI Studio
-                                </span>
-                            </div>
+                            <span className="text-sm font-bold tracking-tight text-white">
+                                MarketPilot
+                            </span>
                         </Link>
                     </div>
 
                     {/* Middle: Hero Typography & System Pillars */}
                     <div className="relative z-10 my-auto space-y-4 py-4">
-                        <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-[10px] font-bold tracking-wider text-blue-300 uppercase backdrop-blur-md">
-                            <Sparkles className="h-3 w-3 text-blue-400" />
-                            Retail Intelligence Engine
+                        <div>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-300/80">
+                                Marketing Creative Platform
+                            </span>
                         </div>
 
-                        <h1 className="text-2xl leading-snug font-extrabold tracking-tight text-white">
+                        <h1 className="text-2xl leading-snug font-bold tracking-tight text-white">
                             Automate seasonal visuals and marketing campaigns{' '}
                             <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-300 bg-clip-text text-transparent">
                                 in seconds.
@@ -162,8 +157,8 @@ export default function AuthSimpleLayout({
                                 },
                                 {
                                     step: '03',
-                                    title: 'OpenAI Studio',
-                                    icon: Sparkles,
+                                    title: 'Creative Studio',
+                                    icon: ImageIcon,
                                     color: 'text-blue-400',
                                     bg: 'bg-blue-500/15 border-blue-400/20',
                                 },
@@ -267,7 +262,7 @@ export default function AuthSimpleLayout({
                         </div>
 
                         <div className="space-y-1 text-left">
-                            <h2 className="text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
+                            <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
                                 {title}
                             </h2>
                             {description && (

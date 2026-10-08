@@ -99,7 +99,7 @@ export function CreativeCanvas({
     const isDraftStatus = isSavedAsDraft || savedDesign?.status === 'draft';
 
     return (
-        <Card className="mx-auto max-w-3xl overflow-hidden rounded-2xl border-border bg-card shadow-sm">
+        <Card className="mx-auto max-w-3xl overflow-hidden rounded-card border-border bg-card shadow-sm">
             <CardHeader className="border-b p-5 md:p-6">
                 {/* Breadcrumb Navigation */}
                 <nav
@@ -247,7 +247,7 @@ export function CreativeCanvas({
                     {/* CLICKABLE GENERATED VISUAL */}
                     <div
                         onClick={handleViewCreative}
-                        className="group relative cursor-pointer overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:border-primary/50"
+                        className="group relative cursor-pointer overflow-hidden rounded-card border border-border bg-card shadow-sm transition-all hover:border-primary/50"
                     >
                         {/* Clean Structured Meta Bar (No capsule pills, No AI snaps) */}
                         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/30 px-4 py-2.5 text-xs">
@@ -291,7 +291,7 @@ export function CreativeCanvas({
                         </div>
 
                         {/* Generated Visual Canvas */}
-                        <div className="flex min-h-[360px] items-center justify-center overflow-hidden rounded-b-xl bg-muted/15 p-3 sm:p-5">
+                        <div className="flex min-h-[360px] items-center justify-center overflow-hidden rounded-b-card bg-muted/15 p-3 sm:p-5">
                             {savedDesign?.image_url ? (
                                 <div className="relative flex max-h-[520px] w-full items-center justify-center overflow-hidden rounded-lg border border-border/60 bg-background/50 shadow-md">
                                     <img

@@ -77,8 +77,8 @@ trait ResolvesGeneratorContext
 
         $campaigns = $user?->campaigns()->with(['event', 'product'])->orderByDesc('created_at')->get() ?? collect();
 
-        $selectedEvent = ($draft?->event ?: ($draft?->event_id ? $events->firstWhere('id', $draft->event_id) : null))
-            ?: ($campaign?->event ?: $events->firstWhere('id', $request->input('event_id')));
+        $selectedEvent = $draft?->event
+            ?: ($campaign?->event ?: ($draft?->event_id ? $events->firstWhere('id', $draft->event_id) : $events->firstWhere('id', $request->input('event_id'))));
 
         return [
             'business' => $business ? [
@@ -113,7 +113,7 @@ trait ResolvesGeneratorContext
                 'proclamation_no' => $selectedEvent->proclamation_no,
             ] : null,
             'initial_campaign_id' => $campaign?->id ? (string) $campaign->id : ($request->input('campaign_id') ?: $request->input('campaign')),
-            'initial_event_id' => $draft?->event_id ? (string) $draft->event_id : ($request->input('event_id') ?: $request->input('event') ?: ($campaign?->event_id ? (string) $campaign->event_id : null)),
+            'initial_event_id' => $draft?->event_id ? (string) $draft->event_id : ($campaign?->event_id ? (string) $campaign->event_id : ($request->input('event_id') ?: $request->input('event'))),
             'initial_product_name' => $request->input('product_name') ?: $request->input('product') ?: $campaign?->product?->name,
             'campaigns' => $campaigns->map(fn (Campaign $c): array => [
                 'id' => $c->id,

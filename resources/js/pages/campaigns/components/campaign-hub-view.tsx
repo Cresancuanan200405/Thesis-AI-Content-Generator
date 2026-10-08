@@ -13,7 +13,6 @@ import {
     Pencil,
     Plus,
     Search,
-    Sparkles,
     Tag,
     Trash2,
     X,
@@ -117,7 +116,7 @@ export function CampaignHubView({
                 CAMPAIGN OVERVIEW / STATS
             ====================================================== */}
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-2xs transition-all hover:border-border">
+                <div className="rounded-card border border-border/70 bg-card p-4 shadow-2xs transition-all hover:border-border">
                     <div className="flex items-center gap-2">
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                             <Layers className="h-3.5 w-3.5" />
@@ -131,10 +130,10 @@ export function CampaignHubView({
                     </p>
                 </div>
 
-                <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-2xs transition-all hover:border-border">
+                <div className="rounded-card border border-border/70 bg-card p-4 shadow-2xs transition-all hover:border-border">
                     <div className="flex items-center gap-2">
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                            <Sparkles className="h-3.5 w-3.5" />
+                            <CheckCircle2 className="h-3.5 w-3.5" />
                         </div>
                         <span className="text-xs font-medium text-muted-foreground">
                             Active
@@ -145,7 +144,7 @@ export function CampaignHubView({
                     </p>
                 </div>
 
-                <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-2xs transition-all hover:border-border">
+                <div className="rounded-card border border-border/70 bg-card p-4 shadow-2xs transition-all hover:border-border">
                     <div className="flex items-center gap-2">
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
                             <CalendarDays className="h-3.5 w-3.5" />
@@ -159,7 +158,7 @@ export function CampaignHubView({
                     </p>
                 </div>
 
-                <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-2xs transition-all hover:border-border">
+                <div className="rounded-card border border-border/70 bg-card p-4 shadow-2xs transition-all hover:border-border">
                     <div className="flex items-center gap-2">
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
                             <CheckCircle2 className="h-3.5 w-3.5" />
@@ -178,7 +177,7 @@ export function CampaignHubView({
                 FILTER TOOLBAR (SYSTEM DESIGN COMPATIBLE)
                 Responsive across all zoom levels
             ====================================================== */}
-            <div className="relative z-20 mb-5 rounded-2xl border border-white/25 bg-card/95 p-2.5 shadow-md backdrop-blur-xl transition-all sm:p-3 dark:border-white/10 dark:bg-card/95">
+            <div className="relative z-20 mb-5 rounded-card border border-white/25 bg-card/95 p-2.5 shadow-md backdrop-blur-xl transition-all sm:p-3 dark:border-white/10 dark:bg-card/95">
                 <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
                     {/* Search Input */}
                     <div className="relative min-w-0 flex-1">
@@ -299,7 +298,7 @@ export function CampaignHubView({
                 CAMPAIGNS CARDS / LIST
             ====================================================== */}
             {displayedCampaigns.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-16 text-center shadow-2xs">
+                <div className="rounded-card border border-dashed border-border bg-card px-6 py-16 text-center shadow-2xs">
                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
                         <Layers className="h-6 w-6" />
                     </div>
@@ -375,7 +374,7 @@ export function CampaignHubView({
                                         );
                                     }
                                 }}
-                                className="group relative flex min-h-[168px] cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-border/70 bg-card text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus:ring-2 focus:ring-primary/30 focus:outline-none"
+                                className="group relative flex min-h-[168px] cursor-pointer flex-col justify-between overflow-hidden rounded-card border border-border/70 bg-card text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus:ring-2 focus:ring-primary/30 focus:outline-none"
                             >
                                 {/* CARD TOP HEADER */}
                                 <div className="border-b border-border/50 p-4">
@@ -583,7 +582,7 @@ export function CampaignHubView({
                                         );
                                     }
                                 }}
-                                className="group flex cursor-pointer items-center gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-2xs transition-all duration-200 hover:border-primary/40 hover:shadow-sm"
+                                className="group flex cursor-pointer items-center gap-3 rounded-card border border-border/70 bg-card p-3 shadow-2xs transition-all duration-200 hover:border-primary/40 hover:shadow-sm"
                             >
                                 {/* Status Icon */}
                                 <div

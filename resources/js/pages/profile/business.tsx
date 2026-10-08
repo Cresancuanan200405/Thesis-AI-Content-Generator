@@ -204,7 +204,7 @@ export default function BusinessProfilePage({
 
                 <form onSubmit={handleSaveBusiness} className="space-y-8">
                     {/* SECTION 1: Business Information (Editable) */}
-                    <Card className="rounded-3xl border-border/80 bg-card shadow-xs">
+                    <Card className="rounded-card border-border/80 bg-card shadow-xs">
                         <CardHeader className="border-b border-border/60 p-6 pb-4">
                             <div className="flex items-center gap-2.5">
                                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -290,7 +290,7 @@ export default function BusinessProfilePage({
                     </Card>
 
                     {/* SECTION 2: Business Location (Editable) */}
-                    <Card className="rounded-3xl border-border/80 bg-card shadow-xs">
+                    <Card className="rounded-card border-border/80 bg-card shadow-xs">
                         <CardHeader className="border-b border-border/60 p-6 pb-4">
                             <div className="flex items-center gap-2.5">
                                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
@@ -346,7 +346,7 @@ export default function BusinessProfilePage({
                     </Card>
 
                     {/* SECTION 3: Industry & Category (Protected / Read-Only) */}
-                    <Card className="rounded-3xl border-border/80 bg-card shadow-xs">
+                    <Card className="rounded-card border-border/80 bg-card shadow-xs">
                         <CardHeader className="border-b border-border/60 p-6 pb-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2.5">
@@ -403,7 +403,7 @@ export default function BusinessProfilePage({
                     </Card>
 
                     {/* SECTION 4: Registration & Compliance (Protected / Read-Only) */}
-                    <Card className="rounded-3xl border-border/80 bg-card shadow-xs">
+                    <Card className="rounded-card border-border/80 bg-card shadow-xs">
                         <CardHeader className="border-b border-border/60 p-6 pb-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2.5">

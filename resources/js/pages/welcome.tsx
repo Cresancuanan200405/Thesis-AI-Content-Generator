@@ -14,7 +14,6 @@ import {
     Menu,
     Moon,
     Package,
-    Sparkles,
     Sun,
     X,
 } from 'lucide-react';
@@ -351,7 +350,7 @@ export default function Welcome() {
                                 <div className="absolute inset-0 -z-10 rounded-2xl bg-primary/25 opacity-70 blur-sm transition-all group-hover:opacity-100 group-hover:blur-md" />
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="text-base font-extrabold tracking-tight text-foreground">
+                                <span className="text-base font-bold tracking-tight text-foreground">
                                     MarketPilot
                                 </span>
                                 <Badge
@@ -574,19 +573,17 @@ export default function Welcome() {
                             <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
                                 {/* Left Column: Clear Value Proposition, CTAs & Capability Summary */}
                                 <div className="space-y-6 lg:col-span-5 xl:col-span-5">
-                                    <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-primary shadow-xs backdrop-blur-md">
-                                        <Sparkles className="h-3.5 w-3.5 text-primary" />
-                                        <span>
-                                            AI-DRIVEN MARKETING CREATIVE STUDIO
+                                    <div>
+                                        <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                                            Marketing Creative Platform
                                         </span>
                                     </div>
 
-                                    <h1 className="text-3xl leading-[1.12] font-extrabold tracking-tight text-foreground sm:text-4xl lg:text-5xl xl:text-[52px]">
+                                    <h1 className="text-3xl leading-[1.15] font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl xl:text-[52px]">
                                         Create Professional
                                         <br className="hidden sm:inline" />{' '}
                                         Marketing Visuals
-                                        <br className="hidden sm:inline" /> With
-                                        AI
+                                        <br className="hidden sm:inline" /> For Your Products
                                     </h1>
 
                                     <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
@@ -670,7 +667,7 @@ export default function Welcome() {
                                 >
                                     {/* Faded Background Sample (Top-Left Offset) */}
                                     <div
-                                        className="pointer-events-none absolute -top-4 -left-4 z-0 hidden aspect-square w-[280px] scale-[0.88] -rotate-6 overflow-hidden rounded-3xl border border-border/40 bg-card/40 opacity-25 shadow-2xl blur-[0.5px] transition-all duration-700 sm:-left-8 sm:block sm:w-[340px] dark:opacity-15"
+                                        className="pointer-events-none absolute -top-4 -left-4 z-0 hidden aspect-square w-[280px] scale-[0.88] -rotate-6 overflow-hidden rounded-card border border-border/40 bg-card/40 opacity-25 shadow-2xl blur-[0.5px] transition-all duration-700 sm:-left-8 sm:block sm:w-[340px] dark:opacity-15"
                                         aria-hidden="true"
                                     >
                                         <img
@@ -683,7 +680,7 @@ export default function Welcome() {
 
                                     {/* Faded Background Sample (Bottom-Right Offset) */}
                                     <div
-                                        className="pointer-events-none absolute -right-4 -bottom-4 z-0 hidden aspect-square w-[280px] scale-[0.88] rotate-6 overflow-hidden rounded-3xl border border-border/40 bg-card/40 opacity-25 shadow-2xl blur-[0.5px] transition-all duration-700 sm:-right-8 sm:block sm:w-[340px] dark:opacity-15"
+                                        className="pointer-events-none absolute -right-4 -bottom-4 z-0 hidden aspect-square w-[280px] scale-[0.88] rotate-6 overflow-hidden rounded-card border border-border/40 bg-card/40 opacity-25 shadow-2xl blur-[0.5px] transition-all duration-700 sm:-right-8 sm:block sm:w-[340px] dark:opacity-15"
                                         aria-hidden="true"
                                     >
                                         <img
@@ -695,9 +692,9 @@ export default function Welcome() {
                                     </div>
 
                                     {/* Active Hero Showcase Frame (Editorial Floating Card) */}
-                                    <div className="relative z-10 w-full max-w-[400px] overflow-hidden rounded-3xl border border-white/40 bg-card/95 p-3 shadow-2xl backdrop-blur-xl transition-all duration-500 sm:max-w-[440px] lg:max-w-[460px] dark:border-white/15 dark:bg-card/90">
+                                    <div className="relative z-10 w-full max-w-[400px] overflow-hidden rounded-card border border-white/40 bg-card/95 p-3 shadow-2xl backdrop-blur-xl transition-all duration-500 sm:max-w-[440px] lg:max-w-[460px] dark:border-white/15 dark:bg-card/90">
                                         {/* Visual Creative Canvas with Crossfade Transition */}
-                                        <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-black/90 shadow-inner">
+                                        <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-black/90 shadow-inner">
                                             {showcaseCreatives.map(
                                                 (creative, index) => (
                                                     <img
@@ -813,7 +810,7 @@ export default function Welcome() {
                                         <Layers className="h-3.5 w-3.5" />
                                         End-to-End System Engine
                                     </div>
-                                    <h2 className="text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">
+                                    <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
                                         How All System Capabilities Connect
                                     </h2>
                                     <p className="text-xs text-muted-foreground sm:text-sm">
@@ -866,7 +863,7 @@ export default function Welcome() {
                                         return (
                                             <div
                                                 key={item.step}
-                                                className="group relative flex flex-col justify-between rounded-3xl border border-white/25 bg-card/85 p-5 shadow-lg backdrop-blur-2xl transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl dark:border-white/10 dark:bg-card/85"
+                                                className="group relative flex flex-col justify-between rounded-card border border-white/25 bg-card/85 p-5 shadow-lg backdrop-blur-2xl transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl dark:border-white/10 dark:bg-card/85"
                                             >
                                                 <div>
                                                     <div className="mb-3 flex items-center justify-between">
@@ -1073,7 +1070,7 @@ export default function Welcome() {
 
                                 {/* Right Side: Interactive Calendar Showcase */}
                                 <div className="lg:col-span-7">
-                                    <div className="overflow-hidden rounded-3xl border border-white/25 bg-card/85 p-6 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-card/85">
+                                    <div className="overflow-hidden rounded-card border border-white/25 bg-card/85 p-6 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-card/85">
                                         <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-4">
                                             <div className="flex items-center gap-2">
                                                 <Calendar className="h-5 w-5 text-amber-500" />
@@ -1208,7 +1205,7 @@ export default function Welcome() {
 
                             <div className="mx-auto mt-12 grid max-w-5xl gap-6 lg:grid-cols-3">
                                 {/* Starter Subscription */}
-                                <div className="group flex flex-col justify-between space-y-6 rounded-3xl border border-border/80 bg-card/85 p-6 shadow-md backdrop-blur-xl transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl dark:border-white/10 dark:bg-card/85">
+                                <div className="group flex flex-col justify-between space-y-6 rounded-card border border-border/80 bg-card/85 p-6 shadow-md backdrop-blur-xl transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl dark:border-white/10 dark:bg-card/85">
                                     <div className="space-y-4">
                                         <div className="space-y-1">
                                             <div className="flex items-center justify-between">
@@ -1277,7 +1274,7 @@ export default function Welcome() {
                                 </div>
 
                                 {/* Pro Growth Subscription (Highlighted) */}
-                                <div className="group relative flex flex-col justify-between space-y-6 rounded-3xl border-2 border-primary bg-card/95 p-6 shadow-xl backdrop-blur-2xl transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/15">
+                                <div className="group relative flex flex-col justify-between space-y-6 rounded-card border-2 border-primary bg-card/95 p-6 shadow-xl backdrop-blur-2xl transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/15">
                                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-md bg-primary px-3 py-0.5 text-[10px] font-extrabold tracking-wider text-primary-foreground uppercase shadow-sm">
                                         Recommended
                                     </div>
@@ -1352,7 +1349,7 @@ export default function Welcome() {
                                 </div>
 
                                 {/* Enterprise Subscription */}
-                                <div className="group flex flex-col justify-between space-y-6 rounded-3xl border border-border/80 bg-card/85 p-6 shadow-md backdrop-blur-xl transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl dark:border-white/10 dark:bg-card/85">
+                                <div className="group flex flex-col justify-between space-y-6 rounded-card border border-border/80 bg-card/85 p-6 shadow-md backdrop-blur-xl transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl dark:border-white/10 dark:bg-card/85">
                                     <div className="space-y-4">
                                         <div className="space-y-1">
                                             <div className="flex items-center justify-between">
@@ -1485,14 +1482,14 @@ export default function Welcome() {
 
                     <section className="bg-background py-16 md:py-20">
                         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-                            <div className="space-y-5 rounded-3xl border border-primary/30 bg-primary/5 p-8 text-center md:p-12">
+                            <div className="space-y-5 rounded-card border border-primary/30 bg-primary/5 p-8 text-center md:p-12">
                                 <Badge
                                     variant="outline"
                                     className="border-primary/20 bg-primary/10 text-xs font-bold text-primary"
                                 >
                                     Ready to automate your marketing?
                                 </Badge>
-                                <h2 className="mx-auto max-w-2xl text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl md:text-4xl">
+                                <h2 className="mx-auto max-w-2xl text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl">
                                     Start generating seasonal marketing
                                     creatives in seconds.
                                 </h2>

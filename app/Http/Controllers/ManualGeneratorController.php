@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\ResolvesGeneratorContext;
 use App\Http\Requests\SuggestTaglineRequest;
 use App\Models\Business;
 use App\Models\Campaign;
+use App\Models\Design;
 use App\Models\Event;
 use App\Models\Product;
 use App\Models\User;
@@ -83,6 +84,19 @@ class ManualGeneratorController extends Controller
             ], 422);
         }
 
+        if ($request->has('product_ids') && ! $request->has('catalog_product_ids')) {
+            $request->merge(['catalog_product_ids' => $request->input('product_ids')]);
+        }
+        if (! $request->filled('product_name')) {
+            $firstCatalogId = $request->input('product_id') ?: ($request->input('catalog_product_ids')[0] ?? null);
+            if ($firstCatalogId) {
+                $p = Product::find($firstCatalogId);
+                if ($p) {
+                    $request->merge(['product_name' => $p->name]);
+                }
+            }
+        }
+
         $validated = $request->validate([
             'campaign_id' => ['required', 'exists:campaigns,id'],
             'product_name' => ['required', 'string', 'max:255'],
@@ -93,7 +107,9 @@ class ManualGeneratorController extends Controller
             'custom_products.*.name' => ['required_with:custom_products', 'string', 'max:150'],
             'custom_products.*.price' => ['nullable'],
             'custom_products.*.description' => ['nullable', 'string', 'max:500'],
+            'include_product_name' => ['nullable', 'boolean'],
             'include_prices' => ['nullable', 'boolean'],
+            'include_product_price' => ['nullable', 'boolean'],
             'include_tagline' => ['nullable', 'boolean'],
             'design_treatment' => ['nullable', 'string', 'max:50'],
             'copy_emphasis' => ['nullable', 'string', 'max:50'],
@@ -181,9 +197,7 @@ class ManualGeneratorController extends Controller
                 : $campaign->product);
 
         /** @var Event|null $event */
-        $event = ! empty($validated['event_id'])
-            ? Event::query()->where('id', $validated['event_id'])->first()
-            : $campaign->event;
+        $event = $campaign->event ?: (! empty($validated['event_id']) ? Event::query()->where('id', $validated['event_id'])->first() : null);
 
         $showEventText = array_key_exists('show_event_text', $validated)
             ? filter_var($validated['show_event_text'], FILTER_VALIDATE_BOOLEAN)
@@ -211,7 +225,11 @@ class ManualGeneratorController extends Controller
                 : $business->name;
         }
 
-        $includePrices = filter_var($validated['include_prices'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $includeProductName = array_key_exists('include_product_name', $validated)
+            ? filter_var($validated['include_product_name'], FILTER_VALIDATE_BOOLEAN)
+            : true;
+
+        $includePrices = filter_var($validated['include_prices'] ?? ($validated['include_product_price'] ?? true), FILTER_VALIDATE_BOOLEAN);
 
         $includeTagline = array_key_exists('include_tagline', $validated)
             ? filter_var($validated['include_tagline'], FILTER_VALIDATE_BOOLEAN)
@@ -248,12 +266,14 @@ class ManualGeneratorController extends Controller
 
         $designTreatment = $designSystem->validateDesignTreatment($validated['design_treatment'] ?? null);
         $copyEmphasis = $designSystem->validateCopyEmphasis($validated['copy_emphasis'] ?? null);
+        $renderStyle = $designSystem->validateRenderStyle($validated['render_style'] ?? null);
 
         $productImageUrl = $product?->image_path ? Storage::url($product->image_path) : null;
 
         $previewPayload = $request->all();
         $previewPayload['tagline'] = $normalizedTagline;
         $previewPayload['tagline_mode'] = $taglineMode;
+        $previewPayload['include_product_name'] = $includeProductName;
         $previewPayload['include_tagline'] = $includeTagline;
         $previewPayload['include_business_name'] = $includeBusinessName;
         $previewPayload['business_name'] = $businessName;
@@ -281,7 +301,7 @@ class ManualGeneratorController extends Controller
                 'creative_concept' => $validated['notes'] ?? $validated['scene_prompt'] ?? $validated['image_prompt'] ?? null,
                 'design_treatment' => $designTreatment,
                 'copy_emphasis' => $copyEmphasis,
-                'render_style' => $validated['render_style'] ?? 'Studio Product Still',
+                'render_style' => $renderStyle,
                 'visual_theme' => $visualTheme,
                 'brand_tone' => $brandTone,
                 'aspect_ratio' => $validated['aspect_ratio'] ?? '1:1',
@@ -381,6 +401,7 @@ class ManualGeneratorController extends Controller
                 'event_name' => $event?->name,
                 'show_event_text' => $showEventText,
                 'price' => ($isMultiProduct || ! $includePrices) ? null : ($product ? $product->price : ($validated['price'] ?? null)),
+                'include_product_name' => $includeProductName,
                 'include_prices' => $includePrices,
                 'include_tagline' => $includeTagline,
                 'include_business_name' => $includeBusinessName,
@@ -388,7 +409,7 @@ class ManualGeneratorController extends Controller
                 'custom_products' => $validated['custom_products'] ?? [],
                 'brand_tone' => $brandTone,
                 'visual_theme' => $visualTheme,
-                'render_style' => $validated['render_style'] ?? 'Studio Product Still',
+                'render_style' => $renderStyle,
                 'design_treatment' => $designTreatment,
                 'copy_emphasis' => $copyEmphasis,
                 'scene_family' => $validated['scene_family'] ?? null,
@@ -419,6 +440,7 @@ class ManualGeneratorController extends Controller
                 'reference_image_paths' => $referenceImagePaths,
                 'scene_prompt' => $prompt,
                 'user_prompt' => $prompt,
+                'prompt_is_final' => true,
                 'notes' => $validated['notes'] ?? null,
             ];
 
@@ -441,6 +463,7 @@ class ManualGeneratorController extends Controller
                 'price_style' => $validated['price_style'] ?? null,
                 'tagline_style' => $validated['tagline_style'] ?? null,
                 'text_depth_mode' => $validated['text_depth_mode'] ?? null,
+                'include_product_name' => $includeProductName,
                 'include_tagline' => $includeTagline,
                 'tagline_mode' => $taglineMode,
                 'show_event_text' => $showEventText,
@@ -449,7 +472,40 @@ class ManualGeneratorController extends Controller
 
             $actualPrompt = $productionVisualPrompt;
 
+            $design = Design::create([
+                'user_id' => $user->id,
+                'business_id' => $business->id,
+                'campaign_id' => $campaign->id,
+                'event_id' => $event?->id,
+                'product_id' => $product?->id,
+                'product_name' => (string) $validated['product_name'],
+                'prompt' => $productionVisualPrompt,
+                'price' => ($isMultiProduct || ! $includePrices) ? null : ($product ? $product->price : ($validated['price'] ?? null)),
+                'brand_tone' => ! empty($brandTone) ? (is_array($brandTone) ? implode(', ', $brandTone) : (string) $brandTone) : null,
+                'visual_theme' => ! empty($visualTheme) ? (is_array($visualTheme) ? implode(', ', $visualTheme) : (string) $visualTheme) : null,
+                'tagline' => $normalizedTagline,
+                'tagline_mode' => $taglineMode,
+                'aspect_ratio' => $validated['aspect_ratio'] ?? '1:1',
+                'reference_image_path' => $referenceImagePath,
+                'generated_image_path' => $generatedImagePath,
+                'status' => Design::STATUS_DRAFT,
+                'generation_metadata' => array_merge($genMeta, [
+                    'scene_prompt' => $validated['prompt'] ?? $validated['scene_prompt'] ?? $validated['image_prompt'] ?? $productionVisualPrompt,
+                    'user_prompt' => $validated['prompt'] ?? $validated['scene_prompt'] ?? $validated['image_prompt'] ?? $productionVisualPrompt,
+                    'render_style' => $renderStyle,
+                    'copy_emphasis' => $copyEmphasis,
+                    'include_product_name' => $includeProductName,
+                    'include_prices' => $includePrices,
+                    'include_tagline' => $includeTagline,
+                    'include_business_name' => $includeBusinessName,
+                    'show_event_text' => $showEventText,
+                    'aspect_ratio' => $validated['aspect_ratio'] ?? '1:1',
+                ]),
+            ]);
+
             $previewData = [
+                'id' => $design->id,
+                'design_id' => $design->id,
                 'image_url' => Storage::url($generatedImagePath),
                 'generated_image_path' => $generatedImagePath,
                 'prompt' => $actualPrompt,
@@ -461,11 +517,13 @@ class ManualGeneratorController extends Controller
                 'reference_image_paths' => $referenceImagePaths,
                 'tagline' => $normalizedTagline,
                 'tagline_mode' => $taglineMode,
+                'include_product_name' => $includeProductName,
                 'include_tagline' => $includeTagline,
+                'include_business_name' => $includeBusinessName,
                 'show_event_text' => $showEventText,
                 'price' => $includePrices ? ($validated['price'] ?? $product?->price) : null,
                 'include_prices' => $includePrices,
-                'render_style' => $validated['render_style'] ?? 'Studio Product Still',
+                'render_style' => $renderStyle,
                 'design_treatment' => $designTreatment,
                 'copy_emphasis' => $copyEmphasis,
                 'creative_fingerprint' => $creativeFingerprint,

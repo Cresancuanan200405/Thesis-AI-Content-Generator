@@ -167,7 +167,7 @@ export function CalendarMonthGrid({
     const headerHeightPx = 32; // Height for day numbers header
 
     return (
-        <Card className="overflow-hidden rounded-3xl border-border bg-card shadow-xs">
+        <Card className="overflow-hidden rounded-card border-border bg-card shadow-xs">
             {/* Weekday Header */}
             <div className="grid grid-cols-7 border-b border-border bg-muted/20 text-center text-xs font-semibold text-muted-foreground">
                 {weekdayNames.map((wName) => (

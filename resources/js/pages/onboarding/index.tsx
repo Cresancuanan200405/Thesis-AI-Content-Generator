@@ -8,14 +8,15 @@ import {
     CheckCircle2,
     FileCheck2,
     FileText,
+    ImageIcon,
     Layers,
+    Lightbulb,
     Lock,
     MapPin,
     Moon,
     PanelLeftClose,
     PanelLeftOpen,
     ShieldCheck,
-    Sparkles,
     Sun,
     Upload,
     User as UserIcon,
@@ -1385,7 +1386,7 @@ export default function OnboardingIndex({
                                             <div className="rounded-xl border border-primary/20 bg-gradient-to-r from-primary/[0.08] via-primary/[0.03] to-transparent p-3 shadow-2xs">
                                                 <div className="flex items-start gap-2.5">
                                                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary shadow-2xs">
-                                                        <Sparkles className="h-3.5 w-3.5" />
+                                                        <ImageIcon className="h-3.5 w-3.5" />
                                                     </div>
                                                     <div className="min-w-0 flex-1">
                                                         <div className="flex items-center gap-2">
@@ -2259,7 +2260,7 @@ export default function OnboardingIndex({
                                                         </div>
 
                                                         <div className="mt-3 flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 p-2 text-[10px] text-muted-foreground">
-                                                            <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" />
+                                                            <Lightbulb className="h-3.5 w-3.5 shrink-0 text-primary" />
                                                             <span>
                                                                 Seeds the AI
                                                                 image generator
@@ -2393,7 +2394,7 @@ export default function OnboardingIndex({
                                             <div className="space-y-3.5 rounded-2xl border border-border/80 bg-gradient-to-b from-card via-card/95 to-muted/20 p-4 shadow-xs transition-all duration-300 sm:p-5">
                                                 <div className="flex items-start gap-2.5 sm:items-center">
                                                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-border bg-gradient-to-b from-muted to-muted/60 text-foreground shadow-2xs">
-                                                        <Sparkles className="h-4 w-4 text-amber-500" />
+                                                        <Building2 className="h-4 w-4 text-primary" />
                                                     </div>
                                                     <div>
                                                         <div className="flex items-center gap-1.5">
@@ -3041,7 +3042,7 @@ export default function OnboardingIndex({
                                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                                 <div className="flex items-center gap-3">
                                                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 shadow-2xs dark:text-emerald-400">
-                                                        <Sparkles className="h-5 w-5" />
+                                                        <CheckCircle2 className="h-5 w-5" />
                                                     </div>
                                                     <div>
                                                         <h3 className="text-sm font-bold text-foreground sm:text-base">
@@ -3075,9 +3076,8 @@ export default function OnboardingIndex({
                                                 <div>
                                                     <div className="flex items-center justify-between border-b border-border/60 pb-2.5">
                                                         <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
-                                                            <Sparkles className="h-3.5 w-3.5 text-primary" />{' '}
-                                                            Brand Core & AI
-                                                            Creative Baseline
+                                                            <Layers className="h-3.5 w-3.5 text-primary" />{' '}
+                                                            Brand Core & Creative Baseline
                                                         </span>
                                                         <div className="flex items-center gap-2">
                                                             <span className="py-0.2 rounded-md border border-primary/20 bg-primary/10 px-1.5 text-[9px] font-bold tracking-wider text-primary uppercase">
@@ -3495,7 +3495,7 @@ export default function OnboardingIndex({
                                         )}
                                     >
                                         {currentStep === 4 && (
-                                            <Sparkles className="mr-1 h-3 w-3" />
+                                            <Check className="mr-1 h-3 w-3" />
                                         )}
                                         <span>{continueButtonLabel}</span>
                                         {currentStep !== 4 && (
@@ -3514,7 +3514,7 @@ export default function OnboardingIndex({
                 open={!!activeLegalModal}
                 onOpenChange={() => setActiveLegalModal(null)}
             >
-                <DialogContent className="flex max-h-[90vh] w-[92vw] max-w-4xl flex-col rounded-3xl border border-border/80 bg-card p-6 shadow-2xl backdrop-blur-xl sm:max-w-3xl sm:p-8 md:max-w-4xl lg:max-w-5xl">
+                <DialogContent className="flex max-h-[90vh] w-[92vw] max-w-4xl flex-col rounded-card border border-border/80 bg-card p-6 shadow-2xl backdrop-blur-xl sm:max-w-3xl sm:p-8 md:max-w-4xl lg:max-w-5xl">
                     <DialogHeader className="space-y-1.5 border-b border-border/60 pb-3">
                         <div className="flex items-center gap-2">
                             <span className="inline-flex items-center rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">

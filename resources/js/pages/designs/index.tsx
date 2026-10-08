@@ -1,5 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
+    ArrowUpRight,
     Calendar,
     CalendarDays,
     Check,
@@ -20,7 +21,6 @@ import {
     Plus,
     RefreshCw,
     Search,
-    Sparkles,
     Square,
     Tag,
     Trash2,
@@ -768,34 +768,32 @@ export default function DesignsPage({
                     ====================================================== */}
 
                     <div
-                        className={`flex flex-col gap-3 border-b border-border/60 pb-3 sm:flex-row sm:items-center sm:justify-between ${isRegenerating ? 'hidden' : ''}`}
+                        className={`flex flex-col gap-3 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between ${isRegenerating ? 'hidden' : ''}`}
                     >
-                        <div className="flex items-center gap-2.5">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                <ImageIcon className="h-4 w-4" />
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-xs" />
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                                    Creative Library
+                                </span>
                             </div>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
-                                        My Designs
-                                    </h1>
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                    Manage, preview, and download your marketing
-                                    visuals.
-                                </p>
-                            </div>
+                            <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                                Generated Marketing Creatives
+                            </h1>
+                            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                                Review, inspect, and organize commercial assets produced by the AI Marketing Studio.
+                            </p>
                         </div>
 
                         <div className="flex items-center gap-2 self-start sm:self-auto">
                             <Button
                                 asChild
                                 size="sm"
-                                className="h-8 gap-1.5 text-xs font-semibold shadow-2xs"
+                                className="h-9 gap-1.5 rounded-full bg-foreground px-4 text-xs font-bold text-background shadow-md transition-all hover:opacity-95 hover:scale-[1.02] active:scale-95"
                             >
                                 <Link href="/generator">
-                                    <Plus className="h-3.5 w-3.5" />
-                                    Create Design
+                                    <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                                    <span>Create Design</span>
                                 </Link>
                             </Button>
                         </div>
@@ -806,7 +804,7 @@ export default function DesignsPage({
                     ====================================================== */}
 
                     <div
-                        className={`sticky top-11 z-30 mb-5 rounded-2xl border border-white/25 bg-card/95 px-2.5 py-1.5 shadow-md backdrop-blur-xl transition-all sm:top-12 sm:px-3 sm:py-1.5 dark:border-white/10 dark:bg-card/95 ${isRegenerating ? 'hidden' : ''}`}
+                        className={`sticky top-11 z-30 mb-5 rounded-card border border-border/70 bg-card/95 px-3 py-2 shadow-sm backdrop-blur-xl transition-all sm:top-12 dark:bg-card/90 ${isRegenerating ? 'hidden' : ''}`}
                     >
                         <div className="flex items-center justify-between gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-2.5">
                             {/* Search */}
@@ -1075,7 +1073,7 @@ export default function DesignsPage({
                     ====================================================== */}
 
                     {designList.length === 0 ? (
-                        <Card className="rounded-2xl border-border bg-card shadow-sm">
+                        <Card className="rounded-card border-border bg-card shadow-sm">
                             <CardContent className="flex flex-col items-center justify-center p-12 text-center">
                                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
                                     <ImageIcon className="h-6 w-6" />
@@ -1149,7 +1147,7 @@ export default function DesignsPage({
                                                         }
                                                     }
                                                 }}
-                                                className={`group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-xl border bg-card text-left shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:ring-2 focus:ring-primary/30 focus:outline-none ${
+                                                className={`group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-card border bg-card text-left shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:ring-2 focus:ring-primary/30 focus:outline-none dark:border-white/[0.08] dark:bg-[#161820] ${
                                                     isSelected
                                                         ? 'border-primary ring-2 ring-primary/40'
                                                         : 'border-border hover:border-primary/40'
@@ -1366,7 +1364,7 @@ export default function DesignsPage({
                                                                                 }}
                                                                                 className="cursor-pointer gap-2 text-xs font-medium text-amber-600 dark:text-amber-400"
                                                                             >
-                                                                                <Sparkles className="h-3.5 w-3.5" />
+                                                                                <Tag className="h-3.5 w-3.5" />
                                                                                 Resume Draft
                                                                             </DropdownMenuItem>
 
@@ -1419,9 +1417,8 @@ export default function DesignsPage({
                                                                                 }}
                                                                                 className="cursor-pointer gap-2 text-xs font-medium"
                                                                             >
-                                                                                <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
+                                                                                <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground" />
                                                                                 Edit in
-                                                                                AI
                                                                                 Studio
                                                                             </DropdownMenuItem>
                                                                         </>
@@ -1519,7 +1516,7 @@ export default function DesignsPage({
                                                         }
                                                     }
                                                 }}
-                                                className={`group flex cursor-pointer items-center gap-4 rounded-2xl border bg-card p-3 shadow-sm transition-all duration-200 hover:border-primary/40 hover:shadow-md ${
+                                                className={`group flex cursor-pointer items-center gap-4 rounded-card border bg-card p-3 shadow-sm transition-all duration-200 hover:border-primary/40 hover:shadow-md dark:border-white/[0.08] dark:bg-[#161820] ${
                                                     isSelected
                                                         ? 'border-primary ring-2 ring-primary/40'
                                                         : 'border-border'
@@ -1717,7 +1714,7 @@ export default function DesignsPage({
                                                                         }}
                                                                         className="cursor-pointer gap-2 text-xs font-medium text-amber-600 dark:text-amber-400"
                                                                     >
-                                                                        <Sparkles className="h-3.5 w-3.5" />{' '}
+                                                                        <Tag className="h-3.5 w-3.5" />{' '}
                                                                         Resume Draft
                                                                     </DropdownMenuItem>
                                                                     <DropdownMenuItem
@@ -1768,8 +1765,8 @@ export default function DesignsPage({
                                                                         }}
                                                                         className="cursor-pointer gap-2 text-xs font-medium"
                                                                     >
-                                                                        <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />{' '}
-                                                                        Edit in AI
+                                                                        <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground" />{' '}
+                                                                        Edit in
                                                                         Studio
                                                                     </DropdownMenuItem>
                                                                 </>
@@ -1845,7 +1842,7 @@ export default function DesignsPage({
 
             {selectedIds.length > 0 && !isRegenerating && (
                 <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 animate-in duration-300 slide-in-from-bottom-5 fade-in">
-                    <div className="card-elevated flex items-center gap-3 rounded-2xl border border-border/80 bg-card/95 px-4 py-2.5 shadow-2xl backdrop-blur-xl">
+                    <div className="card-elevated flex items-center gap-3 rounded-card border border-border/80 bg-card/95 px-4 py-2.5 shadow-2xl backdrop-blur-xl">
                         <div className="flex items-center gap-2 border-r border-border/80 pr-3">
                             <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-primary px-2 text-xs font-bold text-primary-foreground shadow-sm">
                                 {selectedIds.length}
@@ -1932,7 +1929,7 @@ export default function DesignsPage({
                     }
                 }}
             >
-                <DialogContent className="rounded-2xl sm:max-w-md">
+                <DialogContent className="rounded-card sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="text-lg">
                             Delete {selectedIds.length} Selected Designs?
@@ -1985,7 +1982,7 @@ export default function DesignsPage({
                     }
                 }}
             >
-                <DialogContent className="rounded-2xl sm:max-w-md">
+                <DialogContent className="rounded-card sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="text-lg">
                             Delete Design Visual?
@@ -2036,7 +2033,7 @@ export default function DesignsPage({
                     }
                 }}
             >
-                <DialogContent className="rounded-2xl sm:max-w-md">
+                <DialogContent className="rounded-card sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-lg">
                             <FolderPlus className="h-5 w-5 text-amber-500" />
@@ -2188,7 +2185,7 @@ export default function DesignsPage({
                     }
                 }}
             >
-                <DialogContent className="rounded-3xl sm:max-w-md">
+                <DialogContent className="rounded-card sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold">
                             Regenerate Design?
@@ -2238,7 +2235,7 @@ export default function DesignsPage({
                     aria-live="polite"
                     aria-label="Regenerating visual creative"
                 >
-                    <div className="relative flex max-h-full w-full max-w-lg flex-col items-center gap-5 overflow-hidden rounded-3xl border border-border/80 bg-card/95 p-6 shadow-2xl backdrop-blur-2xl sm:p-8">
+                    <div className="relative flex max-h-full w-full max-w-lg flex-col items-center gap-5 overflow-hidden rounded-card border border-border/80 bg-card/95 p-6 shadow-2xl backdrop-blur-2xl sm:p-8">
                         <div className="pointer-events-none absolute -top-16 left-1/2 h-36 w-36 -translate-x-1/2 rounded-full bg-primary/15 blur-3xl motion-reduce:hidden" />
                         <div className="pointer-events-none absolute -bottom-16 left-1/2 h-36 w-36 -translate-x-1/2 rounded-full bg-emerald-500/15 blur-3xl motion-reduce:hidden" />
 
@@ -2264,17 +2261,16 @@ export default function DesignsPage({
                         </div>
 
                         <div className="relative flex w-full items-center justify-center py-2 sm:py-3">
-                            <div className="pointer-events-none absolute h-28 w-28 rounded-full bg-primary/20 blur-2xl motion-safe:animate-pulse motion-reduce:hidden" />
-                            <div className="relative flex h-28 w-28 items-center justify-center rounded-3xl border border-primary/25 bg-gradient-to-b from-primary/15 via-primary/5 to-muted/40 shadow-xl ring-1 shadow-primary/10 ring-primary/20 backdrop-blur-xl sm:h-32 sm:w-32">
-                                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-xs ring-1 ring-primary/25">
-                                    <Sparkles className="h-7 w-7 text-primary motion-safe:animate-pulse" />
+                            <div className="relative flex h-24 w-24 items-center justify-center rounded-2xl border border-border/80 bg-muted/30 shadow-xs sm:h-28 sm:w-28">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                    <RefreshCw className="h-6 w-6 animate-spin" />
                                 </div>
                             </div>
                         </div>
 
                         <div className="relative w-full space-y-3">
-                            <div className="flex items-center justify-center gap-1.5 text-center">
-                                <Sparkles className="h-3.5 w-3.5 text-primary motion-safe:animate-pulse motion-reduce:hidden" />
+                            <div className="flex items-center justify-center gap-2 text-center">
+                                <RefreshCw className="h-3.5 w-3.5 text-primary animate-spin" />
                                 <p className="text-xs font-semibold text-foreground transition-opacity duration-500 sm:text-sm">
                                     {
                                         regenerationStatusPhrases[

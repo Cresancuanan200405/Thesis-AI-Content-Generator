@@ -239,7 +239,7 @@ export default function AccountSettingsPage({
                     title="Account"
                     description="Manage your account identity and authentication methods."
                 >
-                    <Card className="overflow-hidden rounded-2xl border-border/70 bg-card shadow-xs">
+                    <Card className="overflow-hidden rounded-card border-border/70 bg-card shadow-xs">
                         <CardContent className="p-0">
                             {/* EMAIL */}
                             <SettingsRow
@@ -388,7 +388,7 @@ export default function AccountSettingsPage({
                     title="Security"
                     description="Protect your account and manage signed-in devices."
                 >
-                    <Card className="overflow-hidden rounded-2xl border-border/70 bg-card shadow-xs">
+                    <Card className="overflow-hidden rounded-card border-border/70 bg-card shadow-xs">
                         <CardContent className="p-0">
                             {/* TWO FACTOR */}
                             <SettingsRow
@@ -720,7 +720,7 @@ export default function AccountSettingsPage({
                     title="Preferences"
                     description="Customize how MarketPilot looks on your device."
                 >
-                    <Card className="overflow-hidden rounded-2xl border-border/70 bg-card shadow-xs">
+                    <Card className="overflow-hidden rounded-card border-border/70 bg-card shadow-xs">
                         <CardHeader className="border-b border-border/60 px-5 py-4 sm:px-6">
                             <CardTitle className="text-sm font-bold">
                                 Appearance
@@ -769,7 +769,7 @@ export default function AccountSettingsPage({
                     description="Permanent account actions. These actions may not be reversible."
                     danger
                 >
-                    <Card className="overflow-hidden rounded-2xl border-destructive/25 bg-destructive/[0.025] shadow-xs">
+                    <Card className="overflow-hidden rounded-card border-destructive/25 bg-destructive/[0.025] shadow-xs">
                         <CardHeader className="border-b border-destructive/15 px-5 py-4 sm:px-6">
                             <div className="flex items-start gap-3">
                                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-destructive/20 bg-destructive/10 text-destructive">
@@ -797,7 +797,7 @@ export default function AccountSettingsPage({
                             </p>
 
                             <div className="shrink-0">
-                                <DeleteUser />
+                                <DeleteUser hasPassword={hasPassword} />
                             </div>
                         </CardContent>
                     </Card>

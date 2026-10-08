@@ -20,9 +20,9 @@ export function EmptyState({
 }: EmptyStateProps) {
     return (
         <Card
-            className={`flex flex-col items-center justify-center rounded-3xl border border-dashed border-border/80 bg-card/40 p-8 text-center sm:p-12 ${className}`}
+            className={`flex flex-col items-center justify-center rounded-card border border-dashed border-border/80 bg-card/40 p-8 text-center sm:p-12 ${className}`}
         >
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-8 ring-primary/5">
+            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary/10 text-primary ring-8 ring-primary/5">
                 <Icon className="h-8 w-8 stroke-[1.8]" />
             </div>
 

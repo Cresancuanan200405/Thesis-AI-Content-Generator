@@ -119,7 +119,7 @@ export function ChangeGoogleAccountModal({
                 )}
             </DialogTrigger>
 
-            <DialogContent className="rounded-3xl p-6 sm:max-w-md">
+            <DialogContent className="rounded-card p-6 sm:max-w-md">
                 <DialogHeader>
                     <div className="mb-1 flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600">
                         <svg className="h-5 w-5" viewBox="0 0 24 24">

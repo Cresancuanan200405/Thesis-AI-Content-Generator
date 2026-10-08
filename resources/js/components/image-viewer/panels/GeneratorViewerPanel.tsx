@@ -5,13 +5,13 @@ import {
     Check,
     ChevronDown,
     ChevronUp,
+    Compass,
     Cpu,
     Download,
     FileText,
     Palette,
     RefreshCcw,
     SlidersHorizontal,
-    Sparkles,
     Type,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -306,7 +306,7 @@ export function GeneratorViewerPanel({
                 {/* ================================================================= */}
                 <div className="rounded-xl border border-border/70 bg-card p-4 space-y-3 shadow-xs">
                     <div className="flex items-center gap-2 border-b border-border/50 pb-2">
-                        <Sparkles className="h-4 w-4 text-primary" />
+                        <Compass className="h-4 w-4 text-primary" />
                         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                             Creative Direction
                         </h3>

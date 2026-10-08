@@ -77,9 +77,9 @@ export function CalendarYearView({
                 ].map((stat) => (
                     <div
                         key={stat.label}
-                        className={`rounded-2xl border ${stat.border} ${stat.bg} space-y-1 p-4 shadow-2xs`}
+                        className={`rounded-card border ${stat.border} ${stat.bg} space-y-1 p-4 shadow-2xs`}
                     >
-                        <div className={`text-2xl font-extrabold ${stat.text}`}>
+                        <div className={`text-2xl font-bold tabular-nums ${stat.text}`}>
                             {stat.count}
                         </div>
                         <div className="text-[11px] font-semibold text-muted-foreground">
@@ -103,7 +103,7 @@ export function CalendarYearView({
                     return (
                         <Card
                             key={mName}
-                            className="flex flex-col justify-between overflow-hidden rounded-3xl border-border bg-card shadow-xs"
+                            className="flex flex-col justify-between overflow-hidden rounded-card border-border bg-card shadow-xs"
                         >
                             <div className="space-y-3 p-4">
                                 {/* Month Header */}

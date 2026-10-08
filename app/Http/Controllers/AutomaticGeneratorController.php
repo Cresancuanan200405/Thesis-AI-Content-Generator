@@ -78,8 +78,10 @@ class AutomaticGeneratorController extends Controller
             'custom_products.*.name' => ['required', 'string', 'max:150'],
             'custom_products.*.price' => ['nullable'],
             'custom_products.*.description' => ['nullable', 'string', 'max:500'],
+            'include_product_name' => ['nullable', 'boolean'],
             'include_tagline' => ['nullable', 'boolean'],
             'include_prices' => ['nullable', 'boolean'],
+            'include_product_price' => ['nullable', 'boolean'],
             'tagline' => ['nullable', 'string', 'max:255'],
             'user_instruction' => ['nullable', 'string', 'max:4000'],
             'image_prompt' => ['nullable', 'string', 'max:4000'],
@@ -157,8 +159,11 @@ class AutomaticGeneratorController extends Controller
         $imageQuality = $validated['image_quality'] ?? 'medium';
         $includeBusinessName = filter_var($validated['include_business_name'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $businessName = $includeBusinessName ? $business->name : null;
+        $includeProductName = array_key_exists('include_product_name', $validated)
+            ? filter_var($validated['include_product_name'], FILTER_VALIDATE_BOOLEAN)
+            : true;
         $includeTagline = filter_var($validated['include_tagline'] ?? true, FILTER_VALIDATE_BOOLEAN);
-        $includePrices = filter_var($validated['include_prices'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $includePrices = filter_var($validated['include_prices'] ?? ($validated['include_product_price'] ?? true), FILTER_VALIDATE_BOOLEAN);
 
         // Primary catalog product for reference preservation
         $primaryProduct = $catalogProducts->first();
@@ -181,6 +186,7 @@ class AutomaticGeneratorController extends Controller
                 'generation_mode' => 'automatic',
                 'require_tagline' => $includeTagline,
                 'include_tagline' => $includeTagline,
+                'include_product_name' => $includeProductName,
                 'include_prices' => $includePrices,
                 'show_event_text' => $showEventText,
                 'event' => $event,
@@ -475,8 +481,10 @@ class AutomaticGeneratorController extends Controller
             'campaign_objective' => $campaign->objective,
             'event_name' => $event?->name,
             'show_event_text' => $showEventText,
-            'price' => ($isMultiProduct || ! $includePrices) ? null : $primaryProduct?->price,
+            'price' => $primaryProduct?->price,
+            'include_product_name' => $includeProductName,
             'include_prices' => $includePrices,
+            'include_product_price' => $includePrices,
             'catalog_products' => $catalogProducts,
             'custom_products' => $validated['custom_products'] ?? [],
             'brand_tone' => array_filter([$brandTone]),
@@ -519,10 +527,11 @@ class AutomaticGeneratorController extends Controller
             'reference_image_paths' => $referenceImagePaths,
             'scene_prompt' => $conceptScene,
             'user_prompt' => $conceptScene,
+            'prompt_is_final' => true,
             'notes' => null,
         ];
 
-        $productionVisualPrompt = $promptOrchestrator->orchestrate($orchestratedOptions, $business);
+        $productionVisualPrompt = $promptOrchestrator->orchestrateAutomaticCampaignBrief($orchestratedOptions, $business);
 
         $creativeFingerprint = $designSystem->buildFingerprint([
             'creative_concept' => $creativeConcept,
@@ -576,6 +585,10 @@ class AutomaticGeneratorController extends Controller
                 'visual_theme' => $visualTheme,
                 'brand_tone' => $brandTone,
                 'show_event_text' => $showEventText,
+                'include_product_name' => $includeProductName,
+                'include_prices' => $includePrices,
+                'include_business_name' => $includeBusinessName,
+                'include_tagline' => $includeTagline,
                 'visual_core_diversity' => [
                     'attempted_candidates' => $attemptedCandidates,
                     'rejected_candidates' => $rejectedCandidates,
@@ -620,7 +633,9 @@ class AutomaticGeneratorController extends Controller
                 'custom_products' => $validated['custom_products'] ?? [],
                 'reference_image_paths' => $referenceImagePaths,
                 'price' => $includePrices ? $primaryProduct?->price : null,
+                'include_product_name' => $includeProductName,
                 'include_prices' => $includePrices,
+                'include_business_name' => $includeBusinessName,
                 'include_tagline' => $includeTagline,
                 'render_style' => $renderStyle,
                 'aspect_ratio' => $aspectRatio,
@@ -646,8 +661,10 @@ class AutomaticGeneratorController extends Controller
                 'creative_fingerprint' => $creativeFingerprint,
                 'visual_prompt' => $productionVisualPrompt,
                 'prompt' => $productionVisualPrompt,
+                'include_product_name' => $includeProductName,
                 'include_tagline' => $includeTagline,
                 'include_prices' => $includePrices,
+                'include_business_name' => $includeBusinessName,
                 'preview' => $previewData,
             ], $previewData));
         } catch (\Throwable $e) {

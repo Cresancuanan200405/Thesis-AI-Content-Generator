@@ -1,36 +1,17 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
-    Activity,
-    AlertCircle,
     ArrowUpRight,
-    BarChart3,
-    Briefcase,
-    Building2,
-    Calendar,
-    CalendarDays,
-    Car,
-    CheckCircle2,
     ChevronLeft,
     ChevronRight,
-    Cpu,
     Download,
     Eye,
-    GraduationCap,
-    HeartPulse,
     ImageIcon,
-    Landmark,
+    LayoutGrid,
+    List,
     Megaphone,
     Package,
-    PieChart,
-    Plane,
     Plus,
-    ShieldCheck,
-    ShoppingBag,
-    ShoppingCart,
-    Sparkles,
-    UtensilsCrossed,
     X,
-    Zap,
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -187,42 +168,6 @@ const formatEventCategory = (category?: string, type?: string): string => {
     return raw.charAt(0).toUpperCase() + raw.slice(1);
 };
 
-function IndustryIcon({
-    industry,
-    className,
-}: {
-    industry?: string | null;
-    className?: string;
-}) {
-    switch (industry) {
-        case 'Food & Beverage':
-            return <UtensilsCrossed className={className} />;
-        case 'Retail':
-            return <ShoppingBag className={className} />;
-        case 'Technology':
-            return <Cpu className={className} />;
-        case 'Healthcare':
-            return <HeartPulse className={className} />;
-        case 'Real Estate':
-            return <Building2 className={className} />;
-        case 'Education':
-            return <GraduationCap className={className} />;
-        case 'Beauty & Wellness':
-            return <Sparkles className={className} />;
-        case 'Professional Services':
-            return <Briefcase className={className} />;
-        case 'Travel & Hospitality':
-            return <Plane className={className} />;
-        case 'Automotive':
-            return <Car className={className} />;
-        case 'Finance':
-            return <Landmark className={className} />;
-        case 'E-commerce':
-            return <ShoppingCart className={className} />;
-        default:
-            return <Building2 className={className} />;
-    }
-}
 
 /* ==========================================================================
    MAIN DASHBOARD
@@ -238,7 +183,7 @@ export default function Dashboard({
     monthly_activity = [],
     weekly_activity = [],
     campaign_status_breakdown = {},
-    system_health = {},
+    system_health: _system_health = {},
     business = {},
 }: Props) {
     const user = auth?.user;
@@ -248,15 +193,6 @@ export default function Dashboard({
     ---------------------------------------------------------------------- */
 
     const now = new Date();
-    const hour = now.getHours();
-
-    const greeting =
-        hour < 12
-            ? 'Good morning'
-            : hour < 18
-              ? 'Good afternoon'
-              : 'Good evening';
-
     const todayFormatted = new Intl.DateTimeFormat('en-US', {
         weekday: 'long',
         month: 'short',
@@ -271,6 +207,7 @@ export default function Dashboard({
     const [chartTimeframe, setChartTimeframe] = useState<'monthly' | 'weekly'>(
         'monthly',
     );
+    const [recentViewMode, setRecentViewMode] = useState<'grid' | 'capsule'>('grid');
     const [hoveredPointIndex, setHoveredPointIndex] = useState<number | null>(
         null,
     );
@@ -319,7 +256,13 @@ export default function Dashboard({
             : 0;
 
     /* ----------------------------------------------------------------------
-       ACTIVITY DATA
+       FEATURED CREATIVE (Visual Focal Point)
+    ---------------------------------------------------------------------- */
+
+    const featuredDesign = recent_designs.length > 0 ? recent_designs[0] : null;
+
+    /* ----------------------------------------------------------------------
+       ACTIVITY DATA (Authentic DB records)
     ---------------------------------------------------------------------- */
 
     const activeActivityData = useMemo(
@@ -362,22 +305,6 @@ export default function Dashboard({
         return Math.max(highest + 1, 4);
     }, [activeActivityData, hasActivity]);
 
-    const averageOutputText = useMemo(() => {
-        if (!hasActivity || activeActivityData.length === 0) {
-            return '0 visuals recorded';
-        }
-
-        const avg = Math.round(totalPeriodDesigns / activeActivityData.length);
-        const unit = chartTimeframe === 'monthly' ? 'month' : 'day';
-
-        return `${avg} visual${avg === 1 ? '' : 's'} / ${unit}`;
-    }, [
-        hasActivity,
-        totalPeriodDesigns,
-        activeActivityData.length,
-        chartTimeframe,
-    ]);
-
     /* ----------------------------------------------------------------------
        CAMPAIGN PIPELINE
     ---------------------------------------------------------------------- */
@@ -402,211 +329,6 @@ export default function Dashboard({
 
     const getStatusPercentage = (count: number) =>
         totalCampaignsTracked > 0 ? (count / totalCampaignsTracked) * 100 : 0;
-
-    /* ----------------------------------------------------------------------
-       WORKSPACE PIPELINE STATUS
-    ---------------------------------------------------------------------- */
-
-    const systemStatusList = [
-        {
-            label: 'AI Visual Engine',
-            isOperational: system_health?.ai_generation === 'operational',
-            status:
-                system_health?.ai_generation === 'operational'
-                    ? 'Operational'
-                    : 'Attention Required',
-        },
-        {
-            label: 'Event Calendar',
-            isOperational: system_health?.event_calendar === 'operational',
-            status:
-                system_health?.event_calendar === 'operational'
-                    ? 'Operational'
-                    : 'Attention Required',
-        },
-        {
-            label: 'Product Catalog',
-            isOperational: system_health?.product_catalog === 'operational',
-            status:
-                system_health?.product_catalog === 'operational'
-                    ? 'Operational'
-                    : 'Attention Required',
-        },
-        {
-            label: 'Campaign Engine',
-            isOperational: system_health?.campaign_engine === 'operational',
-            status:
-                system_health?.campaign_engine === 'operational'
-                    ? 'Operational'
-                    : 'Attention Required',
-        },
-    ];
-
-    /* ----------------------------------------------------------------------
-       MARKETING RECOMMENDATIONS (DETECTION & ACTION-ORIENTED)
-    ---------------------------------------------------------------------- */
-
-    const recommendations = useMemo(() => {
-        const items: {
-            id: string;
-            title: string;
-            description: string;
-            action: string;
-            href: string;
-            icon: React.ElementType;
-            tone: string;
-        }[] = [];
-
-        if (system_health?.ai_generation === 'attention_required') {
-            items.push({
-                id: 'ai-health',
-                title: 'Check AI generation setup',
-                description:
-                    'The AI visual engine needs attention before new creatives can be generated.',
-                action: 'Check Generator',
-                href: '/generator',
-                icon: AlertCircle,
-                tone: 'text-amber-500 bg-amber-500/10',
-            });
-        }
-
-        if (totalProducts === 0) {
-            items.push({
-                id: 'catalog-empty',
-                title: 'Build your product catalog',
-                description:
-                    'Add products first so the studio can stage marketing creatives around your catalog.',
-                action: 'Add First Product',
-                href: '/products/create',
-                icon: Package,
-                tone: 'text-emerald-500 bg-emerald-500/10',
-            });
-        } else if (productsWithoutVisuals > 0) {
-            items.push({
-                id: 'missing-visuals',
-                title: 'Review catalog visuals',
-                description: `${productsWithoutVisuals} ${productsWithoutVisuals === 1 ? 'product does' : 'products do'} not have marketing visuals yet. Review your catalog to decide which products need creatives.`,
-                action: 'Review Products',
-                href: '/products',
-                icon: Package,
-                tone: 'text-purple-500 bg-purple-500/10',
-            });
-        }
-
-        if (upcomingEventsCount > 0 && upcoming_events.length > 0) {
-            const firstEvent = upcoming_events[0];
-            items.push({
-                id: 'upcoming-event',
-                title: `Prepare for ${firstEvent.name}`,
-                description: `${firstEvent.date || 'Upcoming'} is a marketing opportunity worth planning for.`,
-                action: 'Launch Generator',
-                href: `/generator?event_id=${firstEvent.id}`,
-                icon: CalendarDays,
-                tone: 'text-blue-500 bg-blue-500/10',
-            });
-        }
-
-        if (statusCounts.draft > 0) {
-            items.push({
-                id: 'draft-campaigns',
-                title: 'Review draft campaigns',
-                description: `${statusCounts.draft} ${statusCounts.draft === 1 ? 'campaign is' : 'campaigns are'} waiting in draft status.`,
-                action: 'Review Campaigns',
-                href: '/campaigns',
-                icon: Megaphone,
-                tone: 'text-amber-500 bg-amber-500/10',
-            });
-        }
-
-        if (
-            totalDesigns === 0 &&
-            system_health?.ai_generation !== 'attention_required'
-        ) {
-            items.push({
-                id: 'first-visual',
-                title: 'Create an AI visual',
-                description:
-                    'Start building your marketing creative library by manually generating a visual from your catalog or an event.',
-                action: 'Open Generator',
-                href: '/generator',
-                icon: Sparkles,
-                tone: 'text-primary bg-primary/10',
-            });
-        }
-
-        if (items.length === 0) {
-            items.push({
-                id: 'healthy-workspace',
-                title: 'Your marketing workspace is on track',
-                description:
-                    'Your catalog, campaigns, visuals, and upcoming opportunities are currently in good shape.',
-                action: 'View Campaigns',
-                href: '/campaigns',
-                icon: CheckCircle2,
-                tone: 'text-emerald-500 bg-emerald-500/10',
-            });
-        }
-
-        return items.slice(0, 3);
-    }, [
-        system_health,
-        totalProducts,
-        productsWithoutVisuals,
-        upcomingEventsCount,
-        upcoming_events,
-        statusCounts.draft,
-        totalDesigns,
-    ]);
-
-    /* ----------------------------------------------------------------------
-       SUMMARY METRICS
-    ---------------------------------------------------------------------- */
-
-    const summaryMetrics = [
-        {
-            label: 'AI Visuals Generated',
-            value: totalDesigns,
-            description:
-                totalDesigns === 1
-                    ? '1 generated visual'
-                    : `${totalDesigns} generated visuals`,
-            icon: ImageIcon,
-            color: 'text-purple-500',
-            bgColor: 'bg-purple-500/10 dark:bg-purple-500/20',
-            borderColor: 'hover:border-purple-500/40',
-            href: '/designs',
-        },
-        {
-            label: 'Active Campaigns',
-            value: activeCampaigns,
-            description: 'Live & scheduled',
-            icon: Megaphone,
-            color: 'text-blue-500',
-            bgColor: 'bg-blue-500/10 dark:bg-blue-500/20',
-            borderColor: 'hover:border-blue-500/40',
-            href: '/campaigns',
-        },
-        {
-            label: 'Upcoming Key Dates',
-            value: upcomingEventsCount,
-            description: 'Next 30 days',
-            icon: CalendarDays,
-            color: 'text-amber-500',
-            bgColor: 'bg-amber-500/10 dark:bg-amber-500/20',
-            borderColor: 'hover:border-amber-500/40',
-            href: '/calendar',
-        },
-        {
-            label: 'Catalog Products',
-            value: totalProducts,
-            description: `${catalogCoverage}% visual coverage`,
-            icon: Package,
-            color: 'text-emerald-500',
-            bgColor: 'bg-emerald-500/10 dark:bg-emerald-500/20',
-            borderColor: 'hover:border-emerald-500/40',
-            href: '/products',
-        },
-    ];
 
     /* ----------------------------------------------------------------------
        IMAGE PREVIEW NAVIGATION & KEYBOARD HANDLING
@@ -770,476 +492,401 @@ export default function Dashboard({
 
     return (
         <>
-            <Head title="Marketing Studio Dashboard" />
+            <Head title="Marketing Dashboard" />
 
-            <div className="min-h-screen w-full min-w-0 bg-background pb-24 text-foreground selection:bg-primary selection:text-primary-foreground">
-                <div className="w-full min-w-0 space-y-6 p-4 sm:space-y-8 md:p-6 lg:p-8">
+            <div className="min-h-screen w-full min-w-0 bg-background pb-20 text-foreground selection:bg-primary selection:text-primary-foreground">
+                <div className="w-full min-w-0 space-y-8 p-4 sm:space-y-10 md:p-6 lg:p-8">
                     {/* ======================================================
-                        SECTION 1 — HERO & BRAND HIGHLIGHT
+                        1. HERO (EDITORIAL INTRODUCTION + SINGLE CTA + METRICS)
+                        2. FEATURED CREATIVE (VISUAL FOCAL POINT)
                     ====================================================== */}
-                    <section className="relative w-full min-w-0 overflow-hidden rounded-3xl border border-border/80 bg-gradient-to-br from-card via-card to-primary/[0.03] p-4 shadow-xs sm:p-6 lg:p-8">
-                        <div className="pointer-events-none absolute -top-16 -right-16 h-64 w-64 rounded-full bg-primary/10 blur-[90px]" />
-                        <div className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-blue-500/10 blur-[90px]" />
-
-                        <div className="relative z-10 w-full min-w-0 space-y-6">
-                            {/* Executive Business Brand Highlight Header */}
-                            <div className="flex w-full min-w-0 flex-col gap-4 rounded-2xl border border-border/70 bg-background/70 p-3.5 shadow-2xs backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:p-4 dark:bg-background/40">
-                                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 sm:flex-nowrap sm:gap-3.5">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-gradient-to-br from-primary/15 via-primary/10 to-transparent text-primary shadow-xs ring-1 ring-primary/20 sm:h-12 sm:w-12">
-                                        {business?.logo_url ? (
-                                            <img
-                                                src={business.logo_url}
-                                                alt={
-                                                    business.name ||
-                                                    'Brand Logo'
-                                                }
-                                                className="h-7 w-7 rounded-lg object-contain sm:h-8 sm:w-8"
-                                            />
-                                        ) : (
-                                            <IndustryIcon
-                                                industry={business?.industry}
-                                                className="h-5 w-5 sm:h-6 sm:w-6"
-                                            />
-                                        )}
-                                    </div>
-
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex min-w-0 flex-wrap items-center gap-2">
-                                            <span className="text-base font-black tracking-tight break-words text-foreground sm:text-lg lg:text-xl">
-                                                {business?.name ||
-                                                    'Marketing Studio Workspace'}
-                                            </span>
-                                            <Badge
-                                                variant="outline"
-                                                className="shrink-0 border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-bold text-primary"
-                                            >
-                                                {business?.industry ||
-                                                    'Commercial Profile'}
-                                            </Badge>
-                                        </div>
-
-                                        <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-muted-foreground sm:gap-2">
-                                            {business?.category && (
-                                                <span className="font-medium break-words text-foreground/80">
-                                                    {business.category}
-                                                </span>
-                                            )}
-                                            {business?.category &&
-                                                business?.tagline && (
-                                                    <span className="text-border">
-                                                        •
-                                                    </span>
-                                                )}
-                                            {business?.tagline && (
-                                                <span className="break-words text-muted-foreground italic">
-                                                    "{business.tagline}"
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
+                    <div className="grid w-full min-w-0 grid-cols-1 gap-6 lg:grid-cols-12">
+                        {/* LEFT: EDITORIAL HERO & ESSENTIAL METRICS */}
+                        <section className="flex flex-col justify-between overflow-hidden rounded-card border border-border/80 bg-card p-6 shadow-xs sm:p-8 lg:col-span-7 xl:col-span-8 dark:border-white/[0.08] dark:bg-[#15171f]">
+                            <div className="w-full min-w-0 space-y-4">
+                                {/* Context / Date Header */}
+                                <div className="flex w-full min-w-0 items-center justify-between gap-3 text-xs text-muted-foreground">
+                                    <span className="truncate font-medium">
+                                        {business?.name
+                                            ? `${business.name} • Marketing Platform`
+                                            : 'MarketPilot Platform'}
+                                    </span>
+                                    <span className="shrink-0 font-medium">
+                                        {todayFormatted}
+                                    </span>
                                 </div>
 
-                                <div className="flex w-full shrink-0 items-center gap-2 self-start border-t border-border/40 pt-2 text-xs font-medium text-muted-foreground sm:w-auto sm:self-auto sm:border-0 sm:pt-0">
-                                    <Calendar className="h-3.5 w-3.5 shrink-0 text-primary" />
-                                    <span>{todayFormatted}</span>
-                                </div>
-                            </div>
-
-                            {/* Hero Greeting & Quick Actions */}
-                            <div className="flex w-full min-w-0 flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                                <div className="min-w-0 flex-1 space-y-1.5 sm:space-y-2">
-                                    <h1 className="text-xl font-extrabold tracking-tight break-words text-foreground sm:text-2xl lg:text-3xl">
-                                        {greeting},{' '}
-                                        {user?.name?.split(' ')[0] ||
-                                            'Marketer'}
-                                        !
+                                {/* Editorial Headline & Natural Supporting Copy */}
+                                <div className="max-w-xl space-y-2 pt-1">
+                                    <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
+                                        Create your next marketing campaign
                                     </h1>
-
-                                    <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                                        Your AI-driven marketing workspace
-                                        overview for planning campaigns,
-                                        generating visuals, managing catalog
-                                        readiness, and scheduling opportunities.
+                                    <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                                        Turn your products into polished marketing creatives for your next campaign.
                                     </p>
                                 </div>
 
-                                <div className="flex w-full shrink-0 flex-wrap items-center gap-2.5 sm:gap-3 lg:w-auto">
+                                {/* One Primary CTA (No competing hero buttons) */}
+                                <div className="pt-2">
                                     <Button
                                         asChild
-                                        className="h-11 min-w-fit gap-2 rounded-xl bg-primary px-5 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:scale-[1.02] active:scale-95"
+                                        className="h-10 rounded-md bg-foreground px-5 text-xs font-semibold text-background shadow-xs transition-opacity hover:opacity-90"
                                     >
                                         <Link href="/generator">
-                                            <Sparkles className="h-4 w-4" />
                                             Create Marketing Design
                                         </Link>
                                     </Button>
-
-                                    <Button
-                                        asChild
-                                        variant="outline"
-                                        className="h-11 min-w-fit gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
-                                    >
-                                        <Link href="/products/create">
-                                            <Package className="h-4 w-4" />
-                                            Add Product
-                                        </Link>
-                                    </Button>
-
-                                    <Button
-                                        asChild
-                                        variant="outline"
-                                        className="h-11 min-w-fit gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
-                                    >
-                                        <Link href="/calendar">
-                                            <Calendar className="h-4 w-4" />
-                                            View Calendar
-                                        </Link>
-                                    </Button>
-
-                                    <Button
-                                        asChild
-                                        variant="outline"
-                                        className="h-11 min-w-fit gap-1.5 rounded-xl px-3.5 text-xs font-semibold"
-                                    >
-                                        <Link href="/designs">
-                                            <ImageIcon className="h-4 w-4" />
-                                            View My Designs
-                                        </Link>
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* ======================================================
-                        SECTION 2 — KEY MARKETING METRICS (4 CARDS)
-                    ====================================================== */}
-                    <section className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-                        {summaryMetrics.map((metric) => {
-                            const Icon = metric.icon;
-
-                            return (
-                                <Link
-                                    key={metric.label}
-                                    href={metric.href}
-                                    className={cn(
-                                        'group relative flex w-full min-w-0 flex-col justify-between overflow-hidden rounded-2xl border border-border/80 bg-card p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-5',
-                                        metric.borderColor,
-                                    )}
-                                >
-                                    <div className="flex min-w-0 items-center justify-between gap-2">
-                                        <span className="truncate text-xs font-semibold text-muted-foreground">
-                                            {metric.label}
-                                        </span>
-
-                                        <div
-                                            className={cn(
-                                                'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-xs transition-transform duration-200 group-hover:scale-110',
-                                                metric.bgColor,
-                                                metric.color,
-                                            )}
-                                        >
-                                            <Icon className="h-4 w-4" />
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-3 min-w-0">
-                                        <span className="text-2xl font-extrabold tracking-tight sm:text-3xl">
-                                            {metric.value}
-                                        </span>
-                                    </div>
-
-                                    <div className="mt-3 flex min-w-0 items-center justify-between gap-2 border-t border-border/50 pt-2.5 text-[11px]">
-                                        <span className="truncate text-muted-foreground">
-                                            {metric.description}
-                                        </span>
-
-                                        <span className="flex shrink-0 items-center gap-0.5 font-bold text-primary">
-                                            View
-                                            <ArrowUpRight className="h-3 w-3" />
-                                        </span>
-                                    </div>
-                                </Link>
-                            );
-                        })}
-                    </section>
-
-                    {/* ======================================================
-                        SECTION 3 & 4 — ACTIVITY & PIPELINE
-                    ====================================================== */}
-                    <div className="grid w-full min-w-0 grid-cols-1 gap-6 lg:grid-cols-3">
-                        {/* --------------------------------------------------
-                            MARKETING ACTIVITY & OUTPUT
-                        -------------------------------------------------- */}
-                        <Card className="w-full min-w-0 overflow-hidden rounded-3xl border-border/80 bg-card p-4 shadow-xs sm:p-6 lg:col-span-2">
-                            <div className="flex w-full min-w-0 flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                            <BarChart3 className="h-4 w-4" />
-                                        </div>
-
-                                        <h2 className="truncate text-base font-bold tracking-tight">
-                                            Marketing Activity & Output
-                                        </h2>
-                                    </div>
-
-                                    <p className="mt-1 text-xs text-muted-foreground">
-                                        Authentic visual generation and campaign
-                                        output from your database.
-                                    </p>
-                                </div>
-
-                                <div className="flex shrink-0 flex-wrap items-center gap-1 self-start rounded-xl border border-border bg-muted/50 p-1 sm:self-auto">
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setChartTimeframe('monthly')
-                                        }
-                                        className={cn(
-                                            'cursor-pointer rounded-lg px-2.5 py-1 text-xs font-bold transition-all sm:px-3',
-                                            chartTimeframe === 'monthly'
-                                                ? 'bg-card text-foreground shadow-xs'
-                                                : 'text-muted-foreground hover:text-foreground',
-                                        )}
-                                    >
-                                        Monthly (6M)
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setChartTimeframe('weekly')
-                                        }
-                                        className={cn(
-                                            'cursor-pointer rounded-lg px-2.5 py-1 text-xs font-bold transition-all sm:px-3',
-                                            chartTimeframe === 'weekly'
-                                                ? 'bg-card text-foreground shadow-xs'
-                                                : 'text-muted-foreground hover:text-foreground',
-                                        )}
-                                    >
-                                        Weekly (7D)
-                                    </button>
                                 </div>
                             </div>
 
-                            <div className="mt-4 flex w-full min-w-0 flex-wrap items-center justify-between gap-3 text-xs">
-                                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="h-3 w-3 shrink-0 rounded-md bg-primary" />
-                                        <span className="font-semibold">
-                                            AI Visuals
-                                        </span>
-                                        <Badge
-                                            variant="outline"
-                                            className="text-[10px] font-bold"
-                                        >
-                                            {totalPeriodDesigns}
-                                        </Badge>
-                                    </div>
+                            {/* Essential Business Metrics (KPIs) - Typographic Hierarchy */}
+                            <div className="mt-8 border-t border-border/60 pt-6">
+                                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6">
+                                    <Link
+                                        href="/designs"
+                                        className="group transition-opacity hover:opacity-85"
+                                    >
+                                        <p className="text-2xl font-bold tabular-nums tracking-tight text-foreground sm:text-3xl transition-colors group-hover:text-primary">
+                                            {totalDesigns}
+                                        </p>
+                                        <p className="mt-1 text-xs font-medium text-muted-foreground">
+                                            Designs
+                                        </p>
+                                    </Link>
 
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="h-3 w-3 shrink-0 rounded-md bg-emerald-500" />
-                                        <span className="font-semibold">
+                                    <Link
+                                        href="/campaigns"
+                                        className="group transition-opacity hover:opacity-85"
+                                    >
+                                        <p className="text-2xl font-bold tabular-nums tracking-tight text-foreground sm:text-3xl transition-colors group-hover:text-primary">
+                                            {activeCampaigns}
+                                        </p>
+                                        <p className="mt-1 text-xs font-medium text-muted-foreground">
                                             Campaigns
-                                        </span>
-                                        <Badge
-                                            variant="outline"
-                                            className="text-[10px] font-bold"
-                                        >
-                                            {totalPeriodCampaigns}
-                                        </Badge>
-                                    </div>
-                                </div>
+                                        </p>
+                                    </Link>
 
-                                {hasActivity && (
-                                    <span className="text-[11px] text-muted-foreground">
-                                        Hover over bars for exact counts
+                                    <Link
+                                        href="/products"
+                                        className="group transition-opacity hover:opacity-85"
+                                    >
+                                        <p className="text-2xl font-bold tabular-nums tracking-tight text-foreground sm:text-3xl transition-colors group-hover:text-primary">
+                                            {totalProducts}
+                                        </p>
+                                        <p className="mt-1 text-xs font-medium text-muted-foreground">
+                                            Products
+                                        </p>
+                                    </Link>
+
+                                    <Link
+                                        href="/calendar"
+                                        className="group transition-opacity hover:opacity-85"
+                                    >
+                                        <p className="text-2xl font-bold tabular-nums tracking-tight text-foreground sm:text-3xl transition-colors group-hover:text-primary">
+                                            {upcomingEventsCount}
+                                        </p>
+                                        <p className="mt-1 text-xs font-medium text-muted-foreground">
+                                            Key Dates
+                                        </p>
+                                    </Link>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* RIGHT: FEATURED CREATIVE (VISUAL FOCAL POINT) */}
+                        <section className="flex flex-col justify-between overflow-hidden rounded-card border border-border/80 bg-card p-5 shadow-xs sm:p-6 lg:col-span-5 xl:col-span-4 dark:border-white/[0.08] dark:bg-[#15171f]">
+                            <div className="flex items-center justify-between pb-3">
+                                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                    Featured Creative
+                                </h2>
+                                {featuredDesign?.created_at && (
+                                    <span className="text-xs font-medium text-muted-foreground">
+                                        {featuredDesign.created_at}
                                     </span>
                                 )}
                             </div>
 
-                            <div className="w-full min-w-0 overflow-x-auto pt-6">
-                                {hasActivity ? (
+                            {featuredDesign ? (
+                                <div className="flex flex-1 flex-col justify-between">
                                     <div
-                                        className="grid h-48 w-full min-w-0 items-end gap-2 border-b border-border/60 px-1 sm:gap-4 sm:px-2"
-                                        style={{
-                                            gridTemplateColumns: `repeat(${activeActivityData.length || 6}, minmax(0, 1fr))`,
-                                        }}
+                                        onClick={() => setPreviewDesign(featuredDesign)}
+                                        className="group relative aspect-4/3 w-full cursor-pointer overflow-hidden rounded-lg border border-border/60 bg-muted"
                                     >
-                                        {activeActivityData.map(
-                                            (item, index) => {
-                                                const designs =
-                                                    item.designs || 0;
-                                                const campaigns =
-                                                    item.campaigns || 0;
-
-                                                const designHeight =
-                                                    designs > 0
-                                                        ? Math.max(
-                                                              12,
-                                                              Math.round(
-                                                                  (designs /
-                                                                      maxChartValue) *
-                                                                      100,
-                                                              ),
-                                                          )
-                                                        : 4;
-
-                                                const campaignHeight =
-                                                    campaigns > 0
-                                                        ? Math.max(
-                                                              8,
-                                                              Math.round(
-                                                                  (campaigns /
-                                                                      maxChartValue) *
-                                                                      100,
-                                                              ),
-                                                          )
-                                                        : 4;
-
-                                                const hovered =
-                                                    hoveredPointIndex === index;
-
-                                                return (
-                                                    <div
-                                                        key={`${item.period}-${index}`}
-                                                        className="group relative flex h-full min-w-0 cursor-pointer flex-col items-center justify-end"
-                                                        onMouseEnter={() =>
-                                                            setHoveredPointIndex(
-                                                                index,
-                                                            )
-                                                        }
-                                                        onMouseLeave={() =>
-                                                            setHoveredPointIndex(
-                                                                null,
-                                                            )
-                                                        }
-                                                    >
-                                                        {hovered && (
-                                                            <div className="absolute -top-12 z-30 rounded-xl border border-border bg-popover px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap text-popover-foreground shadow-lg">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="font-bold text-primary">
-                                                                        {
-                                                                            designs
-                                                                        }{' '}
-                                                                        visual
-                                                                        {designs ===
-                                                                        1
-                                                                            ? ''
-                                                                            : 's'}
-                                                                    </span>
-                                                                    <span>
-                                                                        •
-                                                                    </span>
-                                                                    <span className="font-bold text-emerald-500">
-                                                                        {
-                                                                            campaigns
-                                                                        }{' '}
-                                                                        campaign
-                                                                        {campaigns ===
-                                                                        1
-                                                                            ? ''
-                                                                            : 's'}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        )}
-
-                                                        <div className="flex h-36 w-full max-w-full items-end justify-center gap-1 sm:gap-1.5">
-                                                            <div
-                                                                style={{
-                                                                    height: `${designHeight}%`,
-                                                                }}
-                                                                className={cn(
-                                                                    'w-1/2 rounded-t-lg transition-all',
-                                                                    designs > 0
-                                                                        ? 'bg-primary/80 group-hover:bg-primary'
-                                                                        : 'bg-muted/40',
-                                                                )}
-                                                            />
-
-                                                            <div
-                                                                style={{
-                                                                    height: `${campaignHeight}%`,
-                                                                }}
-                                                                className={cn(
-                                                                    'w-1/2 rounded-t-lg transition-all',
-                                                                    campaigns >
-                                                                        0
-                                                                        ? 'bg-emerald-500/80 group-hover:bg-emerald-500'
-                                                                        : 'bg-muted/40',
-                                                                )}
-                                                            />
-                                                        </div>
-
-                                                        <span className="mt-2 max-w-full truncate text-center text-xs font-bold text-muted-foreground">
-                                                            {item.period}
-                                                        </span>
-                                                    </div>
-                                                );
-                                            },
+                                        {featuredDesign.image_url ? (
+                                            <img
+                                                src={featuredDesign.image_url}
+                                                alt={
+                                                    featuredDesign.product_name ||
+                                                    'Featured creative'
+                                                }
+                                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                                            />
+                                        ) : (
+                                            <div className="flex h-full w-full items-center justify-center text-muted-foreground/40">
+                                                <ImageIcon className="h-8 w-8" />
+                                            </div>
                                         )}
                                     </div>
-                                ) : (
-                                    <div className="flex h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-border/80 bg-muted/20 p-6 text-center">
-                                        <Activity className="mb-2 h-8 w-8 text-muted-foreground/40" />
-                                        <p className="text-sm font-semibold">
-                                            No marketing activity recorded for
-                                            this period.
-                                        </p>
-                                        <p className="mt-1 max-w-sm text-xs text-muted-foreground">
-                                            Generate AI visuals or launch a
-                                            promotional campaign to begin
-                                            tracking activity.
-                                        </p>
+
+                                    <div className="mt-4 flex items-end justify-between gap-3 pt-1">
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-bold text-foreground">
+                                                {featuredDesign.campaign_name ||
+                                                    featuredDesign.product_name ||
+                                                    'Marketing Creative'}
+                                            </p>
+                                            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                                                {featuredDesign.event_name
+                                                    ? `${featuredDesign.event_name}${featuredDesign.product_name ? ` • ${featuredDesign.product_name}` : ''}`
+                                                    : featuredDesign.product_name ||
+                                                      'Campaign asset'}
+                                            </p>
+                                        </div>
+
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setPreviewDesign(featuredDesign)}
+                                            className="h-8 shrink-0 rounded-md text-xs font-medium hover:bg-muted"
+                                        >
+                                            View Design
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-1 flex-col items-center justify-center rounded-lg border border-dashed border-border/60 bg-muted/20 p-8 text-center">
+                                    <ImageIcon className="mb-2 h-8 w-8 text-muted-foreground/40" />
+                                    <p className="text-sm font-semibold text-foreground">
+                                        No designs generated yet
+                                    </p>
+                                    <p className="mt-1 max-w-xs text-xs text-muted-foreground">
+                                        Generate your first marketing creative to feature it here.
+                                    </p>
+                                    <Button
+                                        asChild
+                                        variant="outline"
+                                        size="sm"
+                                        className="mt-4 rounded-md text-xs font-medium"
+                                    >
+                                        <Link href="/generator">Create Design</Link>
+                                    </Button>
+                                </div>
+                            )}
+                        </section>
+                    </div>
+
+                    {/* ======================================================
+                        3. RECENT DESIGNS (IMAGE-LED MARKETING OUTPUT)
+                    ====================================================== */}
+                    <section className="w-full min-w-0 space-y-4">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <h2 className="text-base font-bold tracking-tight text-foreground sm:text-lg">
+                                    Recent Designs
+                                </h2>
+                                <p className="text-xs text-muted-foreground">
+                                    Marketing creatives ready for review and publishing
+                                </p>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                {recent_designs.length > 0 && (
+                                    <div className="hidden sm:flex items-center rounded-md border border-border/70 bg-muted/40 p-0.5 text-xs">
+                                        <button
+                                            type="button"
+                                            onClick={() => setRecentViewMode('grid')}
+                                            className={cn(
+                                                'flex items-center gap-1 rounded px-2 py-0.5 font-medium transition-colors',
+                                                recentViewMode === 'grid'
+                                                    ? 'bg-card text-foreground shadow-2xs font-semibold'
+                                                    : 'text-muted-foreground hover:text-foreground',
+                                            )}
+                                            title="Grid View"
+                                        >
+                                            <LayoutGrid className="h-3 w-3" />
+                                            <span>Grid</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setRecentViewMode('capsule')}
+                                            className={cn(
+                                                'flex items-center gap-1 rounded px-2 py-0.5 font-medium transition-colors',
+                                                recentViewMode === 'capsule'
+                                                    ? 'bg-card text-foreground shadow-2xs font-semibold'
+                                                    : 'text-muted-foreground hover:text-foreground',
+                                            )}
+                                            title="List View"
+                                        >
+                                            <List className="h-3 w-3" />
+                                            <span>List</span>
+                                        </button>
                                     </div>
                                 )}
-                            </div>
 
-                            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border/40 pt-3 text-xs text-muted-foreground">
-                                <span>
-                                    Average Output:{' '}
-                                    <strong className="text-foreground">
-                                        {averageOutputText}
-                                    </strong>
-                                </span>
-
-                                <Link
-                                    href="/generator"
-                                    className="font-bold text-primary hover:underline"
+                                <Button
+                                    asChild
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-xs font-medium text-muted-foreground hover:text-foreground"
                                 >
-                                    Generate Visual →
+                                    <Link href="/designs">
+                                        View all ({totalDesigns})
+                                        <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+                                    </Link>
+                                </Button>
+                            </div>
+                        </div>
+
+                        {recent_designs.length === 0 ? (
+                            <Card className="w-full rounded-card border-border/80 bg-card p-8 text-center shadow-xs">
+                                <ImageIcon className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
+                                <h3 className="text-sm font-semibold text-foreground">
+                                    No designs created yet
+                                </h3>
+                                <p className="mx-auto mt-1 max-w-xs text-xs text-muted-foreground">
+                                    Start by generating creatives from your catalog or upcoming marketing events.
+                                </p>
+                                <Button
+                                    asChild
+                                    size="sm"
+                                    className="mt-4 rounded-md text-xs font-medium"
+                                >
+                                    <Link href="/generator">Create Design</Link>
+                                </Button>
+                            </Card>
+                        ) : recentViewMode === 'grid' ? (
+                            <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                                {recent_designs.map((design) => (
+                                    <div
+                                        key={design.id}
+                                        onClick={() => setPreviewDesign(design)}
+                                        className="group cursor-pointer overflow-hidden rounded-card border border-border/80 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md dark:border-white/[0.08] dark:bg-[#161820]"
+                                    >
+                                        <div className="relative aspect-4/3 w-full overflow-hidden bg-muted">
+                                            {design.image_url ? (
+                                                <img
+                                                    src={design.image_url}
+                                                    alt={
+                                                        design.product_name ||
+                                                        'Design creative'
+                                                    }
+                                                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                                                />
+                                            ) : (
+                                                <div className="flex h-full w-full items-center justify-center text-muted-foreground/30">
+                                                    <ImageIcon className="h-8 w-8" />
+                                                </div>
+                                            )}
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                                                <span className="flex items-center gap-1.5 rounded-md bg-black/70 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-xs">
+                                                    <Eye className="h-3.5 w-3.5" />
+                                                    Preview
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1 p-3.5">
+                                            <p className="truncate text-xs font-semibold text-foreground transition-colors group-hover:text-primary">
+                                                {design.campaign_name ||
+                                                    design.product_name ||
+                                                    'Marketing Creative'}
+                                            </p>
+                                            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                                                <span className="truncate">
+                                                    {design.event_name ||
+                                                        design.product_name ||
+                                                        'Design asset'}
+                                                </span>
+                                                <span className="shrink-0">
+                                                    {design.created_at}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {recent_designs.map((design) => (
+                                    <div
+                                        key={design.id}
+                                        onClick={() => setPreviewDesign(design)}
+                                        className="group flex cursor-pointer items-center justify-between gap-4 rounded-card border border-border/80 bg-card p-3 shadow-xs transition-all hover:border-border hover:shadow-sm dark:border-white/[0.08] dark:bg-[#161820]"
+                                    >
+                                        <div className="flex min-w-0 items-center gap-3">
+                                            <div className="h-12 w-16 shrink-0 overflow-hidden rounded-md border border-border/40 bg-muted">
+                                                {design.image_url ? (
+                                                    <img
+                                                        src={design.image_url}
+                                                        alt={
+                                                            design.product_name ||
+                                                            'Design'
+                                                        }
+                                                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                                                    />
+                                                ) : (
+                                                    <ImageIcon className="m-auto h-4 w-4 text-muted-foreground opacity-30" />
+                                                )}
+                                            </div>
+                                            <div className="min-w-0 space-y-0.5">
+                                                <p className="truncate text-xs font-semibold text-foreground transition-colors group-hover:text-primary">
+                                                    {design.campaign_name ||
+                                                        design.product_name ||
+                                                        'Marketing Creative'}
+                                                </p>
+                                                <p className="truncate text-[11px] text-muted-foreground">
+                                                    {design.event_name
+                                                        ? `${design.event_name} • ${design.product_name || 'Catalog Item'}`
+                                                        : design.product_name ||
+                                                          'Marketing asset'}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex shrink-0 items-center gap-3">
+                                            <span className="hidden text-xs text-muted-foreground sm:inline">
+                                                {design.created_at}
+                                            </span>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-8 rounded-md px-2 text-xs text-muted-foreground hover:text-foreground"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setPreviewDesign(design);
+                                                }}
+                                            >
+                                                View
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </section>
+
+                    {/* ======================================================
+                        4. CAMPAIGN PIPELINE, CATALOG READINESS & KEY DATES
+                    ====================================================== */}
+                    <div className="grid w-full min-w-0 grid-cols-1 gap-6 lg:grid-cols-12">
+                        {/* CAMPAIGN PIPELINE (lg:col-span-4) */}
+                        <Card className="min-w-0 rounded-card border-border/80 bg-card p-5 shadow-xs lg:col-span-4 dark:border-white/[0.08] dark:bg-[#161820]">
+                            <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-3">
+                                <h3 className="truncate text-sm font-bold text-foreground">
+                                    Campaign Pipeline
+                                </h3>
+                                <Link
+                                    href="/campaigns"
+                                    className="shrink-0 text-xs font-medium text-muted-foreground hover:text-foreground"
+                                >
+                                    View all ({totalCampaignsTracked}) →
                                 </Link>
                             </div>
-                        </Card>
 
-                        {/* --------------------------------------------------
-                            CAMPAIGN PIPELINE
-                        -------------------------------------------------- */}
-                        <Card className="min-w-0 rounded-3xl border-border/80 bg-card p-4 shadow-xs sm:p-5">
-                            <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-3">
-                                <div className="flex min-w-0 items-center gap-2">
-                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
-                                        <PieChart className="h-4 w-4" />
-                                    </div>
-
-                                    <h3 className="truncate text-sm font-bold">
-                                        Campaign Pipeline
-                                    </h3>
-                                </div>
-
-                                <Badge
-                                    variant="outline"
-                                    className="shrink-0 text-[10px] font-bold"
-                                >
-                                    {totalCampaignsTracked} Total
-                                </Badge>
-                            </div>
-
-                            <div className="mt-4 min-w-0 space-y-3">
-                                {/* Pipeline Distribution Bar */}
-                                <div className="flex h-3 min-w-0 overflow-hidden rounded-full bg-muted/60">
+                            <div className="mt-4 min-w-0 space-y-4">
+                                {/* Segmented Distribution Bar */}
+                                <div className="flex h-2.5 min-w-0 overflow-hidden rounded-full bg-muted/60">
                                     {[
                                         {
                                             status: 'active',
@@ -1280,360 +927,145 @@ export default function Dashboard({
                                     ))}
                                 </div>
 
-                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                {/* Status Rows */}
+                                <div className="space-y-1.5">
                                     {[
                                         {
                                             label: 'Active',
                                             status: 'active',
-                                            color: 'bg-emerald-500',
                                             count: statusCounts.active,
+                                            badgeVariant: 'outline' as const,
+                                            badgeClass:
+                                                'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10',
                                         },
                                         {
                                             label: 'Scheduled',
                                             status: 'scheduled',
-                                            color: 'bg-blue-500',
                                             count: statusCounts.scheduled,
+                                            badgeVariant: 'outline' as const,
+                                            badgeClass:
+                                                'border-blue-500/30 text-blue-600 dark:text-blue-400 bg-blue-500/10',
                                         },
                                         {
                                             label: 'Draft',
                                             status: 'draft',
-                                            color: 'bg-amber-500',
                                             count: statusCounts.draft,
+                                            badgeVariant: 'outline' as const,
+                                            badgeClass:
+                                                'border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/10',
                                         },
                                         {
                                             label: 'Completed',
                                             status: 'completed',
-                                            color: 'bg-purple-500',
                                             count: statusCounts.completed,
-                                        },
-                                        {
-                                            label: 'Archived',
-                                            status: 'archived',
-                                            color: 'bg-zinc-500',
-                                            count: statusCounts.archived,
-                                            fullWidth: true,
+                                            badgeVariant: 'outline' as const,
+                                            badgeClass:
+                                                'border-zinc-500/30 text-muted-foreground bg-muted/40',
                                         },
                                     ].map((item) => (
                                         <Link
                                             key={item.status}
                                             href="/campaigns"
-                                            className={cn(
-                                                'flex min-w-0 items-center justify-between rounded-xl border border-border/60 bg-muted/20 p-2.5 transition-colors hover:bg-muted/60',
-                                                item.fullWidth &&
-                                                    'sm:col-span-2',
-                                            )}
+                                            className="flex items-center justify-between rounded-lg p-2 text-xs transition-colors hover:bg-muted/50"
                                         >
-                                            <div className="flex min-w-0 items-center gap-1.5">
-                                                <span
+                                            <div className="flex items-center gap-2">
+                                                <Badge
+                                                    variant={item.badgeVariant}
                                                     className={cn(
-                                                        'h-2 w-2 shrink-0 rounded-full',
-                                                        item.color,
+                                                        'rounded-md px-1.5 py-0 text-[10px] font-semibold',
+                                                        item.badgeClass,
                                                     )}
-                                                />
-                                                <span className="truncate text-xs font-medium text-muted-foreground">
+                                                >
                                                     {item.label}
-                                                </span>
+                                                </Badge>
                                             </div>
-
-                                            <span className="ml-2 shrink-0 text-xs font-bold">
+                                            <span className="text-xs font-bold tabular-nums text-foreground">
                                                 {item.count}
                                             </span>
                                         </Link>
                                     ))}
                                 </div>
+
+                                <div className="border-t border-border/40 pt-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setIsCreateCampaignOpen(true)}
+                                        className="w-full rounded-md text-xs font-medium"
+                                    >
+                                        <Plus className="mr-1.5 h-3.5 w-3.5" />
+                                        New Campaign
+                                    </Button>
+                                </div>
                             </div>
                         </Card>
-                    </div>
 
-                    {/* ======================================================
-                        SECTION 5 & 6 — RECENT VISUALS & UPCOMING OPPORTUNITIES
-                    ====================================================== */}
-                    <div className="grid w-full min-w-0 grid-cols-1 gap-6 lg:grid-cols-3">
-                        {/* --------------------------------------------------
-                            RECENT AI VISUALS
-                        -------------------------------------------------- */}
-                        <div className="w-full min-w-0 space-y-4 lg:col-span-2">
-                            <div className="flex items-center justify-between gap-2">
-                                <h2 className="flex items-center gap-2 truncate text-base font-bold sm:text-lg">
-                                    <ImageIcon className="h-4 w-4 shrink-0 text-primary" />
-                                    <span>Recent AI Visuals</span>
-                                </h2>
-
-                                <Button
-                                    asChild
-                                    variant="ghost"
-                                    size="sm"
-                                    className="shrink-0 text-xs font-bold text-primary"
+                        {/* CATALOG READINESS (lg:col-span-4) */}
+                        <Card className="min-w-0 rounded-card border-border/80 bg-card p-5 shadow-xs lg:col-span-4 dark:border-white/[0.08] dark:bg-[#161820]">
+                            <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-3">
+                                <h3 className="truncate text-sm font-bold text-foreground">
+                                    Catalog Readiness
+                                </h3>
+                                <Link
+                                    href="/products"
+                                    className="shrink-0 text-xs font-medium text-muted-foreground hover:text-foreground"
                                 >
-                                    <Link href="/designs">
-                                        View All ({totalDesigns})
-                                        <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
-                                    </Link>
-                                </Button>
+                                    Manage catalog →
+                                </Link>
                             </div>
 
-                            {recent_designs.length === 0 ? (
-                                <Card className="w-full min-w-0 rounded-3xl border-border/80 bg-card p-8 text-center shadow-xs">
-                                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                                        <ImageIcon className="h-6 w-6" />
-                                    </div>
-
-                                    <h3 className="text-sm font-bold">
-                                        No AI visuals generated yet.
-                                    </h3>
-
-                                    <p className="mx-auto mt-1 max-w-xs text-xs text-muted-foreground">
-                                        Create commercial posters and social
-                                        creatives using your products and
-                                        marketing events.
-                                    </p>
-
-                                    <Button
-                                        asChild
-                                        size="sm"
-                                        className="mt-4 gap-1.5 rounded-xl text-xs font-bold"
-                                    >
-                                        <Link href="/generator">
-                                            <Sparkles className="h-3.5 w-3.5" />
-                                            Open Generator
-                                        </Link>
-                                    </Button>
-                                </Card>
-                            ) : (
-                                <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-                                    {recent_designs.map((design) => (
-                                        <button
-                                            type="button"
-                                            key={design.id}
-                                            onClick={() =>
-                                                setPreviewDesign(design)
-                                            }
-                                            className="group flex w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-border/80 bg-card text-left shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md"
-                                        >
-                                            <div className="relative aspect-4/3 w-full shrink-0 overflow-hidden bg-muted sm:aspect-auto sm:h-44">
-                                                {design.image_url ? (
-                                                    <img
-                                                        src={design.image_url}
-                                                        alt={
-                                                            design.product_name ||
-                                                            'Marketing visual creative'
-                                                        }
-                                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                                    />
-                                                ) : (
-                                                    <div className="flex h-full items-center justify-center text-muted-foreground">
-                                                        <ImageIcon className="h-8 w-8 opacity-40" />
-                                                    </div>
-                                                )}
-
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-
-                                                <span className="absolute top-2.5 right-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white opacity-0 backdrop-blur-md transition-opacity group-hover:opacity-100">
-                                                    <Eye className="h-3.5 w-3.5" />
-                                                </span>
-                                            </div>
-
-                                            <div className="min-w-0 flex-1 space-y-1 p-3 sm:p-3.5">
-                                                <p className="truncate text-xs font-bold group-hover:text-primary">
-                                                    {design.product_name ||
-                                                        'Marketing Creative'}
-                                                </p>
-
-                                                <p className="truncate text-[11px] text-muted-foreground">
-                                                    {design.campaign_name ||
-                                                        design.event_name ||
-                                                        design.created_at ||
-                                                        'Generated visual'}
-                                                </p>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* --------------------------------------------------
-                            UPCOMING MARKETING OPPORTUNITIES
-                        -------------------------------------------------- */}
-                        <div className="w-full min-w-0 space-y-4">
-                            <div className="flex items-center justify-between gap-2">
-                                <h2 className="flex items-center gap-2 truncate text-base font-bold sm:text-lg">
-                                    <Calendar className="h-4 w-4 shrink-0 text-primary" />
-                                    <span>Upcoming Opportunities</span>
-                                </h2>
-
-                                <Button
-                                    asChild
-                                    variant="ghost"
-                                    size="sm"
-                                    className="shrink-0 text-xs font-bold text-primary"
-                                >
-                                    <Link href="/calendar">
-                                        Calendar
-                                        <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
-                                    </Link>
-                                </Button>
-                            </div>
-
-                            {upcoming_events.length === 0 ? (
-                                <Card className="w-full min-w-0 rounded-3xl border-border/80 bg-card p-6 text-center shadow-xs">
-                                    <CalendarDays className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
-
-                                    <p className="text-xs text-muted-foreground">
-                                        No upcoming marketing opportunities in
-                                        the next 30 days.
-                                    </p>
-
-                                    <Button
-                                        asChild
-                                        size="sm"
-                                        variant="outline"
-                                        className="mt-3 rounded-xl text-xs font-bold"
-                                    >
-                                        <Link href="/calendar">
-                                            Browse Events
-                                        </Link>
-                                    </Button>
-                                </Card>
-                            ) : (
-                                <div className="w-full min-w-0 space-y-3">
-                                    {upcoming_events.map((event) => (
-                                        <div
-                                            key={event.id}
-                                            className="group w-full min-w-0 rounded-2xl border border-border/80 bg-card p-3.5 shadow-xs transition-all hover:border-primary/40 hover:shadow-md sm:p-4"
-                                        >
-                                            <div className="flex min-w-0 items-start justify-between gap-3">
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="truncate text-xs font-bold group-hover:text-primary">
-                                                        {event.name}
-                                                    </p>
-
-                                                    <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                                                        {event.date ||
-                                                            'Upcoming'}
-                                                    </p>
-                                                </div>
-
-                                                {event.days && (
-                                                    <Badge
-                                                        variant="secondary"
-                                                        className="shrink-0 border-primary/20 bg-primary/10 text-[10px] font-bold text-primary"
-                                                    >
-                                                        {event.days}
-                                                    </Badge>
-                                                )}
-                                            </div>
-
-                                            <div className="mt-3 flex min-w-0 items-center justify-between gap-2 border-t border-border/40 pt-2">
-                                                <span className="truncate text-[11px] font-medium text-muted-foreground">
-                                                    {formatEventCategory(
-                                                        event.category,
-                                                        event.type,
-                                                    )}
-                                                </span>
-
-                                                <Button
-                                                    asChild
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-7 shrink-0 rounded-lg px-2 text-xs font-bold text-primary"
-                                                >
-                                                    <Link
-                                                        href={`/generator?event_id=${event.id}`}
-                                                    >
-                                                        Launch Generator
-                                                        <ArrowUpRight className="ml-1 h-3 w-3" />
-                                                    </Link>
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* ======================================================
-                        SECTION 7 — CATALOG COVERAGE & RECOMMENDATIONS
-                    ====================================================== */}
-                    <section className="grid w-full min-w-0 grid-cols-1 gap-6 lg:grid-cols-3">
-                        {/* CATALOG READINESS */}
-                        <Card className="w-full min-w-0 rounded-3xl border-border/80 bg-card p-4 shadow-xs sm:p-5 lg:col-span-2">
-                            <div className="flex min-w-0 items-center justify-between gap-2 border-b border-border/60 pb-3">
-                                <div className="flex min-w-0 items-center gap-2">
-                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
-                                        <Package className="h-4 w-4" />
-                                    </div>
-
-                                    <div className="min-w-0 flex-1">
-                                        <h3 className="truncate text-sm font-bold">
-                                            Catalog Visual Readiness
-                                        </h3>
-
-                                        <p className="truncate text-[10px] text-muted-foreground">
-                                            Product coverage for AI marketing
-                                            creatives
+                            <div className="mt-4 min-w-0 space-y-4">
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="space-y-1">
+                                        <p className="text-2xl font-bold tabular-nums tracking-tight text-foreground">
+                                            {totalProducts}{' '}
+                                            <span className="text-xs font-normal text-muted-foreground">
+                                                products
+                                            </span>
                                         </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {productsWithVisuals} with visuals ({catalogCoverage}%)
+                                        </p>
+                                        {productsWithoutVisuals > 0 && (
+                                            <p className="text-[11px] text-muted-foreground">
+                                                {productsWithoutVisuals} waiting for creatives
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Actual product image thumbnail if available */}
+                                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-muted">
+                                        {recent_designs[0]?.image_url ? (
+                                            <img
+                                                src={recent_designs[0].image_url}
+                                                alt="Catalog item"
+                                                className="h-full w-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="flex h-full w-full items-center justify-center text-muted-foreground/30">
+                                                <Package className="h-6 w-6" />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
-                                <span className="shrink-0 text-xs font-bold text-emerald-500">
-                                    {catalogCoverage}% Ready
-                                </span>
-                            </div>
-
-                            <div className="mt-4 w-full min-w-0 space-y-4">
-                                <Progress
-                                    value={catalogCoverage}
-                                    className="h-2"
-                                />
-
-                                <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
-                                    <div className="min-w-0 rounded-xl border border-border/60 bg-muted/20 p-3">
-                                        <span className="block truncate text-[11px] text-muted-foreground">
-                                            With Visuals
+                                <div className="space-y-1.5">
+                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                        <span>Coverage</span>
+                                        <span className="font-bold tabular-nums text-foreground">
+                                            {catalogCoverage}%
                                         </span>
-
-                                        <p className="mt-1 text-xl font-extrabold">
-                                            {productsWithVisuals}
-                                        </p>
                                     </div>
-
-                                    <div className="min-w-0 rounded-xl border border-border/60 bg-muted/20 p-3">
-                                        <span className="block truncate text-[11px] text-muted-foreground">
-                                            Needs Visuals
-                                        </span>
-
-                                        <p className="mt-1 text-xl font-extrabold">
-                                            {productsWithoutVisuals}
-                                        </p>
-                                    </div>
+                                    <Progress value={catalogCoverage} className="h-2" />
                                 </div>
 
-                                <div className="flex w-full min-w-0 flex-col gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-xs font-bold">
-                                            {totalProducts === 0
-                                                ? 'Your catalog is empty. Add products to organize your marketing assets.'
-                                                : catalogCoverage >= 100
-                                                  ? 'All catalog products have associated marketing visuals.'
-                                                  : `${productsWithoutVisuals} ${productsWithoutVisuals === 1 ? 'product does' : 'products do'} not have marketing visuals yet.`}
-                                        </p>
-
-                                        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                                            {totalProducts === 0
-                                                ? 'Add your catalog products to start staging marketing creatives around your catalog.'
-                                                : catalogCoverage >= 100
-                                                  ? 'Your entire product catalog has visual assets staged in the studio.'
-                                                  : 'Review your catalog to decide which products need creatives.'}
-                                        </p>
-                                    </div>
-
+                                <div className="border-t border-border/40 pt-2">
                                     <Button
                                         asChild
-                                        size="sm"
                                         variant="outline"
-                                        className="shrink-0 self-start rounded-xl text-xs font-bold sm:self-auto"
+                                        size="sm"
+                                        className="w-full rounded-md text-xs font-medium"
                                     >
                                         <Link
                                             href={
@@ -1644,19 +1076,11 @@ export default function Dashboard({
                                         >
                                             {totalProducts === 0 ? (
                                                 <>
-                                                    <Plus className="mr-1.5 h-3.5 w-3.5 text-primary" />
+                                                    <Plus className="mr-1.5 h-3.5 w-3.5" />
                                                     Add First Product
                                                 </>
-                                            ) : productsWithoutVisuals > 0 ? (
-                                                <>
-                                                    <Package className="mr-1.5 h-3.5 w-3.5 text-primary" />
-                                                    Review Products
-                                                </>
                                             ) : (
-                                                <>
-                                                    <Package className="mr-1.5 h-3.5 w-3.5 text-primary" />
-                                                    View Products
-                                                </>
+                                                'Review Products'
                                             )}
                                         </Link>
                                     </Button>
@@ -1664,135 +1088,200 @@ export default function Dashboard({
                             </div>
                         </Card>
 
-                        {/* MARKETING RECOMMENDATIONS */}
-                        <Card className="w-full min-w-0 rounded-3xl border-border/80 bg-card p-4 shadow-xs sm:p-5">
-                            <div className="min-w-0 border-b border-border/60 pb-3">
-                                <div className="flex min-w-0 items-center gap-2">
-                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                        <Zap className="h-4 w-4" />
-                                    </div>
-
-                                    <div className="min-w-0 flex-1">
-                                        <h3 className="truncate text-sm font-bold">
-                                            Marketing Recommendations
-                                        </h3>
-
-                                        <p className="truncate text-[10px] text-muted-foreground">
-                                            Workspace review actions
-                                        </p>
-                                    </div>
-                                </div>
+                        {/* UPCOMING KEY DATES (lg:col-span-4) */}
+                        <Card className="min-w-0 rounded-card border-border/80 bg-card p-5 shadow-xs lg:col-span-4 dark:border-white/[0.08] dark:bg-[#161820]">
+                            <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-3">
+                                <h3 className="truncate text-sm font-bold text-foreground">
+                                    Upcoming Key Dates
+                                </h3>
+                                <Link
+                                    href="/calendar"
+                                    className="shrink-0 text-xs font-medium text-muted-foreground hover:text-foreground"
+                                >
+                                    Calendar →
+                                </Link>
                             </div>
 
-                            <div className="mt-3 w-full min-w-0 space-y-2.5">
-                                {recommendations.map((recommendation) => {
-                                    const Icon = recommendation.icon;
-
-                                    return (
-                                        <div
-                                            key={recommendation.id}
-                                            className="w-full min-w-0 rounded-2xl border border-border/60 bg-muted/20 p-3 transition-colors hover:bg-muted/40"
-                                        >
-                                            <div className="flex min-w-0 gap-3">
-                                                <div
-                                                    className={cn(
-                                                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl',
-                                                        recommendation.tone,
-                                                    )}
-                                                >
-                                                    <Icon className="h-4 w-4" />
+                            <div className="mt-3 min-w-0">
+                                {upcoming_events.length === 0 ? (
+                                    <div className="p-4 text-center text-xs text-muted-foreground">
+                                        No upcoming events in the next 30 days.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {upcoming_events.slice(0, 4).map((event) => (
+                                            <div
+                                                key={event.id}
+                                                className="group flex items-center justify-between gap-2 rounded-lg p-2 transition-colors hover:bg-muted/50"
+                                            >
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="truncate text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
+                                                        {event.name}
+                                                    </p>
+                                                    <p className="truncate text-[11px] text-muted-foreground">
+                                                        {event.date || 'Upcoming'} • {formatEventCategory(event.category, event.type)}
+                                                    </p>
                                                 </div>
 
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="truncate text-xs font-bold">
-                                                        {recommendation.title}
-                                                    </p>
-
-                                                    <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-muted-foreground">
-                                                        {
-                                                            recommendation.description
-                                                        }
-                                                    </p>
-
+                                                <div className="flex shrink-0 items-center gap-1.5">
+                                                    {event.days && (
+                                                        <span className="text-[11px] font-medium text-muted-foreground">
+                                                            {event.days}
+                                                        </span>
+                                                    )}
                                                     <Button
                                                         asChild
-                                                        variant="link"
+                                                        variant="ghost"
                                                         size="sm"
-                                                        className="mt-1 h-auto p-0 text-[10px] font-bold text-primary"
+                                                        className="h-7 px-2 text-[11px] font-medium text-primary hover:bg-primary/10"
                                                     >
                                                         <Link
-                                                            href={
-                                                                recommendation.href
-                                                            }
+                                                            href={`/generator?event_id=${event.id}`}
+                                                            title={`Create design for ${event.name}`}
                                                         >
-                                                            {
-                                                                recommendation.action
-                                                            }
+                                                            Create
                                                             <ArrowUpRight className="ml-1 h-3 w-3" />
                                                         </Link>
                                                     </Button>
                                                 </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </Card>
-                    </section>
+                    </div>
 
                     {/* ======================================================
-                        SECTION 8 — SYSTEM AUTOMATION & PIPELINE STATUS
+                        5. OUTPUT HISTORY (AUTHENTIC DATABASE ACTIVITY)
                     ====================================================== */}
-                    <section className="w-full min-w-0 rounded-3xl border border-border/80 bg-card/60 p-4 shadow-xs sm:p-5">
-                        <div className="flex min-w-0 flex-col gap-2 border-b border-border/60 pb-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="flex min-w-0 items-center gap-2">
-                                <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-500" />
+                    {hasActivity && (
+                        <Card className="w-full min-w-0 overflow-hidden rounded-card border-border/80 bg-card p-5 shadow-xs sm:p-6 dark:border-white/[0.08] dark:bg-[#161820]">
+                            <div className="flex w-full min-w-0 flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="min-w-0 flex-1">
+                                    <h3 className="truncate text-sm font-bold tracking-tight text-foreground">
+                                        Output History
+                                    </h3>
+                                    <p className="mt-0.5 text-xs text-muted-foreground">
+                                        Database record of generated designs and campaign production
+                                    </p>
+                                </div>
 
-                                <h3 className="truncate text-xs font-bold tracking-wider uppercase">
-                                    System Automation & Pipeline Status
-                                </h3>
+                                <div className="flex shrink-0 items-center gap-1 rounded-md border border-border/70 bg-muted/40 p-0.5 text-xs">
+                                    <button
+                                        type="button"
+                                        onClick={() => setChartTimeframe('monthly')}
+                                        className={cn(
+                                            'rounded px-2.5 py-1 font-medium transition-colors',
+                                            chartTimeframe === 'monthly'
+                                                ? 'bg-card text-foreground shadow-2xs font-semibold'
+                                                : 'text-muted-foreground hover:text-foreground',
+                                        )}
+                                    >
+                                        Monthly
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setChartTimeframe('weekly')}
+                                        className={cn(
+                                            'rounded px-2.5 py-1 font-medium transition-colors',
+                                            chartTimeframe === 'weekly'
+                                                ? 'bg-card text-foreground shadow-2xs font-semibold'
+                                                : 'text-muted-foreground hover:text-foreground',
+                                        )}
+                                    >
+                                        Weekly
+                                    </button>
+                                </div>
                             </div>
 
-                            <span className="text-[11px] text-muted-foreground">
-                                Current workspace pipeline status
-                            </span>
-                        </div>
-
-                        <div className="mt-3 grid min-w-0 grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-                            {systemStatusList.map((item) => (
+                            <div className="w-full min-w-0 overflow-x-auto pt-6">
                                 <div
-                                    key={item.label}
-                                    className="flex min-w-0 items-center gap-2.5 rounded-xl border border-border/60 bg-muted/20 p-3"
+                                    className="grid h-40 w-full min-w-0 items-end gap-2 border-b border-border/60 px-1 sm:gap-4 sm:px-2"
+                                    style={{
+                                        gridTemplateColumns: `repeat(${activeActivityData.length || 6}, minmax(0, 1fr))`,
+                                    }}
                                 >
-                                    <span
-                                        className={cn(
-                                            'h-2 w-2 shrink-0 rounded-full',
-                                            item.isOperational
-                                                ? 'bg-emerald-500'
-                                                : 'bg-amber-500',
-                                        )}
-                                    />
+                                    {activeActivityData.map((item, index) => {
+                                        const designs = item.designs || 0;
+                                        const campaigns = item.campaigns || 0;
 
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate text-xs font-semibold">
-                                            {item.label}
-                                        </p>
+                                        const designHeight =
+                                            designs > 0
+                                                ? Math.max(
+                                                      12,
+                                                      Math.round(
+                                                          (designs / maxChartValue) * 100,
+                                                      ),
+                                                  )
+                                                : 4;
 
-                                        <p
-                                            className={cn(
-                                                'truncate text-[10px]',
-                                                item.isOperational
-                                                    ? 'text-muted-foreground'
-                                                    : 'font-medium text-amber-500',
-                                            )}
-                                        >
-                                            {item.status}
-                                        </p>
-                                    </div>
+                                        const campaignHeight =
+                                            campaigns > 0
+                                                ? Math.max(
+                                                      8,
+                                                      Math.round(
+                                                          (campaigns / maxChartValue) * 100,
+                                                      ),
+                                                  )
+                                                : 4;
+
+                                        const hovered = hoveredPointIndex === index;
+
+                                        return (
+                                            <div
+                                                key={`${item.period}-${index}`}
+                                                className="group relative flex h-full min-w-0 cursor-pointer flex-col items-center justify-end"
+                                                onMouseEnter={() =>
+                                                    setHoveredPointIndex(index)
+                                                }
+                                                onMouseLeave={() =>
+                                                    setHoveredPointIndex(null)
+                                                }
+                                            >
+                                                {hovered && (
+                                                    <div className="absolute -top-12 z-30 whitespace-nowrap rounded-md border border-border bg-popover px-2.5 py-1 text-[11px] font-semibold text-popover-foreground shadow-md">
+                                                        <span>
+                                                            {designs} design{designs === 1 ? '' : 's'} • {campaigns} campaign{campaigns === 1 ? '' : 's'}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                <div className="flex h-28 w-full max-w-full items-end justify-center gap-1 sm:gap-1.5">
+                                                    <div
+                                                        style={{
+                                                            height: `${designHeight}%`,
+                                                        }}
+                                                        className={cn(
+                                                            'w-1/2 rounded-t-sm transition-all',
+                                                            designs > 0
+                                                                ? 'bg-foreground/80 group-hover:bg-foreground'
+                                                                : 'bg-muted/40',
+                                                        )}
+                                                    />
+                                                    <div
+                                                        style={{
+                                                            height: `${campaignHeight}%`,
+                                                        }}
+                                                        className={cn(
+                                                            'w-1/2 rounded-t-sm transition-all',
+                                                            campaigns > 0
+                                                                ? 'bg-muted-foreground/60 group-hover:bg-muted-foreground'
+                                                                : 'bg-muted/40',
+                                                        )}
+                                                    />
+                                                </div>
+
+                                                <span className="mt-2 max-w-full truncate text-center text-xs font-medium text-muted-foreground">
+                                                    {item.period}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                            ))}
-                        </div>
-                    </section>
+                            </div>
+                        </Card>
+                    )}
                 </div>
             </div>
 
@@ -1900,7 +1389,7 @@ export default function Dashboard({
                 open={isCreateCampaignOpen}
                 onOpenChange={setIsCreateCampaignOpen}
             >
-                <DialogContent className="max-h-[90vh] w-[calc(100vw-2rem)] overflow-y-auto rounded-3xl border-border bg-card p-4 shadow-2xl sm:max-w-md sm:p-6">
+                <DialogContent className="max-h-[90vh] w-[calc(100vw-2rem)] overflow-y-auto rounded-card border-border bg-card p-4 shadow-2xl sm:max-w-md sm:p-6">
                     <DialogHeader>
                         <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">

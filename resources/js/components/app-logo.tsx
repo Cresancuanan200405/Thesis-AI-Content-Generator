@@ -16,7 +16,7 @@ export default function AppLogo({ subtitle, className }: AppLogoProps = {}) {
                 <AppLogoIcon className="size-full rounded-lg object-contain" />
             </div>
             <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-extrabold tracking-tight text-foreground">
+                <span className="truncate font-bold tracking-tight text-foreground">
                     {name ?? 'MarketPilot'}
                 </span>
                 {subtitle && (

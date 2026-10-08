@@ -10,14 +10,15 @@ import {
     ChevronDown,
     Clapperboard,
     Compass,
+    ImageIcon,
+    Lightbulb,
     Loader2,
     Package,
     PenTool,
     RotateCcw,
     SlidersHorizontal,
-    Sparkles,
+    Type,
     Calendar,
-    Wand2,
     X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -83,6 +84,8 @@ import {
     ImageQuality,
     ProductItem,
     renderStyleOptions,
+    normalizeRenderStyle,
+    normalizeCopyEmphasis,
     parseList,
     restoreProductsFromDraft,
     Step,
@@ -173,7 +176,8 @@ export default function ManualGenerator({
         adjustScenePromptHeight();
     }, [scenePrompt, adjustScenePromptHeight]);
 
-    // Step 3 state: Marketing Copy
+    // Content & Copy Visibility state
+    const [includeProductName, setIncludeProductName] = useState<boolean>(true);
     const [includeTagline, setIncludeTagline] = useState<boolean>(true);
     const [tagline, setTagline] = useState('');
     const [taglineMode, setTaglineMode] = useState<TaglineMode>('none');
@@ -225,7 +229,13 @@ export default function ManualGenerator({
         const restoredProducts = restoreProductsFromDraft(initial_draft, products);
         setSelectedCatalogProducts(restoredProducts);
 
-        if (initial_draft.prompt) setScenePrompt(initial_draft.prompt);
+        const restoredPrompt =
+            meta.scene_prompt ||
+            meta.user_prompt ||
+            (initial_draft.prompt?.startsWith('FINAL MARKETING DESIGN TASK')
+                ? (initial_draft.prompt.match(/• PRIMARY USER SCENE DIRECTION:\s*(.+)$/m)?.[1]?.trim() || initial_draft.prompt)
+                : initial_draft.prompt);
+        if (restoredPrompt) setScenePrompt(restoredPrompt);
 
         if (typeof meta.include_tagline === 'boolean') {
             setIncludeTagline(meta.include_tagline);
@@ -239,7 +249,7 @@ export default function ManualGenerator({
             setTaglineMode(initial_draft.tagline_mode || meta.tagline_mode);
         }
         if (meta.render_style || initial_draft.render_style) {
-            setRenderStyle(meta.render_style || initial_draft.render_style);
+            setRenderStyle(normalizeRenderStyle(meta.render_style || initial_draft.render_style));
         }
 
         const restoredThemes = parseList(
@@ -257,9 +267,12 @@ export default function ManualGenerator({
         }
 
         if (meta.design_treatment) setDesignTreatment(meta.design_treatment);
-        if (meta.copy_emphasis) setCopyEmphasis(meta.copy_emphasis);
+        if (meta.copy_emphasis) setCopyEmphasis(normalizeCopyEmphasis(meta.copy_emphasis));
         if (meta.aspect_ratio || initial_draft.aspect_ratio) {
             setAspectRatio(meta.aspect_ratio || initial_draft.aspect_ratio);
+        }
+        if (typeof meta.include_product_name === 'boolean') {
+            setIncludeProductName(meta.include_product_name);
         }
         if (typeof meta.show_event_text === 'boolean') {
             setShowEventText(meta.show_event_text);
@@ -526,6 +539,7 @@ export default function ManualGenerator({
                     brand_tone: brandTone,
                     aspect_ratio: aspectRatio,
                     include_business_name: includeBusinessName,
+                    include_product_name: includeProductName,
                     include_prices: includePrices,
                     include_tagline: includeTagline,
                     tagline: tagline.trim(),
@@ -536,6 +550,9 @@ export default function ManualGenerator({
             const data = await response.json();
             if (response.ok && data.success && data.visual_prompt) {
                 setScenePrompt(data.visual_prompt);
+                if (data.render_style) {
+                    setRenderStyle(normalizeRenderStyle(data.render_style));
+                }
                 setRecentSuggestions((prev) => [
                     data.visual_prompt,
                     ...prev.filter((p) => p !== data.visual_prompt).slice(0, 4),
@@ -645,6 +662,7 @@ export default function ManualGenerator({
             formData.append('prompt', scenePrompt);
             formData.append('scene_prompt', scenePrompt);
 
+            formData.append('include_product_name', includeProductName ? '1' : '0');
             formData.append('include_prices', includePrices ? '1' : '0');
 
             if (includePrices && effectivePrice) {
@@ -820,6 +838,7 @@ export default function ManualGenerator({
                 if (cp.price) formData.append(`custom_products[${idx}][price]`, cp.price);
                 if (cp.description) formData.append(`custom_products[${idx}][description]`, cp.description);
             });
+            formData.append('include_product_name', includeProductName ? '1' : '0');
             formData.append('include_prices', includePrices ? '1' : '0');
             if (campaign?.id) {
                 formData.append('campaign_id', String(campaign.id));
@@ -1019,12 +1038,12 @@ export default function ManualGenerator({
         );
     };
 
-    // Stepper navigation structure (Strict 4-Step User Creative Director)
+    // Stepper navigation structure (Streamlined 3-Step Studio)
     const steps: WizardStepItem[] = [
         {
             step: 1,
-            title: 'Products & Campaign',
-            subtitle: 'Catalog & Context',
+            title: 'Products',
+            subtitle: 'Catalog & Offerings',
             icon: Package,
             isCompleted: hasProductSelected,
             isAccessible: true,
@@ -1032,23 +1051,15 @@ export default function ManualGenerator({
         {
             step: 2,
             title: 'Creative Direction',
-            subtitle: 'Scene & Styling',
-            icon: Sparkles,
+            subtitle: 'Scene & Style',
+            icon: Compass,
             isCompleted: Boolean(stepTwoValid),
             isAccessible: hasProductSelected,
         },
         {
             step: 3,
-            title: 'Marketing Copy',
-            subtitle: 'Tagline & Identity',
-            icon: PenTool,
-            isCompleted: Boolean(!includeTagline || tagline.trim().length > 0),
-            isAccessible: hasProductSelected && stepTwoValid,
-        },
-        {
-            step: 4,
-            title: 'Format & Generate',
-            subtitle: 'Canvas & Review',
+            title: 'Format & Canvas',
+            subtitle: 'Aspect Ratio & Review',
             icon: SlidersHorizontal,
             isCompleted: Boolean(aspectRatio && canGenerateManual),
             isAccessible: hasProductSelected && stepTwoValid,
@@ -1067,7 +1078,7 @@ export default function ManualGenerator({
             <Head title="Manual Generation — AI Marketing Studio" />
 
             <div
-                className={`flex w-full min-w-0 max-w-full overflow-x-clip bg-background text-foreground ${generationState === 'generating'
+                className={`flex w-full min-w-0 max-w-full bg-background text-foreground ${generationState === 'generating'
                     ? 'h-[calc(100vh-2.75rem)] overflow-hidden sm:h-[calc(100vh-3rem)]'
                     : 'min-h-[calc(100vh-2.75rem)] sm:min-h-[calc(100vh-3rem)]'
                     }`}
@@ -1170,27 +1181,23 @@ export default function ManualGenerator({
                             )}
 
                             {/* Main Card */}
-                            <Card className="overflow-hidden rounded-2xl border-border bg-card shadow-sm gap-0 py-0">
+                            <Card className="overflow-hidden rounded-card border-border bg-card shadow-sm gap-0 py-0">
                                 <CardHeader className="border-b bg-muted/10 px-4 py-2.5 sm:px-5">
                                     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                                         <div>
                                             <h2 className="text-sm font-bold text-foreground">
                                                 {currentStep === 1
-                                                    ? 'Products & Campaign'
+                                                    ? 'Products'
                                                     : currentStep === 2
                                                         ? 'Creative Direction'
-                                                        : currentStep === 3
-                                                            ? 'Marketing Copy'
-                                                            : 'Format & Generate'}
+                                                        : 'Format & Canvas'}
                                             </h2>
                                             <p className="text-[11px] text-muted-foreground mt-0.5">
                                                 {currentStep === 1
-                                                    ? 'Select catalog products or custom offerings and review campaign context.'
+                                                    ? 'Select catalog products or custom offerings for your marketing visual.'
                                                     : currentStep === 2
-                                                        ? 'Describe visual scene, choose art direction presets, design treatment, and copy emphasis.'
-                                                        : currentStep === 3
-                                                            ? 'Configure marketing copy, AI tagline generation, and pricing visibility.'
-                                                            : 'Choose canvas aspect ratio, review creative brief summary, and generate final image.'}
+                                                        ? 'Describe your desired scene, choose a canonical render style, and set copy emphasis.'
+                                                        : 'Choose canvas aspect ratio, customize headline if desired, and generate final image.'}
                                             </p>
                                         </div>
                                     </div>
@@ -1228,649 +1235,499 @@ export default function ManualGenerator({
                                     {/* STEP 2: CREATIVE DIRECTION */}
                                     {currentStep === 2 && (
                                         <div className="animate-in space-y-4 duration-200 fade-in">
-                                            {/* Visual Scene Prompt Card */}
-                                            <div className="space-y-2 rounded-xl border border-border/80 bg-card/60 p-3 shadow-xs">
-                                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Label className="text-xs font-bold text-foreground">
-                                                            Visual Scene Prompt
-                                                        </Label>
-                                                        <HelpTooltip text="Detailed scene prompt describing the visual setting, composition, lighting, and mood. Required for manual generation." />
-                                                        {scenePrompt.trim() ? (
-                                                            <span className="flex items-center gap-1 rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                                                <Check className="h-2.5 w-2.5 stroke-[3]" />
-                                                                Ready
-                                                            </span>
-                                                        ) : (
-                                                            <span className="flex items-center gap-1 rounded border border-red-500/40 bg-red-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-red-600 dark:text-red-400">
-                                                                Required
-                                                            </span>
-                                                        )}
-                                                    </div>
+                                            {/* Creative Direction Scene Prompt */}
+                                            <div className="space-y-2 rounded-xl border border-border/80 bg-card/60 p-3.5 shadow-xs">
+                                                <div className="flex items-center justify-between gap-2">
                                                     <div className="flex items-center gap-2">
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="sm"
-                                                            disabled={isGeneratingPrompt}
-                                                            onClick={handleGenerateVisualPrompt}
-                                                            className="relative h-7.5 gap-1.5 rounded-lg border-primary/40 bg-primary/10 px-2.5 text-xs font-bold text-primary shadow-xs ring-1 ring-primary/30 transition-all hover:border-primary hover:bg-primary hover:text-primary-foreground disabled:pointer-events-none disabled:opacity-60 active:scale-95"
-                                                        >
-                                                            {isGeneratingPrompt ? (
-                                                                <>
-                                                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                                                                    <span>Generating...</span>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <Sparkles className="h-3.5 w-3.5 animate-pulse" />
-                                                                    <span>
-                                                                        {scenePrompt.trim()
-                                                                            ? 'Suggest Different Angle'
-                                                                            : 'Suggest Visual Prompt'}
-                                                                    </span>
-                                                                </>
-                                                            )}
-                                                        </Button>
+                                                        <Compass className="h-4 w-4 text-primary" />
+                                                        <div>
+                                                            <Label
+                                                                htmlFor="manual_creative_direction"
+                                                                className="text-xs font-bold text-foreground"
+                                                            >
+                                                                Creative Direction
+                                                            </Label>
+                                                            <p className="text-[10px] text-muted-foreground">
+                                                                Describe the visual scene, lighting, environment, and atmosphere.
+                                                            </p>
+                                                        </div>
                                                     </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        disabled={isGeneratingPrompt}
+                                                        onClick={handleGenerateVisualPrompt}
+                                                        className="relative h-7.5 gap-1.5 rounded-lg border-primary/40 bg-primary/10 px-2.5 text-xs font-bold text-primary shadow-xs ring-1 ring-primary/30 transition-all hover:border-primary hover:bg-primary hover:text-primary-foreground active:scale-95 disabled:opacity-50 cursor-pointer"
+                                                    >
+                                                        <Lightbulb
+                                                            className={`h-3.5 w-3.5 ${
+                                                                isGeneratingPrompt
+                                                                    ? 'animate-spin'
+                                                                    : ''
+                                                            }`}
+                                                        />
+                                                        {isGeneratingPrompt
+                                                            ? 'Suggesting...'
+                                                            : 'Suggest Visual Prompt'}
+                                                    </Button>
                                                 </div>
 
                                                 <Textarea
+                                                    id="manual_creative_direction"
                                                     ref={scenePromptTextareaRef}
                                                     value={scenePrompt}
                                                     onChange={(e) => setScenePrompt(e.target.value)}
-                                                    placeholder="Describe scene staging, festive props, lighting, or backdrop (or click Suggest Visual Prompt to have AI compose one)..."
+                                                    placeholder="Describe what you want in your visual scene (e.g. Premium coffee advertisement with warm morning sunlight and an elegant café atmosphere)..."
+                                                    rows={3}
                                                     className="w-full resize-y text-xs leading-relaxed transition-all focus-visible:ring-primary/30 rounded-xl border-border/80 bg-background/80 p-2.5 min-h-[72px]"
-                                                    style={{
-                                                        fieldSizing: 'content',
-                                                    }}
                                                 />
 
-                                                {scenePrompt.trim() ? (
-                                                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                                                {scenePrompt.trim() && (
+                                                    <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5">
                                                         <span className="flex items-center gap-1 font-medium text-foreground">
-                                                            <Check className="h-3 w-3 text-primary" /> Custom visual prompt is ready to guide image rendering.
+                                                            <Check className="h-3 w-3 text-emerald-500" /> Visual scene direction is ready.
                                                         </span>
                                                         <button
                                                             type="button"
                                                             onClick={() => setScenePrompt('')}
-                                                            className="text-xs font-medium text-muted-foreground transition-colors hover:text-destructive"
+                                                            className="text-[11px] font-medium text-muted-foreground transition-colors hover:text-destructive cursor-pointer"
                                                         >
-                                                            Clear Prompt
+                                                            Clear
                                                         </button>
                                                     </div>
-                                                ) : (
-                                                    <p className="text-[11px] text-muted-foreground">
-
-                                                    </p>
                                                 )}
                                             </div>
 
-                                            {/* Smart Style Suggestions Banner with Deterministic Shuffle */}
-                                            <div className="flex flex-col gap-2.5 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:flex-row sm:items-center sm:justify-between">
-                                                <div className="flex items-center gap-2.5">
-                                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                                        <Wand2 className="h-3.5 w-3.5" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs font-bold text-foreground">
-                                                            Creative Direction Presets
-                                                        </p>
-                                                        <p className="text-[11px] text-muted-foreground">
-                                                            Instantly randomize compatible design treatments, copy emphases, and styles locally.
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center gap-2">
-                                                    <Button
-                                                        type="button"
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={handleClearPresets}
-                                                        className="relative h-7 gap-1.5 self-start rounded-lg border-border/80 bg-background px-2.5 text-xs font-semibold text-muted-foreground transition-all duration-200 hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive active:scale-95 sm:self-auto cursor-pointer"
-                                                        title="Reset all creative direction presets to defaults"
-                                                    >
-                                                        <RotateCcw className="h-3 w-3" />
-                                                        Clear Presets
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={applyDynamicSuggestions}
-                                                        className="relative h-7 gap-1.5 self-start rounded-lg border-primary/40 bg-primary/10 px-2.5 text-xs font-bold text-primary shadow-xs ring-1 ring-primary/30 transition-all duration-200 hover:border-primary hover:bg-primary hover:text-primary-foreground active:scale-95 sm:self-auto cursor-pointer"
-                                                    >
-                                                        <Sparkles className="h-3 w-3 animate-pulse" />
-                                                        Shuffle Presets
-                                                    </Button>
-                                                </div>
-                                            </div>
-
-                                            {/* PRESETS ACCORDION: 5 DROPDOWN SECTIONS WITH FULL CARDS */}
-                                            <div className="space-y-3">
-                                                {/* 1. Design Treatment Section */}
-                                                <div className="rounded-xl border border-border/80 bg-card/60 p-3 shadow-xs">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => togglePresetSection('treatment')}
-                                                        className="flex w-full items-center justify-between cursor-pointer select-none text-left"
-                                                    >
-                                                        <div className="flex items-center gap-2">
-                                                            <SlidersHorizontal className="h-4 w-4 shrink-0 text-primary" />
-                                                            <span className="text-xs font-bold text-foreground">
-                                                                Design Treatment
-                                                            </span>
-                                                            <HelpTooltip text="Controls the overall visual and typographic layout structure of the creative." />
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="flex items-center gap-1 rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                                                <Check className="h-2.5 w-2.5 stroke-[3]" />
-                                                                {designTreatment}
-                                                            </span>
-                                                            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${openPresetSections.treatment ? 'rotate-180' : ''}`} />
-                                                        </div>
-                                                    </button>
-
-                                                    {openPresetSections.treatment && (
-                                                        <div className="animate-in fade-in slide-in-from-top-1 duration-200 grid gap-2 sm:grid-cols-3 pt-3">
-                                                            {designTreatmentOptions.map((opt) => {
-                                                                const isSelected = designTreatment === opt.value;
-                                                                return (
-                                                                    <button
-                                                                        key={opt.value}
-                                                                        type="button"
-                                                                        onClick={() => setDesignTreatment(opt.value)}
-                                                                        className={`group relative flex flex-col justify-between rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none ${
-                                                                            isSelected
-                                                                                ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
-                                                                                : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
-                                                                        }`}
-                                                                    >
-                                                                        <div className="space-y-1">
-                                                                            <div className="flex items-center justify-between gap-1.5">
-                                                                                <span className={`text-xs font-bold ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground group-hover:text-primary'}`}>
-                                                                                    {opt.label}
-                                                                                </span>
-                                                                                <div className="flex items-center gap-1">
-                                                                                    <span className={`rounded-md border px-1.5 py-0.5 text-[9px] font-bold ${opt.badgeColor}`}>
-                                                                                        {opt.badge}
-                                                                                    </span>
-                                                                                    <HelpTooltip text={opt.description} />
-                                                                                </div>
-                                                                            </div>
-                                                                            <p className="line-clamp-2 text-[10px] text-muted-foreground">
-                                                                                {opt.description}
-                                                                            </p>
-                                                                        </div>
-                                                                        {isSelected && (
-                                                                            <div className="mt-2 flex items-center justify-end">
-                                                                                <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 stroke-[3]" />
-                                                                            </div>
-                                                                        )}
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* 2. Copy Emphasis Section */}
-                                                <div className="rounded-xl border border-border/80 bg-card/60 p-3 shadow-xs">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => togglePresetSection('emphasis')}
-                                                        className="flex w-full items-center justify-between cursor-pointer select-none text-left"
-                                                    >
-                                                        <div className="flex items-center gap-2">
-                                                            <Sparkles className="h-4 w-4 shrink-0 text-primary" />
-                                                            <span className="text-xs font-bold text-foreground">
-                                                                Copy Emphasis
-                                                            </span>
-                                                            <HelpTooltip text="Determines dominant focus between product, campaign tagline, or promotional price." />
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="flex items-center gap-1 rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                                                <Check className="h-2.5 w-2.5 stroke-[3]" />
-                                                                {copyEmphasis}
-                                                            </span>
-                                                            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${openPresetSections.emphasis ? 'rotate-180' : ''}`} />
-                                                        </div>
-                                                    </button>
-
-                                                    {openPresetSections.emphasis && (
-                                                        <div className="animate-in fade-in slide-in-from-top-1 duration-200 grid gap-2 grid-cols-2 sm:grid-cols-4 pt-3">
-                                                            {copyEmphasisOptions.map((opt) => {
-                                                                const isSelected = copyEmphasis === opt.value;
-                                                                return (
-                                                                    <button
-                                                                        key={opt.value}
-                                                                        type="button"
-                                                                        onClick={() => setCopyEmphasis(opt.value)}
-                                                                        className={`rounded-xl border p-2 text-left transition-all cursor-pointer select-none ${
-                                                                            isSelected
-                                                                                ? 'border-emerald-500 bg-emerald-500/10 font-bold shadow-xs ring-1 ring-emerald-500/40'
-                                                                                : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
-                                                                        }`}
-                                                                    >
-                                                                        <div className="flex items-center justify-between gap-1">
-                                                                            <span className={`text-xs font-semibold ${isSelected ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-foreground'}`}>{opt.label}</span>
-                                                                            <div className="flex items-center gap-1">
-                                                                                <HelpTooltip text={opt.description} />
-                                                                                {isSelected && <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400 stroke-[3]" />}
-                                                                            </div>
-                                                                        </div>
-                                                                        <p className="mt-0.5 line-clamp-1 text-[10px] text-muted-foreground">
-                                                                            {opt.description}
-                                                                        </p>
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* 3. Render Style Section */}
-                                                <div className="rounded-xl border border-border/80 bg-card/60 p-3 shadow-xs">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => togglePresetSection('render')}
-                                                        className="flex w-full items-center justify-between cursor-pointer select-none text-left"
-                                                    >
-                                                        <div className="flex items-center gap-2">
-                                                            <Camera className="h-4 w-4 shrink-0 text-primary" />
+                                            {/* Canonical Render Styles (4 Options) */}
+                                            <div className="space-y-2 rounded-xl border border-border/80 bg-card/60 p-3.5 shadow-xs">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <Camera className="h-4 w-4 text-primary" />
+                                                        <div>
                                                             <span className="text-xs font-bold text-foreground">
                                                                 Render Style
                                                             </span>
-                                                            <HelpTooltip text="Defines visual rendering mode, studio camera treatment, volumetric lighting, and scene fidelity." />
+                                                            <p className="text-[10px] text-muted-foreground">
+                                                                High-level commercial production aesthetic for your visual.
+                                                            </p>
                                                         </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="flex items-center gap-1 rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                                                <Check className="h-2.5 w-2.5 stroke-[3]" />
-                                                                {renderStyle}
-                                                            </span>
-                                                            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${openPresetSections.render ? 'rotate-180' : ''}`} />
-                                                        </div>
-                                                    </button>
-
-                                                    {openPresetSections.render && (
-                                                        <div className="animate-in fade-in slide-in-from-top-1 duration-200 grid gap-2 sm:grid-cols-2 pt-3">
-                                                            {renderStyleOptions.map((opt) => {
-                                                                const isSelected = renderStyle === opt.value;
-                                                                const IconComponent =
-                                                                    opt.value === 'Studio Product Still'
-                                                                        ? Camera
-                                                                        : opt.value === 'Cinematic Marketing'
-                                                                            ? Clapperboard
-                                                                            : opt.value === 'Lifestyle Capture'
-                                                                                ? Compass
-                                                                                : PenTool;
-                                                                return (
-                                                                    <button
-                                                                        key={opt.value}
-                                                                        type="button"
-                                                                        onClick={() => setRenderStyle(opt.value)}
-                                                                        className={`group relative flex items-start gap-2.5 rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none ${
-                                                                            isSelected
-                                                                                ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
-                                                                                : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
-                                                                        }`}
-                                                                    >
-                                                                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${
-                                                                            isSelected ? 'border-emerald-500/40 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'border-border bg-muted/60 text-muted-foreground'
-                                                                        }`}>
-                                                                            <IconComponent className="h-4 w-4" />
-                                                                        </div>
-                                                                        <div className="flex-1 min-w-0">
-                                                                            <div className="flex items-center justify-between gap-1">
-                                                                                <span className={`text-xs font-bold truncate ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'}`}>{opt.label}</span>
-                                                                                <div className="flex items-center gap-1">
-                                                                                    <span className="rounded border px-1 py-0.2 text-[9px] font-bold text-muted-foreground">{opt.badge}</span>
-                                                                                    <HelpTooltip text={opt.tagline || opt.label} />
-                                                                                </div>
-                                                                            </div>
-                                                                            <p className="text-[10px] text-muted-foreground line-clamp-1">{opt.tagline}</p>
-                                                                        </div>
-                                                                        {isSelected && <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 stroke-[3] shrink-0 mt-0.5" />}
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    )}
+                                                    </div>
+                                                    <span className="flex items-center gap-1 rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                        <Check className="h-2.5 w-2.5 stroke-[3]" />
+                                                        {renderStyle}
+                                                    </span>
                                                 </div>
 
-                                                {/* 4. Visual Themes Section */}
-                                                <div className="rounded-xl border border-border/80 bg-card/60 p-3 shadow-xs">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => togglePresetSection('themes')}
-                                                        className="flex w-full items-center justify-between cursor-pointer select-none text-left"
-                                                    >
-                                                        <div className="flex items-center gap-2">
-                                                            <Wand2 className="h-4 w-4 shrink-0 text-primary" />
-                                                            <span className="text-xs font-bold text-foreground">
-                                                                Visual Themes
-                                                            </span>
-                                                            <HelpTooltip text="Art direction and photography aesthetics (up to 3 presets)." />
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="flex items-center gap-1 rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                                                {contentStyle.length > 0 ? `${contentStyle.length} / 3 Selected` : 'None Selected'}
-                                                            </span>
-                                                            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${openPresetSections.themes ? 'rotate-180' : ''}`} />
-                                                        </div>
-                                                    </button>
-
-                                                    {openPresetSections.themes && (
-                                                        <div className="animate-in fade-in slide-in-from-top-1 duration-200 flex flex-wrap gap-1.5 pt-3">
-                                                            {contentStyleOptions.map((style) => {
-                                                                const active = contentStyle.includes(style);
-                                                                const disabled = !active && contentStyle.length >= 3;
-                                                                const desc = contentStyleDescriptions[style] || style;
-                                                                return (
-                                                                    <div key={style} className="inline-flex items-center">
-                                                                        <button
-                                                                            type="button"
-                                                                            disabled={disabled}
-                                                                            onClick={() => {
-                                                                                if (active) {
-                                                                                    setContentStyle(contentStyle.filter((s) => s !== style));
-                                                                                } else if (contentStyle.length < 3) {
-                                                                                    setContentStyle([...contentStyle, style]);
-                                                                                }
-                                                                            }}
-                                                                            className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition-all cursor-pointer select-none inline-flex items-center gap-1.5 ${
-                                                                                active
-                                                                                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold shadow-2xs ring-1 ring-emerald-500/30'
-                                                                                    : 'border-border/80 bg-card text-muted-foreground hover:border-emerald-500/40 hover:text-foreground'
-                                                                            } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
-                                                                            title={desc}
+                                                <div className="grid gap-2.5 sm:grid-cols-2 pt-1">
+                                                    {renderStyleOptions.map((opt) => {
+                                                        const isSelected = renderStyle === opt.value;
+                                                        const IconComponent =
+                                                            opt.value === 'Studio Product Still'
+                                                                ? Camera
+                                                                : opt.value === 'Cinematic Marketing'
+                                                                    ? Clapperboard
+                                                                    : opt.value === 'Lifestyle Capture'
+                                                                        ? Compass
+                                                                        : PenTool;
+                                                        return (
+                                                            <button
+                                                                key={opt.value}
+                                                                type="button"
+                                                                onClick={() => setRenderStyle(opt.value)}
+                                                                className={`group relative flex items-start gap-2.5 rounded-xl border p-3 text-left transition-all cursor-pointer select-none ${
+                                                                    isSelected
+                                                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
+                                                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
+                                                                }`}
+                                                            >
+                                                                <div
+                                                                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${
+                                                                        isSelected
+                                                                            ? 'border-emerald-500/40 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                                                                            : 'border-border bg-muted/60 text-muted-foreground'
+                                                                    }`}
+                                                                >
+                                                                    <IconComponent className="h-4 w-4" />
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center justify-between gap-1">
+                                                                        <span
+                                                                            className={`text-xs font-bold truncate ${
+                                                                                isSelected
+                                                                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                                                                    : 'text-foreground'
+                                                                            }`}
                                                                         >
-                                                                            <span>{style}</span>
-                                                                            {active && <Check className="h-3 w-3 stroke-[3]" />}
-                                                                            <HelpTooltip text={desc} />
-                                                                        </button>
+                                                                            {opt.label}
+                                                                        </span>
+                                                                        <span className="rounded border px-1 py-0.2 text-[9px] font-bold text-muted-foreground shrink-0">
+                                                                            {opt.badge}
+                                                                        </span>
                                                                     </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* 5. Brand Tone Section */}
-                                                <div className="rounded-xl border border-border/80 bg-card/60 p-3 shadow-xs">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => togglePresetSection('tone')}
-                                                        className="flex w-full items-center justify-between cursor-pointer select-none text-left"
-                                                    >
-                                                        <div className="flex items-center gap-2">
-                                                            <Package className="h-4 w-4 shrink-0 text-primary" />
-                                                            <span className="text-xs font-bold text-foreground">
-                                                                Brand Tone
-                                                            </span>
-                                                            <HelpTooltip text="Brand emotional vibe and atmosphere (up to 3 presets)." />
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="flex items-center gap-1 rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                                                {brandTone.length > 0 ? `${brandTone.length} / 3 Selected` : 'None Selected'}
-                                                            </span>
-                                                            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${openPresetSections.tone ? 'rotate-180' : ''}`} />
-                                                        </div>
-                                                    </button>
-
-                                                    {openPresetSections.tone && (
-                                                        <div className="animate-in fade-in slide-in-from-top-1 duration-200 flex flex-wrap gap-1.5 pt-3">
-                                                            {toneOptions.map((tone) => {
-                                                                const active = brandTone.includes(tone);
-                                                                const disabled = !active && brandTone.length >= 3;
-                                                                const desc = brandToneDescriptions[tone] || tone;
-                                                                return (
-                                                                    <div key={tone} className="inline-flex items-center">
-                                                                        <button
-                                                                            type="button"
-                                                                            disabled={disabled}
-                                                                            onClick={() => {
-                                                                                if (active) {
-                                                                                    setBrandTone(brandTone.filter((t) => t !== tone));
-                                                                                } else if (brandTone.length < 3) {
-                                                                                    setBrandTone([...brandTone, tone]);
-                                                                                }
-                                                                            }}
-                                                                            className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition-all cursor-pointer select-none inline-flex items-center gap-1.5 ${
-                                                                                active
-                                                                                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold shadow-2xs ring-1 ring-emerald-500/30'
-                                                                                    : 'border-border/80 bg-card text-muted-foreground hover:border-emerald-500/40 hover:text-foreground'
-                                                                            } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
-                                                                            title={desc}
-                                                                        >
-                                                                            <span>{tone}</span>
-                                                                            {active && <Check className="h-3 w-3 stroke-[3]" />}
-                                                                            <HelpTooltip text={desc} />
-                                                                        </button>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    )}
+                                                                    <p className="mt-0.5 text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+                                                                        {opt.description}
+                                                                    </p>
+                                                                </div>
+                                                                {isSelected && (
+                                                                    <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 stroke-[3] shrink-0 mt-0.5" />
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
-                                        </div>
-                                    )}
 
-                                    {/* STEP 3: MARKETING COPY */}
-                                    {currentStep === 3 && (
-                                        <div className="animate-in space-y-3.5 duration-200 fade-in">
-                                            {/* Tagline Card Box */}
-                                            <div className="space-y-3 rounded-xl border border-border/80 bg-card/60 p-3.5">
-                                                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2.5">
+                                            {/* Simplified Copy Emphasis (4 Options) */}
+                                            <div className="space-y-2 rounded-xl border border-border/80 bg-card/60 p-3.5 shadow-xs">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <Type className="h-4 w-4 text-primary" />
+                                                        <div>
+                                                            <span className="text-xs font-bold text-foreground">
+                                                                Copy Emphasis
+                                                            </span>
+                                                            <p className="text-[10px] text-muted-foreground">
+                                                                Visual hierarchy balance between product, headline, and pricing.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="flex items-center gap-1 rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                        <Check className="h-2.5 w-2.5 stroke-[3]" />
+                                                        {copyEmphasis}
+                                                    </span>
+                                                </div>
+
+                                                <div className="grid gap-2 grid-cols-2 sm:grid-cols-4 pt-1">
+                                                    {copyEmphasisOptions.map((opt) => {
+                                                        const isSelected = copyEmphasis === opt.value;
+                                                        return (
+                                                            <button
+                                                                key={opt.value}
+                                                                type="button"
+                                                                onClick={() => setCopyEmphasis(opt.value)}
+                                                                className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
+                                                                    isSelected
+                                                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
+                                                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
+                                                                }`}
+                                                            >
+                                                                <div>
+                                                                    <div className="flex items-center justify-between gap-1">
+                                                                        <span
+                                                                            className={`text-xs font-bold ${
+                                                                                isSelected
+                                                                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                                                                    : 'text-foreground'
+                                                                            }`}
+                                                                        >
+                                                                            {opt.label}
+                                                                        </span>
+                                                                        {isSelected && (
+                                                                            <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400 stroke-[3]" />
+                                                                        )}
+                                                                    </div>
+                                                                    <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground leading-relaxed">
+                                                                        {opt.description}
+                                                                    </p>
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* Content & Event Visibility (4 Semantic Controls) */}
+                                            <div className="space-y-2 rounded-xl border border-border/80 bg-card/60 p-3.5 shadow-xs">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <SlidersHorizontal className="h-4 w-4 text-primary" />
+                                                        <div>
+                                                            <span className="text-xs font-bold text-foreground">
+                                                                Copy & Event Visibility
+                                                            </span>
+                                                            <p className="text-[10px] text-muted-foreground">
+                                                                Specify which commercial content elements appear in the artwork.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 pt-1">
+                                                    {/* 1. Include Product Name */}
+                                                    <div
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        onClick={() => setIncludeProductName(!includeProductName)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === ' ' || e.key === 'Enter') setIncludeProductName(!includeProductName);
+                                                        }}
+                                                        className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
+                                                            includeProductName
+                                                                ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
+                                                                : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
+                                                        }`}
+                                                    >
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                                    <Package className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                                    <span className="text-xs font-bold truncate text-foreground">
+                                                                        Product Name
+                                                                    </span>
+                                                                </div>
+                                                                <Checkbox
+                                                                    checked={includeProductName}
+                                                                    onCheckedChange={(c) => setIncludeProductName(Boolean(c))}
+                                                                    className="h-3.5 w-3.5 pointer-events-none rounded data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white shrink-0"
+                                                                />
+                                                            </div>
+                                                            <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+                                                                Render product name typography.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 2. Include Price */}
+                                                    <div
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        onClick={() => setIncludePrices(!includePrices)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === ' ' || e.key === 'Enter') setIncludePrices(!includePrices);
+                                                        }}
+                                                        className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
+                                                            includePrices
+                                                                ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
+                                                                : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
+                                                        }`}
+                                                    >
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                                    <BadgePercent className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                                    <span className="text-xs font-bold truncate text-foreground">
+                                                                        Price
+                                                                    </span>
+                                                                </div>
+                                                                <Checkbox
+                                                                    checked={includePrices}
+                                                                    onCheckedChange={(c) => setIncludePrices(Boolean(c))}
+                                                                    className="h-3.5 w-3.5 pointer-events-none rounded data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white shrink-0"
+                                                                />
+                                                            </div>
+                                                            <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+                                                                Render exact catalog pricing.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 3. Include Tagline */}
+                                                    <div
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        onClick={() => setIncludeTagline(!includeTagline)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === ' ' || e.key === 'Enter') setIncludeTagline(!includeTagline);
+                                                        }}
+                                                        className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
+                                                            includeTagline
+                                                                ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
+                                                                : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
+                                                        }`}
+                                                    >
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                                    <PenTool className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                                    <span className="text-xs font-bold truncate text-foreground">
+                                                                        Tagline
+                                                                    </span>
+                                                                </div>
+                                                                <Checkbox
+                                                                    checked={includeTagline}
+                                                                    onCheckedChange={(c) => setIncludeTagline(Boolean(c))}
+                                                                    className="h-3.5 w-3.5 pointer-events-none rounded data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white shrink-0"
+                                                                />
+                                                            </div>
+                                                            <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+                                                                Render headline / campaign tagline.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 4. Include Business Name */}
                                                     <div
                                                         role="button"
                                                         tabIndex={0}
                                                         onClick={() => {
-                                                            const val = !includeTagline;
-                                                            setIncludeTagline(val);
-                                                            if (!val) setTaglineMode('none');
-                                                            else if (tagline.trim()) setTaglineMode('manual');
+                                                            const nextVal = !includeBusinessName;
+                                                            setIncludeBusinessName(nextVal);
+                                                            if (typeof window !== 'undefined') {
+                                                                localStorage.setItem('ai_studio_include_business_name', String(nextVal));
+                                                            }
                                                         }}
                                                         onKeyDown={(e) => {
                                                             if (e.key === ' ' || e.key === 'Enter') {
-                                                                const val = !includeTagline;
-                                                                setIncludeTagline(val);
-                                                                if (!val) setTaglineMode('none');
-                                                                else if (tagline.trim()) setTaglineMode('manual');
+                                                                const nextVal = !includeBusinessName;
+                                                                setIncludeBusinessName(nextVal);
+                                                                if (typeof window !== 'undefined') {
+                                                                    localStorage.setItem('ai_studio_include_business_name', String(nextVal));
+                                                                }
                                                             }
                                                         }}
-                                                        className="flex items-center gap-2.5 cursor-pointer select-none"
+                                                        className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
+                                                            includeBusinessName
+                                                                ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
+                                                                : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
+                                                        }`}
                                                     >
-                                                        <Checkbox
-                                                            id="manual_include_tagline"
-                                                            checked={includeTagline}
-                                                            onCheckedChange={(checked) => {
-                                                                const val = Boolean(checked);
-                                                                setIncludeTagline(val);
-                                                                if (!val) setTaglineMode('none');
-                                                                else if (tagline.trim()) setTaglineMode('manual');
-                                                            }}
-                                                            className="h-4 w-4 cursor-pointer rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
-                                                        />
-                                                        <div>
-                                                            <Label
-                                                                htmlFor="manual_include_tagline"
-                                                                className="cursor-pointer text-xs font-bold text-foreground"
-                                                            >
-                                                                Include Tagline Headline
-                                                            </Label>
-                                                            <p className="text-[10px] text-muted-foreground">
-                                                                Click card to enable or disable headline copy on visual
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                                    <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                                    <span className="text-xs font-bold truncate text-foreground">
+                                                                        Business Name
+                                                                    </span>
+                                                                </div>
+                                                                <Checkbox
+                                                                    checked={includeBusinessName}
+                                                                    onCheckedChange={(c) => {
+                                                                        const nextVal = Boolean(c);
+                                                                        setIncludeBusinessName(nextVal);
+                                                                        if (typeof window !== 'undefined') {
+                                                                            localStorage.setItem('ai_studio_include_business_name', String(nextVal));
+                                                                        }
+                                                                    }}
+                                                                    className="h-3.5 w-3.5 pointer-events-none rounded data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white shrink-0"
+                                                                />
+                                                            </div>
+                                                            <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+                                                                Render registered brand/shop name.
                                                             </p>
                                                         </div>
                                                     </div>
 
-                                                    {includeTagline && (
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="sm"
-                                                            disabled={isGeneratingTagline}
-                                                            onClick={handleSuggestTagline}
-                                                            className="relative h-7 gap-1.5 rounded-lg border-primary/40 bg-primary/10 px-2.5 text-xs font-bold text-primary shadow-xs ring-1 ring-primary/30 transition-all hover:border-primary hover:bg-primary hover:text-primary-foreground active:scale-95 disabled:opacity-50"
-                                                        >
-                                                            <Sparkles
-                                                                className={`h-3 w-3 ${isGeneratingTagline
-                                                                    ? 'animate-spin'
-                                                                    : 'animate-pulse'
-                                                                    }`}
-                                                            />
-                                                            {isGeneratingTagline
-                                                                ? 'Suggesting...'
-                                                                : 'Suggest Tagline'}
-                                                        </Button>
-                                                    )}
-                                                </div>
-
-                                                {includeTagline ? (
-                                                    <div className="space-y-2">
-                                                        <div className="relative">
-                                                            <Input
-                                                                value={tagline}
-                                                                onChange={(e) => {
-                                                                    setTagline(e.target.value);
-                                                                    setTaglineMode('manual');
-                                                                }}
-                                                                placeholder="Type custom tagline or click Suggest Tagline (or leave blank for auto AI headline)..."
-                                                                className="h-9 pr-8 text-xs font-medium text-foreground"
-                                                            />
-                                                            {tagline && (
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setTagline('');
-                                                                        setTaglineMode('none');
-                                                                    }}
-                                                                    className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-                                                                    title="Clear tagline"
-                                                                >
-                                                                    <X className="h-3.5 w-3.5" />
-                                                                </button>
-                                                            )}
-                                                        </div>
-
-                                                        {tagline.trim() && (
-                                                            <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-xs">
-                                                                <div>
-                                                                    <span className="mr-1.5 text-[10px] font-bold tracking-wider text-primary uppercase">
-                                                                        Active:
-                                                                    </span>
-                                                                    <span className="font-medium text-foreground italic">
-                                                                        "{tagline}"
-                                                                    </span>
-                                                                </div>
-                                                                <Badge
-                                                                    variant="outline"
-                                                                    className="border-primary/30 bg-primary/10 text-[10px] font-bold text-primary"
-                                                                >
-                                                                    {taglineMode === 'ai' ? 'AI Generated' : 'Custom'}
-                                                                </Badge>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ) : null}
-                                            </div>
-
-                                            {/* Simple Clickable Card Boxes Grid for Toggles */}
-                                            <div className="grid gap-3 sm:grid-cols-3">
-                                                {/* Include Prices Card Box */}
-                                                <div
-                                                    role="button"
-                                                    tabIndex={0}
-                                                    onClick={() => setIncludePrices(!includePrices)}
-                                                    onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') setIncludePrices(!includePrices); }}
-                                                    className="group relative flex flex-col justify-between rounded-xl border border-border/80 bg-card/60 p-3 transition-all cursor-pointer hover:bg-muted/30 select-none"
-                                                >
-                                                    <div className="space-y-1">
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-2">
-                                                                <BadgePercent className="h-4 w-4 text-primary" />
-                                                                <p className="text-xs font-bold text-foreground">Include Prices</p>
-                                                            </div>
-                                                            <Checkbox
-                                                                checked={includePrices}
-                                                                onCheckedChange={(c) => setIncludePrices(Boolean(c))}
-                                                                className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
-                                                            />
-                                                        </div>
-                                                        <p className="line-clamp-2 text-[10px] text-muted-foreground">
-                                                            Render authoritative catalog and custom product pricing
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                {/* Business Name Card Box */}
-                                                <div
-                                                    role="button"
-                                                    tabIndex={0}
-                                                    onClick={() => setIncludeBusinessName(!includeBusinessName)}
-                                                    onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') setIncludeBusinessName(!includeBusinessName); }}
-                                                    className="group relative flex flex-col justify-between rounded-xl border border-border/80 bg-card/60 p-3 transition-all cursor-pointer hover:bg-muted/30 select-none"
-                                                >
-                                                    <div className="space-y-1">
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-2">
-                                                                <Building2 className="h-4 w-4 text-primary" />
-                                                                <p className="text-xs font-bold text-foreground">Business Name</p>
-                                                            </div>
-                                                            <Checkbox
-                                                                checked={includeBusinessName}
-                                                                onCheckedChange={(c) => setIncludeBusinessName(Boolean(c))}
-                                                                className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
-                                                            />
-                                                        </div>
-                                                        <p className="line-clamp-2 text-[10px] text-muted-foreground">
-                                                            Feature &ldquo;{business?.name || 'Your Business'}&rdquo; brand identity on creative
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                {/* Show Event/Holiday Text Card Box */}
-                                                {selectedEvent && (
+                                                    {/* 5. Show Event Text */}
                                                     <div
                                                         role="button"
                                                         tabIndex={0}
                                                         onClick={() => setShowEventText(!showEventText)}
-                                                        onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') setShowEventText(!showEventText); }}
-                                                        className="group relative flex flex-col justify-between rounded-xl border border-border/80 bg-card/60 p-3 transition-all cursor-pointer hover:bg-muted/30 select-none"
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === ' ' || e.key === 'Enter') setShowEventText(!showEventText);
+                                                        }}
+                                                        className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
+                                                            showEventText
+                                                                ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
+                                                                : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
+                                                        }`}
                                                     >
                                                         <div className="space-y-1">
                                                             <div className="flex items-center justify-between">
-                                                                <div className="flex items-center gap-2">
-                                                                    <Calendar className="h-4 w-4 text-primary" />
-                                                                    <p className="text-xs font-bold text-foreground">Event Text</p>
+                                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                                    <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                                    <span className="text-xs font-bold truncate text-foreground">
+                                                                        Event Text
+                                                                    </span>
                                                                 </div>
                                                                 <Checkbox
                                                                     checked={showEventText}
                                                                     onCheckedChange={(c) => setShowEventText(Boolean(c))}
-                                                                    className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
+                                                                    className="h-3.5 w-3.5 pointer-events-none rounded data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white shrink-0"
                                                                 />
                                                             </div>
-                                                            <p className="line-clamp-2 text-[10px] text-muted-foreground">
-                                                                Allow &ldquo;{selectedEvent.name}&rdquo; typography on image
+                                                            <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+                                                                Render holiday / event name text.
                                                             </p>
                                                         </div>
                                                     </div>
-                                                )}
+                                                </div>
                                             </div>
                                         </div>
                                     )}
 
-                                    {/* STEP 4: FORMAT & GENERATE */}
-                                    {currentStep === 4 && (
+                                    {/* STEP 3: FORMAT & CANVAS */}
+                                    {currentStep === 3 && (
                                         <div className="animate-in space-y-4 duration-200 fade-in">
-                                            {/* Canvas Aspect Ratio Selector (Clickable Cards) */}
+                                            {/* Canvas Aspect Ratio Selector */}
                                             <AspectRatioSelector
                                                 value={aspectRatio}
                                                 onChange={setAspectRatio}
                                             />
+
+                                            {/* Optional Tagline / Headline */}
+                                            <div className="space-y-2.5 rounded-xl border border-border/80 bg-card/60 p-3.5 shadow-xs">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <PenTool className="h-4 w-4 text-primary" />
+                                                        <div>
+                                                            <Label htmlFor="manual_tagline" className="text-xs font-bold text-foreground">
+                                                                Marketing Headline / Tagline (Optional)
+                                                            </Label>
+                                                            <p className="text-[10px] text-muted-foreground">
+                                                                Specify custom headline copy or leave empty for automatic contextual hook.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        disabled={isGeneratingTagline || !includeTagline}
+                                                        onClick={handleSuggestTagline}
+                                                        className="relative h-7 gap-1.5 rounded-lg border-primary/40 bg-primary/10 px-2.5 text-xs font-bold text-primary shadow-xs ring-1 ring-primary/30 transition-all hover:border-primary hover:bg-primary hover:text-primary-foreground active:scale-95 disabled:opacity-50 cursor-pointer"
+                                                    >
+                                                        <Lightbulb
+                                                            className={`h-3 w-3 ${
+                                                                isGeneratingTagline ? 'animate-spin' : ''
+                                                            }`}
+                                                        />
+                                                        {isGeneratingTagline ? 'Suggesting...' : 'Suggest Tagline'}
+                                                    </Button>
+                                                </div>
+
+                                                <div className="relative">
+                                                    <Input
+                                                        id="manual_tagline"
+                                                        value={tagline}
+                                                        disabled={!includeTagline}
+                                                        onChange={(e) => {
+                                                            setTagline(e.target.value);
+                                                            setTaglineMode('manual');
+                                                        }}
+                                                        placeholder={includeTagline ? 'Enter custom tagline or click Suggest Tagline...' : 'Tagline is disabled in Copy & Event Visibility'}
+                                                        className="h-9 pr-8 text-xs font-medium text-foreground disabled:opacity-50"
+                                                    />
+                                                    {tagline && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setTagline('');
+                                                                setTaglineMode('none');
+                                                            }}
+                                                            className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                                                            title="Clear tagline"
+                                                        >
+                                                            <X className="h-3.5 w-3.5" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Linked Campaign / Event Note if applicable */}
+                                            {selectedEvent && (
+                                                <div className="flex items-center gap-2.5 rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-foreground">
+                                                    <Calendar className="h-4 w-4 text-primary shrink-0" />
+                                                    <div className="flex-1">
+                                                        <p className="font-bold text-[11px]">
+                                                            Linked Event: {selectedEvent.name}
+                                                        </p>
+                                                        <p className="text-[10px] text-muted-foreground">
+                                                            Atmospheric event lighting and seasonal styling will be naturally integrated into the background.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 
@@ -1885,45 +1742,41 @@ export default function ManualGenerator({
                                                 )
                                             }
                                             disabled={currentStep === 1}
-                                            className="gap-2 text-xs font-semibold shadow-none"
+                                            className="gap-2 text-xs font-semibold shadow-none cursor-pointer"
                                         >
                                             <ArrowLeft className="h-4 w-4" />
                                             Back
                                         </Button>
 
-                                        {currentStep < 4 ? (
-                                            <div className="flex items-center gap-2">
-
-                                                <Button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        setCurrentStep((prev) =>
-                                                            Math.min(4, prev + 1) as Step,
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        currentStep === 1
-                                                            ? !hasProductSelected
-                                                            : currentStep === 2
-                                                                ? !stepTwoValid
-                                                                : false
-                                                    }
-                                                    className="gap-2 text-xs font-semibold shadow-sm"
-                                                >
-                                                    Continue
-                                                    <ArrowRight className="h-4 w-4" />
-                                                </Button>
-                                            </div>
+                                        {currentStep < 3 ? (
+                                            <Button
+                                                type="button"
+                                                onClick={() =>
+                                                    setCurrentStep((prev) =>
+                                                        Math.min(3, prev + 1) as Step,
+                                                    )
+                                                }
+                                                disabled={
+                                                    currentStep === 1
+                                                        ? !hasProductSelected
+                                                        : !stepTwoValid
+                                                }
+                                                className="gap-2 text-xs font-semibold shadow-sm cursor-pointer"
+                                            >
+                                                Continue
+                                                <ArrowRight className="h-4 w-4" />
+                                            </Button>
                                         ) : (
                                             <Button
                                                 type="button"
                                                 size="lg"
                                                 onClick={() => handleGenerateManual()}
                                                 disabled={!canGenerateManual || isManualGenerating}
-                                                className={`min-w-[240px] gap-2 text-xs font-bold shadow-md ${isQuotaExceeded
-                                                    ? 'border border-destructive/30 bg-destructive/15 text-destructive hover:bg-destructive/20'
-                                                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                                                    }`}
+                                                className={`min-w-[240px] gap-2 text-xs font-bold shadow-md cursor-pointer ${
+                                                    isQuotaExceeded
+                                                        ? 'border border-destructive/30 bg-destructive/15 text-destructive hover:bg-destructive/20'
+                                                        : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                                                }`}
                                             >
                                                 {isQuotaExceeded ? (
                                                     <>
@@ -1937,7 +1790,7 @@ export default function ManualGenerator({
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <Sparkles className="h-4 w-4" />
+                                                        <ImageIcon className="h-4 w-4" />
                                                         Generate Marketing Image
                                                     </>
                                                 )}
@@ -1976,6 +1829,7 @@ export default function ManualGenerator({
                         includeBusinessName={includeBusinessName}
                         isAutomaticMode={false}
                         includePrices={includePrices}
+                        includeProductName={includeProductName}
                         includeTagline={includeTagline}
                         showEventText={showEventText}
                     />

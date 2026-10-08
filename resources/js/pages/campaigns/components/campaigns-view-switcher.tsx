@@ -1,4 +1,4 @@
-import { Layers, Sparkles } from 'lucide-react';
+import { CalendarDays, Layers } from 'lucide-react';
 
 interface CampaignsViewSwitcherProps {
     activeView: 'opportunities' | 'hub';
@@ -25,7 +25,7 @@ export function CampaignsViewSwitcher({
                         : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'
                 }`}
             >
-                <Sparkles
+                <CalendarDays
                     className={`h-3 w-3 transition-colors ${
                         activeView === 'opportunities'
                             ? 'text-primary'

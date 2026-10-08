@@ -29,13 +29,41 @@ class MarketingDesignSystem
      * @var array<string, string>
      */
     public const COPY_EMPHASES = [
+        'Balanced' => 'Balanced commercial hierarchy giving product, price, tagline, and supporting business information an appropriately balanced visual proportion.',
+        'Product' => 'Product-dominant visual and copy focus, making product details and craftsmanship the unquestioned hero with subordinate typography.',
+        'Price' => 'Promotional pricing emphasis giving the authoritative product price stronger visual scale, prominence, and conversion focus.',
+        'Tagline' => 'Tagline and headline emphasis giving the authoritative marketing hook stronger visual scale, prominence, and narrative priority.',
+        // Backward-compatibility entries:
         'Product-first' => 'Visual priority centered on product details and craftsmanship, typography subordinate.',
         'Tagline-first' => 'Headline tagline takes bold visual precedence, driving emotional hook and promotional narrative.',
         'Price-first' => 'Promotional pricing and value proposition featured prominently with strong conversion focus.',
-        'Balanced' => 'Equal commercial harmony between product imagery, marketing headline, and supporting details.',
         'Price-Focused' => 'Promotional pricing and value proposition featured prominently with strong conversion focus.',
         'Headline-First' => 'Headline tagline takes bold visual precedence, driving emotional hook and promotional narrative.',
         'Product-Focused' => 'Visual priority centered on product details and craftsmanship, typography subordinate.',
+    ];
+
+    /**
+     * Canonical mapping table for Copy Emphases.
+     *
+     * @var array<string, string>
+     */
+    public const CANONICAL_COPY_EMPHASIS_MAP = [
+        'balanced' => 'Balanced',
+        'product' => 'Product',
+        'price' => 'Price',
+        'tagline' => 'Tagline',
+        'product-first' => 'Product',
+        'product_first' => 'Product',
+        'product-focused' => 'Product',
+        'product_focused' => 'Product',
+        'price-first' => 'Price',
+        'price_first' => 'Price',
+        'price-focused' => 'Price',
+        'price_focused' => 'Price',
+        'tagline-first' => 'Tagline',
+        'tagline_first' => 'Tagline',
+        'headline-first' => 'Tagline',
+        'headline_first' => 'Tagline',
     ];
 
     /**
@@ -506,7 +534,25 @@ class MarketingDesignSystem
         'Studio Product Still',
         'Cinematic Marketing',
         'Lifestyle Capture',
-        'Minimalist Graphic Vec',
+        'Minimalist Graphic',
+    ];
+
+    /**
+     * Canonical mapping table for Render Styles.
+     *
+     * @var array<string, string>
+     */
+    public const CANONICAL_RENDER_STYLE_MAP = [
+        'studio_product_still' => 'Studio Product Still',
+        'cinematic_marketing' => 'Cinematic Marketing',
+        'lifestyle_capture' => 'Lifestyle Capture',
+        'minimalist_graphic' => 'Minimalist Graphic',
+        'minimalist_graphic_vec' => 'Minimalist Graphic',
+        'minimalist graphic vec' => 'Minimalist Graphic',
+        'minimalist graphic' => 'Minimalist Graphic',
+        'studio product still' => 'Studio Product Still',
+        'cinematic marketing' => 'Cinematic Marketing',
+        'lifestyle capture' => 'Lifestyle Capture',
     ];
 
     /**
@@ -863,11 +909,21 @@ class MarketingDesignSystem
             return 'Balanced';
         }
 
-        $lower = strtolower(trim($value));
+        $trimmed = trim($value);
+        if (array_key_exists($trimmed, self::COPY_EMPHASES)) {
+            return $trimmed;
+        }
+
+        $lower = strtolower($trimmed);
         foreach (self::COPY_EMPHASES as $key => $desc) {
             if (strtolower($key) === $lower) {
                 return $key;
             }
+        }
+
+        $normalizedKey = strtolower(str_replace(['-', ' '], '_', $trimmed));
+        if (isset(self::CANONICAL_COPY_EMPHASIS_MAP[$normalizedKey])) {
+            return self::CANONICAL_COPY_EMPHASIS_MAP[$normalizedKey];
         }
 
         return 'Balanced';
@@ -1163,6 +1219,73 @@ class MarketingDesignSystem
         return array_keys(self::PRODUCT_ARRANGEMENTS);
     }
 
+    /**
+     * Resolve deterministic multi-product spatial arrangement strategy based on product count, render style, and aspect ratio.
+     *
+     * @param  int  $productCount  Number of total products selected (catalog + custom)
+     * @param  string|null  $renderStyle  Active canonical render style
+     * @param  string|null  $aspectRatio  Active canvas aspect ratio
+     * @param  string|null  $explicitArrangement  Optional explicit arrangement override
+     * @return array{strategy: string, description: string, guidance: string}
+     */
+    public function resolveProductArrangementStrategy(
+        int $productCount,
+        ?string $renderStyle = null,
+        ?string $aspectRatio = null,
+        ?string $explicitArrangement = null
+    ): array {
+        if ($productCount <= 1) {
+            return [
+                'strategy' => 'single_hero',
+                'description' => 'Single hero product focal centerpiece.',
+                'guidance' => 'Hero product commands primary visual dominance without multi-product arrangement.',
+            ];
+        }
+
+        // 1. If an explicit arrangement is provided (e.g. from Automatic mode or direct options), validate it
+        if (! empty($explicitArrangement)) {
+            $strategy = self::validateProductArrangement($explicitArrangement);
+            $desc = self::PRODUCT_ARRANGEMENTS[$strategy] ?? $strategy;
+        } else {
+            // 2. Deterministically select from canonical PRODUCT_ARRANGEMENTS based on product count and render style
+            $normStyle = strtolower(str_replace(['_', '-'], ' ', trim($renderStyle ?? 'studio product still')));
+
+            if ($productCount === 2) {
+                $strategy = match (true) {
+                    str_contains($normStyle, 'cinematic') => 'foreground/background',
+                    str_contains($normStyle, 'lifestyle') => 'asymmetric grouping',
+                    str_contains($normStyle, 'minimalist') => 'asymmetric grouping',
+                    default => 'tiered pedestal',
+                };
+            } else {
+                // 3 or more products
+                $strategy = match (true) {
+                    str_contains($normStyle, 'cinematic') => 'staggered depth',
+                    str_contains($normStyle, 'lifestyle') => 'sculptural cluster',
+                    str_contains($normStyle, 'minimalist') => 'editorial cascade',
+                    default => 'hero + supporting products',
+                };
+            }
+
+            $desc = self::PRODUCT_ARRANGEMENTS[$strategy] ?? $strategy;
+        }
+
+        // 3. Render style specific spatial guidance
+        $normStyle = strtolower(str_replace(['_', '-'], ' ', trim($renderStyle ?? 'studio product still')));
+        $styleGuidance = match (true) {
+            str_contains($normStyle, 'cinematic') => 'Emphasize dimensional foreground/background relationships with volumetric atmospheric lighting, subtle focal falloff on secondary products, and crisp hero definition.',
+            str_contains($normStyle, 'lifestyle') => 'Stage products with organic, unforced contextual spacing on the shared surface, allowing natural commercial interaction and relaxed editorial breathing room.',
+            str_contains($normStyle, 'minimalist') => 'Emphasize restrained geometric grouping, generous negative space, and clean visual dialogue between items without background clutter or party accessories.',
+            default => 'Maintain disciplined studio product hierarchy with clean separation, distinct surface clearance, razor-sharp product details, and realistic contact shadows.',
+        };
+
+        return [
+            'strategy' => $strategy,
+            'description' => $desc,
+            'guidance' => $styleGuidance,
+        ];
+    }
+
     public static function validateBackgroundStyle(?string $value): ?string
     {
         if (empty($value)) {
@@ -1194,8 +1317,33 @@ class MarketingDesignSystem
      */
     public function validateRenderStyle(?string $value): string
     {
-        if ($value && in_array($value, self::RENDER_STYLES, true)) {
-            return $value;
+        if (! $value) {
+            return 'Studio Product Still';
+        }
+
+        $trimmed = trim($value);
+        if (in_array($trimmed, self::RENDER_STYLES, true)) {
+            return $trimmed;
+        }
+
+        $normalizedKey = strtolower(str_replace(['-', ' '], '_', $trimmed));
+        if (isset(self::CANONICAL_RENDER_STYLE_MAP[$normalizedKey])) {
+            return self::CANONICAL_RENDER_STYLE_MAP[$normalizedKey];
+        }
+
+        $lowerKey = strtolower($trimmed);
+        if (isset(self::CANONICAL_RENDER_STYLE_MAP[$lowerKey])) {
+            return self::CANONICAL_RENDER_STYLE_MAP[$lowerKey];
+        }
+
+        foreach (self::RENDER_STYLES as $style) {
+            if (strcasecmp($style, $trimmed) === 0) {
+                return $style;
+            }
+        }
+
+        if (strcasecmp($trimmed, 'Minimalist Graphic Vec') === 0) {
+            return 'Minimalist Graphic';
         }
 
         return 'Studio Product Still';

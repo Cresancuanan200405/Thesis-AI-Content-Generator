@@ -10,7 +10,7 @@ import {
     Package,
     Search,
     SlidersHorizontal,
-    Sparkles,
+    Type,
     ZoomIn,
     ZoomOut,
 } from 'lucide-react';
@@ -66,7 +66,7 @@ export function CatalogBrowserModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[85vh] overflow-hidden rounded-3xl p-0 sm:max-w-xl">
+            <DialogContent className="max-h-[85vh] overflow-hidden rounded-card p-0 sm:max-w-xl">
                 <DialogHeader className="border-b bg-muted/20 p-5 pb-4">
                     <DialogTitle className="flex items-center gap-2 text-lg font-bold">
                         <Package className="h-5 w-5 text-primary" />
@@ -107,7 +107,7 @@ export function CatalogBrowserModal({
                                         key={prod.id}
                                         type="button"
                                         onClick={() => onToggleProduct(prod)}
-                                        className={`group relative flex flex-col overflow-hidden rounded-2xl border text-left transition-all ${
+                                        className={`group relative flex flex-col overflow-hidden rounded-card border text-left transition-all ${
                                             isSelected
                                                 ? 'border-emerald-500 bg-emerald-500/5 shadow-xs ring-1 ring-emerald-500/30'
                                                 : 'border-border bg-card hover:border-emerald-500/40'
@@ -342,7 +342,7 @@ export function ConfirmationModal({
 }: ConfirmationModalProps) {
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="rounded-3xl sm:max-w-md">
+            <DialogContent className="rounded-card sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                     <DialogDescription>{description}</DialogDescription>
@@ -377,6 +377,8 @@ export interface AutomaticSettingsModalProps {
     onOpenChange: (open: boolean) => void;
     aspectRatio: string;
     onAspectRatioChange: (val: string) => void;
+    includeProductName?: boolean;
+    onToggleProductName?: (val: boolean) => void;
     includeBusinessName: boolean;
     onToggleBusinessName: (val: boolean) => void;
     businessName?: string;
@@ -399,6 +401,8 @@ export function AutomaticSettingsModal({
     onOpenChange,
     aspectRatio,
     onAspectRatioChange,
+    includeProductName = true,
+    onToggleProductName,
     includeBusinessName,
     onToggleBusinessName,
     businessName,
@@ -412,7 +416,7 @@ export function AutomaticSettingsModal({
 }: AutomaticSettingsModalProps) {
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="flex flex-col max-h-[85vh] h-auto w-[94vw] max-w-xl md:max-w-2xl overflow-hidden rounded-2xl p-0 shadow-2xl">
+            <DialogContent className="flex flex-col max-h-[85vh] h-auto w-[94vw] max-w-xl md:max-w-2xl overflow-hidden rounded-card p-0 shadow-2xl">
                 <DialogHeader className="shrink-0 border-b bg-muted/20 px-4 py-3.5 sm:px-5 sm:py-4">
                     <div className="flex items-center gap-2">
                         <SlidersHorizontal className="h-5 w-5 text-primary" />
@@ -497,6 +501,38 @@ export function AutomaticSettingsModal({
                                 </div>
                             )}
 
+                            {/* Include Product Name */}
+                            <div
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => onToggleProductName && onToggleProductName(!includeProductName)}
+                                onKeyDown={(e) => {
+                                    if (e.key === ' ' || e.key === 'Enter') onToggleProductName && onToggleProductName(!includeProductName);
+                                }}
+                                className={`group relative flex flex-col justify-between rounded-xl border p-3 transition-all cursor-pointer select-none ${
+                                    includeProductName
+                                        ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-2xs'
+                                        : 'border-border/80 bg-background/60 hover:bg-muted/30'
+                                }`}
+                            >
+                                <div className="space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Package className="h-4 w-4 text-primary" />
+                                            <p className="text-xs font-bold text-foreground">Include Product Name</p>
+                                        </div>
+                                        <Checkbox
+                                            checked={includeProductName}
+                                            onCheckedChange={(c) => onToggleProductName && onToggleProductName(Boolean(c))}
+                                            className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
+                                        />
+                                    </div>
+                                    <p className="line-clamp-2 text-[10px] text-muted-foreground">
+                                        Render product name typography overlay.
+                                    </p>
+                                </div>
+                            </div>
+
                             {/* Include Tagline */}
                             <div
                                 role="button"
@@ -514,7 +550,7 @@ export function AutomaticSettingsModal({
                                 <div className="space-y-1">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <Sparkles className="h-4 w-4 text-primary" />
+                                            <Type className="h-4 w-4 text-primary" />
                                             <p className="text-xs font-bold text-foreground">Include Tagline</p>
                                         </div>
                                         <Checkbox

@@ -98,10 +98,10 @@ export default function MyProfilePage({
                 </div>
 
                 {/* 2. Profile Overview Header Card */}
-                <Card className="overflow-hidden rounded-3xl border-border/80 bg-card p-6 shadow-xs sm:p-8">
+                <Card className="overflow-hidden rounded-card border-border/80 bg-card p-6 shadow-xs sm:p-8">
                     <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-                            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-primary text-2xl font-bold text-primary-foreground shadow-sm ring-4 ring-primary/10">
+                            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground shadow-sm ring-4 ring-primary/10">
                                 {initials}
                             </div>
 
@@ -165,7 +165,7 @@ export default function MyProfilePage({
                 {/* 3. Two-Column Information Layout */}
                 <div className="grid gap-6 md:grid-cols-2">
                     {/* Personal Information Overview */}
-                    <Card className="rounded-3xl border-border/80 bg-card shadow-xs">
+                    <Card className="rounded-card border-border/80 bg-card shadow-xs">
                         <CardHeader className="border-b border-border/60 p-6 pb-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2.5">
@@ -241,7 +241,7 @@ export default function MyProfilePage({
                     </Card>
 
                     {/* Your Business Summary */}
-                    <Card className="flex flex-col justify-between rounded-3xl border-border/80 bg-card shadow-xs">
+                    <Card className="flex flex-col justify-between rounded-card border-border/80 bg-card shadow-xs">
                         <div>
                             <CardHeader className="border-b border-border/60 p-6 pb-4">
                                 <div className="flex items-center justify-between">

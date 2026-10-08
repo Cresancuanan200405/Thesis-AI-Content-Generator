@@ -119,7 +119,7 @@ export default function SecuritySettings(props: Props) {
                     description="Manage your password, two-factor authentication, and active browser sessions."
                 />
                 {/* 1. Update Password Card */}
-                <Card className="rounded-3xl border-border/80 bg-card shadow-xs">
+                <Card className="rounded-card border-border/80 bg-card shadow-xs">
                     <CardHeader className="border-b border-border/60 p-6 pb-4">
                         <div className="flex items-center gap-3">
                             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -247,7 +247,7 @@ export default function SecuritySettings(props: Props) {
                 </Card>
 
                 {/* 2. Two-Factor Authentication */}
-                <Card className="rounded-3xl border-border/80 bg-card shadow-xs">
+                <Card className="rounded-card border-border/80 bg-card shadow-xs">
                     <CardHeader className="border-b border-border/60 p-6 pb-4">
                         <div className="flex items-center gap-3">
                             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -275,7 +275,7 @@ export default function SecuritySettings(props: Props) {
                 </Card>
 
                 {/* 3. Active Browser Sessions */}
-                <Card className="rounded-3xl border-border/80 bg-card shadow-xs">
+                <Card className="rounded-card border-border/80 bg-card shadow-xs">
                     <CardHeader className="border-b border-border/60 p-6 pb-4">
                         <div className="flex items-center gap-3">
                             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-foreground">
@@ -372,7 +372,7 @@ export default function SecuritySettings(props: Props) {
                                         Log Out Other Browser Sessions
                                     </Button>
                                 </DialogTrigger>
-                                <DialogContent className="rounded-3xl p-6 sm:max-w-md">
+                                <DialogContent className="rounded-card p-6 sm:max-w-md">
                                     <DialogHeader>
                                         <DialogTitle className="text-base font-bold text-foreground">
                                             Log Out Other Browser Sessions

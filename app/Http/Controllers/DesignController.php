@@ -429,6 +429,10 @@ class DesignController extends Controller
         $scenePrompt = $request->input('scene_prompt') ?? $request->input('image_prompt') ?? ($incomingMeta['scene_prompt'] ?? null);
         $userPrompt = $request->input('user_prompt') ?? $request->input('image_prompt') ?? ($incomingMeta['user_prompt'] ?? null);
 
+        $includeProductName = $request->has('include_product_name')
+            ? filter_var($request->input('include_product_name'), FILTER_VALIDATE_BOOLEAN)
+            : ($incomingMeta['include_product_name'] ?? true);
+
         $mergedMetadata = array_merge(
             [
                 'source' => 'openai',
@@ -442,6 +446,7 @@ class DesignController extends Controller
                 'render_style' => $request->input('render_style', 'Studio Product Still'),
                 'design_treatment' => $designTreatment,
                 'copy_emphasis' => $copyEmphasis,
+                'include_product_name' => $includeProductName,
                 'include_tagline' => $includeTagline,
                 'creative_concept' => $creativeConcept,
                 'visual_strategy' => $visualStrategy,

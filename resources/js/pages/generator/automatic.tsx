@@ -1,9 +1,13 @@
 import { Head } from '@inertiajs/react';
 import {
     AlertTriangle,
+    BadgePercent,
+    Building2,
     Loader2,
+    ImageIcon,
+    Package,
+    PenTool,
     SlidersHorizontal,
-    Wand2,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -11,6 +15,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { downloadVisualAsFormat } from '@/lib/download';
 import { useSetBreadcrumbs } from '@/context/breadcrumb-context';
 
@@ -86,8 +91,9 @@ export default function AutomaticGenerator({
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
 
     // Marketing Copy Toggles (Part 5 & Part 6)
-    const [includeTagline, setIncludeTagline] = useState<boolean>(true);
+    const [includeProductName, setIncludeProductName] = useState<boolean>(true);
     const [includePrices, setIncludePrices] = useState<boolean>(true);
+    const [includeTagline, setIncludeTagline] = useState<boolean>(true);
     const [showEventText, setShowEventText] = useState<boolean>(
         Boolean(selectedEvent?.id || selectedEvent?.name),
     );
@@ -161,11 +167,17 @@ export default function AutomaticGenerator({
         if (typeof meta.show_event_text === 'boolean') {
             setShowEventText(meta.show_event_text);
         }
+        if (typeof meta.include_product_name === 'boolean') {
+            setIncludeProductName(meta.include_product_name);
+        }
         if (typeof meta.include_prices === 'boolean') {
             setIncludePrices(meta.include_prices);
         }
         if (typeof meta.include_business_name === 'boolean') {
             setIncludeBusinessName(meta.include_business_name);
+        }
+        if (typeof meta.include_tagline === 'boolean') {
+            setIncludeTagline(meta.include_tagline);
         }
         if (meta.quality || meta.image_quality) {
             setImageQuality(meta.quality || meta.image_quality);
@@ -393,13 +405,15 @@ export default function AutomaticGenerator({
                     campaign_id: campaign.id,
                     catalog_product_ids: catalogIds,
                     custom_products: customItems,
-                    include_tagline: includeTagline,
+                    include_product_name: includeProductName,
                     include_prices: includePrices,
+                    include_product_price: includePrices,
+                    include_business_name: includeBusinessName,
+                    include_tagline: includeTagline,
                     show_event_text: selectedEvent ? showEventText : false,
                     aspect_ratio: aspectRatio || '1:1',
                     image_model: 'gpt-image-2',
                     image_quality: imageQuality || 'medium',
-                    include_business_name: includeBusinessName,
                     previous_concepts: previousConcepts,
                     is_variation: options?.is_variation ?? false,
                     source_design_id: options?.is_variation ? (savedDesign?.id || null) : null,
@@ -533,6 +547,7 @@ export default function AutomaticGenerator({
                 if (cp.price) formData.append(`custom_products[${idx}][price]`, cp.price);
                 if (cp.description) formData.append(`custom_products[${idx}][description]`, cp.description);
             });
+            formData.append('include_product_name', includeProductName ? '1' : '0');
             formData.append('include_prices', includePrices ? '1' : '0');
             formData.append('include_tagline', includeTagline ? '1' : '0');
             if (campaign?.id) {
@@ -654,6 +669,7 @@ export default function AutomaticGenerator({
                 if (cp.price) formData.append(`custom_products[${idx}][price]`, cp.price);
                 if (cp.description) formData.append(`custom_products[${idx}][description]`, cp.description);
             });
+            formData.append('include_product_name', includeProductName ? '1' : '0');
             formData.append('include_prices', includePrices ? '1' : '0');
             formData.append('include_tagline', includeTagline ? '1' : '0');
             if (campaign?.id) {
@@ -752,7 +768,7 @@ export default function AutomaticGenerator({
             <Head title="Automatic Generation — AI Marketing Studio" />
 
             <div
-                className={`flex w-full min-w-0 max-w-full overflow-x-clip bg-background text-foreground ${generationState === 'generating'
+                className={`flex w-full min-w-0 max-w-full bg-background text-foreground ${generationState === 'generating'
                         ? 'h-[calc(100vh-2.75rem)] overflow-hidden sm:h-[calc(100vh-3rem)]'
                         : 'min-h-[calc(100vh-2.75rem)] sm:min-h-[calc(100vh-3rem)]'
                     }`}
@@ -851,7 +867,7 @@ export default function AutomaticGenerator({
                                     </div>
                                 </div>
                             )}                            {/* Main Autonomous Studio Card */}
-                            <Card className="overflow-hidden rounded-2xl border-border bg-card shadow-sm gap-0 py-0">
+                            <Card className="overflow-hidden rounded-card border-border bg-card shadow-sm gap-0 py-0">
                                 <CardHeader className="border-b bg-muted/10 px-4 py-3 sm:px-5">
                                     <div>
                                         <h2 className="text-sm font-bold tracking-tight text-foreground">
@@ -881,6 +897,179 @@ export default function AutomaticGenerator({
                                         onClearAllSelections={handleClearAllProducts}
                                     />
 
+                                    {/* COPY / IMAGE CONTENT */}
+                                    <div className="space-y-2 rounded-xl border border-border/80 bg-card/60 p-3.5 shadow-xs">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <SlidersHorizontal className="h-4 w-4 text-primary" />
+                                                <div>
+                                                    <span className="text-xs font-bold text-foreground">
+                                                        Copy / Image Content
+                                                    </span>
+                                                    <p className="text-[10px] text-muted-foreground">
+                                                        Specify which commercial content elements appear in the artwork.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid gap-2 grid-cols-2 sm:grid-cols-4 pt-1">
+                                            {/* 1. Include Product Name */}
+                                            <div
+                                                role="button"
+                                                tabIndex={0}
+                                                onClick={() => setIncludeProductName(!includeProductName)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === ' ' || e.key === 'Enter') setIncludeProductName(!includeProductName);
+                                                }}
+                                                className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
+                                                    includeProductName
+                                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
+                                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
+                                                }`}
+                                            >
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5 min-w-0">
+                                                            <Package className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                            <span className="text-xs font-bold truncate text-foreground">
+                                                                Product Name
+                                                            </span>
+                                                        </div>
+                                                        <Checkbox
+                                                            checked={includeProductName}
+                                                            onCheckedChange={(c) => setIncludeProductName(Boolean(c))}
+                                                            className="h-3.5 w-3.5 pointer-events-none rounded data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white shrink-0"
+                                                        />
+                                                    </div>
+                                                    <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+                                                        Render product name typography.
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* 2. Include Product Price */}
+                                            <div
+                                                role="button"
+                                                tabIndex={0}
+                                                onClick={() => setIncludePrices(!includePrices)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === ' ' || e.key === 'Enter') setIncludePrices(!includePrices);
+                                                }}
+                                                className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
+                                                    includePrices
+                                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
+                                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
+                                                }`}
+                                            >
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5 min-w-0">
+                                                            <BadgePercent className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                            <span className="text-xs font-bold truncate text-foreground">
+                                                                Product Price
+                                                            </span>
+                                                        </div>
+                                                        <Checkbox
+                                                            checked={includePrices}
+                                                            onCheckedChange={(c) => setIncludePrices(Boolean(c))}
+                                                            className="h-3.5 w-3.5 pointer-events-none rounded data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white shrink-0"
+                                                        />
+                                                    </div>
+                                                    <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+                                                        Render exact catalog pricing.
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* 3. Include Business Name */}
+                                            <div
+                                                role="button"
+                                                tabIndex={0}
+                                                onClick={() => {
+                                                    const nextVal = !includeBusinessName;
+                                                    setIncludeBusinessName(nextVal);
+                                                    if (typeof window !== 'undefined') {
+                                                        localStorage.setItem('ai_studio_include_business_name', String(nextVal));
+                                                    }
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === ' ' || e.key === 'Enter') {
+                                                        const nextVal = !includeBusinessName;
+                                                        setIncludeBusinessName(nextVal);
+                                                        if (typeof window !== 'undefined') {
+                                                            localStorage.setItem('ai_studio_include_business_name', String(nextVal));
+                                                        }
+                                                    }
+                                                }}
+                                                className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
+                                                    includeBusinessName
+                                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
+                                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
+                                                }`}
+                                            >
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5 min-w-0">
+                                                            <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                            <span className="text-xs font-bold truncate text-foreground">
+                                                                Business Name
+                                                            </span>
+                                                        </div>
+                                                        <Checkbox
+                                                            checked={includeBusinessName}
+                                                            onCheckedChange={(c) => {
+                                                                const nextVal = Boolean(c);
+                                                                setIncludeBusinessName(nextVal);
+                                                                if (typeof window !== 'undefined') {
+                                                                    localStorage.setItem('ai_studio_include_business_name', String(nextVal));
+                                                                }
+                                                            }}
+                                                            className="h-3.5 w-3.5 pointer-events-none rounded data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white shrink-0"
+                                                        />
+                                                    </div>
+                                                    <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+                                                        Render registered brand/shop name.
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* 4. Include Tagline */}
+                                            <div
+                                                role="button"
+                                                tabIndex={0}
+                                                onClick={() => setIncludeTagline(!includeTagline)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === ' ' || e.key === 'Enter') setIncludeTagline(!includeTagline);
+                                                }}
+                                                className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
+                                                    includeTagline
+                                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
+                                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
+                                                }`}
+                                            >
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5 min-w-0">
+                                                            <PenTool className="h-3.5 w-3.5 text-primary shrink-0" />
+                                                            <span className="text-xs font-bold truncate text-foreground">
+                                                                Tagline
+                                                            </span>
+                                                        </div>
+                                                        <Checkbox
+                                                            checked={includeTagline}
+                                                            onCheckedChange={(c) => setIncludeTagline(Boolean(c))}
+                                                            className="h-3.5 w-3.5 pointer-events-none rounded data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white shrink-0"
+                                                        />
+                                                    </div>
+                                                    <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+                                                        Render headline / campaign tagline.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     {/* Quick Settings Indicator Bar without Pill Badges */}
                                     <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-border/70 bg-muted/20 p-2.5 sm:px-3.5">
                                         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs">
@@ -892,7 +1081,7 @@ export default function AutomaticGenerator({
                                             </span>
                                             <span className="text-border">•</span>
                                             <span className="text-muted-foreground">
-                                                Tagline: <span className={includeTagline ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}>{includeTagline ? 'On' : 'Off'}</span>
+                                                Product: <span className={includeProductName ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}>{includeProductName ? 'On' : 'Off'}</span>
                                             </span>
                                             <span className="text-border">•</span>
                                             <span className="text-muted-foreground">
@@ -901,6 +1090,10 @@ export default function AutomaticGenerator({
                                             <span className="text-border">•</span>
                                             <span className="text-muted-foreground">
                                                 Brand: <span className={includeBusinessName ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}>{includeBusinessName ? 'On' : 'Off'}</span>
+                                            </span>
+                                            <span className="text-border">•</span>
+                                            <span className="text-muted-foreground">
+                                                Tagline: <span className={includeTagline ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}>{includeTagline ? 'On' : 'Off'}</span>
                                             </span>
                                             {selectedEvent && (
                                                 <>
@@ -949,7 +1142,7 @@ export default function AutomaticGenerator({
                                                 </>
                                             ) : (
                                                 <>
-                                                    <Wand2 className="h-4 w-4" />
+                                                    <ImageIcon className="h-4 w-4" />
                                                     Generate Marketing Image
                                                 </>
                                             )}
@@ -978,6 +1171,7 @@ export default function AutomaticGenerator({
                         selectedEvent={selectedEvent}
                         imageModel={imageModel}
                         imageQuality={imageQuality}
+                        includeProductName={includeProductName}
                         includeBusinessName={includeBusinessName}
                         isAutomaticMode={true}
                         includeTagline={includeTagline}
@@ -997,6 +1191,8 @@ export default function AutomaticGenerator({
                 onOpenChange={setIsSettingsModalOpen}
                 aspectRatio={aspectRatio}
                 onAspectRatioChange={setAspectRatio}
+                includeProductName={includeProductName}
+                onToggleProductName={setIncludeProductName}
                 selectedEvent={selectedEvent}
                 showEventText={showEventText}
                 onToggleEventText={setShowEventText}

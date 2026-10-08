@@ -35,10 +35,27 @@ export type DesignTreatment =
     | 'Premium';
 
 export type CopyEmphasis =
+    | 'Balanced'
+    | 'Product'
+    | 'Price'
+    | 'Tagline'
+    | 'balanced'
+    | 'product'
+    | 'price'
+    | 'tagline'
     | 'Product-first'
     | 'Tagline-first'
-    | 'Price-first'
-    | 'Balanced';
+    | 'Price-first';
+
+export type RenderStyle =
+    | 'Studio Product Still'
+    | 'Cinematic Marketing'
+    | 'Lifestyle Capture'
+    | 'Minimalist Graphic'
+    | 'studio_product_still'
+    | 'cinematic_marketing'
+    | 'lifestyle_capture'
+    | 'minimalist_graphic';
 
 export interface EventItem {
     id: number | string;
@@ -252,40 +269,40 @@ export const renderStyleOptions: RenderStyleOption[] = [
     {
         value: 'Studio Product Still',
         label: 'Studio Product Still',
-        tagline: 'Clean studio focus & balanced light',
+        tagline: 'Controlled commercial product photography',
         description:
-            'Forces sharp product focus, clean solid or textured backdrops, and balanced high-end commercial studio lighting.',
-        badge: 'Studio Focus',
+            'Controlled commercial studio environment, deliberate professional lighting, strong product hero presentation.',
+        badge: 'Studio Hero',
         badgeColor:
             'border-border/80 bg-muted/50 text-muted-foreground',
     },
     {
         value: 'Cinematic Marketing',
         label: 'Cinematic Marketing',
-        tagline: 'Volumetric depth & editorial drama',
+        tagline: 'Campaign-oriented commercial photography',
         description:
-            'Adds dynamic volumetric lighting, shallow depth of field, rich shadows, and a premium editorial look.',
-        badge: 'Volumetric Depth',
+            'Strong visual atmosphere, dramatic or directional lighting, cinematic composition and visual storytelling.',
+        badge: 'Cinematic Story',
         badgeColor:
             'border-border/80 bg-muted/50 text-muted-foreground',
     },
     {
         value: 'Lifestyle Capture',
         label: 'Lifestyle Capture',
-        tagline: 'Authentic contextual scene',
+        tagline: 'Believable real-world environment',
         description:
-            'Simulates realistic environmental context and natural lighting as if captured on location by a professional photographer.',
-        badge: 'Natural Context',
+            'Authentic contextual staging, natural environmental lighting, product organically integrated into its setting.',
+        badge: 'Authentic Context',
         badgeColor:
             'border-border/80 bg-muted/50 text-muted-foreground',
     },
     {
-        value: 'Minimalist Graphic Vec',
-        label: 'Minimalist Graphic Vec',
-        tagline: 'Sharp vector geometry & flat style',
+        value: 'Minimalist Graphic',
+        label: 'Minimalist Graphic',
+        tagline: 'Clean graphic advertising composition',
         description:
-            'Simplifies elements into modern flat illustrations, stark high-contrast layouts, and clean vector geometries.',
-        badge: 'Flat Vector',
+            'Strong negative space, simplified visual structure, restrained graphic framing, and typography emphasis.',
+        badge: 'Minimal Graphic',
         badgeColor:
             'border-border/80 bg-muted/50 text-muted-foreground',
     },
@@ -466,25 +483,45 @@ export const designTreatmentOptions: DesignTreatmentOption[] = [
 export const copyEmphasisOptions: CopyEmphasisOption[] = [
     {
         value: 'Balanced',
-        label: 'Balanced Commercial',
-        description: 'Equal visual harmony between product, headline, and details.',
+        label: 'Balanced',
+        description: 'Equal visual harmony between product, headline, price, and branding.',
     },
     {
-        value: 'Product-first',
-        label: 'Product-First',
-        description: 'Product craftsmanship and form take primary focus.',
+        value: 'Product',
+        label: 'Product',
+        description: 'Product craftsmanship and form command dominant visual and copy focus.',
     },
     {
-        value: 'Tagline-first',
-        label: 'Tagline-First',
-        description: 'Campaign headline leads the visual hierarchy.',
+        value: 'Price',
+        label: 'Price',
+        description: 'Authoritative catalog price commands stronger visual scale and prominence.',
     },
     {
-        value: 'Price-first',
-        label: 'Price-First',
-        description: 'Promotional offer and pricing take prominent focus.',
+        value: 'Tagline',
+        label: 'Tagline',
+        description: 'Authoritative campaign tagline commands bold typographic hierarchy.',
     },
 ];
+
+export function normalizeRenderStyle(style?: string | null): RenderStyle {
+    if (!style) return 'Studio Product Still';
+    const lower = style.trim().toLowerCase().replace(/[- ]/g, '_');
+    if (lower === 'studio_product_still') return 'Studio Product Still';
+    if (lower === 'cinematic_marketing') return 'Cinematic Marketing';
+    if (lower === 'lifestyle_capture') return 'Lifestyle Capture';
+    if (lower === 'minimalist_graphic' || lower === 'minimalist_graphic_vec') return 'Minimalist Graphic';
+    return 'Studio Product Still';
+}
+
+export function normalizeCopyEmphasis(emphasis?: string | null): CopyEmphasis {
+    if (!emphasis) return 'Balanced';
+    const lower = emphasis.trim().toLowerCase().replace(/[- ]/g, '_');
+    if (lower === 'product' || lower === 'product_first' || lower === 'product_focused') return 'Product';
+    if (lower === 'price' || lower === 'price_first' || lower === 'price_focused') return 'Price';
+    if (lower === 'tagline' || lower === 'tagline_first' || lower === 'headline_first') return 'Tagline';
+    if (lower === 'balanced') return 'Balanced';
+    return 'Balanced';
+}
 
 export interface DesignSystemExport {
     design_treatments: Record<string, string>;

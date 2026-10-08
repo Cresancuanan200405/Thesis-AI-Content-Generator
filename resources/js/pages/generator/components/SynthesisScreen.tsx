@@ -58,7 +58,7 @@ export function SynthesisScreen({
 
     return (
         <div className="mx-auto flex h-full w-full max-w-md flex-col items-center justify-center p-2 motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in sm:p-4">
-            <div className="relative flex w-full flex-col items-center justify-between gap-5 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+            <div className="relative flex w-full flex-col items-center justify-between gap-5 rounded-card border border-border bg-card p-6 shadow-sm sm:p-8">
                 {/* 1. Technical Status Indicator */}
                 <div className="flex flex-col items-center space-y-2 text-center">
                     <div className="inline-flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-1 font-mono text-xs font-semibold text-foreground">

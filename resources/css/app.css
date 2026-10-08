@@ -9,10 +9,11 @@
 
 @theme {
     --font-sans:
-        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+        Geist, 'Geist Sans', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
 
+    --radius-card: 12px;
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
     --radius-sm: calc(var(--radius) - 4px);
@@ -52,94 +53,112 @@
 }
 
 :root {
-    --background: #f4f4f5;
-    --foreground: #09090b;
+    --background: #f6f7fa;
+    --foreground: #0f1117;
     --card: #ffffff;
-    --card-foreground: #09090b;
+    --card-foreground: #0f1117;
     --popover: #ffffff;
-    --popover-foreground: #09090b;
-    --primary: #18181b;
-    --primary-foreground: #fafafa;
-    --secondary: #f4f4f5;
-    --secondary-foreground: #18181b;
-    --muted: #f4f4f5;
-    --muted-foreground: #71717a;
-    --accent: #f4f4f5;
-    --accent-foreground: #18181b;
+    --popover-foreground: #0f1117;
+    --primary: #0f1117;
+    --primary-foreground: #ffffff;
+    --secondary: #f0f2f5;
+    --secondary-foreground: #0f1117;
+    --muted: #f0f2f5;
+    --muted-foreground: #475569;
+    --accent: #f0f2f5;
+    --accent-foreground: #0f1117;
     --destructive: #ef4444;
-    --destructive-foreground: #fafafa;
-    --border: #e4e4e7;
-    --input: #e4e4e7;
-    --ring: #18181b;
+    --destructive-foreground: #ffffff;
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #0f1117;
     --chart-1: #3b82f6;
     --chart-2: #10b981;
     --chart-3: #f59e0b;
     --chart-4: #8b5cf6;
     --chart-5: #ec4899;
     --radius: 1rem;
-    --sidebar: #fafafa;
-    --sidebar-foreground: #18181b;
-    --sidebar-primary: #18181b;
-    --sidebar-primary-foreground: #fafafa;
-    --sidebar-accent: #f4f4f5;
-    --sidebar-accent-foreground: #18181b;
-    --sidebar-border: #e4e4e7;
-    --sidebar-ring: #18181b;
+    --radius-card: 12px;
+    --sidebar: #ffffff;
+    --sidebar-foreground: #0f1117;
+    --sidebar-primary: #0f1117;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #f1f5f9;
+    --sidebar-accent-foreground: #0f1117;
+    --sidebar-border: #e2e8f0;
+    --sidebar-ring: #0f1117;
+
+    /* Surface Layer Hierarchy (Levels 1 - 6) */
+    --surface-env: #edf0f5;         /* Level 1: Outer environment background */
+    --surface-shell: #ffffff;       /* Level 2: Main application shell frame */
+    --surface-canvas: #f8fafc;      /* Level 3: Page content canvas */
+    --surface-card: #ffffff;        /* Level 4: Primary cards (12px canonical) */
+    --surface-nested: #f1f3f7;      /* Level 5: Nested surfaces (8px) */
+    --surface-floating: rgba(255, 255, 255, 0.88); /* Level 6: Floating controls / glass */
 
     /* Light Mode Card Gradient & 3D Top Highlight */
     --card-border-gradient: linear-gradient(
         180deg,
-        rgba(0, 0, 0, 0.12) 0%,
-        rgba(0, 0, 0, 0.03) 100%
+        rgba(0, 0, 0, 0.08) 0%,
+        rgba(0, 0, 0, 0.02) 100%
     );
     --card-highlight:
         inset 0 1px 0 0 rgba(255, 255, 255, 0.95),
-        0 1px 3px 0 rgba(0, 0, 0, 0.05);
+        0 4px 16px -2px rgba(15, 23, 42, 0.05);
 }
 
 .dark {
-    --background: #09090b;
-    --foreground: #fafafa;
-    --card: #121214;
-    --card-foreground: #fafafa;
-    --popover: #121214;
-    --popover-foreground: #fafafa;
-    --primary: #fafafa;
-    --primary-foreground: #09090b;
-    --secondary: #18181b;
-    --secondary-foreground: #fafafa;
-    --muted: #18181b;
-    --muted-foreground: #a1a1aa;
-    --accent: #18181b;
-    --accent-foreground: #fafafa;
+    --background: #090a0e;
+    --foreground: #f8fafc;
+    --card: #161822;
+    --card-foreground: #f8fafc;
+    --popover: #161822;
+    --popover-foreground: #f8fafc;
+    --primary: #ffffff;
+    --primary-foreground: #090a0e;
+    --secondary: #1e212d;
+    --secondary-foreground: #f8fafc;
+    --muted: #171922;
+    --muted-foreground: #94a3b8;
+    --accent: #1e212d;
+    --accent-foreground: #f8fafc;
     --destructive: #ef4444;
-    --destructive-foreground: #fafafa;
-    --border: #27272a;
-    --input: #27272a;
-    --ring: #d4d4d8;
-    --chart-1: #3b82f6;
-    --chart-2: #10b981;
-    --chart-3: #f59e0b;
-    --chart-4: #8b5cf6;
-    --chart-5: #ec4899;
-    --sidebar: #09090b;
-    --sidebar-foreground: #fafafa;
-    --sidebar-primary: #fafafa;
-    --sidebar-primary-foreground: #09090b;
-    --sidebar-accent: #18181b;
-    --sidebar-accent-foreground: #fafafa;
-    --sidebar-border: #1f1f23;
-    --sidebar-ring: #d4d4d8;
+    --destructive-foreground: #ffffff;
+    --border: rgba(255, 255, 255, 0.08);
+    --input: rgba(255, 255, 255, 0.1);
+    --ring: rgba(255, 255, 255, 0.3);
+    --chart-1: #38bdf8;
+    --chart-2: #34d399;
+    --chart-3: #fbbf24;
+    --chart-4: #a78bfa;
+    --chart-5: #f472b6;
+    --sidebar: #101218;
+    --sidebar-foreground: #f8fafc;
+    --sidebar-primary: #ffffff;
+    --sidebar-primary-foreground: #090a0e;
+    --sidebar-accent: #1a1d26;
+    --sidebar-accent-foreground: #ffffff;
+    --sidebar-border: rgba(255, 255, 255, 0.08);
+    --sidebar-ring: rgba(255, 255, 255, 0.3);
+    --radius-card: 12px;
 
-    /* Dark Mode Card Gradient & 3D Top Highlight (Pitch-black background aesthetic) */
+    /* Surface Layer Hierarchy (Levels 1 - 6) */
+    --surface-env: #08090d;         /* Level 1: Outer environment background */
+    --surface-shell: #11131a;       /* Level 2: Main application shell frame */
+    --surface-canvas: #14161f;      /* Level 3: Page content canvas */
+    --surface-card: #181a24;        /* Level 4: Primary cards (12px canonical) */
+    --surface-nested: #1e212d;      /* Level 5: Nested surfaces (8px) */
+    --surface-floating: rgba(18, 20, 28, 0.85); /* Level 6: Floating controls / glass */
+
+    /* Dark Mode Reference-Grade Surface Highlight */
     --card-border-gradient: linear-gradient(
         180deg,
-        rgba(255, 255, 255, 0.18) 0%,
+        rgba(255, 255, 255, 0.14) 0%,
         rgba(255, 255, 255, 0.02) 100%
     );
     --card-highlight:
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
-        0 4px 20px -2px rgba(0, 0, 0, 0.7);
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
+        0 8px 30px -4px rgba(0, 0, 0, 0.6);
 }
 
 html {
@@ -162,6 +181,12 @@ body {
 
     body {
         @apply bg-background text-foreground;
+        font-family: var(--font-sans);
+        line-height: 1.5;
+    }
+
+    p {
+        line-height: 1.5;
     }
 
     h1,
@@ -171,6 +196,7 @@ body {
     h5,
     h6 {
         @apply text-foreground;
+        letter-spacing: -0.015em;
     }
 
     a {
@@ -178,19 +204,93 @@ body {
     }
 }
 
+@layer utilities {
+    /* Numeric Typography — Tabular Lining Numbers */
+    .numeric,
+    .tabular-nums {
+        font-variant-numeric: lining-nums tabular-nums;
+    }
+
+    /* Standardized Typography Tokens */
+    .type-display {
+        font-size: clamp(2.25rem, 4vw, 2.75rem);
+        line-height: 1.15;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+    }
+
+    .type-title {
+        font-size: clamp(1.75rem, 3vw, 2rem);
+        line-height: 1.2;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+    }
+
+    .type-heading {
+        font-size: 1.25rem;
+        line-height: 1.3;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+    }
+
+    .type-card-heading {
+        font-size: 1rem;
+        line-height: 1.3;
+        font-weight: 600;
+        letter-spacing: -0.005em;
+    }
+
+    .type-body {
+        font-size: 0.9375rem;
+        line-height: 1.5;
+        font-weight: 400;
+    }
+
+    .type-body-compact {
+        font-size: 0.84375rem;
+        line-height: 1.45;
+        font-weight: 400;
+    }
+
+    .type-label {
+        font-size: 0.8125rem;
+        line-height: 1.25;
+        font-weight: 500;
+    }
+
+    .type-metadata {
+        font-size: 0.75rem;
+        line-height: 1.3;
+        font-weight: 500;
+    }
+
+    .type-button {
+        font-size: 0.8125rem;
+        line-height: 1.25;
+        font-weight: 500;
+    }
+
+    .type-kpi {
+        font-size: 1.75rem;
+        line-height: 1.15;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        font-variant-numeric: lining-nums tabular-nums;
+    }
+}
+
 @layer components {
     .card-elevated {
         position: relative;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        background-color: color-mix(in srgb, var(--card) 85%, transparent);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
+        border-radius: var(--radius-card, 12px);
+        border: 1px solid var(--border);
+        background-color: var(--card);
         box-shadow: var(--card-highlight);
     }
 
     .dark .card-elevated {
         border: 1px solid rgba(255, 255, 255, 0.08);
-        background-color: color-mix(in srgb, var(--card) 80%, transparent);
+        background-color: color-mix(in srgb, var(--card) 90%, transparent);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         box-shadow: var(--card-highlight);
@@ -208,22 +308,69 @@ body {
     }
 
     .glass-card {
-        @apply border border-white/25 bg-card/85 shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-card/80 dark:shadow-black/50;
+        @apply border border-white/20 bg-card/85 shadow-xl backdrop-blur-2xl dark:border-white/10 dark:bg-card/85 dark:shadow-black/50;
     }
 
     .glass-panel {
-        @apply border border-white/20 bg-card/80 shadow-[0_20px_80px_rgba(0,0,0,0.25)] backdrop-blur-2xl dark:border-white/10 dark:bg-background/80 dark:shadow-[0_20px_80px_rgba(0,0,0,0.6)];
+        @apply border border-white/20 bg-card/80 shadow-[0_20px_80px_rgba(0,0,0,0.15)] backdrop-blur-2xl dark:border-white/10 dark:bg-card/75 dark:shadow-[0_20px_80px_rgba(0,0,0,0.6)];
+    }
+
+    /* Reference-grade floating frosted shelf */
+    .shelf-translucent {
+        @apply border border-white/25 bg-white/70 shadow-2xl backdrop-blur-2xl dark:border-white/15 dark:bg-black/40 dark:shadow-[0_16px_40px_rgba(0,0,0,0.6)];
+    }
+
+    /* 3D recessed pedestal for product showcase */
+    .pedestal-card {
+        @apply border border-black/5 bg-slate-100 shadow-inner dark:border-white/5 dark:bg-[#12141a];
     }
 
     .glass-header {
-        @apply border-b border-sidebar-border/60 bg-background/70 backdrop-blur-xl dark:bg-background/60;
+        @apply border-b border-border/70 bg-background/80 backdrop-blur-xl dark:border-white/10 dark:bg-background/70;
     }
 
     .glass-sidebar {
-        @apply border-r border-sidebar-border/60 bg-sidebar/85 backdrop-blur-2xl dark:bg-sidebar/75;
+        @apply border-r border-sidebar-border/80 bg-sidebar/95 backdrop-blur-2xl dark:border-white/10 dark:bg-sidebar/85;
     }
 
     .glass-input {
-        @apply border border-border/80 bg-background/80 backdrop-blur-md transition-all focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/20 dark:bg-background/60;
+        @apply border border-border/80 bg-background/80 backdrop-blur-md transition-all focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/20 dark:border-white/10 dark:bg-background/60;
+    }
+
+    /* Level 2: Main Application Shell Container */
+    .app-shell-frame {
+        border-radius: 24px;
+        border: 1px solid var(--border);
+        background-color: var(--surface-shell);
+        box-shadow: 0 24px 70px -12px rgba(0, 0, 0, 0.25);
+    }
+    .dark .app-shell-frame {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background-color: #11131a;
+        box-shadow: 0 32px 80px -16px rgba(0, 0, 0, 0.85);
+    }
+
+    /* Reference-grade contained vertical navigation rail dock */
+    .nav-rail-dock {
+        border-radius: 20px;
+        border: 1px solid var(--sidebar-border);
+        background-color: var(--sidebar);
+        box-shadow: 0 12px 36px -6px rgba(0, 0, 0, 0.15);
+    }
+    .dark .nav-rail-dock {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background-color: #151720;
+        box-shadow: 0 16px 48px -8px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Level 5: Nested surfaces (8px radius) */
+    .surface-nested {
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background-color: var(--surface-nested);
+    }
+    .dark .surface-nested {
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background-color: #1a1d28;
     }
 }

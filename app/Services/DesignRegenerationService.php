@@ -77,6 +77,7 @@ class DesignRegenerationService
         $productName = $design->product_name ?: ($product->name ?? 'Product');
         $productDescription = $product->description ?? $meta['product_description'] ?? null;
 
+        $includeProductName = array_key_exists('include_product_name', $meta) ? (bool) $meta['include_product_name'] : true;
         $includePrices = array_key_exists('include_prices', $meta) ? (bool) $meta['include_prices'] : true;
 
         $numericPrice = $design->price;
@@ -170,7 +171,7 @@ class DesignRegenerationService
         $includeBusinessName = array_key_exists('include_business_name', $meta)
             ? (bool) $meta['include_business_name']
             : (! array_key_exists('business_name', $meta) || ! empty($meta['business_name']));
-        $businessName = $includeBusinessName ? ($meta['business_name'] ?? $business->name) : null;
+        $businessName = $meta['business_name'] ?? $business->name;
 
         // 6. Recover Exact Scene / Visual Prompt
         $scenePrompt = $this->extractScenePrompt($design);
@@ -355,6 +356,7 @@ class DesignRegenerationService
             'event_id' => $eventId,
             'show_event_text' => $showEventText,
             'price' => $isMultiProduct ? null : ($priceForPrompt ?? ($primaryPrice ? (is_numeric($primaryPrice) ? '₱'.number_format((float) $primaryPrice, 2, '.', ',') : (string) $primaryPrice) : null)),
+            'include_product_name' => $includeProductName,
             'include_prices' => $includePrices,
             'tagline' => $normalizedTagline,
             'include_tagline' => $includeTagline,
@@ -392,6 +394,7 @@ class DesignRegenerationService
             'reference_image_paths' => $referenceImagePaths,
             'scene_prompt' => $scenePrompt,
             'user_prompt' => $scenePrompt ?: ($design->prompt ?? $productName),
+            'prompt_is_final' => true,
             'notes' => $scenePrompt ?: ('Regenerated variation of '.$productName),
         ];
 
@@ -498,6 +501,7 @@ class DesignRegenerationService
                     'event_id' => $eventId,
                     'event_name' => $eventName,
                     'show_event_text' => $showEventText,
+                    'include_product_name' => $includeProductName,
                     'include_prices' => $includePrices,
                     'catalog_product_ids' => $catalogProductIds,
                     'custom_products' => $customProducts,

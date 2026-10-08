@@ -14,6 +14,34 @@ class GeneratePromptRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $user = $this->user();
+        if ($user) {
+            if ($this->has('mode') && ! $this->has('generation_mode')) {
+                $this->merge(['generation_mode' => $this->input('mode')]);
+            }
+            if ($this->has('product_ids') && ! $this->has('catalog_product_ids')) {
+                $this->merge(['catalog_product_ids' => $this->input('product_ids')]);
+            }
+            if (! $this->filled('campaign_id')) {
+                $campaign = $user->campaigns()->first();
+                if (! $campaign) {
+                    $campaign = Campaign::firstOrCreate([
+                        'user_id' => $user->id,
+                        'name' => 'Default Studio Campaign',
+                    ], [
+                        'business_id' => $this->input('business_id') ?: $user->business?->id,
+                        'status' => 'draft',
+                    ]);
+                }
+                if ($campaign) {
+                    $this->merge(['campaign_id' => $campaign->id]);
+                }
+            }
+        }
+    }
+
     /**
      * @return array<string, array<int, string>>
      */
@@ -38,6 +66,7 @@ class GeneratePromptRequest extends FormRequest
             'aspect_ratio' => ['nullable', 'string', 'max:20'],
             'tagline' => ['nullable', 'string', 'max:255'],
             'require_tagline' => ['nullable', 'boolean'],
+            'include_product_name' => ['nullable', 'boolean'],
             'include_tagline' => ['nullable', 'boolean'],
             'include_prices' => ['nullable', 'boolean'],
             'target' => ['nullable', 'string', 'max:50'],
