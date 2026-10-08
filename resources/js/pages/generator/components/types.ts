@@ -351,7 +351,7 @@ export const aspectRatioOptions: AspectRatioOption[] = [
         value: '4:5',
         label: '4:5 Portrait',
         description: 'Instagram Feed Portrait (Framed)',
-        badge: '1024 × 1024 (4:5)',
+        badge: '1024 × 1792 (4:5)',
     },
     {
         value: '4:3',

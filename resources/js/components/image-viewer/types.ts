@@ -141,6 +141,7 @@ export interface UnifiedImageViewerProps<T = any> {
     getStudioUrl?: (item: T) => string;
 
     // Optional custom panel renderer or fallback
+    showPanel?: boolean;
     renderCustomPanel?: (item: T) => React.ReactNode;
 }
 

@@ -185,7 +185,7 @@ generate81b455a20a10fb25b09e195d673290c3.post = (options?: RouteQueryOptions): R
             action: generate81b455a20a10fb25b09e195d673290c3.url(options),
             method: 'post',
         })
-
+    
     generate81b455a20a10fb25b09e195d673290c3.form = generate81b455a20a10fb25b09e195d673290c3Form
     /**
 * @see \App\Http\Controllers\ManualGeneratorController::generate

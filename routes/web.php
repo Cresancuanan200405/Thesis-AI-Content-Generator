@@ -13,6 +13,7 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\UserProfileController;
+use App\Models\Design;
 use App\Models\Event;
 use App\Services\OpenAIUsageService;
 use App\Services\PendingOnboardingService;
@@ -142,18 +143,46 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
         $recentDesigns = $user->designs()
             ->with(['campaign', 'event', 'product'])
             ->latest()
-            ->limit(6)
+            ->limit(8)
             ->get()
-            ->map(fn ($design) => [
-                'id' => $design->id,
-                'product_name' => $design->product_name,
-                'campaign_name' => $design->campaign?->name,
-                'event_name' => $design->event?->name,
-                'status' => $design->status,
-                'created_at' => $design->created_at?->format('M j, Y'),
-                'image_url' => $design->generated_image_path ? Storage::url($design->generated_image_path) : null,
-                'url' => route('designs.show', $design),
-            ])->values()->all();
+            ->map(function (Design $design): array {
+                $generationSource = $design->getGenerationSource();
+                $route = $generationSource === 'Automatic' ? 'generator.automatic.index' : 'generator.manual.index';
+                $aspectRatio = $design->aspect_ratio ?? ($design->generation_metadata['aspect_ratio'] ?? '1:1');
+                $renderStyle = $design->render_style ?? ($design->generation_metadata['render_style'] ?? null);
+                $visualTheme = $design->visual_theme ?? ($design->generation_metadata['visual_theme'] ?? $design->content_style);
+
+                return [
+                    'id' => $design->id,
+                    'campaign_id' => $design->campaign_id,
+                    'campaign_event_id' => $design->campaign?->event_id,
+                    'product_name' => $design->product_name,
+                    'campaign_name' => $design->campaign?->name,
+                    'event_name' => $design->event?->name,
+                    'tagline' => $design->tagline,
+                    'prompt' => $design->prompt,
+                    'price' => $design->price,
+                    'content_style' => $design->content_style,
+                    'brand_tone' => $design->brand_tone,
+                    'visual_theme' => $visualTheme,
+                    'render_style' => $renderStyle,
+                    'aspect_ratio' => $aspectRatio,
+                    'generation_source' => $generationSource,
+                    'status' => $design->status,
+                    'is_draft' => $design->isDraft(),
+                    'is_favorite' => (bool) $design->is_favorite,
+                    'created_at' => $design->created_at?->format('M j, Y'),
+                    'image_url' => $design->generated_image_path ? Storage::url($design->generated_image_path) : null,
+                    'download_url' => route('designs.download', $design),
+                    'generation_metadata' => $design->generation_metadata,
+                    'generator_url' => route($route, array_filter([
+                        'campaign_id' => $design->campaign_id,
+                        'draft_id' => $design->id,
+                        'origin' => 'dashboard',
+                    ])),
+                    'url' => route('designs.show', $design),
+                ];
+            })->values()->all();
 
         $totalDesigns = $user->designs()->count();
         $activeCampaigns = $user->campaigns()->whereIn('status', ['active', 'scheduled'])->count();

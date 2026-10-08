@@ -57,10 +57,11 @@ export interface GeneratedCreativeModalProps {
     hasReferenceImage?: boolean;
     creativeFingerprint?: string;
     origin?: string | null;
+    showPanel?: boolean;
 }
 
 export function GeneratedCreativeModal(props: GeneratedCreativeModalProps) {
-    const { isOpen, onClose, savedDesign, productName } = props;
+    const { isOpen, onClose, savedDesign, productName, showPanel = false } = props;
 
     if (!isOpen || !savedDesign?.image_url) {
         return null;
@@ -80,12 +81,13 @@ export function GeneratedCreativeModal(props: GeneratedCreativeModalProps) {
             currentIndex={0}
             onNavigate={() => {}}
             context="generator"
-            renderCustomPanel={(item) => (
+            showPanel={showPanel}
+            renderCustomPanel={showPanel ? (item) => (
                 <GeneratorViewerPanel
                     item={item as GeneratorViewerItem}
                     {...props}
                 />
-            )}
+            ) : undefined}
         />
     );
 }

@@ -1531,6 +1531,17 @@ class ModularPromptOrchestrator
         $copyEmphasis = $this->designSystem->validateCopyEmphasis($options['copy_emphasis'] ?? null);
         $ctrlLines[] = "Copy emphasis: {$copyEmphasis}";
 
+        if ($includeProductName) {
+            if (count($allProducts) > 1) {
+                $namesFormatted = array_map(fn ($p) => "\"{$p['name']}\"", $allProducts);
+                $ctrlLines[] = 'Product name typography: '.implode(', ', $namesFormatted);
+            } else {
+                $ctrlLines[] = "Product name typography: \"{$allProducts[0]['name']}\"";
+            }
+        } else {
+            $ctrlLines[] = 'Product name typography: Disabled';
+        }
+
         $includeTagline = array_key_exists('include_tagline', $options)
             ? filter_var($options['include_tagline'], FILTER_VALIDATE_BOOLEAN) : true;
         $tagline = $options['tagline'] ?? null;

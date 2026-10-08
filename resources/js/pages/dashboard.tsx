@@ -37,7 +37,13 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { downloadVisualAsFormat } from '@/lib/download';
 import { cn } from '@/lib/utils';
+import {
+    CampaignDesignCard,
+    getAspectRatioClass,
+} from '@/pages/campaigns/components/show/CampaignDesignCard';
+import type { CampaignDesign } from '@/pages/campaigns/components/show/types';
 
 /* ==========================================================================
    TYPES
@@ -85,13 +91,12 @@ type DashboardEvent = {
     type?: string;
 };
 
-type DashboardDesign = {
-    id: number | string;
-    image_url?: string;
-    product_name?: string;
-    campaign_name?: string;
-    event_name?: string;
-    created_at?: string;
+type DashboardDesign = CampaignDesign & {
+    campaign_id?: number | null;
+    campaign_event_id?: number | null;
+    campaign_name?: string | null;
+    event_name?: string | null;
+    url?: string;
 };
 
 type DashboardCampaign = {
@@ -214,6 +219,7 @@ export default function Dashboard({
     const [previewDesign, setPreviewDesign] = useState<DashboardDesign | null>(
         null,
     );
+    const [isFinalizingId, setIsFinalizingId] = useState<number | null>(null);
     const [isCreateCampaignOpen, setIsCreateCampaignOpen] = useState(false);
     const [isSubmittingCampaign, setIsSubmittingCampaign] = useState(false);
     const [campaignFormErrors, setCampaignFormErrors] = useState<
@@ -359,21 +365,63 @@ export default function Dashboard({
         }
     };
 
-    const handleDownload = (design: DashboardDesign) => {
-        if (!design.image_url) {
+    const handleDownload = (
+        design: DashboardDesign,
+        format: 'png' | 'jpeg' | 'svg' = 'png',
+    ) => {
+        const url = design.download_url || design.image_url;
+        if (!url) {
             toast.info('No image available to download.');
 
             return;
         }
 
-        const link = document.createElement('a');
-        link.href = design.image_url;
-        link.download = `${design.product_name || 'marketing-visual'}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        downloadVisualAsFormat(
+            url,
+            `${design.campaign_name || 'creative'}-${design.product_name || 'visual'}`,
+            format,
+        );
+    };
 
-        toast.success('Downloading visual!');
+    const handleFinalize = (designId: number) => {
+        setIsFinalizingId(designId);
+        router.post(
+            `/designs/${designId}/finalize`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success('Design finalized successfully.');
+                },
+                onError: () => {
+                    toast.error('Failed to finalize design.');
+                },
+                onFinish: () => {
+                    setIsFinalizingId(null);
+                },
+            },
+        );
+    };
+
+    const handleDeleteDesign = (design: CampaignDesign) => {
+        if (
+            confirm(
+                `Are you sure you want to delete "${design.product_name || 'this visual'}"?`,
+            )
+        ) {
+            router.delete(`/designs/${design.id}`, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success('Visual deleted successfully.');
+                    if (previewDesign?.id === design.id) {
+                        setPreviewDesign(null);
+                    }
+                },
+                onError: () => {
+                    toast.error('Failed to delete visual.');
+                },
+            });
+        }
     };
 
     useEffect(() => {
@@ -610,7 +658,7 @@ export default function Dashboard({
                                 <div className="flex flex-1 flex-col justify-between">
                                     <div
                                         onClick={() => setPreviewDesign(featuredDesign)}
-                                        className="group relative aspect-4/3 w-full cursor-pointer overflow-hidden rounded-lg border border-border/60 bg-muted"
+                                        className={`group relative ${getAspectRatioClass(featuredDesign.aspect_ratio)} w-full max-h-[320px] cursor-pointer overflow-hidden rounded-2xl border border-border/70 bg-muted/20 flex items-center justify-center shadow-2xs transition-all duration-200 hover:border-primary/50 hover:shadow-md`}
                                     >
                                         {featuredDesign.image_url ? (
                                             <img
@@ -619,7 +667,8 @@ export default function Dashboard({
                                                     featuredDesign.product_name ||
                                                     'Featured creative'
                                                 }
-                                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                                                className="h-full w-full object-contain transition-transform duration-200 group-hover:scale-[1.01]"
+                                                loading="lazy"
                                             />
                                         ) : (
                                             <div className="flex h-full w-full items-center justify-center text-muted-foreground/40">
@@ -756,53 +805,19 @@ export default function Dashboard({
                                 </Button>
                             </Card>
                         ) : recentViewMode === 'grid' ? (
-                            <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                 {recent_designs.map((design) => (
-                                    <div
+                                    <CampaignDesignCard
                                         key={design.id}
-                                        onClick={() => setPreviewDesign(design)}
-                                        className="group cursor-pointer overflow-hidden rounded-card border border-border/80 bg-card shadow-xs transition-all duration-200 hover:border-border hover:shadow-md dark:border-white/[0.08] dark:bg-[#161820]"
-                                    >
-                                        <div className="relative aspect-4/3 w-full overflow-hidden bg-muted">
-                                            {design.image_url ? (
-                                                <img
-                                                    src={design.image_url}
-                                                    alt={
-                                                        design.product_name ||
-                                                        'Design creative'
-                                                    }
-                                                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                                                />
-                                            ) : (
-                                                <div className="flex h-full w-full items-center justify-center text-muted-foreground/30">
-                                                    <ImageIcon className="h-8 w-8" />
-                                                </div>
-                                            )}
-                                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-                                                <span className="flex items-center gap-1.5 rounded-md bg-black/70 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-xs">
-                                                    <Eye className="h-3.5 w-3.5" />
-                                                    Preview
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-1 p-3.5">
-                                            <p className="truncate text-xs font-semibold text-foreground transition-colors group-hover:text-primary">
-                                                {design.campaign_name ||
-                                                    design.product_name ||
-                                                    'Marketing Creative'}
-                                            </p>
-                                            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                                                <span className="truncate">
-                                                    {design.event_name ||
-                                                        design.product_name ||
-                                                        'Design asset'}
-                                                </span>
-                                                <span className="shrink-0">
-                                                    {design.created_at}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                        design={design as any}
+                                        campaignId={design.campaign_id ?? null}
+                                        campaignEventId={design.campaign_event_id}
+                                        onOpenViewer={(d) => setPreviewDesign(d as any)}
+                                        onFinalize={handleFinalize}
+                                        onDownload={handleDownload}
+                                        onDelete={handleDeleteDesign}
+                                        isFinalizing={isFinalizingId === design.id}
+                                    />
                                 ))}
                             </div>
                         ) : (
@@ -814,7 +829,7 @@ export default function Dashboard({
                                         className="group flex cursor-pointer items-center justify-between gap-4 rounded-card border border-border/80 bg-card p-3 shadow-xs transition-all hover:border-border hover:shadow-sm dark:border-white/[0.08] dark:bg-[#161820]"
                                     >
                                         <div className="flex min-w-0 items-center gap-3">
-                                            <div className="h-12 w-16 shrink-0 overflow-hidden rounded-md border border-border/40 bg-muted">
+                                            <div className="h-12 w-16 shrink-0 overflow-hidden rounded-md border border-border/40 bg-muted/20 flex items-center justify-center">
                                                 {design.image_url ? (
                                                     <img
                                                         src={design.image_url}
@@ -822,7 +837,7 @@ export default function Dashboard({
                                                             design.product_name ||
                                                             'Design'
                                                         }
-                                                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                                                        className="h-full w-full object-contain transition-transform group-hover:scale-105"
                                                     />
                                                 ) : (
                                                     <ImageIcon className="m-auto h-4 w-4 text-muted-foreground opacity-30" />
@@ -1035,12 +1050,12 @@ export default function Dashboard({
                                     </div>
 
                                     {/* Actual product image thumbnail if available */}
-                                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-muted">
+                                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-muted/20 flex items-center justify-center">
                                         {recent_designs[0]?.image_url ? (
                                             <img
                                                 src={recent_designs[0].image_url}
                                                 alt="Catalog item"
-                                                className="h-full w-full object-cover"
+                                                className="h-full w-full object-contain"
                                             />
                                         ) : (
                                             <div className="flex h-full w-full items-center justify-center text-muted-foreground/30">

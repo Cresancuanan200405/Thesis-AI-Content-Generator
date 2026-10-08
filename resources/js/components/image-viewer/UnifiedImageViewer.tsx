@@ -30,6 +30,7 @@ export function UnifiedImageViewer<T = any>({
     onFavoriteToggle,
     isFavorite,
     getStudioUrl,
+    showPanel = true,
     renderCustomPanel,
 }: UnifiedImageViewerProps<T>) {
     const [mounted, setMounted] = useState(false);
@@ -151,31 +152,33 @@ export function UnifiedImageViewer<T = any>({
                     onTouchEnd={handleTouchEnd}
                 />
 
-                {/* Contextual Action & Metadata Panel */}
-                <ImageViewerPanel>
-                    {renderCustomPanel ? (
-                        renderCustomPanel(currentItem)
-                    ) : context === 'product' ? (
-                        <ProductViewerPanel
-                            product={currentItem as unknown as ProductViewerItem}
-                            onDownload={onDownload as any}
-                            onDelete={onDelete as any}
-                        />
-                    ) : context === 'design' ? (
-                        <DesignViewerPanel
-                            design={currentItem as unknown as DesignViewerItem}
-                            onFinalize={onFinalize as any}
-                            isFinalizing={isFinalizing}
-                            onRegenerate={onRegenerate as any}
-                            isRegenerating={isRegenerating}
-                            onDownload={onDownload as any}
-                            onDelete={onDelete as any}
-                            onFavoriteToggle={onFavoriteToggle as any}
-                            isFavorite={isFavorite as any}
-                            getStudioUrl={getStudioUrl as any}
-                        />
-                    ) : null}
-                </ImageViewerPanel>
+                {/* Contextual Action & Metadata Panel (Optional for pure image viewing) */}
+                {showPanel && Boolean(renderCustomPanel || context === 'product' || context === 'design') && (
+                    <ImageViewerPanel>
+                        {renderCustomPanel ? (
+                            renderCustomPanel(currentItem)
+                        ) : context === 'product' ? (
+                            <ProductViewerPanel
+                                product={currentItem as unknown as ProductViewerItem}
+                                onDownload={onDownload as any}
+                                onDelete={onDelete as any}
+                            />
+                        ) : context === 'design' ? (
+                            <DesignViewerPanel
+                                design={currentItem as unknown as DesignViewerItem}
+                                onFinalize={onFinalize as any}
+                                isFinalizing={isFinalizing}
+                                onRegenerate={onRegenerate as any}
+                                isRegenerating={isRegenerating}
+                                onDownload={onDownload as any}
+                                onDelete={onDelete as any}
+                                onFavoriteToggle={onFavoriteToggle as any}
+                                isFavorite={isFavorite as any}
+                                getStudioUrl={getStudioUrl as any}
+                            />
+                        ) : null}
+                    </ImageViewerPanel>
+                )}
             </div>
         </div>
     );

@@ -27,18 +27,18 @@ import {
 } from '@/components/ui/tooltip';
 import { CampaignDesign } from './types';
 
-interface CampaignDesignCardProps {
+export interface CampaignDesignCardProps {
     design: CampaignDesign;
-    campaignId: number;
+    campaignId?: number | null;
     campaignEventId?: number | null;
     onOpenViewer: (design: CampaignDesign) => void;
-    onFinalize: (designId: number) => void;
+    onFinalize?: (designId: number) => void;
     onDownload: (design: CampaignDesign, format: 'png' | 'jpeg' | 'svg') => void;
-    onDelete: (design: CampaignDesign) => void;
+    onDelete?: (design: CampaignDesign) => void;
     isFinalizing?: boolean;
 }
 
-function getAspectRatioClass(aspectRatio?: string | null): string {
+export function getAspectRatioClass(aspectRatio?: string | null): string {
     switch (aspectRatio) {
         case '9:16':
             return 'aspect-[9/16]';
@@ -74,15 +74,22 @@ export function CampaignDesignCard({
     const hasDesignCreativeDetails = Boolean(renderStyle || aspectRatio);
 
     // Direct studio URLs
+    const effectiveCampaignId = campaignId ?? (design as any).campaign_id ?? null;
     const resumeDraftUrl =
         design.generator_url ||
-        `/campaigns/${campaignId}/generator?draft_id=${design.id}&origin=campaign`;
+        (effectiveCampaignId
+            ? `/campaigns/${effectiveCampaignId}/generator?draft_id=${design.id}&origin=campaign`
+            : `/generator?draft_id=${design.id}`);
 
     const editInStudioUrl =
         design.generator_url ||
-        `/campaigns/${campaignId}/generator?product_name=${encodeURIComponent(
-            design.product_name || '',
-        )}${campaignEventId ? `&event_id=${campaignEventId}` : ''}&price=${encodeURIComponent(String(design.price || ''))}&tagline=${encodeURIComponent(design.tagline || '')}&prompt=${encodeURIComponent(design.prompt || '')}&aspect_ratio=${encodeURIComponent(design.aspect_ratio || '1:1')}`;
+        (effectiveCampaignId
+            ? `/campaigns/${effectiveCampaignId}/generator?product_name=${encodeURIComponent(
+                design.product_name || '',
+            )}${campaignEventId ? `&event_id=${campaignEventId}` : ''}&price=${encodeURIComponent(String(design.price || ''))}&tagline=${encodeURIComponent(design.tagline || '')}&prompt=${encodeURIComponent(design.prompt || '')}&aspect_ratio=${encodeURIComponent(design.aspect_ratio || '1:1')}`
+            : `/generator?product_name=${encodeURIComponent(
+                design.product_name || '',
+            )}&price=${encodeURIComponent(String(design.price || ''))}&tagline=${encodeURIComponent(design.tagline || '')}&prompt=${encodeURIComponent(design.prompt || '')}&aspect_ratio=${encodeURIComponent(design.aspect_ratio || '1:1')}`);
 
     return (
         <div className="group flex flex-col">
@@ -128,6 +135,9 @@ export function CampaignDesignCard({
                         <span>{isDraft ? 'Draft' : 'Final Design'}</span>
                         {design.price !== null && design.price !== undefined && design.price !== '' && (
                             <span> · ₱{design.price}</span>
+                        )}
+                        {(design as any).campaign_name && (design as any).campaign_name !== design.product_name && (
+                            <span className="opacity-90"> · {(design as any).campaign_name}</span>
                         )}
                         {design.created_at && (
                             <span className="opacity-75"> · {design.created_at}</span>
@@ -189,14 +199,16 @@ export function CampaignDesignCard({
                                         </Link>
                                     </DropdownMenuItem>
 
-                                    <DropdownMenuItem
-                                        onClick={() => onFinalize(design.id)}
-                                        disabled={isFinalizing}
-                                        className="cursor-pointer gap-2 text-xs text-emerald-600 dark:text-emerald-400 focus:text-emerald-600"
-                                    >
-                                        <Check className="h-3.5 w-3.5" />
-                                        Finalize Design
-                                    </DropdownMenuItem>
+                                    {onFinalize && (
+                                        <DropdownMenuItem
+                                            onClick={() => onFinalize(design.id)}
+                                            disabled={isFinalizing}
+                                            className="cursor-pointer gap-2 text-xs text-emerald-600 dark:text-emerald-400 focus:text-emerald-600"
+                                        >
+                                            <Check className="h-3.5 w-3.5" />
+                                            Finalize Design
+                                        </DropdownMenuItem>
+                                    )}
                                 </>
                             ) : (
                                 <DropdownMenuItem asChild className="cursor-pointer gap-2 text-xs">
@@ -235,15 +247,18 @@ export function CampaignDesignCard({
                                 </DropdownMenuSubContent>
                             </DropdownMenuSub>
 
-                            <DropdownMenuSeparator />
-
-                            <DropdownMenuItem
-                                onClick={() => onDelete(design)}
-                                className="cursor-pointer gap-2 text-xs text-destructive focus:text-destructive"
-                            >
-                                <Trash2 className="h-3.5 w-3.5" />
-                                Delete Visual
-                            </DropdownMenuItem>
+                            {onDelete && (
+                                <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                        onClick={() => onDelete(design)}
+                                        className="cursor-pointer gap-2 text-xs text-destructive focus:text-destructive"
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                        Delete Visual
+                                    </DropdownMenuItem>
+                                </>
+                            )}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </TooltipProvider>

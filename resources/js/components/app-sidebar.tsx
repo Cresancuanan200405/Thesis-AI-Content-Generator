@@ -8,7 +8,6 @@ import {
     Megaphone,
     Package,
     Plus,
-    Settings,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
@@ -91,21 +90,6 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter className="gap-1 p-2">
-                <SidebarMenu className="gap-1">
-                    <SidebarMenuItem>
-                        <SidebarMenuButton
-                            asChild
-                            tooltip={{ children: 'Settings' }}
-                            className="h-9 rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                        >
-                            <Link href="/settings/profile">
-                                <Settings className="h-4 w-4 stroke-[2.2]" />
-                                <span className="text-xs font-semibold">Settings</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

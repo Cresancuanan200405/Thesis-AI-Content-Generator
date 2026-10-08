@@ -11,6 +11,7 @@ import {
     Clapperboard,
     Compass,
     ImageIcon,
+    Layers,
     Lightbulb,
     Loader2,
     Package,
@@ -29,6 +30,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -54,7 +63,6 @@ import {
 import { downloadVisualAsFormat } from '@/lib/download';
 import { useSetBreadcrumbs } from '@/context/breadcrumb-context';
 
-import { AspectRatioSelector } from './components/AspectRatioSelector';
 import { BusinessNameSection } from './components/BusinessNameSection';
 import { CreativeCanvas } from './components/CreativeCanvas';
 import { ProductSelector } from './components/ProductSelector';
@@ -93,6 +101,61 @@ import {
     toneOptions,
     DesignSystemExport,
 } from './components/types';
+
+const RENDER_STYLE_ASSETS: Record<string, string> = {
+    'Studio Product Still': '/images/render-styles/studioproductstill.jpg',
+    'Cinematic Marketing': '/images/render-styles/cinematicmarketing.jpg',
+    'Lifestyle Capture': '/images/render-styles/lifestylecapture.jpg',
+    'Minimalist Graphic': '/images/render-styles/minimalistgraphic.jpg',
+};
+
+const ASPECT_RATIO_CONFIGS = [
+    {
+        value: '1:1',
+        name: 'Square',
+        label: '1:1 · Square',
+        description: 'Instagram & Facebook Feed',
+        dimensions: '1024 × 1024',
+        previewClass: 'h-6 w-6',
+        modalPreviewClass: 'h-11 w-11',
+    },
+    {
+        value: '16:9',
+        name: 'Landscape',
+        label: '16:9 · Landscape',
+        description: 'Facebook Cover & Banners',
+        dimensions: '1792 × 1024',
+        previewClass: 'h-3.5 w-7',
+        modalPreviewClass: 'h-8 w-14',
+    },
+    {
+        value: '9:16',
+        name: 'Story / Reel',
+        label: '9:16 · Story / Reel',
+        description: 'Stories, Reels & TikTok',
+        dimensions: '1024 × 1792',
+        previewClass: 'h-7 w-3.5',
+        modalPreviewClass: 'h-14 w-8',
+    },
+    {
+        value: '4:5',
+        name: 'Portrait',
+        label: '4:5 · Portrait',
+        description: 'Instagram Feed Portrait',
+        dimensions: '1024 × 1792 (4:5)',
+        previewClass: 'h-6.5 w-5',
+        modalPreviewClass: 'h-13 w-10.5',
+    },
+    {
+        value: '4:3',
+        name: 'Standard',
+        label: '4:3 · Standard',
+        description: 'Display Ads & Editorial',
+        dimensions: '1792 × 1024 (4:3)',
+        previewClass: 'h-5.5 w-7',
+        modalPreviewClass: 'h-10.5 w-14',
+    },
+];
 
 interface ManualGeneratorProps {
     campaign?: CampaignItem | null;
@@ -151,6 +214,8 @@ export default function ManualGenerator({
     const [brandTone, setBrandTone] = useState<string[]>(['Professional', 'Bold']);
     const [designTreatment, setDesignTreatment] = useState<DesignTreatment>('Auto');
     const [copyEmphasis, setCopyEmphasis] = useState<CopyEmphasis>('Balanced');
+    const [isCopyEmphasisModalOpen, setIsCopyEmphasisModalOpen] = useState(false);
+    const [isVisibilityModalOpen, setIsVisibilityModalOpen] = useState(false);
     const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
     const [recentSuggestions, setRecentSuggestions] = useState<string[]>([]);
     const [openPresetSections, setOpenPresetSections] = useState<Record<string, boolean>>({
@@ -201,8 +266,16 @@ export default function ManualGenerator({
 
     // Step 4 state: Format & Canvas
     const [aspectRatio, setAspectRatio] = useState('1:1');
+    const [isAspectRatioModalOpen, setIsAspectRatioModalOpen] = useState(false);
     const imageModel = 'gpt-image-2';
     const [imageQuality, setImageQuality] = useState<ImageQuality>('medium');
+
+    const currentRatioConfig = useMemo(
+        () =>
+            ASPECT_RATIO_CONFIGS.find((c) => c.value === aspectRatio) ||
+            ASPECT_RATIO_CONFIGS[0],
+        [aspectRatio],
+    );
 
     // Generation Execution state
     const [generationState, setGenerationState] =
@@ -326,29 +399,35 @@ export default function ManualGenerator({
         }
     }, [initial_draft]);
 
-    // Breadcrumbs Navigation (Campaigns / Designs -> Generator -> Image Modal)
+    // Breadcrumbs Navigation (Campaigns -> {Campaign Name} -> Generator)
     const breadcrumbs = useMemo(() => {
         const generatorHref = campaign?.id
             ? `/generator/manual?campaign_id=${campaign.id}`
             : '/generator/manual';
 
-        const rootCrumb = origin === 'designs'
-            ? { title: 'My Designs', href: '/designs' }
-            : { title: 'Campaigns', href: '/campaigns' };
-
-        if (generationState === 'ready') {
+        if (origin === 'designs') {
             return [
-                rootCrumb,
+                { title: 'My Designs', href: '/designs' },
+                ...(campaign?.id
+                    ? [{ title: campaign.name || 'Campaign', href: `/campaigns/${campaign.id}` }]
+                    : []),
                 { title: 'Generator', href: generatorHref },
-                { title: 'Image Modal', href: '#' },
+            ];
+        }
+
+        if (campaign?.id) {
+            return [
+                { title: 'Campaigns', href: '/campaigns' },
+                { title: campaign.name || 'Campaign', href: `/campaigns/${campaign.id}` },
+                { title: 'Generator', href: generatorHref },
             ];
         }
 
         return [
-            rootCrumb,
+            { title: 'Campaigns', href: '/campaigns' },
             { title: 'Generator', href: generatorHref },
         ];
-    }, [campaign?.id, generationState, origin]);
+    }, [campaign?.id, campaign?.name, origin]);
 
     useSetBreadcrumbs(breadcrumbs);
 
@@ -1147,6 +1226,20 @@ export default function ManualGenerator({
                             designTreatment={designTreatment}
                             copyEmphasis={copyEmphasis}
                             hasReferenceImage={uniqueSelectedCatalogProducts.length > 0}
+                            mode="manual"
+                            eventName={selectedEvent?.name}
+                            showEventText={showEventText}
+                            catalogProducts={uniqueSelectedCatalogProducts}
+                            customProducts={customProducts}
+                            scenePrompt={scenePrompt}
+                            renderStyle={renderStyle}
+                            visualTheme={savedDesign?.generation_meta?.visual_theme}
+                            brandTone={brandTone}
+                            includeProductName={includeProductName}
+                            includePrices={includePrices}
+                            includeBusinessName={includeBusinessName}
+                            businessName={business?.name}
+                            includeTagline={includeTagline}
                         />
                     ) : (
                         /* STEPPED CREATION FORM */
@@ -1299,361 +1392,571 @@ export default function ManualGenerator({
                                                 )}
                                             </div>
 
-                                            {/* Canonical Render Styles (4 Options) */}
-                                            <div className="space-y-2 rounded-xl border border-border/80 bg-card/60 p-3.5 shadow-xs">
+                                            {/* 1. Render Style — Visual Image Grid (Directly visible on main page) */}
+                                            <div className="space-y-3 rounded-xl border border-border/80 bg-card/60 p-4 sm:p-5 shadow-xs">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-2">
                                                         <Camera className="h-4 w-4 text-primary" />
                                                         <div>
-                                                            <span className="text-xs font-bold text-foreground">
+                                                            <h3 className="text-xs font-bold text-foreground">
                                                                 Render Style
-                                                            </span>
+                                                            </h3>
                                                             <p className="text-[10px] text-muted-foreground">
                                                                 High-level commercial production aesthetic for your visual.
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    <span className="flex items-center gap-1 rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                                        <Check className="h-2.5 w-2.5 stroke-[3]" />
+                                                    <span className="font-mono text-[10px] font-medium text-muted-foreground">
                                                         {renderStyle}
                                                     </span>
                                                 </div>
 
-                                                <div className="grid gap-2.5 sm:grid-cols-2 pt-1">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                                                     {renderStyleOptions.map((opt) => {
                                                         const isSelected = renderStyle === opt.value;
-                                                        const IconComponent =
-                                                            opt.value === 'Studio Product Still'
-                                                                ? Camera
-                                                                : opt.value === 'Cinematic Marketing'
-                                                                    ? Clapperboard
-                                                                    : opt.value === 'Lifestyle Capture'
-                                                                        ? Compass
-                                                                        : PenTool;
+                                                        const imageUrl = RENDER_STYLE_ASSETS[opt.value];
                                                         return (
                                                             <button
                                                                 key={opt.value}
                                                                 type="button"
                                                                 onClick={() => setRenderStyle(opt.value)}
-                                                                className={`group relative flex items-start gap-2.5 rounded-xl border p-3 text-left transition-all cursor-pointer select-none ${
+                                                                className={`group relative flex flex-col rounded-xl border text-left transition-all duration-200 cursor-pointer select-none overflow-hidden ${
                                                                     isSelected
-                                                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
-                                                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
+                                                                        ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-500/[0.03] dark:bg-emerald-500/[0.06] shadow-xs ring-1 ring-emerald-500/30'
+                                                                        : 'border-border/80 bg-card hover:border-border hover:bg-muted/30 hover:shadow-xs'
                                                                 }`}
                                                             >
-                                                                <div
-                                                                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${
-                                                                        isSelected
-                                                                            ? 'border-emerald-500/40 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                                                                            : 'border-border bg-muted/60 text-muted-foreground'
-                                                                    }`}
-                                                                >
-                                                                    <IconComponent className="h-4 w-4" />
+                                                                <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted/40 border-b border-border/50">
+                                                                    {imageUrl ? (
+                                                                        <img
+                                                                            src={imageUrl}
+                                                                            alt={opt.label}
+                                                                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                                                            loading="lazy"
+                                                                        />
+                                                                    ) : (
+                                                                        <div className="flex h-full w-full items-center justify-center">
+                                                                            <Camera className="h-6 w-6 text-muted-foreground/40" />
+                                                                        </div>
+                                                                    )}
                                                                 </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <div className="flex items-center justify-between gap-1">
-                                                                        <span
-                                                                            className={`text-xs font-bold truncate ${
-                                                                                isSelected
-                                                                                    ? 'text-emerald-600 dark:text-emerald-400'
-                                                                                    : 'text-foreground'
-                                                                            }`}
-                                                                        >
-                                                                            {opt.label}
-                                                                        </span>
-                                                                        <span className="rounded border px-1 py-0.2 text-[9px] font-bold text-muted-foreground shrink-0">
-                                                                            {opt.badge}
-                                                                        </span>
-                                                                    </div>
-                                                                    <p className="mt-0.5 text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+                                                                <div className="flex flex-col flex-1 p-3">
+                                                                    <span
+                                                                        className={`text-xs font-semibold tracking-tight ${
+                                                                            isSelected
+                                                                                ? 'text-emerald-700 dark:text-emerald-400 font-bold'
+                                                                                : 'text-foreground'
+                                                                        }`}
+                                                                    >
+                                                                        {opt.label}
+                                                                    </span>
+                                                                    <p className="mt-1 text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
                                                                         {opt.description}
                                                                     </p>
                                                                 </div>
-                                                                {isSelected && (
-                                                                    <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 stroke-[3] shrink-0 mt-0.5" />
-                                                                )}
                                                             </button>
                                                         );
                                                     })}
                                                 </div>
                                             </div>
 
-                                            {/* Simplified Copy Emphasis (4 Options) */}
-                                            <div className="space-y-2 rounded-xl border border-border/80 bg-card/60 p-3.5 shadow-xs">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <Type className="h-4 w-4 text-primary" />
-                                                        <div>
-                                                            <span className="text-xs font-bold text-foreground">
+                                            {/* 2 & 3. Compact Creative Configuration Entry Cards */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                                {/* Compact Copy Emphasis Entry Card */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsCopyEmphasisModalOpen(true)}
+                                                    className="group relative flex items-center justify-between gap-3.5 rounded-xl border border-border/80 bg-card/60 p-3.5 text-left transition-all duration-200 hover:border-border hover:bg-muted/30 hover:shadow-xs cursor-pointer select-none"
+                                                >
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-muted/30 dark:bg-muted/10">
+                                                            <Type className="h-5 w-5 text-primary" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                                                                 Copy Emphasis
-                                                            </span>
-                                                            <p className="text-[10px] text-muted-foreground">
-                                                                Visual hierarchy balance between product, headline, and pricing.
-                                                            </p>
+                                                            </div>
+                                                            <div className="mt-0.5 text-xs font-bold text-foreground truncate">
+                                                                {copyEmphasis === 'Balanced'
+                                                                    ? 'Balanced Harmony'
+                                                                    : copyEmphasis === 'Product'
+                                                                      ? 'Product-focused'
+                                                                      : copyEmphasis === 'Price'
+                                                                        ? 'Price-focused'
+                                                                        : 'Tagline-focused'}
+                                                            </div>
+                                                            <div className="text-[10px] text-muted-foreground truncate">
+                                                                {copyEmphasis === 'Balanced'
+                                                                    ? 'Equal visual harmony'
+                                                                    : copyEmphasis === 'Product'
+                                                                      ? 'Product form commanding focus'
+                                                                      : copyEmphasis === 'Price'
+                                                                        ? 'Catalog price prominence'
+                                                                        : 'Campaign tagline hierarchy'}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <span className="flex items-center gap-1 rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                                        <Check className="h-2.5 w-2.5 stroke-[3]" />
-                                                        {copyEmphasis}
-                                                    </span>
-                                                </div>
+                                                    <div className="flex items-center justify-center h-8 w-8 rounded-lg border border-border/60 bg-background/60 text-muted-foreground transition-all duration-200 group-hover:border-foreground/30 group-hover:text-foreground shrink-0">
+                                                        <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                                                    </div>
+                                                </button>
 
-                                                <div className="grid gap-2 grid-cols-2 sm:grid-cols-4 pt-1">
-                                                    {copyEmphasisOptions.map((opt) => {
-                                                        const isSelected = copyEmphasis === opt.value;
-                                                        return (
-                                                            <button
-                                                                key={opt.value}
-                                                                type="button"
-                                                                onClick={() => setCopyEmphasis(opt.value)}
-                                                                className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
-                                                                    isSelected
-                                                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
-                                                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
-                                                                }`}
-                                                            >
-                                                                <div>
-                                                                    <div className="flex items-center justify-between gap-1">
-                                                                        <span
-                                                                            className={`text-xs font-bold ${
-                                                                                isSelected
-                                                                                    ? 'text-emerald-600 dark:text-emerald-400'
-                                                                                    : 'text-foreground'
-                                                                            }`}
-                                                                        >
-                                                                            {opt.label}
-                                                                        </span>
-                                                                        {isSelected && (
-                                                                            <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400 stroke-[3]" />
-                                                                        )}
-                                                                    </div>
-                                                                    <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground leading-relaxed">
-                                                                        {opt.description}
-                                                                    </p>
-                                                                </div>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
+                                                {/* Compact Copy & Event Visibility Entry Card */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsVisibilityModalOpen(true)}
+                                                    className="group relative flex items-center justify-between gap-3.5 rounded-xl border border-border/80 bg-card/60 p-3.5 text-left transition-all duration-200 hover:border-border hover:bg-muted/30 hover:shadow-xs cursor-pointer select-none"
+                                                >
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-muted/30 dark:bg-muted/10">
+                                                            <SlidersHorizontal className="h-5 w-5 text-primary" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                                                Copy & Event Visibility
+                                                            </div>
+                                                            <div className="mt-0.5 text-xs font-bold text-foreground truncate">
+                                                                {[
+                                                                    includeProductName,
+                                                                    includePrices,
+                                                                    includeTagline,
+                                                                    includeBusinessName,
+                                                                    showEventText,
+                                                                ].filter(Boolean).length}{' '}
+                                                                elements selected
+                                                            </div>
+                                                            <div className="text-[10px] text-muted-foreground truncate">
+                                                                Configure catalog text & event visibility
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center justify-center h-8 w-8 rounded-lg border border-border/60 bg-background/60 text-muted-foreground transition-all duration-200 group-hover:border-foreground/30 group-hover:text-foreground shrink-0">
+                                                        <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                                                    </div>
+                                                </button>
                                             </div>
 
-                                            {/* Content & Event Visibility (4 Semantic Controls) */}
-                                            <div className="space-y-2 rounded-xl border border-border/80 bg-card/60 p-3.5 shadow-xs">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <SlidersHorizontal className="h-4 w-4 text-primary" />
-                                                        <div>
-                                                            <span className="text-xs font-bold text-foreground">
+                                            {/* Dedicated Copy Emphasis Selection Modal */}
+                                            <Dialog
+                                                open={isCopyEmphasisModalOpen}
+                                                onOpenChange={setIsCopyEmphasisModalOpen}
+                                            >
+                                                <DialogContent className="max-h-[90vh] overflow-y-auto rounded-card sm:max-w-3xl p-0">
+                                                    <DialogHeader className="border-b bg-muted/20 p-5 pb-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <Type className="h-4 w-4 text-primary" />
+                                                            <DialogTitle className="text-base font-bold text-foreground">
+                                                                Copy Emphasis
+                                                            </DialogTitle>
+                                                        </div>
+                                                        <DialogDescription className="text-xs text-muted-foreground">
+                                                            Choose how the marketing copy should be emphasized in your visual composition.
+                                                        </DialogDescription>
+                                                    </DialogHeader>
+
+                                                    <div className="p-5">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                                                            {copyEmphasisOptions.map((opt) => {
+                                                                const isSelected = copyEmphasis === opt.value;
+                                                                return (
+                                                                    <button
+                                                                        key={opt.value}
+                                                                        type="button"
+                                                                        onClick={() => setCopyEmphasis(opt.value)}
+                                                                        className={`group relative flex flex-col rounded-xl border text-left transition-all duration-200 cursor-pointer select-none overflow-hidden ${
+                                                                            isSelected
+                                                                                ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-500/[0.03] dark:bg-emerald-500/[0.06] shadow-xs ring-1 ring-emerald-500/30'
+                                                                                : 'border-border/80 bg-card hover:border-border hover:bg-muted/30 hover:shadow-xs'
+                                                                        }`}
+                                                                    >
+                                                                        {/* Typographic Preview Container */}
+                                                                        <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted/30 dark:bg-muted/10 p-2.5 flex flex-col justify-between border-b border-border/50 select-none">
+                                                                            {opt.value === 'Balanced' && (
+                                                                                <>
+                                                                                    <div className="flex items-center justify-between text-[8px] font-semibold tracking-wider text-muted-foreground/70 uppercase">
+                                                                                        <span>Headline</span>
+                                                                                        <span className="font-mono">$49.00</span>
+                                                                                    </div>
+                                                                                    <div className="my-auto py-1">
+                                                                                        <div className="h-1.5 w-16 rounded bg-foreground/60 mb-1" />
+                                                                                        <div className="h-1 w-24 rounded bg-muted-foreground/30" />
+                                                                                    </div>
+                                                                                    <div className="flex items-center gap-1.5 pt-1 border-t border-border/30">
+                                                                                        <div className="h-3 w-6 rounded bg-muted-foreground/20 shrink-0" />
+                                                                                        <div className="h-1 w-12 rounded bg-muted-foreground/25" />
+                                                                                    </div>
+                                                                                </>
+                                                                            )}
+                                                                            {opt.value === 'Product' && (
+                                                                                <>
+                                                                                    <div className="text-[8px] font-semibold tracking-wider text-muted-foreground/70 uppercase">
+                                                                                        Product Hero
+                                                                                    </div>
+                                                                                    <div className="my-auto flex items-center justify-center py-0.5">
+                                                                                        <div className="flex h-10 w-16 items-center justify-center rounded-lg border border-border/70 bg-background/80 shadow-xs">
+                                                                                            <Package className="h-5 w-5 text-foreground/70" />
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="flex justify-center">
+                                                                                        <div className="h-1 w-12 rounded bg-muted-foreground/30" />
+                                                                                    </div>
+                                                                                </>
+                                                                            )}
+                                                                            {opt.value === 'Price' && (
+                                                                                <>
+                                                                                    <div className="text-[8px] font-semibold tracking-wider text-muted-foreground/70 uppercase">
+                                                                                        Price Prominence
+                                                                                    </div>
+                                                                                    <div className="my-auto py-0.5">
+                                                                                        <div className="font-mono text-base font-bold tracking-tight text-foreground leading-none">
+                                                                                            $129.00
+                                                                                        </div>
+                                                                                        <span className="mt-1 inline-block text-[8px] font-semibold text-muted-foreground">
+                                                                                            Special Offer
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <div className="h-1 w-16 rounded bg-muted-foreground/25" />
+                                                                                </>
+                                                                            )}
+                                                                            {opt.value === 'Tagline' && (
+                                                                                <>
+                                                                                    <div className="text-[8px] font-semibold tracking-wider text-muted-foreground/70 uppercase">
+                                                                                        Tagline Hierarchy
+                                                                                    </div>
+                                                                                    <div className="my-auto py-0.5">
+                                                                                        <div className="text-[11px] font-extrabold uppercase leading-tight tracking-tight text-foreground line-clamp-2">
+                                                                                            Bold Vision.
+                                                                                        </div>
+                                                                                        <div className="mt-0.5 text-[9px] text-muted-foreground line-clamp-1">
+                                                                                            Campaign Voice
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="h-1 w-10 rounded bg-muted-foreground/25" />
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex flex-col flex-1 p-3">
+                                                                            <span
+                                                                                className={`text-xs font-semibold tracking-tight ${
+                                                                                    isSelected
+                                                                                        ? 'text-emerald-700 dark:text-emerald-400 font-bold'
+                                                                                        : 'text-foreground'
+                                                                                }`}
+                                                                            >
+                                                                                {opt.label}
+                                                                            </span>
+                                                                            <p className="mt-1 text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+                                                                                {opt.description}
+                                                                            </p>
+                                                                        </div>
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+
+                                                    <DialogFooter className="flex items-center justify-between border-t bg-muted/10 p-3 px-5 sm:justify-between">
+                                                        <span className="font-mono text-[11px] text-muted-foreground">
+                                                            Active: <strong className="text-foreground">{copyEmphasis}</strong>
+                                                        </span>
+                                                        <Button
+                                                            type="button"
+                                                            size="sm"
+                                                            onClick={() => setIsCopyEmphasisModalOpen(false)}
+                                                            className="h-8 rounded-lg px-4 text-xs font-semibold cursor-pointer"
+                                                        >
+                                                            Done
+                                                        </Button>
+                                                    </DialogFooter>
+                                                </DialogContent>
+                                            </Dialog>
+
+                                            {/* Dedicated Copy & Event Visibility Selection Modal */}
+                                            <Dialog
+                                                open={isVisibilityModalOpen}
+                                                onOpenChange={setIsVisibilityModalOpen}
+                                            >
+                                                <DialogContent className="max-h-[90vh] overflow-y-auto rounded-card sm:max-w-2xl p-0">
+                                                    <DialogHeader className="border-b bg-muted/20 p-5 pb-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <SlidersHorizontal className="h-4 w-4 text-primary" />
+                                                            <DialogTitle className="text-base font-bold text-foreground">
                                                                 Copy & Event Visibility
-                                                            </span>
-                                                            <p className="text-[10px] text-muted-foreground">
-                                                                Specify which commercial content elements appear in the artwork.
-                                                            </p>
+                                                            </DialogTitle>
                                                         </div>
-                                                    </div>
-                                                </div>
+                                                        <DialogDescription className="text-xs text-muted-foreground">
+                                                            Choose which elements can appear in the creative.
+                                                        </DialogDescription>
+                                                    </DialogHeader>
 
-                                                <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 pt-1">
-                                                    {/* 1. Include Product Name */}
-                                                    <div
-                                                        role="button"
-                                                        tabIndex={0}
-                                                        onClick={() => setIncludeProductName(!includeProductName)}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === ' ' || e.key === 'Enter') setIncludeProductName(!includeProductName);
-                                                        }}
-                                                        className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
-                                                            includeProductName
-                                                                ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
-                                                                : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
-                                                        }`}
-                                                    >
-                                                        <div className="space-y-1">
-                                                            <div className="flex items-center justify-between">
-                                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                                    <Package className="h-3.5 w-3.5 text-primary shrink-0" />
-                                                                    <span className="text-xs font-bold truncate text-foreground">
-                                                                        Product Name
-                                                                    </span>
-                                                                </div>
-                                                                <Checkbox
-                                                                    checked={includeProductName}
-                                                                    onCheckedChange={(c) => setIncludeProductName(Boolean(c))}
-                                                                    className="h-3.5 w-3.5 pointer-events-none rounded data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white shrink-0"
-                                                                />
-                                                            </div>
-                                                            <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
-                                                                Render product name typography.
-                                                            </p>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* 2. Include Price */}
-                                                    <div
-                                                        role="button"
-                                                        tabIndex={0}
-                                                        onClick={() => setIncludePrices(!includePrices)}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === ' ' || e.key === 'Enter') setIncludePrices(!includePrices);
-                                                        }}
-                                                        className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
-                                                            includePrices
-                                                                ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
-                                                                : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
-                                                        }`}
-                                                    >
-                                                        <div className="space-y-1">
-                                                            <div className="flex items-center justify-between">
-                                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                                    <BadgePercent className="h-3.5 w-3.5 text-primary shrink-0" />
-                                                                    <span className="text-xs font-bold truncate text-foreground">
-                                                                        Price
-                                                                    </span>
-                                                                </div>
-                                                                <Checkbox
-                                                                    checked={includePrices}
-                                                                    onCheckedChange={(c) => setIncludePrices(Boolean(c))}
-                                                                    className="h-3.5 w-3.5 pointer-events-none rounded data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white shrink-0"
-                                                                />
-                                                            </div>
-                                                            <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
-                                                                Render exact catalog pricing.
-                                                            </p>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* 3. Include Tagline */}
-                                                    <div
-                                                        role="button"
-                                                        tabIndex={0}
-                                                        onClick={() => setIncludeTagline(!includeTagline)}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === ' ' || e.key === 'Enter') setIncludeTagline(!includeTagline);
-                                                        }}
-                                                        className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
-                                                            includeTagline
-                                                                ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
-                                                                : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
-                                                        }`}
-                                                    >
-                                                        <div className="space-y-1">
-                                                            <div className="flex items-center justify-between">
-                                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                                    <PenTool className="h-3.5 w-3.5 text-primary shrink-0" />
-                                                                    <span className="text-xs font-bold truncate text-foreground">
-                                                                        Tagline
-                                                                    </span>
-                                                                </div>
-                                                                <Checkbox
-                                                                    checked={includeTagline}
-                                                                    onCheckedChange={(c) => setIncludeTagline(Boolean(c))}
-                                                                    className="h-3.5 w-3.5 pointer-events-none rounded data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white shrink-0"
-                                                                />
-                                                            </div>
-                                                            <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
-                                                                Render headline / campaign tagline.
-                                                            </p>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* 4. Include Business Name */}
-                                                    <div
-                                                        role="button"
-                                                        tabIndex={0}
-                                                        onClick={() => {
-                                                            const nextVal = !includeBusinessName;
-                                                            setIncludeBusinessName(nextVal);
-                                                            if (typeof window !== 'undefined') {
-                                                                localStorage.setItem('ai_studio_include_business_name', String(nextVal));
-                                                            }
-                                                        }}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === ' ' || e.key === 'Enter') {
-                                                                const nextVal = !includeBusinessName;
-                                                                setIncludeBusinessName(nextVal);
-                                                                if (typeof window !== 'undefined') {
-                                                                    localStorage.setItem('ai_studio_include_business_name', String(nextVal));
-                                                                }
-                                                            }
-                                                        }}
-                                                        className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
-                                                            includeBusinessName
-                                                                ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
-                                                                : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
-                                                        }`}
-                                                    >
-                                                        <div className="space-y-1">
-                                                            <div className="flex items-center justify-between">
-                                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                                    <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
-                                                                    <span className="text-xs font-bold truncate text-foreground">
-                                                                        Business Name
-                                                                    </span>
-                                                                </div>
-                                                                <Checkbox
-                                                                    checked={includeBusinessName}
-                                                                    onCheckedChange={(c) => {
-                                                                        const nextVal = Boolean(c);
+                                                    <div className="p-5">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
+                                                            {[
+                                                                {
+                                                                    id: 'product_name',
+                                                                    label: 'Product Name',
+                                                                    description: 'Render product name typography.',
+                                                                    active: includeProductName,
+                                                                    toggle: () => setIncludeProductName(!includeProductName),
+                                                                    icon: Package,
+                                                                    previewText: 'Product Hero',
+                                                                },
+                                                                {
+                                                                    id: 'price',
+                                                                    label: 'Price',
+                                                                    description: 'Render exact catalog pricing.',
+                                                                    active: includePrices,
+                                                                    toggle: () => setIncludePrices(!includePrices),
+                                                                    icon: BadgePercent,
+                                                                    previewText: '$99.00',
+                                                                },
+                                                                {
+                                                                    id: 'tagline',
+                                                                    label: 'Tagline',
+                                                                    description: 'Render headline / campaign tagline.',
+                                                                    active: includeTagline,
+                                                                    toggle: () => setIncludeTagline(!includeTagline),
+                                                                    icon: PenTool,
+                                                                    previewText: 'Tagline',
+                                                                },
+                                                                {
+                                                                    id: 'business_name',
+                                                                    label: 'Business Name',
+                                                                    description: 'Render registered brand/shop name.',
+                                                                    active: includeBusinessName,
+                                                                    toggle: () => {
+                                                                        const nextVal = !includeBusinessName;
                                                                         setIncludeBusinessName(nextVal);
                                                                         if (typeof window !== 'undefined') {
-                                                                            localStorage.setItem('ai_studio_include_business_name', String(nextVal));
+                                                                            localStorage.setItem(
+                                                                                'ai_studio_include_business_name',
+                                                                                String(nextVal),
+                                                                            );
                                                                         }
-                                                                    }}
-                                                                    className="h-3.5 w-3.5 pointer-events-none rounded data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white shrink-0"
-                                                                />
-                                                            </div>
-                                                            <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
-                                                                Render registered brand/shop name.
-                                                            </p>
+                                                                    },
+                                                                    icon: Building2,
+                                                                    previewText: 'Brand Name',
+                                                                },
+                                                                {
+                                                                    id: 'event_text',
+                                                                    label: 'Event Text',
+                                                                    description: 'Render holiday / event name text.',
+                                                                    active: showEventText,
+                                                                    toggle: () => setShowEventText(!showEventText),
+                                                                    icon: Calendar,
+                                                                    previewText: 'Event Text',
+                                                                },
+                                                            ].map((item) => {
+                                                                const IconComponent = item.icon;
+                                                                return (
+                                                                    <button
+                                                                        key={item.id}
+                                                                        type="button"
+                                                                        role="switch"
+                                                                        aria-checked={item.active}
+                                                                        onClick={item.toggle}
+                                                                        className={`group relative flex flex-col rounded-xl border text-left transition-all duration-200 cursor-pointer select-none overflow-hidden ${
+                                                                            item.active
+                                                                                ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-500/[0.03] dark:bg-emerald-500/[0.06] shadow-xs ring-1 ring-emerald-500/30'
+                                                                                : 'border-border/80 bg-card hover:border-border hover:bg-muted/30 hover:shadow-xs opacity-75 hover:opacity-100'
+                                                                        }`}
+                                                                    >
+                                                                        {/* Visual Preview Bar */}
+                                                                        <div className="relative h-14 w-full overflow-hidden bg-muted/30 dark:bg-muted/10 p-2 flex items-center justify-center border-b border-border/50 select-none">
+                                                                            <div
+                                                                                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[10px] font-medium transition-colors ${
+                                                                                    item.active
+                                                                                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                                                                                        : 'border-border/60 bg-background/80 text-muted-foreground'
+                                                                                }`}
+                                                                            >
+                                                                                <IconComponent className="h-3.5 w-3.5 shrink-0" />
+                                                                                <span className="truncate">{item.previewText}</span>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="flex flex-col flex-1 p-3">
+                                                                            <div className="flex items-center justify-between gap-1">
+                                                                                <span
+                                                                                    className={`text-xs font-semibold tracking-tight truncate ${
+                                                                                        item.active
+                                                                                            ? 'text-emerald-700 dark:text-emerald-400 font-bold'
+                                                                                            : 'text-foreground'
+                                                                                    }`}
+                                                                                >
+                                                                                    {item.label}
+                                                                                </span>
+                                                                                <span
+                                                                                    className={`text-[9px] font-mono shrink-0 ${
+                                                                                        item.active
+                                                                                            ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                                                                                            : 'text-muted-foreground'
+                                                                                    }`}
+                                                                                >
+                                                                                    {item.active ? 'Visible' : 'Off'}
+                                                                                </span>
+                                                                            </div>
+                                                                            <p className="mt-1 text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+                                                                                {item.description}
+                                                                            </p>
+                                                                        </div>
+                                                                    </button>
+                                                                );
+                                                            })}
                                                         </div>
                                                     </div>
 
-                                                    {/* 5. Show Event Text */}
-                                                    <div
-                                                        role="button"
-                                                        tabIndex={0}
-                                                        onClick={() => setShowEventText(!showEventText)}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === ' ' || e.key === 'Enter') setShowEventText(!showEventText);
-                                                        }}
-                                                        className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
-                                                            showEventText
-                                                                ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
-                                                                : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
-                                                        }`}
-                                                    >
-                                                        <div className="space-y-1">
-                                                            <div className="flex items-center justify-between">
-                                                                <div className="flex items-center gap-1.5 min-w-0">
-                                                                    <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
-                                                                    <span className="text-xs font-bold truncate text-foreground">
-                                                                        Event Text
-                                                                    </span>
-                                                                </div>
-                                                                <Checkbox
-                                                                    checked={showEventText}
-                                                                    onCheckedChange={(c) => setShowEventText(Boolean(c))}
-                                                                    className="h-3.5 w-3.5 pointer-events-none rounded data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white shrink-0"
-                                                                />
-                                                            </div>
-                                                            <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
-                                                                Render holiday / event name text.
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                                    <DialogFooter className="flex items-center justify-between border-t bg-muted/10 p-3 px-5 sm:justify-between">
+                                                        <span className="font-mono text-[11px] text-muted-foreground">
+                                                            {[
+                                                                includeProductName,
+                                                                includePrices,
+                                                                includeTagline,
+                                                                includeBusinessName,
+                                                                showEventText,
+                                                            ].filter(Boolean).length}{' '}
+                                                            elements active
+                                                        </span>
+                                                        <Button
+                                                            type="button"
+                                                            size="sm"
+                                                            onClick={() => setIsVisibilityModalOpen(false)}
+                                                            className="h-8 rounded-lg px-4 text-xs font-semibold cursor-pointer"
+                                                        >
+                                                            Done
+                                                        </Button>
+                                                    </DialogFooter>
+                                                </DialogContent>
+                                            </Dialog>
                                         </div>
                                     )}
 
                                     {/* STEP 3: FORMAT & CANVAS */}
                                     {currentStep === 3 && (
                                         <div className="animate-in space-y-4 duration-200 fade-in">
-                                            {/* Canvas Aspect Ratio Selector */}
-                                            <AspectRatioSelector
-                                                value={aspectRatio}
-                                                onChange={setAspectRatio}
-                                            />
+                                            {/* Compact Canvas & Aspect Ratio Entry Card */}
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsAspectRatioModalOpen(true)}
+                                                className="group relative flex w-full items-center justify-between gap-3.5 rounded-xl border border-border/80 bg-card/60 p-3.5 text-left transition-all duration-200 hover:border-border hover:bg-muted/30 hover:shadow-xs cursor-pointer select-none"
+                                            >
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-muted/30 dark:bg-muted/10">
+                                                        <div
+                                                            className={`rounded-xs border border-primary/70 bg-primary/20 transition-all ${currentRatioConfig.previewClass}`}
+                                                        />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                                            Canvas & Aspect Ratio
+                                                        </div>
+                                                        <div className="mt-0.5 text-xs font-bold text-foreground truncate">
+                                                            {currentRatioConfig.label}
+                                                        </div>
+                                                        <div className="text-[10px] text-muted-foreground truncate">
+                                                            {currentRatioConfig.description} · {currentRatioConfig.dimensions}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center justify-center h-8 w-8 rounded-lg border border-border/60 bg-background/60 text-muted-foreground transition-all duration-200 group-hover:border-foreground/30 group-hover:text-foreground shrink-0">
+                                                    <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                                                </div>
+                                            </button>
+
+                                            {/* Dedicated Canvas & Aspect Ratio Selection Modal */}
+                                            <Dialog
+                                                open={isAspectRatioModalOpen}
+                                                onOpenChange={setIsAspectRatioModalOpen}
+                                            >
+                                                <DialogContent className="max-h-[90vh] overflow-y-auto rounded-card sm:max-w-3xl p-0">
+                                                    <DialogHeader className="border-b bg-muted/20 p-5 pb-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <Layers className="h-4 w-4 text-primary" />
+                                                            <DialogTitle className="text-base font-bold text-foreground">
+                                                                Canvas & Aspect Ratio
+                                                            </DialogTitle>
+                                                        </div>
+                                                        <DialogDescription className="text-xs text-muted-foreground">
+                                                            Choose the canvas shape for your marketing creative.
+                                                        </DialogDescription>
+                                                    </DialogHeader>
+
+                                                    <div className="p-5">
+                                                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+                                                            {ASPECT_RATIO_CONFIGS.map((opt) => {
+                                                                const isSelected = aspectRatio === opt.value;
+                                                                return (
+                                                                    <button
+                                                                        key={opt.value}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setAspectRatio(opt.value);
+                                                                            setIsAspectRatioModalOpen(false);
+                                                                        }}
+                                                                        className={`group relative flex flex-col rounded-xl border text-left transition-all duration-200 cursor-pointer select-none overflow-hidden ${
+                                                                            isSelected
+                                                                                ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-500/[0.03] dark:bg-emerald-500/[0.06] shadow-xs ring-1 ring-emerald-500/30'
+                                                                                : 'border-border/80 bg-card hover:border-border hover:bg-muted/30 hover:shadow-xs'
+                                                                        }`}
+                                                                    >
+                                                                        {/* Proportional Canvas Shape Preview */}
+                                                                        <div className="relative h-24 w-full overflow-hidden bg-muted/30 dark:bg-muted/10 p-2 flex items-center justify-center border-b border-border/50 select-none">
+                                                                            <div
+                                                                                className={`rounded-sm border-2 transition-all ${
+                                                                                    isSelected
+                                                                                        ? 'border-emerald-600 bg-emerald-500/20 shadow-xs dark:border-emerald-400'
+                                                                                        : 'border-muted-foreground/40 bg-muted/40 group-hover:border-foreground/40'
+                                                                                } ${opt.modalPreviewClass}`}
+                                                                            />
+                                                                        </div>
+
+                                                                        {/* Option Details */}
+                                                                        <div className="flex flex-col flex-1 p-3">
+                                                                            <div className="flex items-center justify-between gap-1">
+                                                                                <span
+                                                                                    className={`font-mono text-xs font-bold tracking-tight ${
+                                                                                        isSelected
+                                                                                            ? 'text-emerald-700 dark:text-emerald-400'
+                                                                                            : 'text-foreground'
+                                                                                    }`}
+                                                                                >
+                                                                                    {opt.value}
+                                                                                </span>
+                                                                                <span className="text-[10px] font-semibold text-muted-foreground">
+                                                                                    {opt.name}
+                                                                                </span>
+                                                                            </div>
+                                                                            <p className="mt-1 text-[10px] text-muted-foreground line-clamp-1 leading-relaxed">
+                                                                                {opt.description}
+                                                                            </p>
+                                                                            <span className="mt-1.5 font-mono text-[9px] text-muted-foreground/80">
+                                                                                {opt.dimensions}
+                                                                            </span>
+                                                                        </div>
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+
+                                                    <DialogFooter className="flex items-center justify-between border-t bg-muted/10 p-3 px-5 sm:justify-between">
+                                                        <span className="font-mono text-[11px] text-muted-foreground">
+                                                            Active:{' '}
+                                                            <strong className="text-foreground">
+                                                                {currentRatioConfig.label} ({currentRatioConfig.dimensions})
+                                                            </strong>
+                                                        </span>
+                                                        <Button
+                                                            type="button"
+                                                            size="sm"
+                                                            onClick={() => setIsAspectRatioModalOpen(false)}
+                                                            className="h-8 rounded-lg px-4 text-xs font-semibold cursor-pointer"
+                                                        >
+                                                            Done
+                                                        </Button>
+                                                    </DialogFooter>
+                                                </DialogContent>
+                                            </Dialog>
 
                                             {/* Optional Tagline / Headline */}
                                             <div className="space-y-2.5 rounded-xl border border-border/80 bg-card/60 p-3.5 shadow-xs">

@@ -222,29 +222,35 @@ export default function AutomaticGenerator({
         }
     }, [initial_draft]);
 
-    // Breadcrumbs Navigation (Campaigns / Designs -> Generator -> Image Modal)
+    // Breadcrumbs Navigation (Campaigns -> {Campaign Name} -> Generator)
     const breadcrumbs = useMemo(() => {
         const generatorHref = campaign?.id
             ? `/generator/automatic?campaign_id=${campaign.id}`
             : '/generator/automatic';
 
-        const rootCrumb = origin === 'designs'
-            ? { title: 'My Designs', href: '/designs' }
-            : { title: 'Campaigns', href: '/campaigns' };
-
-        if (generationState === 'ready') {
+        if (origin === 'designs') {
             return [
-                rootCrumb,
+                { title: 'My Designs', href: '/designs' },
+                ...(campaign?.id
+                    ? [{ title: campaign.name || 'Campaign', href: `/campaigns/${campaign.id}` }]
+                    : []),
                 { title: 'Generator', href: generatorHref },
-                { title: 'Image Modal', href: '#' },
+            ];
+        }
+
+        if (campaign?.id) {
+            return [
+                { title: 'Campaigns', href: '/campaigns' },
+                { title: campaign.name || 'Campaign', href: `/campaigns/${campaign.id}` },
+                { title: 'Generator', href: generatorHref },
             ];
         }
 
         return [
-            rootCrumb,
+            { title: 'Campaigns', href: '/campaigns' },
             { title: 'Generator', href: generatorHref },
         ];
-    }, [campaign?.id, generationState, origin]);
+    }, [campaign?.id, campaign?.name, origin]);
 
     useSetBreadcrumbs(breadcrumbs);
 
@@ -841,6 +847,17 @@ export default function AutomaticGenerator({
                             hasReferenceImage={uniqueSelectedCatalogProducts.length > 0}
                             eventName={selectedEvent?.name}
                             showEventText={showEventText}
+                            mode="automatic"
+                            catalogProducts={uniqueSelectedCatalogProducts}
+                            customProducts={customProducts}
+                            renderStyle={savedDesign?.generation_meta?.render_style}
+                            visualTheme={savedDesign?.generation_meta?.visual_theme}
+                            brandTone={savedDesign?.generation_meta?.brand_tone}
+                            includeProductName={includeProductName}
+                            includePrices={includePrices}
+                            includeBusinessName={includeBusinessName}
+                            businessName={business?.name}
+                            includeTagline={includeTagline}
                         />
                     ) : (
                         /* AUTONOMOUS CREATIVE STUDIO FORM */

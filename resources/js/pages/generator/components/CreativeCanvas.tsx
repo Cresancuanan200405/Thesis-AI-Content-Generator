@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from '@inertiajs/react';
 import {
     Check,
     ChevronDown,
-    ChevronRight,
     ChevronUp,
     Cpu,
     Download,
@@ -23,7 +22,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { GeneratedDesign, ImageQuality } from './types';
 
-interface CreativeCanvasProps {
+export interface CreativeCanvasProps {
     productName: string;
     tagline?: string;
     price?: string;
@@ -42,17 +41,33 @@ interface CreativeCanvasProps {
     onViewGeneratedCreative?: () => void;
     onEditParameters: () => void;
     onRegenerate: () => void;
-    creativeConcept?: string;
-    visualStrategy?: string;
-    designTreatment?: string;
-    copyEmphasis?: string;
-    hasReferenceImage?: boolean;
-    eventName?: string;
-    showEventText?: boolean;
     designId?: string | number | null;
     origin?: string | null;
     campaignId?: string | number | null;
     campaignName?: string | null;
+
+    // Creative & Context Inputs
+    mode?: 'manual' | 'automatic';
+    eventName?: string;
+    showEventText?: boolean;
+    catalogProducts?: Array<{ id: number | string; name: string; price?: number | string | null }>;
+    customProducts?: Array<{ name: string; price?: string; description?: string }>;
+    scenePrompt?: string;
+    creativeConcept?: string;
+    visualStrategy?: string;
+    designTreatment?: string;
+    copyEmphasis?: string;
+    renderStyle?: string;
+    visualTheme?: string | string[];
+    brandTone?: string | string[];
+    hasReferenceImage?: boolean;
+
+    // Marketing Copy & Visibility States
+    includeProductName?: boolean;
+    includePrices?: boolean;
+    includeBusinessName?: boolean;
+    businessName?: string;
+    includeTagline?: boolean;
 }
 
 export function CreativeCanvas({
@@ -74,305 +89,168 @@ export function CreativeCanvas({
     onViewGeneratedCreative,
     onEditParameters,
     onRegenerate,
+    campaignId,
+    campaignName,
+    mode = 'manual',
+    eventName,
+    showEventText,
+    catalogProducts,
+    customProducts,
+    scenePrompt,
     creativeConcept,
     visualStrategy,
     designTreatment,
     copyEmphasis,
+    renderStyle,
+    visualTheme,
+    brandTone,
     hasReferenceImage = false,
-    eventName,
-    showEventText,
-    designId,
-    origin,
-    campaignId,
-    campaignName,
+    includeProductName = true,
+    includePrices = true,
+    includeBusinessName = true,
+    businessName,
+    includeTagline = true,
 }: CreativeCanvasProps) {
     const [isTechDetailsExpanded, setIsTechDetailsExpanded] = useState(false);
-    const [showContext, setShowContext] = useState(false);
 
     const handleViewCreative = onViewGeneratedCreative || onOpenFullscreen;
-
-    const hasContextContent = Boolean(
-        tagline || creativeConcept || visualStrategy || designTreatment || copyEmphasis,
-    );
-
-    const isFinalStatus = isSavedToDesigns || savedDesign?.status === 'final' || savedDesign?.status === 'completed';
     const isDraftStatus = isSavedAsDraft || savedDesign?.status === 'draft';
+
+    // Format currency price
+    const formatPrice = (p?: string | number | null) => {
+        if (p === null || p === undefined || p === '') return null;
+        const str = String(p).trim();
+        const num = Number(str.replace(/[^0-9.]/g, ''));
+        if (isNaN(num)) return str;
+        return `₱${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
+    // Combine all selected products for clear itemized presentation
+    const allDisplayProducts = useMemo(() => {
+        const items: Array<{ name: string; price?: string | number | null }> = [];
+        if (catalogProducts && catalogProducts.length > 0) {
+            catalogProducts.forEach((p) => {
+                items.push({ name: p.name, price: p.price });
+            });
+        }
+        if (customProducts && customProducts.length > 0) {
+            customProducts.forEach((cp) => {
+                if (cp.name) items.push({ name: cp.name, price: cp.price });
+            });
+        }
+        if (items.length === 0 && productName) {
+            items.push({ name: productName, price });
+        }
+        return items;
+    }, [catalogProducts, customProducts, productName, price]);
+
+    // Format canvas dimensions from aspect ratio
+    const resolvedResolution = useMemo(() => {
+        switch (aspectRatio) {
+            case '16:9':
+            case '4:3':
+                return '1792 × 1024';
+            case '9:16':
+            case '4:5':
+                return '1024 × 1792';
+            default:
+                return '1024 × 1024';
+        }
+    }, [aspectRatio]);
+
+    const refCount = savedDesign?.generation_meta?.actual_reference_count ??
+        (hasReferenceImage ? (catalogProducts?.length || 1) : 0);
+
+    const generationMethod = savedDesign?.generation_meta?.generation_method
+        ? String(savedDesign.generation_meta.generation_method).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+        : hasReferenceImage
+          ? 'Image-to-Image Edit'
+          : 'Text-to-Image';
+
+    const durationSeconds = savedDesign?.generation_meta?.duration_seconds;
+    const effectiveEventName = eventName || savedDesign?.generation_meta?.event_name;
+    const isEventTextVisible = typeof showEventText === 'boolean'
+        ? showEventText
+        : (savedDesign?.generation_meta?.show_event_text ?? true);
+
+    const formattedTheme = Array.isArray(visualTheme) ? visualTheme.join(', ') : visualTheme;
+    const formattedTone = Array.isArray(brandTone) ? brandTone.join(', ') : brandTone;
 
     return (
         <Card className="mx-auto max-w-3xl overflow-hidden rounded-card border-border bg-card shadow-sm">
-            <CardHeader className="border-b p-5 md:p-6">
-                {/* Breadcrumb Navigation */}
-                <nav
-                    aria-label="Breadcrumb"
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground"
-                >
-                    {origin === 'designs' ? (
-                        <Link
-                            href="/designs"
-                            className="hover:text-foreground transition-colors"
-                        >
-                            My Designs
-                        </Link>
-                    ) : (
-                        <Link
-                            href={campaignId ? `/campaigns/${campaignId}` : '/campaigns'}
-                            className="hover:text-foreground transition-colors"
-                        >
-                            {campaignName || 'Campaigns'}
-                        </Link>
-                    )}
-                    <ChevronRight className="h-3 w-3 text-muted-foreground/60" />
-                    <button
-                        type="button"
-                        onClick={onEditParameters}
-                        className="hover:text-foreground transition-colors cursor-pointer"
-                    >
-                        Generator
-                    </button>
-                    <ChevronRight className="h-3 w-3 text-muted-foreground/60" />
-                    <span className="font-semibold text-foreground">
-                        Creative Canvas
-                    </span>
-                </nav>
-
-                {/* Header Title & Context Toggle Button */}
-                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-xl font-bold tracking-tight text-foreground">
-                                Visual Creative Ready
-                            </h2>
-                            {(isFinalStatus || isDraftStatus) && (
-                                <span className={`inline-flex items-center rounded border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider ${
-                                    isFinalStatus
-                                        ? 'border-primary/40 bg-primary/10 text-primary'
-                                        : 'border-border/80 bg-muted/50 text-muted-foreground'
-                                }`}>
-                                    Status: {isFinalStatus ? 'FINAL' : 'DRAFT'}
-                                </span>
-                            )}
-                        </div>
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                            High-resolution commercial creative generated for {productName}
-                        </p>
-                    </div>
-
-                    {hasContextContent && (
-                        <div className="flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setShowContext(!showContext)}
-                                className="text-xs font-semibold text-primary hover:underline transition-colors cursor-pointer"
-                            >
-                                {showContext ? 'Hide Context' : 'Show Context'}
-                            </button>
-                        </div>
-                    )}
+            <CardHeader className="border-b p-5 md:p-6 pb-4">
+                <div className="flex flex-col gap-1">
+                    <h2 className="text-xl font-bold tracking-tight text-foreground">
+                        Visual Creative Ready
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                        High-resolution commercial creative generated for {productName}
+                    </p>
                 </div>
             </CardHeader>
 
-            <CardContent className="space-y-6 p-5 md:p-6">
-                <div className="animate-in space-y-6 duration-300 fade-in">
-                    {/* Expandable Creative Context Section */}
-                    {showContext && hasContextContent && (
-                        <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4 transition-all">
-                            <div className="flex items-center justify-between border-b border-border/60 pb-2">
-                                <span className="text-xs font-semibold text-foreground">
-                                    Creative Context & Direction
-                                </span>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowContext(false)}
-                                    className="text-[11px] text-muted-foreground hover:text-foreground hover:underline cursor-pointer"
-                                >
-                                    Hide Context
-                                </button>
-                            </div>
-
-                            {(designTreatment || copyEmphasis) && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                                    {designTreatment && (
-                                        <div className="rounded-md border border-border/70 bg-card p-2">
-                                            <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-                                                Treatment
-                                            </span>
-                                            <p className="mt-0.5 font-medium text-foreground">
-                                                {designTreatment}
-                                            </p>
-                                        </div>
-                                    )}
-                                    {copyEmphasis && (
-                                        <div className="rounded-md border border-border/70 bg-card p-2">
-                                            <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-                                                Copy Emphasis
-                                            </span>
-                                            <p className="mt-0.5 font-medium text-foreground">
-                                                {copyEmphasis}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {tagline && (
-                                <div className="rounded-md border border-border/70 bg-card p-2.5 text-xs">
-                                    <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-                                        Headline Tagline
+            <CardContent className="space-y-5 p-5 md:p-6">
+                <div className="animate-in space-y-5 duration-300 fade-in">
+                    {/* PRIMARY GENERATED VISUAL (CLICKABLE IMAGE-LED HERO) */}
+                    <div
+                        onClick={handleViewCreative}
+                        className="group relative cursor-zoom-in overflow-hidden rounded-card border border-border bg-muted/15 p-3 sm:p-5 transition-all hover:border-primary/50 hover:shadow-md"
+                        title="Click to view full image canvas in pure viewer"
+                    >
+                        {savedDesign?.image_url ? (
+                            <div className="relative flex max-h-[540px] w-full items-center justify-center overflow-hidden rounded-lg bg-background/50">
+                                <img
+                                    src={savedDesign.image_url}
+                                    alt={productName}
+                                    className="max-h-[520px] w-auto max-w-full rounded-md object-contain transition-transform duration-300 group-hover:scale-[1.01]"
+                                />
+                                <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/50 via-transparent to-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100">
+                                    <span className="flex items-center gap-1.5 rounded-md bg-black/80 px-3 py-1.5 text-xs font-medium text-white shadow-md backdrop-blur-md">
+                                        <Eye className="h-3.5 w-3.5 text-primary" />
+                                        Click to zoom & pan canvas
                                     </span>
-                                    <p className="mt-0.5 text-sm font-semibold italic text-foreground">
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="w-full max-w-md space-y-3 rounded-lg border border-border bg-card p-6 text-center text-card-foreground">
+                                <h3 className="text-xl font-bold">{productName}</h3>
+                                {tagline && (
+                                    <p className="text-xs font-medium text-muted-foreground">
                                         "{tagline}"
                                     </p>
-                                </div>
-                            )}
-
-                            {creativeConcept && (
-                                <div className="space-y-1.5 rounded-md border border-border/70 bg-card p-2.5 text-xs">
-                                    <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-                                        Creative Concept
-                                    </span>
-                                    <p className="text-xs leading-relaxed text-foreground">
-                                        {creativeConcept}
+                                )}
+                                {price && (
+                                    <p className="text-base font-bold text-primary">
+                                        {formatPrice(price)}
                                     </p>
-                                    {visualStrategy && (
-                                        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground border-t border-border/50 pt-1.5">
-                                            <strong className="text-foreground/90 font-medium">Visual Strategy:</strong>{' '}
-                                            {visualStrategy}
-                                        </p>
-                                    )}
-                                </div>
-                            )}
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* STATUS ALERT (IF SAVED) */}
+                    {isSavedToDesigns && (
+                        <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/10 p-3 px-4 text-xs">
+                            <div className="flex items-center gap-2 text-primary font-medium">
+                                <Check className="h-4 w-4" />
+                                <span>Visual saved to My Designs</span>
+                            </div>
+                            <Button
+                                asChild
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs text-primary hover:text-primary/80 px-2"
+                            >
+                                <Link href={campaignId ? `/campaigns/${campaignId}` : '/campaigns'}>
+                                    Open Campaign →
+                                </Link>
+                            </Button>
                         </div>
                     )}
 
-                    {/* CLICKABLE GENERATED VISUAL */}
-                    <div
-                        onClick={handleViewCreative}
-                        className="group relative cursor-pointer overflow-hidden rounded-card border border-border bg-card shadow-sm transition-all hover:border-primary/50"
-                    >
-                        {/* Clean Structured Meta Bar (No capsule pills, No AI snaps) */}
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/30 px-4 py-2.5 text-xs">
-                            <div className="flex items-center gap-2">
-                                <span className="font-semibold text-foreground">{productName}</span>
-                                {hasReferenceImage && (
-                                    <span className="rounded-md border border-border/80 bg-muted/50 px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
-                                        Product Reference
-                                    </span>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <span className="rounded-md border border-border bg-background px-2 py-0.5 font-mono text-[10px] font-medium text-foreground">
-                                    {imageModel || 'GPT-Image-2'}
-                                </span>
-                                <span className="rounded-md border border-border bg-background px-2 py-0.5 font-mono text-[10px] font-medium uppercase text-foreground">
-                                    {imageQuality || 'medium'}
-                                </span>
-                                <span className="rounded-md border border-border bg-background px-2 py-0.5 font-mono text-[10px] font-medium text-foreground">
-                                    {aspectRatio || '1:1'}
-                                </span>
-                                {isSavedToDesigns && (
-                                    <span className="rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-primary">
-                                        Saved
-                                    </span>
-                                )}
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleViewCreative();
-                                    }}
-                                    className="h-6 gap-1 px-2 text-[11px] font-semibold text-primary hover:text-primary hover:bg-primary/10 cursor-pointer"
-                                >
-                                    <Eye className="h-3 w-3" />
-                                    View
-                                </Button>
-                            </div>
-                        </div>
-
-                        {/* Generated Visual Canvas */}
-                        <div className="flex min-h-[360px] items-center justify-center overflow-hidden rounded-b-card bg-muted/15 p-3 sm:p-5">
-                            {savedDesign?.image_url ? (
-                                <div className="relative flex max-h-[520px] w-full items-center justify-center overflow-hidden rounded-lg border border-border/60 bg-background/50 shadow-md">
-                                    <img
-                                        src={savedDesign.image_url}
-                                        alt={productName}
-                                        className="max-h-[500px] w-auto max-w-full rounded-md object-contain transition-transform duration-300 group-hover:scale-[1.01]"
-                                    />
-                                    <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/60 via-transparent to-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100">
-                                        <span className="flex items-center gap-1.5 rounded-md bg-black/80 px-3.5 py-1.5 text-xs font-semibold text-white shadow-md backdrop-blur-md">
-                                            <Eye className="h-3.5 w-3.5 text-primary" />
-                                            Click to View Generated Creative
-                                        </span>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="w-full max-w-md space-y-3 rounded-lg border border-border bg-card p-6 text-center text-card-foreground">
-                                    <h3 className="text-xl font-bold">{productName}</h3>
-                                    {tagline && (
-                                        <p className="text-xs font-medium text-muted-foreground">
-                                            "{tagline}"
-                                        </p>
-                                    )}
-                                    {price && (
-                                        <p className="text-base font-bold text-primary">
-                                            ₱{Number(price).toLocaleString()}
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Status Alert */}
-                    <div
-                        className={`rounded-lg border p-3.5 ${
-                            isSavedToDesigns
-                                ? 'border-primary/30 bg-primary/10'
-                                : 'border-border bg-muted/20'
-                        }`}
-                    >
-                        <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2.5">
-                                <Check
-                                    className={`h-4 w-4 ${
-                                        isSavedToDesigns
-                                            ? 'text-primary'
-                                            : 'text-foreground'
-                                    }`}
-                                />
-                                <p className="text-xs font-semibold">
-                                    {isSavedToDesigns
-                                        ? 'Visual successfully saved to My Designs'
-                                        : 'Visual ready — save to keep in your library'}
-                                </p>
-                            </div>
-                            {isSavedToDesigns && (
-                                <Button
-                                    asChild
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 text-xs text-primary hover:text-primary/80"
-                                >
-                                    <Link href="/designs">Open Designs →</Link>
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Action Bar */}
+                    {/* AUTHORITATIVE ACTION BAR */}
                     <div className="space-y-3">
-                        <div className={`grid gap-2.5 ${onSaveAsDraft && !isSavedToDesigns ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'}`}>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={handleViewCreative}
-                                className="h-10 rounded-lg gap-2 text-xs font-semibold shadow-xs hover:bg-accent border-border cursor-pointer"
-                            >
-                                <Eye className="h-4 w-4 text-primary" />
-                                View Generated Creative
-                            </Button>
-
+                        <div className="grid gap-2.5 sm:grid-cols-2 md:grid-cols-3">
                             {onSaveAsDraft && !isSavedToDesigns && (
                                 <Button
                                     type="button"
@@ -430,7 +308,7 @@ export function CreativeCanvas({
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent
-                                    align="center"
+                                    align="end"
                                     className="w-52 rounded-lg border-border p-1.5 shadow-lg"
                                 >
                                     <DropdownMenuItem
@@ -451,7 +329,7 @@ export function CreativeCanvas({
                             </DropdownMenu>
                         </div>
 
-                        {/* Sub actions */}
+                        {/* SUB ACTIONS (EDIT & REGENERATE) */}
                         <div className="flex items-center justify-between border-t border-border/60 pt-2.5">
                             <button
                                 type="button"
@@ -464,15 +342,6 @@ export function CreativeCanvas({
 
                             <button
                                 type="button"
-                                onClick={handleViewCreative}
-                                className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground hover:text-primary transition-colors cursor-pointer"
-                            >
-                                <Eye className="h-3.5 w-3.5 text-primary" />
-                                View Generated Creative
-                            </button>
-
-                            <button
-                                type="button"
                                 onClick={onRegenerate}
                                 className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline transition-colors cursor-pointer"
                             >
@@ -480,125 +349,217 @@ export function CreativeCanvas({
                                 Regenerate Variation
                             </button>
                         </div>
+                    </div>
 
-                        {/* Technical Generation Details Accordion */}
-                        <div className="overflow-hidden rounded-lg border border-border/80 bg-card">
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setIsTechDetailsExpanded(!isTechDetailsExpanded)
-                                }
-                                className="flex w-full items-center justify-between p-3.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted/30 cursor-pointer"
-                            >
-                                <div className="flex items-center gap-2">
-                                    <Cpu className="h-4 w-4 text-muted-foreground" />
-                                    <span>Generation Details</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 text-muted-foreground">
-                                    <span className="text-[11px]">
-                                        Technical Summary
+                    {/* RESTRUCTURED UNIFIED GENERATION DETAILS SECTION */}
+                    <div className="overflow-hidden rounded-card border border-border/80 bg-card shadow-xs">
+                        <div className="border-b border-border/60 bg-muted/20 px-4 py-3 sm:px-5">
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                Generation Details
+                            </h3>
+                            <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                Inputs and creative parameters used to generate this marketing visual
+                            </p>
+                        </div>
+
+                        <div className="p-4 sm:p-5 space-y-4">
+                            {/* TOP GRID: CAMPAIGN, EVENT, CREATIVE DIRECTION */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {/* CAMPAIGN */}
+                                <div className="rounded-lg border border-border/60 bg-muted/10 p-3 space-y-1">
+                                    <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                                        Campaign
                                     </span>
-                                    {isTechDetailsExpanded ? (
-                                        <ChevronUp className="h-4 w-4" />
-                                    ) : (
-                                        <ChevronDown className="h-4 w-4" />
+                                    <p className="text-xs font-semibold text-foreground">
+                                        {campaignName || 'Standard / None'}
+                                    </p>
+                                </div>
+
+                                {/* EVENT */}
+                                <div className="rounded-lg border border-border/60 bg-muted/10 p-3 space-y-1">
+                                    <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                                        Event / Holiday
+                                    </span>
+                                    <p className="text-xs font-semibold text-foreground">
+                                        {effectiveEventName || 'Standard / None'}
+                                    </p>
+                                    {effectiveEventName && (
+                                        <p className="text-[10px] text-muted-foreground">
+                                            Text: {isEventTextVisible ? 'Visible in copy' : 'Visual theme only (text hidden)'}
+                                        </p>
                                     )}
                                 </div>
-                            </button>
-                            {isTechDetailsExpanded && (
-                                <div className="space-y-2.5 border-t border-border/60 p-3.5">
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-                                        <div className="rounded-md border border-border/60 bg-muted/20 p-2.5">
-                                            <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
-                                                Model
-                                            </p>
-                                            <p className="mt-0.5 font-semibold text-foreground">
-                                                {imageModel || 'GPT-Image-2'}
-                                            </p>
+
+                                {/* CREATIVE DIRECTION */}
+                                <div className="rounded-lg border border-border/60 bg-muted/10 p-3 space-y-1">
+                                    <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                                        Creative Direction
+                                    </span>
+                                    <p className="text-xs font-semibold text-foreground">
+                                        {mode === 'automatic' ? 'Autonomous AI Studio' : 'Manual Creative Studio'}
+                                    </p>
+                                    {(scenePrompt || creativeConcept || visualStrategy) && (
+                                        <p className="text-[10px] text-muted-foreground line-clamp-2" title={scenePrompt || creativeConcept || visualStrategy}>
+                                            {scenePrompt || creativeConcept || visualStrategy}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* PRODUCTS SECTION */}
+                            <div className="rounded-lg border border-border/60 bg-muted/10 p-3 space-y-1.5">
+                                <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                                    Selected Products ({allDisplayProducts.length})
+                                </span>
+                                <div className="space-y-1 pt-0.5">
+                                    {allDisplayProducts.map((p, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="flex items-center justify-between text-xs py-1 border-b border-border/40 last:border-0"
+                                        >
+                                            <span className="font-medium text-foreground">
+                                                {idx + 1}. {p.name}
+                                            </span>
+                                            {p.price && (
+                                                <span className="font-mono text-[11px] font-semibold text-primary">
+                                                    {formatPrice(p.price)}
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="rounded-md border border-border/60 bg-muted/20 p-2.5">
-                                            <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
-                                                Method
-                                            </p>
-                                            <p className="mt-0.5 font-semibold text-foreground">
-                                                {hasReferenceImage
-                                                    ? 'Image-to-Image Edit'
-                                                    : 'Text-to-Image'}
-                                            </p>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* COPY & VISUAL GRID */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {/* COPY SETTINGS */}
+                                <div className="rounded-lg border border-border/60 bg-muted/10 p-3 space-y-2">
+                                    <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                                        Copy & Typography
+                                    </span>
+                                    <div className="space-y-1 text-xs">
+                                        <div className="flex justify-between py-0.5">
+                                            <span className="text-muted-foreground">Copy Emphasis</span>
+                                            <span className="font-medium text-foreground">{copyEmphasis || 'Balanced'}</span>
                                         </div>
-                                        <div className="rounded-md border border-border/60 bg-muted/20 p-2.5">
-                                            <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
-                                                Aspect Ratio
-                                            </p>
-                                            <p className="mt-0.5 font-semibold text-foreground">
-                                                {aspectRatio || '1:1'}
-                                            </p>
+                                        <div className="flex justify-between py-0.5">
+                                            <span className="text-muted-foreground">Product Name</span>
+                                            <span className="font-medium text-foreground">{includeProductName !== false ? 'Visible' : 'Hidden'}</span>
                                         </div>
-                                        <div className="rounded-md border border-border/60 bg-muted/20 p-2.5">
-                                            <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
-                                                Safe Margin
-                                            </p>
-                                            <p className="mt-0.5 font-semibold text-foreground">
-                                                20% Safe Zone
-                                            </p>
+                                        <div className="flex justify-between py-0.5">
+                                            <span className="text-muted-foreground">Price</span>
+                                            <span className="font-medium text-foreground">{includePrices !== false ? 'Visible' : 'Hidden'}</span>
                                         </div>
-                                        <div className="rounded-md border border-border/60 bg-muted/20 p-2.5">
-                                            <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
-                                                Status
-                                            </p>
-                                            <p className={`mt-0.5 font-semibold ${
-                                                isFinalStatus
-                                                    ? 'text-primary'
-                                                    : 'text-muted-foreground'
-                                            }`}>
-                                                {isFinalStatus ? 'FINAL' : isDraftStatus ? 'DRAFT' : 'READY'}
-                                            </p>
+                                        <div className="flex justify-between py-0.5">
+                                            <span className="text-muted-foreground">Business Name</span>
+                                            <span className="font-medium text-foreground">
+                                                {includeBusinessName !== false ? (businessName || 'Visible') : 'Hidden'}
+                                            </span>
                                         </div>
-                                        {savedDesign?.generation_meta?.duration_seconds && (
-                                            <div className="rounded-md border border-border/60 bg-muted/20 p-2.5">
-                                                <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
-                                                    Duration
-                                                </p>
-                                                <p className="mt-0.5 font-semibold text-foreground">
-                                                    {savedDesign.generation_meta.duration_seconds}s
-                                                </p>
+                                        <div className="flex justify-between py-0.5">
+                                            <span className="text-muted-foreground">Tagline</span>
+                                            <span className="font-medium text-foreground truncate max-w-[180px]">
+                                                {includeTagline !== false && tagline ? `"${tagline}"` : 'Hidden'}
+                                            </span>
+                                        </div>
+                                        {effectiveEventName && (
+                                            <div className="flex justify-between py-0.5">
+                                                <span className="text-muted-foreground">Event Text</span>
+                                                <span className="font-medium text-foreground">{isEventTextVisible ? 'Visible' : 'Hidden'}</span>
                                             </div>
-                                        )}
-                                        {Boolean(eventName || savedDesign?.generation_meta?.event_name) && (
-                                            <>
-                                                <div className="rounded-md border border-border/60 bg-muted/20 p-2.5">
-                                                    <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
-                                                        Event / Holiday
-                                                    </p>
-                                                    <p className="mt-0.5 font-semibold text-foreground">
-                                                        {eventName || savedDesign?.generation_meta?.event_name}
-                                                    </p>
-                                                </div>
-                                                <div className="rounded-md border border-border/60 bg-muted/20 p-2.5">
-                                                    <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
-                                                        Event Visual Influence
-                                                    </p>
-                                                    <p className="mt-0.5 font-semibold text-foreground">
-                                                        Included
-                                                    </p>
-                                                </div>
-                                                <div className="rounded-md border border-border/60 bg-muted/20 p-2.5">
-                                                    <p className="font-mono text-[10px] font-semibold text-muted-foreground uppercase">
-                                                        Show Event/Holiday Text
-                                                    </p>
-                                                    <p className="mt-0.5 font-semibold text-foreground">
-                                                        {(typeof showEventText === 'boolean'
-                                                            ? showEventText
-                                                            : (savedDesign?.generation_meta?.show_event_text ?? true))
-                                                            ? 'On'
-                                                            : 'Off'}
-                                                    </p>
-                                                </div>
-                                            </>
                                         )}
                                     </div>
                                 </div>
-                            )}
+
+                                {/* VISUAL STYLING */}
+                                <div className="rounded-lg border border-border/60 bg-muted/10 p-3 space-y-2">
+                                    <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                                        Visual Styling
+                                    </span>
+                                    <div className="space-y-1 text-xs">
+                                        <div className="flex justify-between py-0.5">
+                                            <span className="text-muted-foreground">Render Style</span>
+                                            <span className="font-medium text-foreground">{renderStyle || 'Studio Product Still'}</span>
+                                        </div>
+                                        <div className="flex justify-between py-0.5">
+                                            <span className="text-muted-foreground">Canvas Ratio</span>
+                                            <span className="font-mono font-medium text-foreground">{aspectRatio || '1:1'}</span>
+                                        </div>
+                                        {formattedTheme && (
+                                            <div className="flex justify-between py-0.5">
+                                                <span className="text-muted-foreground">Visual Theme</span>
+                                                <span className="font-medium text-foreground truncate max-w-[180px]">{formattedTheme}</span>
+                                            </div>
+                                        )}
+                                        {formattedTone && (
+                                            <div className="flex justify-between py-0.5">
+                                                <span className="text-muted-foreground">Brand Tone</span>
+                                                <span className="font-medium text-foreground truncate max-w-[180px]">{formattedTone}</span>
+                                            </div>
+                                        )}
+                                        {designTreatment && (
+                                            <div className="flex justify-between py-0.5">
+                                                <span className="text-muted-foreground">Treatment</span>
+                                                <span className="font-medium text-foreground">{designTreatment}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* TECHNICAL DETAILS (COLLAPSIBLE) */}
+                            <div className="rounded-lg border border-border/60 bg-muted/10 overflow-hidden">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsTechDetailsExpanded(!isTechDetailsExpanded)}
+                                    className="flex w-full items-center justify-between p-3 text-xs font-semibold text-foreground hover:bg-muted/30 transition-colors cursor-pointer"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <Cpu className="h-4 w-4 text-muted-foreground" />
+                                        <span>Technical Details</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                                        <span className="text-[11px]">
+                                            {isTechDetailsExpanded ? 'Hide' : 'Show'}
+                                        </span>
+                                        {isTechDetailsExpanded ? (
+                                            <ChevronUp className="h-4 w-4" />
+                                        ) : (
+                                            <ChevronDown className="h-4 w-4" />
+                                        )}
+                                    </div>
+                                </button>
+                                {isTechDetailsExpanded && (
+                                    <div className="border-t border-border/50 p-3 pt-2 grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+                                        <div>
+                                            <span className="text-[10px] text-muted-foreground uppercase font-mono">Model</span>
+                                            <p className="font-semibold text-foreground">{imageModel || 'GPT-Image-2'}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] text-muted-foreground uppercase font-mono">Method</span>
+                                            <p className="font-semibold text-foreground">{generationMethod}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] text-muted-foreground uppercase font-mono">Reference Images</span>
+                                            <p className="font-semibold text-foreground">{refCount}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] text-muted-foreground uppercase font-mono">Canvas Resolution</span>
+                                            <p className="font-semibold text-foreground">{resolvedResolution}</p>
+                                        </div>
+                                        {durationSeconds && (
+                                            <div>
+                                                <span className="text-[10px] text-muted-foreground uppercase font-mono">Duration</span>
+                                                <p className="font-semibold text-foreground">{durationSeconds}s</p>
+                                            </div>
+                                        )}
+                                        <div>
+                                            <span className="text-[10px] text-muted-foreground uppercase font-mono">Safe Margin</span>
+                                            <p className="font-semibold text-foreground">20% Internal Safe Zone</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
