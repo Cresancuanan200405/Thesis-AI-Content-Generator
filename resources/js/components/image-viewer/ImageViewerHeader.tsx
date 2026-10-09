@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Layers } from 'lucide-react';
+import { X, Layers, RefreshCcw, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +18,8 @@ interface ImageViewerHeaderProps {
     onSurfaceChange: (surface: BackgroundSurface) => void;
     onClose: () => void;
     contextBadge?: string;
+    onRegenerate?: () => void;
+    isRegenerating?: boolean;
 }
 
 export function ImageViewerHeader({
@@ -28,6 +30,8 @@ export function ImageViewerHeader({
     onSurfaceChange,
     onClose,
     contextBadge = 'Product',
+    onRegenerate,
+    isRegenerating = false,
 }: ImageViewerHeaderProps) {
     return (
         <header className="flex h-14 shrink-0 items-center justify-between border-b border-white/10 bg-black/60 px-4 backdrop-blur-md sm:px-6">
@@ -52,6 +56,28 @@ export function ImageViewerHeader({
             </div>
 
             <div className="flex items-center gap-2">
+                {/* Regenerate Action (when supported by context) */}
+                {onRegenerate && (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={onRegenerate}
+                        disabled={isRegenerating}
+                        className="h-8 gap-1.5 rounded-lg px-2.5 text-xs text-white/80 hover:bg-white/15 hover:text-white transition-all disabled:opacity-50"
+                        title="Regenerate this visual"
+                        aria-label="Regenerate selected visual"
+                    >
+                        {isRegenerating ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                        ) : (
+                            <RefreshCcw className="h-3.5 w-3.5 text-primary" />
+                        )}
+                        <span className="hidden sm:inline">
+                            {isRegenerating ? 'Regenerating...' : 'Regenerate Selected'}
+                        </span>
+                    </Button>
+                )}
                 {/* Surface / Backdrop selector for cutout transparency */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>

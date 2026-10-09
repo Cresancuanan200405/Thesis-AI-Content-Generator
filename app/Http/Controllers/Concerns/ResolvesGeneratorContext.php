@@ -161,6 +161,7 @@ trait ResolvesGeneratorContext
                 'tagline' => $draft->tagline,
                 'tagline_mode' => $draft->tagline_mode,
                 'aspect_ratio' => $draft->generation_metadata['aspect_ratio'] ?? null,
+                'render_style' => $draft->generation_metadata['render_style'] ?? null,
                 'status' => $draft->status,
                 'image_url' => $draft->generated_image_path ? Storage::url($draft->generated_image_path) : null,
                 'generated_image_path' => $draft->generated_image_path,

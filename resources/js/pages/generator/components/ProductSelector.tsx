@@ -61,9 +61,9 @@ export function ProductSelector({
     });
 
     return (
-        <div className="space-y-3.5">
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden space-y-3">
             {/* Top Toolbar: Full-Width Evenly Centered Tab Switcher */}
-            <div className="w-full">
+            <div className="w-full shrink-0">
                 <div className="grid grid-cols-2 rounded-card border border-border/80 bg-muted/25 p-1.5 shadow-2xs gap-1.5">
                     <button
                         type="button"
@@ -115,8 +115,8 @@ export function ProductSelector({
 
             {/* TAB 1: PRODUCT CATALOG */}
             {productTab === 'catalog' && (
-                <div className="space-y-3 animate-in duration-200 fade-in">
-                    <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden space-y-3 animate-in duration-200 fade-in">
+                    <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between shrink-0">
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                             <Input
@@ -210,7 +210,7 @@ export function ProductSelector({
                             No catalog items match "{inlineProductSearch}".
                         </div>
                     ) : (
-                        <div className="max-h-[580px] overflow-y-auto pr-1">
+                        <div className="flex-1 min-h-0 overflow-y-auto pr-1">
                             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
                             {displayedCatalog.map((prod: ProductItem) => {
                                 const isSelected = selectedCatalogProducts.some(
@@ -285,8 +285,8 @@ export function ProductSelector({
 
             {/* TAB 2: CUSTOM ITEMS */}
             {productTab === 'custom' && (
-                <div className="space-y-3.5 animate-in duration-200 fade-in">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden space-y-3 animate-in duration-200 fade-in">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between shrink-0">
                         <div>
                             <p className="text-xs font-bold text-foreground">
                                 Custom Products & Services
@@ -320,7 +320,7 @@ export function ProductSelector({
 
                     {/* Custom Items List */}
                     {customProducts.length > 0 ? (
-                        <div className="max-h-[580px] overflow-y-auto pr-1 space-y-2.5">
+                        <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2.5">
                             {customProducts.map((item, index) => (
                                 <div
                                     key={item.id}

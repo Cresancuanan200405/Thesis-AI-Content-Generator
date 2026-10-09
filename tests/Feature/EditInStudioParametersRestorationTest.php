@@ -280,3 +280,39 @@ it('restores custom products alongside catalog products', function () {
             ->where('initial_draft.generation_metadata.custom_products', $customProducts);
     });
 });
+
+it('restores saved non-default render style into automatic studio inertia props', function () {
+    $prod = Product::factory()->create([
+        'business_id' => $this->business->id,
+        'name' => 'Organic Glow Serum',
+        'price' => 75.00,
+    ]);
+
+    $design = Design::factory()->create([
+        'user_id' => $this->user->id,
+        'business_id' => $this->business->id,
+        'campaign_id' => $this->campaign->id,
+        'product_id' => $prod->id,
+        'product_name' => $prod->name,
+        'status' => Design::STATUS_DRAFT,
+        'generation_metadata' => [
+            'generation_mode' => 'automatic',
+            'render_style' => 'Lifestyle Capture',
+            'aspect_ratio' => '4:5',
+        ],
+    ]);
+
+    $response = $this->actingAs($this->user)->get(route('generator.automatic.index', [
+        'campaign_id' => $this->campaign->id,
+        'draft_id' => $design->id,
+        'origin' => 'designs',
+    ]));
+
+    $response->assertOk();
+    $response->assertInertia(function (Assert $page) use ($design) {
+        $page->component('generator/automatic')
+            ->where('initial_draft.id', $design->id)
+            ->where('initial_draft.render_style', 'Lifestyle Capture')
+            ->where('initial_draft.generation_metadata.render_style', 'Lifestyle Capture');
+    });
+});

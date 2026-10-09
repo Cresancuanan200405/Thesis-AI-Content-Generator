@@ -323,46 +323,75 @@ export default function ProductsIndexPage({
                             </Button>
                         </div>
                     ) : viewMode === 'grid' ? (
-                        /* COMPACT GRID VIEW WITH ACTUAL FULL IMAGE */
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                        /* GRID VIEW MATCHING CAMPAIGN & DESIGNS CARD DESIGN */
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 sm:gap-5">
                             {productList.map((product: any) => {
                                 return (
                                     <div
                                         key={product.id}
-                                        onClick={() =>
-                                            handleOpenProductPreview(product)
-                                        }
-                                        role="button"
-                                        tabIndex={0}
-                                        onKeyDown={(e) => {
-                                            if (
-                                                e.key === 'Enter' ||
-                                                e.key === ' '
-                                            ) {
-                                                handleOpenProductPreview(
-                                                    product,
-                                                );
-                                            }
-                                        }}
-                                        className="group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-card border border-border bg-card text-left shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus:ring-2 focus:ring-primary/30 focus:outline-none dark:border-white/[0.08] dark:bg-[#161820]"
+                                        className="group flex flex-col"
                                     >
-                                        {/* Product Image Container (Full Actual Image View) */}
-                                        <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden border-b border-border/50 bg-muted/20 p-1.5">
+                                        {/* Product Image Stage (Full Image View, No Cropping) */}
+                                        <div
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={() =>
+                                                handleOpenProductPreview(product)
+                                            }
+                                            onKeyDown={(e) => {
+                                                if (
+                                                    e.key === 'Enter' ||
+                                                    e.key === ' '
+                                                ) {
+                                                    handleOpenProductPreview(
+                                                        product,
+                                                    );
+                                                }
+                                            }}
+                                            className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl border border-border/70 bg-muted/20 cursor-pointer shadow-2xs transition-all duration-200 hover:border-primary/50 hover:shadow-md focus:outline-hidden"
+                                            title="Click to view product details"
+                                        >
                                             {product.image_url ? (
                                                 <img
                                                     src={product.image_url}
                                                     alt={product.name}
-                                                    className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                                                    className="h-full w-full object-contain transition-transform duration-200 group-hover:scale-[1.01]"
+                                                    loading="lazy"
                                                 />
                                             ) : (
-                                                <div className="flex h-full w-full items-center justify-center bg-muted/30 text-muted-foreground">
-                                                    <Tag className="h-7 w-7 opacity-30" />
+                                                <div className="flex h-full w-full items-center justify-center bg-muted/30 text-muted-foreground/40">
+                                                    <Tag className="h-9 w-9 opacity-30" />
                                                 </div>
                                             )}
+                                        </div>
 
-                                            {/* Top Right Options Menu (Visible ONLY on Hover) */}
+                                        {/* Product Details Header & Action Menu */}
+                                        <div className="mt-2.5 flex items-start justify-between gap-2 px-0.5">
+                                            <div className="min-w-0 flex-1">
+                                                {/* Product Name */}
+                                                <h3
+                                                    className="truncate text-sm font-semibold text-foreground leading-tight"
+                                                    title={product.name}
+                                                >
+                                                    {product.name}
+                                                </h3>
+
+                                                {/* Price */}
+                                                {product.price !== null &&
+                                                    product.price !== undefined &&
+                                                    product.price !== '' && (
+                                                        <p className="mt-1 text-xs font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                                                            ₱
+                                                            {Number(
+                                                                product.price,
+                                                            ).toLocaleString()}
+                                                        </p>
+                                                    )}
+                                            </div>
+
+                                            {/* Options Menu */}
                                             <div
-                                                className="absolute top-1.5 right-1.5 z-20 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                                                className="shrink-0"
                                                 onClick={(e) =>
                                                     e.stopPropagation()
                                                 }
@@ -377,7 +406,7 @@ export default function ProductsIndexPage({
                                                                 e.preventDefault();
                                                                 e.stopPropagation();
                                                             }}
-                                                            className="flex h-6.5 w-6.5 items-center justify-center rounded-md bg-black/60 text-white/90 shadow-xs backdrop-blur-md transition-all hover:bg-black/80 hover:text-white"
+                                                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/50 bg-background/80 text-muted-foreground shadow-2xs backdrop-blur-xs transition-colors hover:border-border hover:bg-muted hover:text-foreground"
                                                             aria-label="Product options"
                                                         >
                                                             <MoreVertical className="h-3.5 w-3.5" />
@@ -454,27 +483,6 @@ export default function ProductsIndexPage({
                                                 </DropdownMenu>
                                             </div>
                                         </div>
-
-                                        {/* Product Details Header */}
-                                        <div className="flex flex-1 flex-col justify-between p-2.5">
-                                            <h3 className="truncate text-xs font-bold text-foreground transition-colors group-hover:text-primary">
-                                                {product.name}
-                                            </h3>
-                                            <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
-                                                <span className="truncate">
-                                                    {product.created_at ||
-                                                        'Catalog Item'}
-                                                </span>
-                                                {product.price && (
-                                                    <span className="font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                                                        ₱
-                                                        {Number(
-                                                            product.price,
-                                                        ).toLocaleString()}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
                                     </div>
                                 );
                             })}
@@ -503,9 +511,9 @@ export default function ProductsIndexPage({
                                         }}
                                         className="group flex cursor-pointer items-center justify-between gap-3 rounded-card border border-border bg-card p-2.5 shadow-2xs transition-all duration-200 hover:border-primary/40 hover:shadow-xs dark:border-white/[0.08] dark:bg-[#161820]"
                                     >
-                                        <div className="flex min-w-0 items-center gap-2.5">
+                                        <div className="flex min-w-0 items-center gap-3">
                                             {/* Thumbnail (Full Image View) */}
-                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted/30 p-0.5">
+                                            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border/70 bg-muted/20 p-1">
                                                 {product.image_url ? (
                                                     <img
                                                         src={product.image_url}
@@ -513,29 +521,25 @@ export default function ProductsIndexPage({
                                                         className="h-full w-full object-contain"
                                                     />
                                                 ) : (
-                                                    <Tag className="h-4 w-4 text-muted-foreground/40" />
+                                                    <Tag className="h-5 w-5 text-muted-foreground/40" />
                                                 )}
                                             </div>
 
-                                            {/* Info */}
+                                            {/* Info: Show ONLY product name and price */}
                                             <div className="min-w-0 space-y-0.5">
-                                                <div className="flex items-center gap-2">
-                                                    <h3 className="truncate text-xs font-bold text-foreground transition-colors group-hover:text-primary">
-                                                        {product.name}
-                                                    </h3>
-                                                    {product.price && (
-                                                        <span className="text-[11px] font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                                                <h3 className="truncate text-xs font-bold text-foreground transition-colors group-hover:text-primary">
+                                                    {product.name}
+                                                </h3>
+                                                {product.price !== null &&
+                                                    product.price !== undefined &&
+                                                    product.price !== '' && (
+                                                        <p className="text-[11px] font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
                                                             ₱
                                                             {Number(
                                                                 product.price,
                                                             ).toLocaleString()}
-                                                        </span>
+                                                        </p>
                                                     )}
-                                                </div>
-                                                <p className="truncate text-[10px] text-muted-foreground">
-                                                    {product.created_at ||
-                                                        'Catalog Item'}
-                                                </p>
                                             </div>
                                         </div>
 

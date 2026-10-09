@@ -1,13 +1,8 @@
 import { Head } from '@inertiajs/react';
 import {
     AlertTriangle,
-    BadgePercent,
-    Building2,
     Loader2,
     ImageIcon,
-    Package,
-    PenTool,
-    SlidersHorizontal,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -15,7 +10,6 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { downloadVisualAsFormat } from '@/lib/download';
 import { useSetBreadcrumbs } from '@/context/breadcrumb-context';
 
@@ -39,6 +33,7 @@ import {
     ImageQuality,
     ProductItem,
     restoreProductsFromDraft,
+    resolveRenderStyleFromDraft,
     DesignSystemExport,
 } from './components/types';
 
@@ -114,6 +109,19 @@ export default function AutomaticGenerator({
         return true;
     });
 
+    // Automatic Studio Generation Settings
+    const [renderStyle, setRenderStyle] = useState<string>(() =>
+        resolveRenderStyleFromDraft(initial_draft),
+    );
+    const [quantity, setQuantity] = useState<number>(1);
+    const [promptVariation, setPromptVariation] = useState<'different' | 'same'>('different');
+    const [taglineVariation, setTaglineVariation] = useState<'same' | 'different'>('same');
+    const [styleVariation, setStyleVariation] = useState<'same' | 'different'>('same');
+    const [generatedDesigns, setGeneratedDesigns] = useState<GeneratedDesign[]>([]);
+    const [selectedDesignIndex, setSelectedDesignIndex] = useState<number>(0);
+    const [isRegeneratingSelected, setIsRegeneratingSelected] = useState(false);
+    const [isRegeneratingAll, setIsRegeneratingAll] = useState(false);
+
     // Autonomous Creative Outputs (Discovered from backend execution)
     const [tagline, setTagline] = useState('');
     const [creativeConcept, setCreativeConcept] = useState('');
@@ -144,9 +152,12 @@ export default function AutomaticGenerator({
     useEffect(() => {
         if (!initial_draft) return;
 
-        const meta = initial_draft.generation_metadata || {};
+        const meta = initial_draft.generation_metadata || initial_draft.generation_meta || {};
         const restoredProducts = restoreProductsFromDraft(initial_draft, products);
         setSelectedCatalogProducts(restoredProducts);
+
+        const restoredRenderStyle = resolveRenderStyleFromDraft(initial_draft);
+        setRenderStyle(restoredRenderStyle);
 
         if (typeof meta.include_tagline === 'boolean') {
             setIncludeTagline(meta.include_tagline);
@@ -208,7 +219,10 @@ export default function AutomaticGenerator({
             aspect_ratio: meta.aspect_ratio || initial_draft.aspect_ratio || '1:1',
             image_model: meta.model || 'gpt-image-2',
             prompt: initial_draft.prompt,
-            generation_meta: meta,
+            generation_meta: {
+                ...meta,
+                render_style: meta.render_style || restoredRenderStyle,
+            },
             status: initial_draft.status,
         });
 
@@ -275,6 +289,7 @@ export default function AutomaticGenerator({
     const canGenerateAutomatic =
         hasProductSelected &&
         Boolean(campaign?.id) &&
+        Boolean(renderStyle && renderStyle.trim().length > 0) &&
         !isQuotaExceeded &&
         generationState !== 'generating';
 
@@ -426,7 +441,11 @@ export default function AutomaticGenerator({
                     tagline: options?.is_variation ? (savedDesign?.tagline || tagline) : (includeTagline && tagline ? tagline : undefined),
                     design_treatment: options?.is_variation ? (savedDesign?.generation_meta?.design_treatment || designTreatment) : undefined,
                     copy_emphasis: options?.is_variation ? (savedDesign?.generation_meta?.copy_emphasis || copyEmphasis) : undefined,
-                    render_style: options?.is_variation ? (savedDesign?.generation_meta?.render_style || undefined) : undefined,
+                    render_style: options?.is_variation ? (savedDesign?.generation_meta?.render_style || renderStyle) : renderStyle,
+                    quantity: options?.is_variation ? 1 : quantity,
+                    prompt_variation: promptVariation,
+                    tagline_variation: taglineVariation,
+                    style_variation: styleVariation,
                     creative_concept: options?.is_variation ? (savedDesign?.generation_meta?.creative_concept || creativeConcept) : undefined,
                     visual_strategy: options?.is_variation ? (savedDesign?.generation_meta?.visual_strategy || visualStrategy) : undefined,
                 }),
@@ -474,34 +493,326 @@ export default function AutomaticGenerator({
             const preview = data.preview || data;
             const productionPrompt = data.visual_prompt || data.prompt || preview.prompt || preview.visual_prompt || '';
             setGeneratedPromptText(productionPrompt);
-            setSavedDesign({
-                id: null,
-                image_url: preview.image_url,
-                generated_image_path: preview.generated_image_path,
-                product_name: preview.product_name || effectiveProductName,
-                tagline: includeTagline ? (preview.tagline || data.tagline || (options?.is_variation ? savedDesign?.tagline : '') || '') : '',
-                aspect_ratio: preview.aspect_ratio || aspectRatio,
-                image_model: preview.image_model || 'gpt-image-2',
-                prompt: productionPrompt,
-                generation_meta: preview.generation_meta || {
-                    prompt: productionPrompt,
-                    creative_concept: data.creative_concept,
-                    visual_strategy: data.visual_strategy,
+
+            const allOutputs: GeneratedDesign[] = (data.previews || data.designs || [preview]).map((pItem: any, pIdx: number) => ({
+                id: pItem.id || pItem.design_id || null,
+                image_url: pItem.image_url,
+                generated_image_path: pItem.generated_image_path,
+                product_name: pItem.product_name || effectiveProductName,
+                tagline: includeTagline ? (pItem.tagline || (pIdx === 0 ? data.tagline : '') || '') : '',
+                aspect_ratio: pItem.aspect_ratio || aspectRatio,
+                image_model: pItem.image_model || 'gpt-image-2',
+                prompt: pItem.prompt || pItem.visual_prompt || productionPrompt,
+                generation_meta: pItem.generation_meta || {
+                    prompt: pItem.prompt || pItem.visual_prompt || productionPrompt,
+                    creative_concept: pItem.creative_concept || data.creative_concept,
+                    visual_strategy: pItem.visual_strategy || data.visual_strategy,
+                    render_style: pItem.render_style || renderStyle,
                     show_event_text: selectedEvent ? showEventText : false,
                 },
-            });
+                status: pItem.status || 'draft',
+            }));
+
+            const validOutputs = allOutputs.filter((pItem) => Boolean(pItem.image_url));
+
+            setGeneratedDesigns(validOutputs);
+            setSelectedDesignIndex(0);
+            setSavedDesign(validOutputs[0] || null);
 
             setIsSavedToDesigns(false);
             setSaveErrorMessage(null);
             setGenerationState('ready');
-            setIsPreviewFullViewOpen(true);
-            toast.success(options?.is_variation ? 'Variation Generated!' : 'Automatic Marketing Visual Generated!');
+            setIsPreviewFullViewOpen(false);
+            if (data.partial) {
+                toast.warning(data.message || 'Some images could not be generated.');
+            } else {
+                toast.success(
+                    options?.is_variation
+                        ? 'Variation Generated!'
+                        : validOutputs.length > 1
+                          ? `Generated ${validOutputs.length} visual creatives automatically!`
+                          : 'Automatic Marketing Visual Generated!'
+                );
+            }
         } catch {
             window.clearInterval(progressTimer);
             setGenerationState('error');
             toast.error('Network error during visual generation.');
         } finally {
             setIsAutoGenerating(false);
+        }
+    };
+
+    // -------------------------------------------------------------------------
+    // REGENERATE SELECTED VISUAL ONLY (PRESERVES OTHER BATCH OUTPUTS)
+    // -------------------------------------------------------------------------
+    const handleRegenerateSelected = async (targetIndex?: number) => {
+        if (isAutoGenerating || isRegeneratingSelected || isRegeneratingAll) return;
+        if (isQuotaExceeded) {
+            toast.error('You have reached your AI budget quota limit.');
+            return;
+        }
+        if (!campaign?.id) {
+            toast.error('A Campaign is required before regenerating a visual.');
+            return;
+        }
+
+        const indexToRegenerate = typeof targetIndex === 'number' ? targetIndex : selectedDesignIndex;
+        const targetDesign = (generatedDesigns && generatedDesigns[indexToRegenerate]) || savedDesign;
+        if (!targetDesign) {
+            toast.error('No visual selected to regenerate.');
+            return;
+        }
+
+        setIsRegeneratingSelected(true);
+        try {
+            const catalogIds = uniqueSelectedCatalogProducts.map((p) => p.id);
+            const customItems = customProducts
+                .filter((p) => p.name.trim())
+                .map((p) => ({ name: p.name, price: p.price || null }));
+
+            const targetMeta = targetDesign.generation_meta || {};
+
+            const response = await fetch('/generator/automatic', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN':
+                        document.querySelector<HTMLMetaElement>(
+                            'meta[name="csrf-token"]',
+                        )?.content || '',
+                },
+                body: JSON.stringify({
+                    campaign_id: campaign.id,
+                    catalog_product_ids: catalogIds,
+                    custom_products: customItems,
+                    include_product_name: typeof targetMeta.include_product_name === 'boolean'
+                        ? targetMeta.include_product_name
+                        : includeProductName,
+                    include_prices: typeof targetMeta.include_prices === 'boolean'
+                        ? targetMeta.include_prices
+                        : includePrices,
+                    include_product_price: typeof targetMeta.include_prices === 'boolean'
+                        ? targetMeta.include_prices
+                        : includePrices,
+                    include_business_name: typeof targetMeta.include_business_name === 'boolean'
+                        ? targetMeta.include_business_name
+                        : includeBusinessName,
+                    include_tagline: typeof targetMeta.include_tagline === 'boolean'
+                        ? targetMeta.include_tagline
+                        : includeTagline,
+                    show_event_text: typeof targetMeta.show_event_text === 'boolean'
+                        ? targetMeta.show_event_text
+                        : (selectedEvent ? showEventText : false),
+                    aspect_ratio: targetDesign.aspect_ratio || targetMeta.aspect_ratio || aspectRatio || '1:1',
+                    image_model: 'gpt-image-2',
+                    image_quality: imageQuality || 'medium',
+                    previous_concepts: previousConcepts,
+                    is_variation: true,
+                    source_design_id: targetDesign.id || null,
+                    tagline: targetDesign.tagline || (includeTagline && tagline ? tagline : undefined),
+                    design_treatment: targetMeta.design_treatment || designTreatment || undefined,
+                    copy_emphasis: targetMeta.copy_emphasis || copyEmphasis || undefined,
+                    render_style: targetMeta.render_style || renderStyle || 'Studio Product Still',
+                    quantity: 1,
+                    creative_concept: targetMeta.creative_concept || creativeConcept || undefined,
+                    visual_strategy: targetMeta.visual_strategy || visualStrategy || undefined,
+                }),
+            });
+
+            const data = await response.json().catch(() => null);
+
+            if (!response.ok || !data?.success) {
+                const errorMsg =
+                    data?.message ||
+                    (data?.errors
+                        ? Object.values(data.errors).flat().join(', ')
+                        : 'Failed to regenerate selected visual');
+                toast.error(errorMsg);
+                return;
+            }
+
+            const preview = data.preview || data;
+            const productionPrompt = data.visual_prompt || data.prompt || preview.prompt || preview.visual_prompt || '';
+
+            const regeneratedDesign: GeneratedDesign = {
+                id: preview.id || preview.design_id || null,
+                image_url: preview.image_url,
+                generated_image_path: preview.generated_image_path,
+                product_name: preview.product_name || targetDesign.product_name || effectiveProductName,
+                tagline: includeTagline ? (preview.tagline || targetDesign.tagline || '') : '',
+                aspect_ratio: preview.aspect_ratio || targetDesign.aspect_ratio || aspectRatio,
+                image_model: preview.image_model || 'gpt-image-2',
+                prompt: preview.prompt || preview.visual_prompt || productionPrompt,
+                generation_meta: preview.generation_meta || {
+                    prompt: preview.prompt || preview.visual_prompt || productionPrompt,
+                    creative_concept: preview.creative_concept || data.creative_concept,
+                    visual_strategy: preview.visual_strategy || data.visual_strategy,
+                    render_style: preview.render_style || targetMeta.render_style || renderStyle,
+                    show_event_text: selectedEvent ? showEventText : false,
+                },
+                status: preview.status || 'draft',
+            };
+
+            setGeneratedDesigns((prev) => {
+                if (prev.length === 0) {
+                    return [regeneratedDesign];
+                }
+                const updated = [...prev];
+                if (indexToRegenerate >= 0 && indexToRegenerate < updated.length) {
+                    updated[indexToRegenerate] = regeneratedDesign;
+                } else {
+                    updated[0] = regeneratedDesign;
+                }
+                return updated;
+            });
+
+            setSavedDesign(regeneratedDesign);
+            setIsSavedToDesigns(false);
+            setSaveErrorMessage(null);
+            toast.success('Visual variation regenerated!');
+        } catch {
+            toast.error('Network error regenerating visual.');
+        } finally {
+            setIsRegeneratingSelected(false);
+        }
+    };
+
+    // -------------------------------------------------------------------------
+    // REGENERATE ENTIRE BATCH (RETAINS BATCH QUANTITY & VARIATION RULES)
+    // -------------------------------------------------------------------------
+    const handleRegenerateAll = async () => {
+        if (isAutoGenerating || isRegeneratingSelected || isRegeneratingAll) return;
+        if (isQuotaExceeded) {
+            toast.error('You have reached your AI budget quota limit.');
+            return;
+        }
+        if (!campaign?.id) {
+            toast.error('A Campaign is required before generating automatic marketing visuals.');
+            return;
+        }
+
+        const batchQuantity = Math.max(1, generatedDesigns.length > 0 ? generatedDesigns.length : quantity);
+
+        setIsRegeneratingAll(true);
+        try {
+            const catalogIds = uniqueSelectedCatalogProducts.map((p) => p.id);
+            const customItems = customProducts
+                .filter((p) => p.name.trim())
+                .map((p) => ({ name: p.name, price: p.price || null }));
+
+            const response = await fetch('/generator/automatic', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN':
+                        document.querySelector<HTMLMetaElement>(
+                            'meta[name="csrf-token"]',
+                        )?.content || '',
+                },
+                body: JSON.stringify({
+                    campaign_id: campaign.id,
+                    catalog_product_ids: catalogIds,
+                    custom_products: customItems,
+                    include_product_name: includeProductName,
+                    include_prices: includePrices,
+                    include_product_price: includePrices,
+                    include_business_name: includeBusinessName,
+                    include_tagline: includeTagline,
+                    show_event_text: selectedEvent ? showEventText : false,
+                    aspect_ratio: aspectRatio || '1:1',
+                    image_model: 'gpt-image-2',
+                    image_quality: imageQuality || 'medium',
+                    previous_concepts: previousConcepts,
+                    is_variation: true,
+                    render_style: renderStyle,
+                    quantity: batchQuantity,
+                    prompt_variation: promptVariation,
+                    tagline_variation: taglineVariation,
+                    style_variation: styleVariation,
+                    design_treatment: designTreatment || undefined,
+                    copy_emphasis: copyEmphasis || undefined,
+                    tagline: includeTagline && tagline ? tagline : undefined,
+                    creative_concept: creativeConcept || undefined,
+                    visual_strategy: visualStrategy || undefined,
+                }),
+            });
+
+            const data = await response.json().catch(() => null);
+
+            if (!response.ok || !data?.success) {
+                const errorMsg =
+                    data?.message ||
+                    (data?.errors
+                        ? Object.values(data.errors).flat().join(', ')
+                        : 'Failed to regenerate visual batch');
+                toast.error(errorMsg);
+                return;
+            }
+
+            if (data.creative_concept) {
+                setCreativeConcept(data.creative_concept);
+                setPreviousConcepts((prev) => [...prev, data.creative_concept]);
+            }
+            if (data.visual_strategy) {
+                setVisualStrategy(data.visual_strategy);
+            }
+            if (data.design_treatment || data.preview?.design_treatment) {
+                setDesignTreatment(data.design_treatment || data.preview?.design_treatment);
+            }
+            if (data.copy_emphasis || data.preview?.copy_emphasis) {
+                setCopyEmphasis(data.copy_emphasis || data.preview?.copy_emphasis);
+            }
+
+            const preview = data.preview || data;
+            const productionPrompt = data.visual_prompt || data.prompt || preview.prompt || preview.visual_prompt || '';
+
+            const allOutputs: GeneratedDesign[] = (data.previews || data.designs || [preview]).map((pItem: any, pIdx: number) => ({
+                id: pItem.id || pItem.design_id || null,
+                image_url: pItem.image_url,
+                generated_image_path: pItem.generated_image_path,
+                product_name: pItem.product_name || effectiveProductName,
+                tagline: includeTagline ? (pItem.tagline || (pIdx === 0 ? data.tagline : '') || '') : '',
+                aspect_ratio: pItem.aspect_ratio || aspectRatio,
+                image_model: pItem.image_model || 'gpt-image-2',
+                prompt: pItem.prompt || pItem.visual_prompt || productionPrompt,
+                generation_meta: pItem.generation_meta || {
+                    prompt: pItem.prompt || pItem.visual_prompt || productionPrompt,
+                    creative_concept: pItem.creative_concept || data.creative_concept,
+                    visual_strategy: pItem.visual_strategy || data.visual_strategy,
+                    render_style: pItem.render_style || renderStyle,
+                    show_event_text: selectedEvent ? showEventText : false,
+                },
+                status: pItem.status || 'draft',
+            }));
+
+            const validOutputs = allOutputs.filter((pItem) => Boolean(pItem.image_url));
+
+            if (validOutputs.length > 0) {
+                setGeneratedDesigns(validOutputs);
+                setSelectedDesignIndex(0);
+                setSavedDesign(validOutputs[0] || null);
+                setIsSavedToDesigns(false);
+                setSaveErrorMessage(null);
+            }
+
+            if (data.partial) {
+                toast.warning(data.message || 'Some images could not be generated.');
+            } else {
+                toast.success(
+                    validOutputs.length > 1
+                        ? `Regenerated ${validOutputs.length} visual creatives automatically!`
+                        : 'Visual Creative Regenerated!'
+                );
+            }
+        } catch {
+            toast.error('Network error regenerating visual batch.');
+        } finally {
+            setIsRegeneratingAll(false);
         }
     };
 
@@ -774,26 +1085,30 @@ export default function AutomaticGenerator({
             <Head title="Automatic Generation — AI Marketing Studio" />
 
             <div
-                className={`flex w-full min-w-0 max-w-full bg-background text-foreground ${generationState === 'generating'
-                        ? 'h-[calc(100vh-2.75rem)] overflow-hidden sm:h-[calc(100vh-3rem)]'
-                        : 'min-h-[calc(100vh-2.75rem)] sm:min-h-[calc(100vh-3rem)]'
+                className={`flex w-full min-w-0 max-w-full bg-background text-foreground ${generationState === 'ready'
+                        ? 'min-h-[calc(100vh-2.75rem)] sm:min-h-[calc(100vh-3rem)]'
+                        : 'h-[calc(100vh-2.75rem)] overflow-hidden sm:h-[calc(100vh-3rem)]'
                     }`}
             >
                 {/* MAIN STUDIO WORKSPACE */}
                 <div
                     className={`min-w-0 flex-1 ${generationState === 'generating'
-                            ? 'flex h-full max-h-full flex-col items-center justify-center overflow-hidden p-2 sm:p-4'
-                            : 'space-y-3.5 p-3 sm:p-4 lg:p-5'
+                            ? 'flex h-full max-h-full flex-col overflow-hidden p-2 sm:p-3 lg:p-4'
+                            : generationState === 'ready'
+                            ? 'space-y-3.5 p-3 sm:p-4 lg:p-5'
+                            : 'flex h-full max-h-full flex-col overflow-hidden p-3 sm:p-4 lg:p-4'
                         }`}
                 >
                     {/* Header */}
                     {generationState !== 'ready' && (
-                        <StudioHeader
-                            activeMode="automatic"
-                            activeCampaign={campaign}
-                            campaigns={campaigns}
-                            generationState={generationState}
-                        />
+                        <div className="shrink-0 w-full mb-2 sm:mb-3">
+                            <StudioHeader
+                                activeMode="automatic"
+                                activeCampaign={campaign}
+                                campaigns={campaigns}
+                                generationState={generationState}
+                            />
+                        </div>
                     )}
 
                     {/* GENERATION STATE SWITCHING */}
@@ -802,6 +1117,7 @@ export default function AutomaticGenerator({
                             business={business}
                             activeIndustry={business?.industry || 'Commercial'}
                             productName={effectiveProductName}
+                            productImageUrl={uniqueSelectedCatalogProducts[0]?.image_url}
                             renderStyle="Automatic (AI Creative Director)"
                             activeCampaign={campaign}
                             selectedEvent={selectedEvent}
@@ -839,7 +1155,12 @@ export default function AutomaticGenerator({
                             campaignId={campaign?.id}
                             campaignName={campaign?.name}
                             onEditParameters={() => setGenerationState('idle')}
-                            onRegenerate={() => handleGenerateAutomatic({ is_variation: true })}
+                            onRegenerate={() => handleRegenerateSelected(selectedDesignIndex)}
+                            onRegenerateSelected={(idx) => handleRegenerateSelected(typeof idx === 'number' ? idx : selectedDesignIndex)}
+                            onRegenerateAll={handleRegenerateAll}
+                            isRegeneratingSelected={isRegeneratingSelected}
+                            isRegeneratingAll={isRegeneratingAll}
+                            isRegenerating={isAutoGenerating || isRegeneratingSelected || isRegeneratingAll}
                             creativeConcept={creativeConcept}
                             visualStrategy={visualStrategy}
                             designTreatment={designTreatment}
@@ -850,7 +1171,7 @@ export default function AutomaticGenerator({
                             mode="automatic"
                             catalogProducts={uniqueSelectedCatalogProducts}
                             customProducts={customProducts}
-                            renderStyle={savedDesign?.generation_meta?.render_style}
+                            renderStyle={savedDesign?.generation_meta?.render_style || renderStyle}
                             visualTheme={savedDesign?.generation_meta?.visual_theme}
                             brandTone={savedDesign?.generation_meta?.brand_tone}
                             includeProductName={includeProductName}
@@ -858,13 +1179,24 @@ export default function AutomaticGenerator({
                             includeBusinessName={includeBusinessName}
                             businessName={business?.name}
                             includeTagline={includeTagline}
+                            generatedDesigns={generatedDesigns}
+                            selectedDesignIndex={selectedDesignIndex}
+                            onSelectDesignIndex={(idx) => {
+                                setSelectedDesignIndex(idx);
+                                if (generatedDesigns[idx]) {
+                                    setSavedDesign(generatedDesigns[idx]);
+                                    if (generatedDesigns[idx].tagline) {
+                                        setTagline(generatedDesigns[idx].tagline || '');
+                                    }
+                                }
+                            }}
                         />
                     ) : (
                         /* AUTONOMOUS CREATIVE STUDIO FORM */
-                        <div className="space-y-3">
+                        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                             {/* Quota Banner */}
                             {isQuotaExceeded && (
-                                <div className="mb-3 flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive shadow-xs">
+                                <div className="shrink-0 mb-3 flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive shadow-xs">
                                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
                                     <div className="flex-1 space-y-1">
                                         <div className="flex items-center justify-between gap-2">
@@ -883,9 +1215,11 @@ export default function AutomaticGenerator({
                                         </p>
                                     </div>
                                 </div>
-                            )}                            {/* Main Autonomous Studio Card */}
-                            <Card className="overflow-hidden rounded-card border-border bg-card shadow-sm gap-0 py-0">
-                                <CardHeader className="border-b bg-muted/10 px-4 py-3 sm:px-5">
+                            )}
+
+                            {/* Main Autonomous Studio Card */}
+                            <Card className="flex-1 min-h-0 flex flex-col overflow-hidden rounded-card border-border bg-card shadow-sm gap-0 py-0">
+                                <CardHeader className="shrink-0 border-b bg-muted/10 px-4 py-3 sm:px-5">
                                     <div>
                                         <h2 className="text-sm font-bold tracking-tight text-foreground">
                                             Autonomous Creative Studio
@@ -896,252 +1230,34 @@ export default function AutomaticGenerator({
                                     </div>
                                 </CardHeader>
 
-                                <CardContent className="space-y-4 p-3 sm:p-4">
+                                <CardContent className="flex-1 min-h-0 flex flex-col overflow-hidden p-3 sm:p-4 gap-0">
                                     {/* Product Selection Section */}
-                                    <ProductSelector
-                                        products={products}
-                                        selectedCatalogProducts={uniqueSelectedCatalogProducts}
-                                        onToggleCatalogProduct={handleToggleCatalogProduct}
-                                        customProducts={customProducts}
-                                        onAddCustomProduct={handleAddCustomProduct}
-                                        onUpdateCustomProduct={handleUpdateCustomProduct}
-                                        onRemoveCustomProduct={handleRemoveCustomProduct}
-                                        productTab={productTab}
-                                        onSelectTab={setProductTab}
-                                        inlineProductSearch={inlineProductSearch}
-                                        onSearchChange={setInlineProductSearch}
-                                        onOpenBrowseModal={() => setIsProductModalOpen(true)}
-                                        onClearAllSelections={handleClearAllProducts}
-                                    />
-
-                                    {/* COPY / IMAGE CONTENT */}
-                                    <div className="space-y-2 rounded-xl border border-border/80 bg-card/60 p-3.5 shadow-xs">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <SlidersHorizontal className="h-4 w-4 text-primary" />
-                                                <div>
-                                                    <span className="text-xs font-bold text-foreground">
-                                                        Copy / Image Content
-                                                    </span>
-                                                    <p className="text-[10px] text-muted-foreground">
-                                                        Specify which commercial content elements appear in the artwork.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid gap-2 grid-cols-2 sm:grid-cols-4 pt-1">
-                                            {/* 1. Include Product Name */}
-                                            <div
-                                                role="button"
-                                                tabIndex={0}
-                                                onClick={() => setIncludeProductName(!includeProductName)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === ' ' || e.key === 'Enter') setIncludeProductName(!includeProductName);
-                                                }}
-                                                className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
-                                                    includeProductName
-                                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
-                                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
-                                                }`}
-                                            >
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-1.5 min-w-0">
-                                                            <Package className="h-3.5 w-3.5 text-primary shrink-0" />
-                                                            <span className="text-xs font-bold truncate text-foreground">
-                                                                Product Name
-                                                            </span>
-                                                        </div>
-                                                        <Checkbox
-                                                            checked={includeProductName}
-                                                            onCheckedChange={(c) => setIncludeProductName(Boolean(c))}
-                                                            className="h-3.5 w-3.5 pointer-events-none rounded data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white shrink-0"
-                                                        />
-                                                    </div>
-                                                    <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
-                                                        Render product name typography.
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {/* 2. Include Product Price */}
-                                            <div
-                                                role="button"
-                                                tabIndex={0}
-                                                onClick={() => setIncludePrices(!includePrices)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === ' ' || e.key === 'Enter') setIncludePrices(!includePrices);
-                                                }}
-                                                className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
-                                                    includePrices
-                                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
-                                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
-                                                }`}
-                                            >
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-1.5 min-w-0">
-                                                            <BadgePercent className="h-3.5 w-3.5 text-primary shrink-0" />
-                                                            <span className="text-xs font-bold truncate text-foreground">
-                                                                Product Price
-                                                            </span>
-                                                        </div>
-                                                        <Checkbox
-                                                            checked={includePrices}
-                                                            onCheckedChange={(c) => setIncludePrices(Boolean(c))}
-                                                            className="h-3.5 w-3.5 pointer-events-none rounded data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white shrink-0"
-                                                        />
-                                                    </div>
-                                                    <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
-                                                        Render exact catalog pricing.
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {/* 3. Include Business Name */}
-                                            <div
-                                                role="button"
-                                                tabIndex={0}
-                                                onClick={() => {
-                                                    const nextVal = !includeBusinessName;
-                                                    setIncludeBusinessName(nextVal);
-                                                    if (typeof window !== 'undefined') {
-                                                        localStorage.setItem('ai_studio_include_business_name', String(nextVal));
-                                                    }
-                                                }}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === ' ' || e.key === 'Enter') {
-                                                        const nextVal = !includeBusinessName;
-                                                        setIncludeBusinessName(nextVal);
-                                                        if (typeof window !== 'undefined') {
-                                                            localStorage.setItem('ai_studio_include_business_name', String(nextVal));
-                                                        }
-                                                    }
-                                                }}
-                                                className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
-                                                    includeBusinessName
-                                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
-                                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
-                                                }`}
-                                            >
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-1.5 min-w-0">
-                                                            <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
-                                                            <span className="text-xs font-bold truncate text-foreground">
-                                                                Business Name
-                                                            </span>
-                                                        </div>
-                                                        <Checkbox
-                                                            checked={includeBusinessName}
-                                                            onCheckedChange={(c) => {
-                                                                const nextVal = Boolean(c);
-                                                                setIncludeBusinessName(nextVal);
-                                                                if (typeof window !== 'undefined') {
-                                                                    localStorage.setItem('ai_studio_include_business_name', String(nextVal));
-                                                                }
-                                                            }}
-                                                            className="h-3.5 w-3.5 pointer-events-none rounded data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white shrink-0"
-                                                        />
-                                                    </div>
-                                                    <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
-                                                        Render registered brand/shop name.
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {/* 4. Include Tagline */}
-                                            <div
-                                                role="button"
-                                                tabIndex={0}
-                                                onClick={() => setIncludeTagline(!includeTagline)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === ' ' || e.key === 'Enter') setIncludeTagline(!includeTagline);
-                                                }}
-                                                className={`rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
-                                                    includeTagline
-                                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
-                                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
-                                                }`}
-                                            >
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-1.5 min-w-0">
-                                                            <PenTool className="h-3.5 w-3.5 text-primary shrink-0" />
-                                                            <span className="text-xs font-bold truncate text-foreground">
-                                                                Tagline
-                                                            </span>
-                                                        </div>
-                                                        <Checkbox
-                                                            checked={includeTagline}
-                                                            onCheckedChange={(c) => setIncludeTagline(Boolean(c))}
-                                                            className="h-3.5 w-3.5 pointer-events-none rounded data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white shrink-0"
-                                                        />
-                                                    </div>
-                                                    <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
-                                                        Render headline / campaign tagline.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Quick Settings Indicator Bar without Pill Badges */}
-                                    <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-border/70 bg-muted/20 p-2.5 sm:px-3.5">
-                                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs">
-                                            <span className="font-semibold text-muted-foreground">
-                                                Studio Settings:
-                                            </span>
-                                            <span className="text-muted-foreground">
-                                                Aspect: <span className="font-semibold text-foreground">{aspectRatio}</span>
-                                            </span>
-                                            <span className="text-border">•</span>
-                                            <span className="text-muted-foreground">
-                                                Product: <span className={includeProductName ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}>{includeProductName ? 'On' : 'Off'}</span>
-                                            </span>
-                                            <span className="text-border">•</span>
-                                            <span className="text-muted-foreground">
-                                                Price: <span className={includePrices ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}>{includePrices ? 'On' : 'Off'}</span>
-                                            </span>
-                                            <span className="text-border">•</span>
-                                            <span className="text-muted-foreground">
-                                                Brand: <span className={includeBusinessName ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}>{includeBusinessName ? 'On' : 'Off'}</span>
-                                            </span>
-                                            <span className="text-border">•</span>
-                                            <span className="text-muted-foreground">
-                                                Tagline: <span className={includeTagline ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}>{includeTagline ? 'On' : 'Off'}</span>
-                                            </span>
-                                            {selectedEvent && (
-                                                <>
-                                                    <span className="text-border">•</span>
-                                                    <span className="text-muted-foreground">
-                                                        Event Text: <span className={showEventText ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}>{showEventText ? 'On' : 'Off'}</span>
-                                                    </span>
-                                                </>
-                                            )}
-                                        </div>
+                                    <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                                        <ProductSelector
+                                            products={products}
+                                            selectedCatalogProducts={uniqueSelectedCatalogProducts}
+                                            onToggleCatalogProduct={handleToggleCatalogProduct}
+                                            customProducts={customProducts}
+                                            onAddCustomProduct={handleAddCustomProduct}
+                                            onUpdateCustomProduct={handleUpdateCustomProduct}
+                                            onRemoveCustomProduct={handleRemoveCustomProduct}
+                                            productTab={productTab}
+                                            onSelectTab={setProductTab}
+                                            inlineProductSearch={inlineProductSearch}
+                                            onSearchChange={setInlineProductSearch}
+                                            onOpenBrowseModal={() => setIsProductModalOpen(true)}
+                                            onClearAllSelections={handleClearAllProducts}
+                                        />
                                     </div>
 
                                     {/* Action Bar */}
-                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 border-t border-border/70 pt-3">
+                                    <div className="shrink-0 flex items-center justify-end border-t border-border/70 pt-3 mt-3">
                                         <Button
                                             type="button"
-                                            variant="outline"
                                             size="lg"
                                             onClick={() => setIsSettingsModalOpen(true)}
-                                            className="gap-2 text-xs font-semibold cursor-pointer h-10 px-4 rounded-xl border-border bg-background shadow-xs hover:bg-muted/60"
-                                        >
-                                            <SlidersHorizontal className="h-4 w-4 text-primary" />
-                                            <span>Studio Settings</span>
-                                        </Button>
-
-                                        <Button
-                                            type="button"
-                                            size="lg"
-                                            onClick={() => handleGenerateAutomatic()}
                                             disabled={!canGenerateAutomatic || isAutoGenerating}
-                                            className={`min-w-[220px] gap-2 text-xs font-bold shadow-md cursor-pointer rounded-xl h-10 ${
+                                            className={`min-w-[240px] gap-2 text-xs font-bold shadow-md cursor-pointer rounded-xl h-10 ${
                                                 isQuotaExceeded
                                                     ? 'border border-destructive/30 bg-destructive/15 text-destructive hover:bg-destructive/20'
                                                     : 'bg-primary text-primary-foreground hover:bg-primary/90'
@@ -1206,6 +1322,16 @@ export default function AutomaticGenerator({
             <AutomaticSettingsModal
                 isOpen={isSettingsModalOpen}
                 onOpenChange={setIsSettingsModalOpen}
+                renderStyle={renderStyle}
+                onRenderStyleChange={setRenderStyle}
+                quantity={quantity}
+                onQuantityChange={setQuantity}
+                promptVariation={promptVariation}
+                onPromptVariationChange={setPromptVariation}
+                taglineVariation={taglineVariation}
+                onTaglineVariationChange={setTaglineVariation}
+                styleVariation={styleVariation}
+                onStyleVariationChange={setStyleVariation}
                 aspectRatio={aspectRatio}
                 onAspectRatioChange={setAspectRatio}
                 includeProductName={includeProductName}
@@ -1223,6 +1349,12 @@ export default function AutomaticGenerator({
                     localStorage.setItem('ai_studio_include_business_name', String(val));
                 }}
                 businessName={business?.name}
+                onGenerate={() => {
+                    setIsSettingsModalOpen(false);
+                    handleGenerateAutomatic();
+                }}
+                isGenerating={isAutoGenerating}
+                canGenerate={canGenerateAutomatic}
             />
 
             <CatalogBrowserModal
@@ -1242,6 +1374,17 @@ export default function AutomaticGenerator({
                 campaignName={campaign?.name}
                 eventName={selectedEvent?.name}
                 savedDesign={savedDesign}
+                generatedDesigns={generatedDesigns}
+                selectedIndex={selectedDesignIndex}
+                onSelectIndex={(idx) => {
+                    setSelectedDesignIndex(idx);
+                    if (generatedDesigns[idx]) {
+                        setSavedDesign(generatedDesigns[idx]);
+                        if (generatedDesigns[idx].tagline) {
+                            setTagline(generatedDesigns[idx].tagline || '');
+                        }
+                    }
+                }}
                 isSavedToDesigns={isSavedToDesigns}
                 isSavingDesign={isSavingDesign}
                 onSaveToDesigns={handleSaveToDesigns}
@@ -1250,9 +1393,13 @@ export default function AutomaticGenerator({
                 onSaveAsDraft={handleSaveAsDraft}
                 onDownload={handleDownload}
                 onRegenerate={() => {
-                    setIsPreviewFullViewOpen(false);
-                    handleGenerateAutomatic({ is_variation: true });
+                    handleRegenerateSelected(selectedDesignIndex);
                 }}
+                onRegenerateSelected={(idx) => {
+                    handleRegenerateSelected(typeof idx === 'number' ? idx : selectedDesignIndex);
+                }}
+                isRegenerating={isRegeneratingSelected}
+                isRegeneratingSelected={isRegeneratingSelected}
                 onEditCreative={() => {
                     setIsPreviewFullViewOpen(false);
                     setGenerationState('idle');

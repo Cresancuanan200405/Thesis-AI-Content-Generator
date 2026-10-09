@@ -61,6 +61,7 @@ import {
 } from '@/components/ui/select';
 import { useSidebar } from '@/components/ui/sidebar';
 import { downloadVisualAsFormat } from '@/lib/download';
+import { getAspectRatioClass } from '@/pages/campaigns/components/show/CampaignDesignCard';
 
 const regenerationStatusPhrases = [
     'Analyzing creative parameters & scene...',
@@ -1108,36 +1109,27 @@ export default function DesignsPage({
                             ================================================== */}
 
                             {viewMode === 'grid' ? (
-                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                                <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 sm:gap-5">
                                     {designList.map((design: any) => {
                                         const isSelected = selectedIds.includes(
                                             design.id,
+                                        );
+                                        const aspectClass = getAspectRatioClass(
+                                            design.aspect_ratio,
                                         );
 
                                         return (
                                             <div
                                                 key={design.id}
-                                                onClick={() => {
-                                                    if (
-                                                        selectedIds.length > 0
-                                                    ) {
-                                                        toggleSelectDesign(
-                                                            design.id,
-                                                        );
-                                                    } else {
-                                                        openPreview(design);
-                                                    }
-                                                }}
-                                                role="button"
-                                                tabIndex={0}
-                                                onKeyDown={(e) => {
-                                                    if (
-                                                        e.key === 'Enter' ||
-                                                        e.key === ' '
-                                                    ) {
+                                                className="group flex flex-col"
+                                            >
+                                                {/* Visual Creative Stage: Preserves true aspect ratio, avoids forced cropping */}
+                                                <div
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={() => {
                                                         if (
-                                                            selectedIds.length >
-                                                            0
+                                                            selectedIds.length > 0
                                                         ) {
                                                             toggleSelectDesign(
                                                                 design.id,
@@ -1145,16 +1137,31 @@ export default function DesignsPage({
                                                         } else {
                                                             openPreview(design);
                                                         }
-                                                    }
-                                                }}
-                                                className={`group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-card border bg-card text-left shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:ring-2 focus:ring-primary/30 focus:outline-none dark:border-white/[0.08] dark:bg-[#161820] ${
-                                                    isSelected
-                                                        ? 'border-primary ring-2 ring-primary/40'
-                                                        : 'border-border hover:border-primary/40'
-                                                }`}
-                                            >
-                                                {/* Image Container */}
-                                                <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden border-b border-border/50 bg-muted/20 p-1.5">
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (
+                                                            e.key === 'Enter' ||
+                                                            e.key === ' '
+                                                        ) {
+                                                            if (
+                                                                selectedIds.length >
+                                                                0
+                                                            ) {
+                                                                toggleSelectDesign(
+                                                                    design.id,
+                                                                );
+                                                            } else {
+                                                                openPreview(design);
+                                                            }
+                                                        }
+                                                    }}
+                                                    className={`relative w-full ${aspectClass} overflow-hidden rounded-2xl border bg-muted/20 cursor-pointer shadow-2xs transition-all duration-200 hover:border-primary/50 hover:shadow-md focus:outline-hidden flex items-center justify-center ${
+                                                        isSelected
+                                                            ? 'border-primary ring-2 ring-primary/40'
+                                                            : 'border-border/70 hover:border-primary/50'
+                                                    }`}
+                                                    title="Click to open image viewer"
+                                                >
                                                     {design.image_url ? (
                                                         <img
                                                             src={
@@ -1164,22 +1171,23 @@ export default function DesignsPage({
                                                                 design.product_name ||
                                                                 'Marketing design'
                                                             }
-                                                            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                                                            className="h-full w-full object-contain transition-transform duration-200 group-hover:scale-[1.01]"
+                                                            loading="lazy"
                                                         />
                                                     ) : (
-                                                        <div className="flex h-full w-full items-center justify-center bg-muted/30 text-muted-foreground">
-                                                            <ImageIcon className="h-7 w-7 opacity-30" />
+                                                        <div className="flex h-full w-full items-center justify-center text-muted-foreground/40">
+                                                            <ImageIcon className="h-10 w-10 stroke-1" />
                                                         </div>
                                                     )}
 
                                                     {/* SELECTED CHECKMARK BADGE (SHOWN ONLY WHEN SELECTED) */}
                                                     {isSelected && (
-                                                        <div className="absolute top-1.5 left-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md">
-                                                            <Check className="h-3 w-3 stroke-[3]" />
+                                                        <div className="absolute top-2 left-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md">
+                                                            <Check className="h-3.5 w-3.5 stroke-[3]" />
                                                         </div>
                                                     )}
 
-                                                    {/* TOP RIGHT: HEART FAVORITE (ONLY ON HOVER) */}
+                                                    {/* TOP RIGHT: HEART FAVORITE (ONLY ON HOVER OR WHEN FAVORITED) */}
                                                     <button
                                                         type="button"
                                                         onClick={(e) => {
@@ -1196,12 +1204,12 @@ export default function DesignsPage({
                                                                 ? 'Remove from favorites'
                                                                 : 'Add to favorites'
                                                         }
-                                                        className={`absolute top-1.5 right-1.5 z-20 flex h-6.5 w-6.5 cursor-pointer items-center justify-center rounded-md opacity-0 shadow-xs backdrop-blur-md transition-opacity duration-200 group-hover:opacity-100 hover:scale-110 ${
+                                                        className={`absolute top-2 right-2 z-20 flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg shadow-xs backdrop-blur-md transition-all duration-200 hover:scale-110 ${
                                                             isDesignFavorite(
                                                                 design,
                                                             )
-                                                                ? 'bg-white/90 text-rose-500 hover:bg-white dark:bg-card/90'
-                                                                : 'bg-black/40 text-white/90 hover:bg-black/60 hover:text-rose-400'
+                                                                ? 'bg-white/90 text-rose-500 opacity-100 dark:bg-card/90'
+                                                                : 'bg-black/40 text-white/90 opacity-0 group-hover:opacity-100 hover:bg-black/60 hover:text-rose-400'
                                                         }`}
                                                     >
                                                         <Heart
@@ -1216,28 +1224,56 @@ export default function DesignsPage({
                                                     </button>
                                                 </div>
 
-                                                {/* Card Content */}
-                                                <div className="flex flex-1 flex-col justify-between space-y-1.5 p-2.5">
-                                                    <div>
-                                                        <p className="truncate text-xs font-bold text-foreground transition-colors group-hover:text-primary">
+                                                {/* Design Metadata & Action Menu */}
+                                                <div className="mt-2.5 flex items-start justify-between gap-2 px-0.5">
+                                                    <div className="min-w-0 flex-1">
+                                                        {/* Product Name */}
+                                                        <p
+                                                            className="truncate text-sm font-semibold text-foreground leading-tight"
+                                                            title={
+                                                                design.product_name ||
+                                                                'Untitled design'
+                                                            }
+                                                        >
                                                             {design.product_name ||
                                                                 'Untitled design'}
                                                         </p>
+
+                                                        {/* Campaign Where Located */}
+                                                        <p className="mt-1 truncate text-xs text-muted-foreground font-medium">
+                                                            {design.campaign_name ? (
+                                                                <span
+                                                                    className="text-foreground/85 font-medium hover:text-primary transition-colors cursor-pointer"
+                                                                    title={`Campaign: ${design.campaign_name}`}
+                                                                    onClick={(e) => {
+                                                                        if (design.campaign_id) {
+                                                                            e.stopPropagation();
+                                                                            router.visit(`/campaigns/${design.campaign_id}`);
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    {design.campaign_name}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-muted-foreground/50 italic">
+                                                                    No campaign
+                                                                </span>
+                                                            )}
+                                                        </p>
+
+                                                        {/* Date Created */}
+                                                        <p className="mt-0.5 truncate text-[11px] text-muted-foreground/75">
+                                                            {design.created_at}
+                                                        </p>
                                                     </div>
 
-                                                    {/* Card Footer */}
-                                                    <div className="flex items-center justify-between border-t border-border/50 pt-1.5 text-[10px]">
-                                                        <span className="truncate text-muted-foreground">
-                                                            {design.created_at}
-                                                        </span>
-
-                                                        <div
-                                                            className="flex shrink-0 items-center gap-1"
-                                                            onClick={(e) =>
-                                                                e.stopPropagation()
-                                                            }
-                                                        >
-                                                            <DropdownMenu>
+                                                    <div
+                                                        className="flex shrink-0 items-center"
+                                                        onClick={(e) =>
+                                                            e.stopPropagation()
+                                                        }
+                                                    >
+                                                        <DropdownMenu>
                                                                 <DropdownMenuTrigger
                                                                     asChild
                                                                 >
@@ -1471,7 +1507,6 @@ export default function DesignsPage({
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
                                         );
                                     })}
                                 </div>
@@ -1523,7 +1558,7 @@ export default function DesignsPage({
                                                 }`}
                                             >
                                                 {/* Thumbnail with selection check */}
-                                                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-muted">
+                                                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-border/50 bg-muted/20 flex items-center justify-center">
                                                     {design.image_url ? (
                                                         <img
                                                             src={
@@ -1533,7 +1568,7 @@ export default function DesignsPage({
                                                                 design.product_name ||
                                                                 'Design'
                                                             }
-                                                            className="h-full w-full object-cover"
+                                                            className="h-full w-full object-contain"
                                                         />
                                                     ) : (
                                                         <div className="flex h-full w-full items-center justify-center text-muted-foreground">
@@ -1552,12 +1587,21 @@ export default function DesignsPage({
 
                                                 {/* Info */}
                                                 <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <p className="truncate text-sm font-semibold text-foreground transition-colors group-hover:text-primary">
-                                                            {design.product_name ||
-                                                                'Untitled design'}
-                                                        </p>
-                                                    </div>
+                                                    <p className="truncate text-sm font-semibold text-foreground transition-colors group-hover:text-primary">
+                                                        {design.product_name ||
+                                                            'Untitled design'}
+                                                    </p>
+                                                    <p className="mt-0.5 truncate text-xs text-muted-foreground font-medium">
+                                                        {design.campaign_name ? (
+                                                            <span className="text-foreground/80 font-medium">
+                                                                {design.campaign_name}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-muted-foreground/50 italic">
+                                                                No campaign
+                                                            </span>
+                                                        )}
+                                                    </p>
                                                 </div>
 
                                                 {/* Date */}

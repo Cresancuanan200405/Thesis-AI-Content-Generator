@@ -906,42 +906,15 @@ export default function CampaignsPage({
                     {/* =====================================================
                         CAMPAIGNS TOOLBOX (MATCHING SYSTEM TOOLBAR)
                     ====================================================== */}
-                    <div className="sticky top-11 z-30 mb-5 rounded-card border border-border/70 bg-card/95 px-3 py-2 shadow-sm backdrop-blur-xl transition-all sm:top-12 dark:bg-card/90">
-                        <div className="flex items-center justify-between gap-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                    <div className="sticky top-11 z-30 mb-5 rounded-card border border-border/70 bg-card/95 p-1.5 shadow-sm backdrop-blur-xl transition-all sm:top-12 dark:bg-card/90">
+                        <div className="flex w-full items-center justify-center">
                             {/* Navigation / View Switcher Control */}
-                            <div className="flex shrink-0 items-center gap-2">
-                                <CampaignsViewSwitcher
-                                    activeView={activeView}
-                                    onViewChange={handleViewChange}
-                                    campaignCount={stats.total}
-                                    upcomingCount={upcomingList.length}
-                                />
-                            </div>
-
-                            {/* Semantic Color Legend (Matching Marketing Calendar) */}
-                            <div className="flex shrink-0 items-center gap-2.5 text-[11px] text-muted-foreground sm:gap-3">
-                                <span className="font-semibold text-foreground">Legend:</span>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="h-2.5 w-2.5 rounded-[2px] bg-rose-500" />
-                                    <span>Regular Holiday</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="h-2.5 w-2.5 rounded-[2px] bg-amber-500" />
-                                    <span>Special Non-Working</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="h-2.5 w-2.5 rounded-[2px] bg-emerald-500" />
-                                    <span>Islamic Holiday</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="h-2.5 w-2.5 rounded-[2px] bg-blue-500" />
-                                    <span>Retail Sale</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="h-2.5 w-2.5 rounded-[2px] bg-purple-500" />
-                                    <span>Custom Event</span>
-                                </div>
-                            </div>
+                            <CampaignsViewSwitcher
+                                activeView={activeView}
+                                onViewChange={handleViewChange}
+                                campaignCount={stats.total}
+                                upcomingCount={upcomingList.length}
+                            />
                         </div>
                     </div>
 

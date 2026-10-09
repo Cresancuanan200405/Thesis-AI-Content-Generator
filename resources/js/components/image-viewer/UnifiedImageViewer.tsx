@@ -122,6 +122,8 @@ export function UnifiedImageViewer<T = any>({
                 onSurfaceChange={setSurface}
                 onClose={onClose}
                 contextBadge={context === 'product' ? 'Product' : context === 'design' ? 'Design' : context === 'campaign' ? 'Campaign' : context === 'generator' ? 'Generator' : 'Creative'}
+                onRegenerate={onRegenerate ? () => onRegenerate(currentItem) : undefined}
+                isRegenerating={isRegenerating}
             />
 
             {/* Main Stage & Panel Split View */}

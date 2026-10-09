@@ -1,17 +1,8 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import {
-    Activity,
-    AlertTriangle,
-    ArrowUpRight,
     Bell,
     Check,
     CheckCheck,
-    CheckCircle2,
-    Coins,
-    Cpu,
-    Hash,
-    ImageIcon,
-    Info,
     Monitor,
     Moon,
     Sun,
@@ -20,7 +11,6 @@ import * as React from 'react';
 
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { resolveNotificationConfig } from '@/components/notification-toast';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -35,7 +25,6 @@ import { useNavigationOriginBreadcrumbs } from '@/hooks/use-navigation-origin';
 import { cn } from '@/lib/utils';
 import type {
     BreadcrumbItem as BreadcrumbItemType,
-    OpenAIUsageTelemetry,
 } from '@/types';
 
 type NotificationItem = {
@@ -98,63 +87,13 @@ export function AppSidebarHeader({
     breadcrumbs?: BreadcrumbItemType[];
 }) {
     const { appearance, updateAppearance } = useAppearance();
-    const { unread_notifications_count, recent_notifications, ai_usage } =
+    const { unread_notifications_count, recent_notifications } =
         usePage<{
             unread_notifications_count?: number;
             recent_notifications?: NotificationItem[];
-            ai_usage?: OpenAIUsageTelemetry | null;
         }>().props;
     const unreadCount = Number(unread_notifications_count || 0);
     const notifications = recent_notifications || [];
-
-    const budgetLimit = Number(
-        ai_usage?.budget_limit ??
-            ai_usage?.application_configured_limit ??
-            20.0,
-    );
-    const totalSpent = Number(ai_usage?.total_spent ?? 0.0);
-    const remainingBudget = Number(
-        ai_usage?.remaining_budget ??
-            ai_usage?.remaining_configured_limit ??
-            Math.max(0, budgetLimit - totalSpent),
-    );
-    const totalGenerations = Number(
-        ai_usage?.total_images ?? ai_usage?.total_generations ?? 0,
-    );
-    const totalRequests = Number(ai_usage?.total_requests ?? 0);
-    const tokensUsedFormatted =
-        ai_usage?.input_tokens_formatted ||
-        ai_usage?.total_tokens_formatted ||
-        (ai_usage?.input_tokens !== undefined && ai_usage?.input_tokens !== null
-            ? Number(ai_usage.input_tokens).toLocaleString()
-            : ai_usage?.total_tokens !== undefined &&
-                ai_usage?.total_tokens !== null
-              ? Number(ai_usage.total_tokens).toLocaleString()
-              : '0');
-    const percentageUsed = Math.min(
-        100,
-        Math.max(
-            0,
-            ai_usage?.percentage_used !== undefined &&
-                ai_usage?.percentage_used !== null
-                ? Number(ai_usage.percentage_used)
-                : budgetLimit > 0
-                  ? Math.round((totalSpent / budgetLimit) * 100)
-                  : 0,
-        ),
-    );
-    const isLimitReached =
-        Boolean(ai_usage?.is_limit_reached) ||
-        percentageUsed >= 100 ||
-        (budgetLimit > 0 && totalSpent >= budgetLimit);
-    const isApproachingLimit = !isLimitReached && percentageUsed >= 80;
-    const isUnavailable = ai_usage?.status === 'unavailable';
-    const activeModel = ai_usage?.active_model || {
-        id: 'gpt-image-2',
-        display_name: 'GPT-Image-2',
-        tag: 'Flagship Photorealism',
-        badge: 'Recommended',
-    };
 
     const handleNotificationClick = (item: NotificationItem) => {
         if (!item.read_at) {
@@ -214,282 +153,6 @@ export function AppSidebarHeader({
                 RIGHT ACTIONS
             ============================================================= */}
             <div className="flex items-center gap-1">
-                {/* ========================================================
-                    AI TOKEN & BILLING USAGE DROPDOWN
-                ========================================================= */}
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            data-telemetry-trigger="true"
-                            aria-label="AI Token & Quota Usage"
-                            title={`OpenAI Synthesis Balance ($${budgetLimit.toFixed(2)} Limit)`}
-                            className="h-8 gap-1.5 rounded-full px-2.5 text-xs font-semibold text-muted-foreground shadow-2xs transition-all duration-200 hover:scale-105 hover:bg-primary/10 hover:text-primary hover:ring-1 hover:ring-primary/25 active:scale-95 data-[state=open]:scale-105 data-[state=open]:bg-primary/15 data-[state=open]:text-primary data-[state=open]:ring-2 data-[state=open]:ring-primary/40"
-                        >
-                            <Coins
-                                className={`h-4 w-4 ${isLimitReached ? 'text-rose-500' : isApproachingLimit ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}
-                            />
-                            <span className="hidden font-mono text-[11px] font-bold sm:inline-block">
-                                ${totalSpent.toFixed(2)}
-                                <span className="font-normal text-muted-foreground">
-                                    /${budgetLimit.toFixed(0)}
-                                </span>
-                            </span>
-                        </Button>
-                    </DropdownMenuTrigger>
-
-                    <DropdownMenuContent
-                        align="end"
-                        sideOffset={8}
-                        collisionPadding={16}
-                        avoidCollisions={true}
-                        className="max-h-[86vh] w-[calc(100vw-2rem)] max-w-sm overflow-y-auto rounded-2xl border border-border/80 bg-popover/98 p-0 shadow-2xl shadow-black/20 backdrop-blur-xl duration-200 fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 sm:max-w-md dark:shadow-black/50"
-                    >
-                        {/* 1. HEADER */}
-                        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border/80 bg-popover/98 px-4 py-3 backdrop-blur-md">
-                            <div className="flex items-center gap-2.5">
-                                <div
-                                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ring-1 ${
-                                        isLimitReached
-                                            ? 'bg-rose-500/10 text-rose-600 ring-rose-500/20'
-                                            : isApproachingLimit
-                                              ? 'bg-amber-500/10 text-amber-600 ring-amber-500/20'
-                                              : 'bg-primary/10 text-primary ring-primary/20'
-                                    }`}
-                                >
-                                    <Cpu className="h-4 w-4" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xs font-bold text-foreground">
-                                        OpenAI Synthesis Balance
-                                    </h3>
-                                    <p className="text-[10px] text-muted-foreground">
-                                        Current AI generation usage and
-                                        available budget
-                                    </p>
-                                </div>
-                            </div>
-                            <Badge
-                                variant="outline"
-                                className="border-border bg-muted/40 font-mono text-[10px] font-bold text-foreground"
-                            >
-                                Limit: ${budgetLimit.toFixed(2)}
-                            </Badge>
-                        </div>
-
-                        <div className="space-y-3.5 p-4">
-                            {/* 2. PRIMARY BALANCE SECTION (4 Cards) */}
-                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                                <div className="rounded-xl border border-border/70 bg-muted/20 p-2.5 text-center sm:text-left">
-                                    <span className="text-[10px] font-medium text-muted-foreground">
-                                        Used
-                                    </span>
-                                    <p className="mt-0.5 font-mono text-xs font-bold text-foreground">
-                                        ${totalSpent.toFixed(2)}
-                                    </p>
-                                </div>
-
-                                <div className="rounded-xl border border-border/70 bg-muted/20 p-2.5 text-center sm:text-left">
-                                    <span className="text-[10px] font-medium text-muted-foreground">
-                                        Remaining
-                                    </span>
-                                    <p
-                                        className={`mt-0.5 font-mono text-xs font-bold ${
-                                            isLimitReached
-                                                ? 'text-rose-600 dark:text-rose-400'
-                                                : isApproachingLimit
-                                                  ? 'text-amber-600 dark:text-amber-400'
-                                                  : 'text-emerald-600 dark:text-emerald-400'
-                                        }`}
-                                    >
-                                        ${remainingBudget.toFixed(2)}
-                                    </p>
-                                </div>
-
-                                <div className="rounded-xl border border-border/70 bg-muted/20 p-2.5 text-center sm:text-left">
-                                    <span className="text-[10px] font-medium text-muted-foreground">
-                                        Monthly Limit
-                                    </span>
-                                    <p className="mt-0.5 font-mono text-xs font-bold text-foreground">
-                                        ${budgetLimit.toFixed(2)}
-                                    </p>
-                                </div>
-
-                                <div className="rounded-xl border border-border/70 bg-muted/20 p-2.5 text-center sm:text-left">
-                                    <span className="text-[10px] font-medium text-muted-foreground">
-                                        Usage
-                                    </span>
-                                    <p className="mt-0.5 font-mono text-xs font-bold text-foreground">
-                                        {percentageUsed}%
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* 3. USAGE PROGRESS BAR */}
-                            <div className="space-y-2 rounded-xl border border-border/70 bg-muted/20 p-3">
-                                <div className="flex items-center justify-between text-xs">
-                                    <span className="font-semibold text-foreground">
-                                        AI Budget Usage
-                                    </span>
-                                    <span className="font-mono text-xs font-bold text-foreground">
-                                        {percentageUsed}% used
-                                    </span>
-                                </div>
-
-                                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                                    <div
-                                        className={`h-full rounded-full transition-all duration-500 ${
-                                            isLimitReached
-                                                ? 'bg-rose-500'
-                                                : isApproachingLimit
-                                                  ? 'bg-amber-500'
-                                                  : 'bg-gradient-to-r from-emerald-500 via-primary to-blue-500'
-                                        }`}
-                                        style={{
-                                            width: `${Math.min(100, Math.max(0, percentageUsed))}%`,
-                                        }}
-                                    />
-                                </div>
-
-                                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                                    <span>${totalSpent.toFixed(2)} billed</span>
-                                    <span>
-                                        ${remainingBudget.toFixed(2)} remaining
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* 4. AI ACTIVITY (3 Compact Metrics) */}
-                            <div className="space-y-1.5">
-                                <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
-                                    Creative Activity
-                                </span>
-                                <div className="grid grid-cols-3 gap-2">
-                                    <div className="rounded-xl border border-border/70 bg-muted/20 p-2.5 text-center">
-                                        <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground">
-                                            <ImageIcon className="h-3 w-3 text-primary" />
-                                            <span>Designs</span>
-                                        </div>
-                                        <p className="mt-1 font-mono text-xs font-bold text-foreground">
-                                            {totalGenerations}
-                                        </p>
-                                    </div>
-
-                                    <div className="rounded-xl border border-border/70 bg-muted/20 p-2.5 text-center">
-                                        <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground">
-                                            <Activity className="h-3 w-3 text-sky-500" />
-                                            <span>AI Requests</span>
-                                        </div>
-                                        <p className="mt-1 font-mono text-xs font-bold text-foreground">
-                                            {totalRequests}
-                                        </p>
-                                    </div>
-
-                                    <div className="rounded-xl border border-border/70 bg-muted/20 p-2.5 text-center">
-                                        <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground">
-                                            <Hash className="h-3 w-3 text-purple-500" />
-                                            <span>Tokens Used</span>
-                                        </div>
-                                        <p className="mt-1 font-mono text-xs font-bold text-foreground">
-                                            {tokensUsedFormatted}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* 5. QUOTA STATUS */}
-                            <div
-                                className={`flex items-start gap-2.5 rounded-xl border p-3 text-xs leading-relaxed ${
-                                    isUnavailable
-                                        ? 'border-border/70 bg-muted/30 text-muted-foreground'
-                                        : isLimitReached
-                                          ? 'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300'
-                                          : isApproachingLimit
-                                            ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300'
-                                            : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                                }`}
-                            >
-                                {isUnavailable ? (
-                                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                                ) : isLimitReached ? (
-                                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
-                                ) : isApproachingLimit ? (
-                                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-                                ) : (
-                                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                                )}
-                                <div className="space-y-0.5">
-                                    <p className="font-bold">
-                                        {isUnavailable
-                                            ? 'Telemetry Unavailable'
-                                            : isLimitReached
-                                              ? 'Quota Reached'
-                                              : isApproachingLimit
-                                                ? 'Approaching Limit'
-                                                : 'Available'}
-                                    </p>
-                                    <p className="text-[11px] opacity-90">
-                                        {isUnavailable
-                                            ? 'Usage data temporarily unavailable.'
-                                            : isLimitReached
-                                              ? 'New AI generations are temporarily unavailable.'
-                                              : isApproachingLimit
-                                                ? 'Your remaining AI budget is low (80%+ consumed).'
-                                                : 'AI generation is available.'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* 6. CURRENT MODEL */}
-                            <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 p-3">
-                                <div className="flex items-center gap-2.5">
-                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                        <Cpu className="h-3.5 w-3.5" />
-                                    </div>
-                                    <div>
-                                        <span className="text-[10px] font-semibold text-muted-foreground">
-                                            Current Model
-                                        </span>
-                                        <p className="font-mono text-xs font-bold text-foreground">
-                                            {activeModel.display_name ||
-                                                activeModel.id}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <Badge
-                                        variant="outline"
-                                        className="border-primary/30 bg-primary/10 text-[9px] font-semibold text-primary"
-                                    >
-                                        {activeModel.tag ||
-                                            'Flagship Photorealism'}
-                                    </Badge>
-                                </div>
-                            </div>
-
-                            {/* 7. FOOTER / ACTION */}
-                            <div className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/30 p-2.5 text-[10px] text-muted-foreground">
-                                <div className="flex items-center gap-1.5">
-                                    <Info className="h-3.5 w-3.5 shrink-0 text-primary" />
-                                    <span>Authoritative OpenAI Telemetry</span>
-                                </div>
-                                <Button
-                                    asChild
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 gap-1 px-2 text-[10px] font-semibold text-primary hover:bg-primary/10 hover:text-primary"
-                                >
-                                    <Link href="/subscriptions">
-                                        <span>View detailed usage</span>
-                                        <ArrowUpRight className="h-3 w-3" />
-                                    </Link>
-                                </Button>
-                            </div>
-                        </div>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-
                 {/* ========================================================
                     THEME DROPDOWN
                 ========================================================= */}

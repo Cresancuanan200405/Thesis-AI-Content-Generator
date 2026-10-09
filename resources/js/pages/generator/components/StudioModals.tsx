@@ -5,9 +5,14 @@ import {
     CalendarDays,
     Check,
     ChevronDown,
+    ChevronUp,
     Download,
     ExternalLink,
+    Layers,
+    Loader2,
+    Maximize2,
     Package,
+    Palette,
     Search,
     SlidersHorizontal,
     Type,
@@ -34,7 +39,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AspectRatioSelector } from './AspectRatioSelector';
-import { EventItem, GeneratedDesign, ProductItem } from './types';
+import { EventItem, GeneratedDesign, ProductItem, renderStyleOptions } from './types';
 export { GeneratedCreativeModal } from './GeneratedCreativeModal';
 export type { GeneratedCreativeModalProps } from './GeneratedCreativeModal';
 
@@ -375,6 +380,20 @@ export function ConfirmationModal({
 export interface AutomaticSettingsModalProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
+    // Render style (Required)
+    renderStyle: string;
+    onRenderStyleChange: (style: string) => void;
+    // Generation quantity (1-4)
+    quantity: number;
+    onQuantityChange: (qty: number) => void;
+    // Variation settings
+    promptVariation: 'different' | 'same';
+    onPromptVariationChange: (val: 'different' | 'same') => void;
+    taglineVariation: 'same' | 'different';
+    onTaglineVariationChange: (val: 'same' | 'different') => void;
+    styleVariation: 'same' | 'different';
+    onStyleVariationChange: (val: 'same' | 'different') => void;
+    // Canvas & Copy toggles
     aspectRatio: string;
     onAspectRatioChange: (val: string) => void;
     includeProductName?: boolean;
@@ -389,16 +408,31 @@ export interface AutomaticSettingsModalProps {
     selectedEvent?: EventItem | null;
     showEventText: boolean;
     onToggleEventText: (val: boolean) => void;
+    // Generation Action & Controls
+    onGenerate: () => void;
+    isGenerating?: boolean;
+    canGenerate?: boolean;
 }
 
 /**
- * Generation & Canvas Settings Modal for Automatic Mode.
- * Unifies all requirements (canvas proportions, identity, and marketing overlays)
- * into a single clean, easy-to-navigate modal.
+ * Generation & Canvas Settings Modal for Automatic Studio.
+ * Enhances workflow with required canonical render-style selection,
+ * selectable image quantity (1-4), configurable variation settings,
+ * and direct generation trigger with generation summary.
  */
 export function AutomaticSettingsModal({
     isOpen,
     onOpenChange,
+    renderStyle,
+    onRenderStyleChange,
+    quantity,
+    onQuantityChange,
+    promptVariation,
+    onPromptVariationChange,
+    taglineVariation,
+    onTaglineVariationChange,
+    styleVariation,
+    onStyleVariationChange,
     aspectRatio,
     onAspectRatioChange,
     includeProductName = true,
@@ -413,245 +447,633 @@ export function AutomaticSettingsModal({
     selectedEvent,
     showEventText,
     onToggleEventText,
+    onGenerate,
+    isGenerating = false,
+    canGenerate = true,
 }: AutomaticSettingsModalProps) {
+    const [activeCard, setActiveCard] = useState<'style' | 'quantity' | 'ratio' | 'typography'>('style');
+
+    const isStyleSelected = Boolean(renderStyle && renderStyle.trim().length > 0);
+    const isGenerateDisabled = !isStyleSelected || isGenerating || !canGenerate;
+
+    const activeElementsCount = [
+        selectedEvent && showEventText,
+        includeProductName,
+        includePrices,
+        includeTagline,
+        includeBusinessName,
+    ].filter(Boolean).length;
+
+    const handleFormSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!isGenerateDisabled) {
+            onGenerate();
+        }
+    };
+
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="flex flex-col max-h-[85vh] h-auto w-[94vw] max-w-xl md:max-w-2xl overflow-hidden rounded-card p-0 shadow-2xl">
+            <DialogContent className="flex flex-col min-h-[540px] max-h-[88vh] h-[640px] w-[94vw] max-w-xl md:max-w-2xl lg:max-w-3xl overflow-hidden rounded-card p-0 shadow-2xl">
                 <DialogHeader className="shrink-0 border-b bg-muted/20 px-4 py-3.5 sm:px-5 sm:py-4">
                     <div className="flex items-center gap-2">
                         <SlidersHorizontal className="h-5 w-5 text-primary" />
                         <DialogTitle className="text-base font-bold text-foreground">
-                            Generation & Canvas Settings
+                            Automatic Studio Generation Settings
                         </DialogTitle>
                     </div>
                     <DialogDescription className="text-xs text-muted-foreground">
-                        Configure canvas proportions and customize marketing copy typography overlays.
+                        Configure creative render style, batch quantity, proportions, and marketing typography.
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-4">
-                    {/* Section 1: Canvas Dimensions */}
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                1. Canvas Proportions & Aspect Ratio
-                            </Label>
-                            <span className="text-[10px] font-mono font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                                {aspectRatio}
-                            </span>
+                <form onSubmit={handleFormSubmit} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                    {/* 4 CARD SELECTOR BAR */}
+                    <div className="shrink-0 border-b border-border/70 bg-muted/10 p-3 sm:px-5">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-2.5">
+                            {/* Card 1: Render Style */}
+                            <button
+                                type="button"
+                                onClick={() => setActiveCard('style')}
+                                className={`group relative flex flex-col justify-between rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none ${
+                                    activeCard === 'style'
+                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40 text-foreground'
+                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30 text-muted-foreground'
+                                }`}
+                            >
+                                <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-1.5">
+                                        <Palette className={`h-3.5 w-3.5 ${activeCard === 'style' ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary'}`} />
+                                        <span className="text-xs font-bold text-foreground">Render Style</span>
+                                    </div>
+                                    <span className="text-[10px] font-mono font-bold px-1 rounded-sm bg-muted text-muted-foreground">
+                                        1
+                                    </span>
+                                </div>
+                                <p className="text-[11px] font-medium truncate text-muted-foreground">
+                                    {renderStyle || 'Select style'}
+                                </p>
+                            </button>
+
+                            {/* Card 2: Generation Quantity */}
+                            <button
+                                type="button"
+                                onClick={() => setActiveCard('quantity')}
+                                className={`group relative flex flex-col justify-between rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none ${
+                                    activeCard === 'quantity'
+                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40 text-foreground'
+                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30 text-muted-foreground'
+                                }`}
+                            >
+                                <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                        <Layers className={`h-3.5 w-3.5 shrink-0 ${activeCard === 'quantity' ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary'}`} />
+                                        <span className="text-xs font-bold text-foreground truncate">Generation Quantity</span>
+                                    </div>
+                                    <span className="text-[10px] font-mono font-bold px-1 rounded-sm bg-muted text-muted-foreground shrink-0">
+                                        2
+                                    </span>
+                                </div>
+                                <p className="text-[11px] font-medium truncate text-muted-foreground">
+                                    {quantity === 1 ? '1 Image' : `${quantity} Images (${styleVariation === 'different' ? 'Varied' : 'Same'})`}
+                                </p>
+                            </button>
+
+                            {/* Card 3: Canvas Proportions and Aspect Ratio */}
+                            <button
+                                type="button"
+                                onClick={() => setActiveCard('ratio')}
+                                className={`group relative flex flex-col justify-between rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none ${
+                                    activeCard === 'ratio'
+                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40 text-foreground'
+                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30 text-muted-foreground'
+                                }`}
+                            >
+                                <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                        <Maximize2 className={`h-3.5 w-3.5 shrink-0 ${activeCard === 'ratio' ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary'}`} />
+                                        <span className="text-xs font-bold text-foreground truncate">Canvas Proportions & Ratio</span>
+                                    </div>
+                                    <span className="text-[10px] font-mono font-bold px-1 rounded-sm bg-muted text-muted-foreground shrink-0">
+                                        3
+                                    </span>
+                                </div>
+                                <p className="text-[11px] font-medium truncate text-muted-foreground">
+                                    {aspectRatio || '1:1'} Ratio
+                                </p>
+                            </button>
+
+                            {/* Card 4: Marketing Typography & Elements */}
+                            <button
+                                type="button"
+                                onClick={() => setActiveCard('typography')}
+                                className={`group relative flex flex-col justify-between rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none ${
+                                    activeCard === 'typography'
+                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40 text-foreground'
+                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30 text-muted-foreground'
+                                }`}
+                            >
+                                <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                        <Type className={`h-3.5 w-3.5 shrink-0 ${activeCard === 'typography' ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary'}`} />
+                                        <span className="text-xs font-bold text-foreground truncate">Typography & Elements</span>
+                                    </div>
+                                    <span className="text-[10px] font-mono font-bold px-1 rounded-sm bg-muted text-muted-foreground shrink-0">
+                                        4
+                                    </span>
+                                </div>
+                                <p className="text-[11px] font-medium truncate text-muted-foreground">
+                                    {activeElementsCount} Elements Active
+                                </p>
+                            </button>
                         </div>
-                        <AspectRatioSelector
-                            value={aspectRatio}
-                            onChange={onAspectRatioChange}
-                            defaultOpen={true}
-                        />
                     </div>
 
-                    {/* Section 2: Marketing Content Toggles */}
-                    <div className="space-y-2.5">
-                        <div className="flex items-center justify-between">
-                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                2. Marketing Typography & Elements
-                            </Label>
-                            <span className="text-[10px] text-muted-foreground">
-                                Click card to toggle
-                            </span>
-                        </div>
-
-                        <div className="grid gap-2.5 sm:grid-cols-2">
-                            {/* Show Event/Holiday Text */}
-                            {selectedEvent && (
-                                <div
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={() => onToggleEventText(!showEventText)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === ' ' || e.key === 'Enter') onToggleEventText(!showEventText);
-                                    }}
-                                    className={`group relative flex flex-col justify-between rounded-xl border p-3 transition-all cursor-pointer select-none sm:col-span-2 ${
-                                        showEventText
-                                            ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-2xs'
-                                            : 'border-border/80 bg-background/60 hover:bg-muted/30'
-                                    }`}
-                                >
-                                    <div className="space-y-1">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <CalendarDays className="h-4 w-4 text-primary" />
-                                                <span className="text-xs font-bold text-foreground">
-                                                    Show Event/Holiday Text
-                                                </span>
-                                                <Badge
-                                                    variant="outline"
-                                                    className="text-[10px] font-semibold border-border bg-muted/50 text-foreground"
-                                                >
-                                                    {selectedEvent.name}
-                                                </Badge>
-                                            </div>
-                                            <Checkbox
-                                                checked={showEventText}
-                                                onCheckedChange={(c) => onToggleEventText(Boolean(c))}
-                                                className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
-                                            />
-                                        </div>
-                                        <p className="line-clamp-2 text-[10px] text-muted-foreground">
-                                            Allow the Event/Holiday name to appear as typography in the final design.
+                    {/* ACTIVE CARD OPTIONS CONTENT */}
+                    <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5">
+                        {/* OPTION 1: RENDER STYLE */}
+                        {activeCard === 'style' && (
+                            <div className="space-y-4 animate-in fade-in-50 duration-150">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                            <Palette className="h-3.5 w-3.5 text-primary" />
+                                            1. Render Style <span className="text-destructive">*</span>
+                                        </Label>
+                                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                                            Choose the visual artistic rendering style for image synthesis.
                                         </p>
                                     </div>
+                                    <span className={`text-[11px] font-medium ${isStyleSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400 font-semibold'}`}>
+                                        {isStyleSelected
+                                            ? (quantity > 1 && styleVariation === 'different' ? 'Starting style' : 'Selected')
+                                            : 'Required selection'}
+                                    </span>
                                 </div>
-                            )}
 
-                            {/* Include Product Name */}
-                            <div
-                                role="button"
-                                tabIndex={0}
-                                onClick={() => onToggleProductName && onToggleProductName(!includeProductName)}
-                                onKeyDown={(e) => {
-                                    if (e.key === ' ' || e.key === 'Enter') onToggleProductName && onToggleProductName(!includeProductName);
-                                }}
-                                className={`group relative flex flex-col justify-between rounded-xl border p-3 transition-all cursor-pointer select-none ${
-                                    includeProductName
-                                        ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-2xs'
-                                        : 'border-border/80 bg-background/60 hover:bg-muted/30'
-                                }`}
-                            >
-                                <div className="space-y-1">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Package className="h-4 w-4 text-primary" />
-                                            <p className="text-xs font-bold text-foreground">Include Product Name</p>
-                                        </div>
-                                        <Checkbox
-                                            checked={includeProductName}
-                                            onCheckedChange={(c) => onToggleProductName && onToggleProductName(Boolean(c))}
-                                            className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
-                                        />
-                                    </div>
-                                    <p className="line-clamp-2 text-[10px] text-muted-foreground">
-                                        Render product name typography overlay.
+                                {quantity > 1 && styleVariation === 'different' && (
+                                    <p className="text-[11px] text-muted-foreground bg-muted/30 border border-border/70 rounded-lg p-2.5 leading-relaxed">
+                                        <strong>Different render styles enabled:</strong> The first output will use this selected style, and remaining outputs will distribute across the other supported canonical styles.
                                     </p>
+                                )}
+
+                                <div className="grid gap-2.5 sm:grid-cols-2">
+                                    {renderStyleOptions.map((opt) => {
+                                        const isSelected = renderStyle === opt.value;
+                                        return (
+                                            <button
+                                                key={opt.value}
+                                                type="button"
+                                                onClick={() => onRenderStyleChange(opt.value)}
+                                                className={`group relative flex flex-col justify-between rounded-xl border p-3.5 text-left transition-all cursor-pointer select-none ${
+                                                    isSelected
+                                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
+                                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
+                                                }`}
+                                            >
+                                                <div className="space-y-1.5">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-bold text-foreground">
+                                                            {opt.label}
+                                                        </span>
+                                                        <span
+                                                            className={`flex h-4 w-4 items-center justify-center rounded-full border transition-all ${
+                                                                isSelected
+                                                                    ? 'border-emerald-600 bg-emerald-600 text-white'
+                                                                    : 'border-muted-foreground/30 bg-transparent'
+                                                            }`}
+                                                        >
+                                                            {isSelected && <Check className="h-2.5 w-2.5 stroke-[3]" />}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                                        {opt.tagline || opt.description}
+                                                    </p>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
+                        )}
 
-                            {/* Include Tagline */}
-                            <div
-                                role="button"
-                                tabIndex={0}
-                                onClick={() => onToggleTagline(!includeTagline)}
-                                onKeyDown={(e) => {
-                                    if (e.key === ' ' || e.key === 'Enter') onToggleTagline(!includeTagline);
-                                }}
-                                className={`group relative flex flex-col justify-between rounded-xl border p-3 transition-all cursor-pointer select-none ${
-                                    includeTagline
-                                        ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-2xs'
-                                        : 'border-border/80 bg-background/60 hover:bg-muted/30'
-                                }`}
-                            >
-                                <div className="space-y-1">
+                        {/* OPTION 2: GENERATION QUANTITY */}
+                        {activeCard === 'quantity' && (
+                            <div className="space-y-5 animate-in fade-in-50 duration-150">
+                                <div className="space-y-2">
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Type className="h-4 w-4 text-primary" />
-                                            <p className="text-xs font-bold text-foreground">Include Tagline</p>
+                                        <div>
+                                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                                <Layers className="h-3.5 w-3.5 text-primary" />
+                                                2. Generation Quantity
+                                            </Label>
+                                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                                                Select how many marketing image variations to synthesize.
+                                            </p>
                                         </div>
-                                        <Checkbox
-                                            checked={includeTagline}
-                                            onCheckedChange={(c) => onToggleTagline(Boolean(c))}
-                                            className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
-                                        />
+                                        <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                                            {quantity === 1 ? '1 image generated' : `${quantity} images generated`}
+                                        </span>
                                     </div>
-                                    <p className="line-clamp-2 text-[10px] text-muted-foreground">
-                                        AI generates an original commercial headline tagline.
-                                    </p>
-                                </div>
-                            </div>
 
-                            {/* Include Prices */}
-                            <div
-                                role="button"
-                                tabIndex={0}
-                                onClick={() => onTogglePrices(!includePrices)}
-                                onKeyDown={(e) => {
-                                    if (e.key === ' ' || e.key === 'Enter') onTogglePrices(!includePrices);
-                                }}
-                                className={`group relative flex flex-col justify-between rounded-xl border p-3 transition-all cursor-pointer select-none ${
-                                    includePrices
-                                        ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-2xs'
-                                        : 'border-border/80 bg-background/60 hover:bg-muted/30'
-                                }`}
-                            >
-                                <div className="space-y-1">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <BadgePercent className="h-4 w-4 text-primary" />
-                                            <p className="text-xs font-bold text-foreground">Include Prices</p>
-                                        </div>
-                                        <Checkbox
-                                            checked={includePrices}
-                                            onCheckedChange={(c) => onTogglePrices(Boolean(c))}
-                                            className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
-                                        />
-                                    </div>
-                                    <p className="line-clamp-2 text-[10px] text-muted-foreground">
-                                        Render authoritative product pricing badge.
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Include Business Name */}
-                            <div
-                                role="button"
-                                tabIndex={0}
-                                onClick={() => onToggleBusinessName(!includeBusinessName)}
-                                onKeyDown={(e) => {
-                                    if (e.key === ' ' || e.key === 'Enter') onToggleBusinessName(!includeBusinessName);
-                                }}
-                                className={`group relative flex flex-col justify-between rounded-xl border p-3 transition-all cursor-pointer select-none ${
-                                    includeBusinessName
-                                        ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-2xs'
-                                        : 'border-border/80 bg-background/60 hover:bg-muted/30'
-                                }`}
-                            >
-                                <div className="space-y-1">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Building2 className="h-4 w-4 text-primary" />
-                                            <p className="text-xs font-bold text-foreground">Include Business Name</p>
-                                            {businessName && (
-                                                <Badge
-                                                    variant="outline"
-                                                    className="text-[10px] font-semibold border-border bg-muted/50 text-foreground"
+                                    <div className="grid grid-cols-4 gap-2.5 pt-1">
+                                        {[1, 2, 3, 4].map((q) => {
+                                            const isSelected = quantity === q;
+                                            return (
+                                                <button
+                                                    key={q}
+                                                    type="button"
+                                                    onClick={() => onQuantityChange(q)}
+                                                    className={`flex flex-col items-center justify-center py-3 px-2 rounded-xl border text-center transition-all cursor-pointer ${
+                                                        isSelected
+                                                            ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40 text-foreground font-bold'
+                                                            : 'border-border/80 bg-card text-muted-foreground hover:border-border hover:bg-muted/30'
+                                                    }`}
                                                 >
-                                                    {businessName}
-                                                </Badge>
+                                                    <span className="text-base font-bold">{q}</span>
+                                                    <span className="text-[10px] mt-0.5">{q === 1 ? 'Image' : 'Images'}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Variation Settings (Shown when quantity > 1) */}
+                                {quantity > 1 ? (
+                                    <div className="space-y-4 rounded-xl border border-border/80 bg-muted/15 p-4">
+                                        <div>
+                                            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                                Multiple Output Variation Settings
+                                            </h4>
+                                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                                                Configure how prompts, headlines, and styles vary across the {quantity} outputs.
+                                            </p>
+                                        </div>
+
+                                        {/* Prompt Variation */}
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-semibold text-foreground">
+                                                Prompt Variation
+                                            </Label>
+                                            <div className="grid gap-2 sm:grid-cols-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onPromptVariationChange('different')}
+                                                    className={`rounded-lg border p-2.5 text-left text-xs transition-all cursor-pointer ${
+                                                        promptVariation === 'different'
+                                                            ? 'border-emerald-500 bg-emerald-500/10 font-medium'
+                                                            : 'border-border/70 bg-card hover:bg-muted/30 text-muted-foreground'
+                                                    }`}
+                                                >
+                                                    <div className="font-semibold text-foreground">Different prompt for each image</div>
+                                                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                                                        Plans distinct visual directions while preserving shared campaign goals.
+                                                    </div>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onPromptVariationChange('same')}
+                                                    className={`rounded-lg border p-2.5 text-left text-xs transition-all cursor-pointer ${
+                                                        promptVariation === 'same'
+                                                            ? 'border-emerald-500 bg-emerald-500/10 font-medium'
+                                                            : 'border-border/70 bg-card hover:bg-muted/30 text-muted-foreground'
+                                                    }`}
+                                                >
+                                                    <div className="font-semibold text-foreground">Same core prompt for all images</div>
+                                                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                                                        Reuses identical creative scene direction across all outputs.
+                                                    </div>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Tagline Behavior */}
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-semibold text-foreground">
+                                                Tagline Behavior
+                                            </Label>
+                                            <div className="grid gap-2 sm:grid-cols-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onTaglineVariationChange('same')}
+                                                    className={`rounded-lg border p-2.5 text-left text-xs transition-all cursor-pointer ${
+                                                        taglineVariation === 'same'
+                                                            ? 'border-emerald-500 bg-emerald-500/10 font-medium'
+                                                            : 'border-border/70 bg-card hover:bg-muted/30 text-muted-foreground'
+                                                    }`}
+                                                >
+                                                    <div className="font-semibold text-foreground">Same tagline across all images</div>
+                                                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                                                        Uses one unified headline for consistent brand messaging.
+                                                    </div>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onTaglineVariationChange('different')}
+                                                    className={`rounded-lg border p-2.5 text-left text-xs transition-all cursor-pointer ${
+                                                        taglineVariation === 'different'
+                                                            ? 'border-emerald-500 bg-emerald-500/10 font-medium'
+                                                            : 'border-border/70 bg-card hover:bg-muted/30 text-muted-foreground'
+                                                    }`}
+                                                >
+                                                    <div className="font-semibold text-foreground">Different generated tagline for each image</div>
+                                                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                                                        Generates fresh alternative copy angles for each output.
+                                                    </div>
+                                                </button>
+                                            </div>
+                                            {!includeTagline && (
+                                                <p className="text-[10px] text-muted-foreground italic">
+                                                    Note: Taglines are currently disabled in Typography settings.
+                                                </p>
                                             )}
                                         </div>
-                                        <Checkbox
-                                            checked={includeBusinessName}
-                                            onCheckedChange={(c) => onToggleBusinessName(Boolean(c))}
-                                            className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
-                                        />
+
+                                        {/* Render-Style Behavior */}
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs font-semibold text-foreground">
+                                                Render-Style Behavior
+                                            </Label>
+                                            <div className="grid gap-2 sm:grid-cols-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onStyleVariationChange('same')}
+                                                    className={`rounded-lg border p-2.5 text-left text-xs transition-all cursor-pointer ${
+                                                        styleVariation === 'same'
+                                                            ? 'border-emerald-500 bg-emerald-500/10 font-medium'
+                                                            : 'border-border/70 bg-card hover:bg-muted/30 text-muted-foreground'
+                                                    }`}
+                                                >
+                                                    <div className="font-semibold text-foreground">Same render style for all images</div>
+                                                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                                                        Applies {renderStyle || 'the selected style'} to every output.
+                                                    </div>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onStyleVariationChange('different')}
+                                                    className={`rounded-lg border p-2.5 text-left text-xs transition-all cursor-pointer ${
+                                                        styleVariation === 'different'
+                                                            ? 'border-emerald-500 bg-emerald-500/10 font-medium'
+                                                            : 'border-border/70 bg-card hover:bg-muted/30 text-muted-foreground'
+                                                    }`}
+                                                >
+                                                    <div className="font-semibold text-foreground">Different render styles across images</div>
+                                                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                                                        Distributes supported canonical styles across the requested outputs.
+                                                    </div>
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <p className="line-clamp-2 text-[10px] text-muted-foreground">
-                                        Incorporate registered business identity into the creative.
+                                ) : (
+                                    <div className="rounded-xl border border-border/70 bg-muted/20 p-3.5 text-xs text-muted-foreground">
+                                        Single visual generation active. Selecting 2 to 4 images enables prompt, tagline, and render style variation options.
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* OPTION 3: CANVAS PROPORTIONS */}
+                        {activeCard === 'ratio' && (
+                            <div className="space-y-4 animate-in fade-in-50 duration-150">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                            <Maximize2 className="h-3.5 w-3.5 text-primary" />
+                                            3. Canvas Proportions & Aspect Ratio
+                                        </Label>
+                                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                                            Select standard social or marketing dimensions for your canvas.
+                                        </p>
+                                    </div>
+                                    <span className="text-[10px] font-mono font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                                        {aspectRatio}
+                                    </span>
+                                </div>
+                                <AspectRatioSelector
+                                    value={aspectRatio}
+                                    onChange={onAspectRatioChange}
+                                    defaultOpen={true}
+                                />
+                            </div>
+                        )}
+
+                        {/* OPTION 4: MARKETING TYPOGRAPHY & ELEMENTS */}
+                        {activeCard === 'typography' && (
+                            <div className="space-y-4 animate-in fade-in-50 duration-150">
+                                <div>
+                                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                        <Type className="h-3.5 w-3.5 text-primary" />
+                                        4. Marketing Typography & Elements
+                                    </Label>
+                                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                                        Specify which commercial branding and typography layers to render in the artwork.
                                     </p>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                <DialogFooter className="shrink-0 border-t bg-muted/10 px-4 py-3 sm:px-5 flex items-center justify-between">
-                    <span className="hidden sm:inline-flex text-xs text-muted-foreground items-center">
-                        All settings are applied instantly
-                    </span>
-                    <Button
-                        type="button"
-                        onClick={() => onOpenChange(false)}
-                        className="w-full sm:w-auto text-xs font-bold px-6 rounded-xl cursor-pointer"
-                    >
-                        Done
-                    </Button>
-                </DialogFooter>
+                                <div className="grid gap-2.5 sm:grid-cols-2">
+                                    {/* Show Event/Holiday Text */}
+                                    {selectedEvent && (
+                                        <div
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={() => onToggleEventText(!showEventText)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === ' ' || e.key === 'Enter') onToggleEventText(!showEventText);
+                                            }}
+                                            className={`group relative flex flex-col justify-between rounded-xl border p-3 transition-all cursor-pointer select-none sm:col-span-2 ${
+                                                showEventText
+                                                    ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-2xs'
+                                                    : 'border-border/80 bg-background/60 hover:bg-muted/30'
+                                            }`}
+                                        >
+                                            <div className="space-y-1">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <CalendarDays className="h-4 w-4 text-primary" />
+                                                        <span className="text-xs font-bold text-foreground">
+                                                            Show Event/Holiday Text
+                                                        </span>
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="text-[10px] font-semibold border-border bg-muted/50 text-foreground"
+                                                        >
+                                                            {selectedEvent.name}
+                                                        </Badge>
+                                                    </div>
+                                                    <Checkbox
+                                                        checked={showEventText}
+                                                        onCheckedChange={(c) => onToggleEventText(Boolean(c))}
+                                                        className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
+                                                    />
+                                                </div>
+                                                <p className="line-clamp-2 text-[10px] text-muted-foreground">
+                                                    Allow the Event/Holiday name to appear as typography in the final design.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Include Product Name */}
+                                    <div
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={() => onToggleProductName && onToggleProductName(!includeProductName)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === ' ' || e.key === 'Enter') onToggleProductName && onToggleProductName(!includeProductName);
+                                        }}
+                                        className={`group relative flex flex-col justify-between rounded-xl border p-3 transition-all cursor-pointer select-none ${
+                                            includeProductName
+                                                ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-2xs'
+                                                : 'border-border/80 bg-background/60 hover:bg-muted/30'
+                                        }`}
+                                    >
+                                        <div className="space-y-1">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <Package className="h-4 w-4 text-primary" />
+                                                    <p className="text-xs font-bold text-foreground">Include Product Name</p>
+                                                </div>
+                                                <Checkbox
+                                                    checked={includeProductName}
+                                                    onCheckedChange={(c) => onToggleProductName && onToggleProductName(Boolean(c))}
+                                                    className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
+                                                />
+                                            </div>
+                                            <p className="line-clamp-2 text-[10px] text-muted-foreground">
+                                                Render product name typography overlay.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Include Prices */}
+                                    <div
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={() => onTogglePrices(!includePrices)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === ' ' || e.key === 'Enter') onTogglePrices(!includePrices);
+                                        }}
+                                        className={`group relative flex flex-col justify-between rounded-xl border p-3 transition-all cursor-pointer select-none ${
+                                            includePrices
+                                                ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-2xs'
+                                                : 'border-border/80 bg-background/60 hover:bg-muted/30'
+                                        }`}
+                                    >
+                                        <div className="space-y-1">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <BadgePercent className="h-4 w-4 text-primary" />
+                                                    <p className="text-xs font-bold text-foreground">Include Prices</p>
+                                                </div>
+                                                <Checkbox
+                                                    checked={includePrices}
+                                                    onCheckedChange={(c) => onTogglePrices(Boolean(c))}
+                                                    className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
+                                                />
+                                            </div>
+                                            <p className="line-clamp-2 text-[10px] text-muted-foreground">
+                                                Render authoritative product pricing badge.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Include Tagline */}
+                                    <div
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={() => onToggleTagline(!includeTagline)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === ' ' || e.key === 'Enter') onToggleTagline(!includeTagline);
+                                        }}
+                                        className={`group relative flex flex-col justify-between rounded-xl border p-3 transition-all cursor-pointer select-none ${
+                                            includeTagline
+                                                ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-2xs'
+                                                : 'border-border/80 bg-background/60 hover:bg-muted/30'
+                                        }`}
+                                    >
+                                        <div className="space-y-1">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <Type className="h-4 w-4 text-primary" />
+                                                    <p className="text-xs font-bold text-foreground">Include Tagline</p>
+                                                </div>
+                                                <Checkbox
+                                                    checked={includeTagline}
+                                                    onCheckedChange={(c) => onToggleTagline(Boolean(c))}
+                                                    className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
+                                                />
+                                            </div>
+                                            <p className="line-clamp-2 text-[10px] text-muted-foreground">
+                                                AI generates an original commercial headline tagline.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Include Business Name */}
+                                    <div
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={() => onToggleBusinessName(!includeBusinessName)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === ' ' || e.key === 'Enter') onToggleBusinessName(!includeBusinessName);
+                                        }}
+                                        className={`group relative flex flex-col justify-between rounded-xl border p-3 transition-all cursor-pointer select-none ${
+                                            includeBusinessName
+                                                ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-2xs'
+                                                : 'border-border/80 bg-background/60 hover:bg-muted/30'
+                                        }`}
+                                    >
+                                        <div className="space-y-1">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <Building2 className="h-4 w-4 text-primary" />
+                                                    <p className="text-xs font-bold text-foreground">Include Business Name</p>
+                                                    {businessName && (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="text-[10px] font-semibold border-border bg-muted/50 text-foreground"
+                                                        >
+                                                            {businessName}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                <Checkbox
+                                                    checked={includeBusinessName}
+                                                    onCheckedChange={(c) => onToggleBusinessName(Boolean(c))}
+                                                    className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
+                                                />
+                                            </div>
+                                            <p className="line-clamp-2 text-[10px] text-muted-foreground">
+                                                Incorporate registered business identity into the creative.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* MODAL FOOTER */}
+                    <DialogFooter className="shrink-0 border-t bg-muted/15 px-4 py-3 sm:px-5 flex items-center justify-end">
+                        <Button
+                            type="submit"
+                            disabled={isGenerateDisabled}
+                            className="w-full sm:w-auto text-xs font-bold px-6 rounded-xl cursor-pointer h-10 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-md"
+                        >
+                            {isGenerating ? (
+                                <>
+                                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                                    Generating...
+                                </>
+                            ) : quantity === 1 ? (
+                                'Generate Image'
+                            ) : (
+                                `Generate ${quantity} Images`
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </form>
             </DialogContent>
         </Dialog>
     );

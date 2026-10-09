@@ -972,3 +972,170 @@ test('9-14: Final Manual prompt contains Campaign, Event, Event visibility, exac
     $body = (string) $capturedRequest->body();
     expect($body)->toContain('authoritative-product-image-binary-12345');
 });
+
+test('15: Suggest Visual Prompt with Minimalist Graphic passes style context, compatible instructions, and preserves selection', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+    $campaign = Campaign::factory()->create(['user_id' => $user->id, 'business_id' => $business->id]);
+    $product = Product::factory()->create(['business_id' => $business->id, 'name' => 'Minimal Canvas Bag']);
+
+    Http::fake([
+        'https://api.openai.com/v1/responses' => function ($request) {
+            $data = $request->data();
+
+            // Verify selected render style reached the input payload
+            expect($data['input'])->toContain('SELECTED RENDER STYLE:')
+                ->and($data['input'])->toContain('Minimalist Graphic')
+                ->and($data['input'])->toContain('Formulate a visual concept that naturally complements "Minimalist Graphic"');
+
+            // Verify instructions include compatibility guidance
+            expect($data['instructions'])->toContain('Render Style Compatibility:')
+                ->and($data['instructions'])->toContain('If "Minimalist Graphic", formulate a visual concept suited for graphic design');
+
+            return Http::response([
+                'output' => [
+                    [
+                        'content' => [
+                            [
+                                'type' => 'output_text',
+                                'text' => json_encode([
+                                    'creative_concept' => 'Flat Lay Geometric Composition',
+                                    'visual_strategy' => 'Bold clean geometric background blocks framing the tote bag.',
+                                    'visual_prompt' => 'A canvas tote bag presented against warm cream and sage color-blocked paper textures, flat lighting, clean negative space.',
+                                    'render_style' => 'Minimalist Graphic',
+                                ]),
+                            ],
+                        ],
+                    ],
+                ],
+                'usage' => ['total_tokens' => 200],
+            ], 200);
+        },
+        'https://api.openai.com/v1/organization/*' => Http::response(['data' => []], 200),
+    ]);
+
+    $response = $this->actingAs($user)->postJson(route('generator.prompt'), [
+        'generation_mode' => 'manual',
+        'campaign_id' => $campaign->id,
+        'catalog_product_ids' => [$product->id],
+        'render_style' => 'Minimalist Graphic',
+    ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'success' => true,
+            'render_style' => 'Minimalist Graphic',
+            'creative_concept' => 'Flat Lay Geometric Composition',
+        ]);
+});
+
+test('16: Suggest Visual Prompt with Studio Product Still passes style context, studio instructions, and preserves selection', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+    $campaign = Campaign::factory()->create(['user_id' => $user->id, 'business_id' => $business->id]);
+    $product = Product::factory()->create(['business_id' => $business->id, 'name' => 'Ceramic Mug']);
+
+    Http::fake([
+        'https://api.openai.com/v1/responses' => function ($request) {
+            $data = $request->data();
+
+            expect($data['input'])->toContain('SELECTED RENDER STYLE:')
+                ->and($data['input'])->toContain('Studio Product Still')
+                ->and($data['input'])->toContain('Formulate a visual concept that naturally complements "Studio Product Still"');
+
+            expect($data['instructions'])->toContain('If "Studio Product Still", focus on clean studio staging');
+
+            return Http::response([
+                'output' => [
+                    [
+                        'content' => [
+                            [
+                                'type' => 'output_text',
+                                'text' => json_encode([
+                                    'creative_concept' => 'Matte Clay Pedestal Still',
+                                    'visual_strategy' => 'Studio key lighting illuminating the glazed ceramic texture on a stone pedestal.',
+                                    'visual_prompt' => 'A handcrafted ceramic mug resting on a carved stone pedestal under soft diffusion studio box lighting, neutral backdrop with subtle gradient.',
+                                    'render_style' => 'Studio Product Still',
+                                ]),
+                            ],
+                        ],
+                    ],
+                ],
+                'usage' => ['total_tokens' => 210],
+            ], 200);
+        },
+        'https://api.openai.com/v1/organization/*' => Http::response(['data' => []], 200),
+    ]);
+
+    $response = $this->actingAs($user)->postJson(route('generator.prompt'), [
+        'generation_mode' => 'manual',
+        'campaign_id' => $campaign->id,
+        'catalog_product_ids' => [$product->id],
+        'render_style' => 'Studio Product Still',
+    ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'success' => true,
+            'render_style' => 'Studio Product Still',
+            'creative_concept' => 'Matte Clay Pedestal Still',
+        ]);
+});
+
+test('17: Repeated suggestions preserve the selected render style even if raw AI model output recommends another style', function () {
+    $user = User::factory()->create(['onboarding_completed' => true]);
+    $business = Business::factory()->create(['user_id' => $user->id]);
+    $campaign = Campaign::factory()->create(['user_id' => $user->id, 'business_id' => $business->id]);
+    $product = Product::factory()->create(['business_id' => $business->id, 'name' => 'Signature Blend Coffee']);
+
+    // Mock where OpenAI returns a different render_style like Cinematic Marketing
+    Http::fake([
+        'https://api.openai.com/v1/responses' => Http::response([
+            'output' => [
+                [
+                    'content' => [
+                        [
+                            'type' => 'output_text',
+                            'text' => json_encode([
+                                'creative_concept' => 'Warm Morning Brew',
+                                'visual_strategy' => 'Studio display highlighting the beans and cup.',
+                                'visual_prompt' => 'A steaming porcelain cup beside a package of roasted coffee beans on a polished granite surface under warm spotlighting.',
+                                'render_style' => 'Cinematic Marketing', // AI recommended Cinematic Marketing
+                            ]),
+                        ],
+                    ],
+                ],
+            ],
+            'usage' => ['total_tokens' => 190],
+        ], 200),
+        'https://api.openai.com/v1/organization/*' => Http::response(['data' => []], 200),
+    ]);
+
+    // Request 1: User selected Studio Product Still
+    $res1 = $this->actingAs($user)->postJson(route('generator.prompt'), [
+        'generation_mode' => 'manual',
+        'campaign_id' => $campaign->id,
+        'catalog_product_ids' => [$product->id],
+        'render_style' => 'Studio Product Still',
+    ]);
+
+    $res1->assertOk()
+        ->assertJson([
+            'success' => true,
+            'render_style' => 'Studio Product Still', // preserved! Not overwritten by Cinematic Marketing
+        ]);
+
+    // Request 2 (repeated suggestion): Still selected Studio Product Still
+    $res2 = $this->actingAs($user)->postJson(route('generator.prompt'), [
+        'generation_mode' => 'manual',
+        'campaign_id' => $campaign->id,
+        'catalog_product_ids' => [$product->id],
+        'render_style' => 'Studio Product Still',
+    ]);
+
+    $res2->assertOk()
+        ->assertJson([
+            'success' => true,
+            'render_style' => 'Studio Product Still', // stays Studio Product Still
+        ]);
+});

@@ -3,7 +3,7 @@ import manual8a44cf from './manual'
 import generate from './generate'
 /**
 * @see \App\Http\Controllers\AutomaticGeneratorController::automatic
- * @see app/Http/Controllers/AutomaticGeneratorController.php:47
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:50
  * @route '/generator/automatic'
  */
 export const automatic = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -18,7 +18,7 @@ automatic.definition = {
 
 /**
 * @see \App\Http\Controllers\AutomaticGeneratorController::automatic
- * @see app/Http/Controllers/AutomaticGeneratorController.php:47
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:50
  * @route '/generator/automatic'
  */
 automatic.url = (options?: RouteQueryOptions) => {
@@ -27,7 +27,7 @@ automatic.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AutomaticGeneratorController::automatic
- * @see app/Http/Controllers/AutomaticGeneratorController.php:47
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:50
  * @route '/generator/automatic'
  */
 automatic.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -37,7 +37,7 @@ automatic.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\AutomaticGeneratorController::automatic
- * @see app/Http/Controllers/AutomaticGeneratorController.php:47
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:50
  * @route '/generator/automatic'
  */
     const automaticForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -47,7 +47,7 @@ automatic.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\AutomaticGeneratorController::automatic
- * @see app/Http/Controllers/AutomaticGeneratorController.php:47
+ * @see app/Http/Controllers/AutomaticGeneratorController.php:50
  * @route '/generator/automatic'
  */
         automaticForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

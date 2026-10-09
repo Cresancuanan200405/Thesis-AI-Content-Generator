@@ -12,6 +12,9 @@ export interface GeneratedCreativeModalProps {
     campaignName?: string;
     eventName?: string;
     savedDesign: GeneratedDesign | null;
+    generatedDesigns?: GeneratedDesign[];
+    selectedIndex?: number;
+    onSelectIndex?: (index: number) => void;
     isSavedToDesigns: boolean;
     isSavingDesign: boolean;
     onSaveToDesigns: () => void | Promise<void>;
@@ -25,6 +28,9 @@ export interface GeneratedCreativeModalProps {
      */
     onDownload: (format: 'png' | 'jpeg') => void;
     onRegenerate: () => void;
+    onRegenerateSelected?: (index?: number) => void;
+    isRegenerating?: boolean;
+    isRegeneratingSelected?: boolean;
     onEditCreative: () => void;
     saveError?: string | null;
 
@@ -61,31 +67,77 @@ export interface GeneratedCreativeModalProps {
 }
 
 export function GeneratedCreativeModal(props: GeneratedCreativeModalProps) {
-    const { isOpen, onClose, savedDesign, productName, showPanel = false } = props;
+    const {
+        isOpen,
+        onClose,
+        savedDesign,
+        generatedDesigns,
+        selectedIndex,
+        onSelectIndex,
+        productName,
+        showPanel = false,
+        onRegenerate,
+        onRegenerateSelected,
+        isRegenerating,
+        isRegeneratingSelected,
+        ...panelProps
+    } = props;
 
-    if (!isOpen || !savedDesign?.image_url) {
+    if (!isOpen) {
         return null;
     }
 
-    const viewerItem: GeneratorViewerItem = {
-        ...savedDesign,
-        image_url: savedDesign.image_url,
-        product_name: productName || savedDesign.product_name || 'Generated Marketing Creative',
+    const availableDesigns = React.useMemo(() => {
+        if (generatedDesigns && generatedDesigns.length > 0) {
+            return generatedDesigns.filter((d) => Boolean(d.image_url));
+        }
+        return savedDesign?.image_url ? [savedDesign] : [];
+    }, [generatedDesigns, savedDesign]);
+
+    if (availableDesigns.length === 0) {
+        return null;
+    }
+
+    const viewerItems: GeneratorViewerItem[] = availableDesigns.map((design, index) => ({
+        ...design,
+        image_url: design.image_url,
+        product_name: productName || design.product_name || `Generated Marketing Creative ${index + 1}`,
+    }));
+
+    const validIndex =
+        selectedIndex !== undefined && selectedIndex >= 0 && selectedIndex < viewerItems.length
+            ? selectedIndex
+            : 0;
+
+    const handleRegenerate = () => {
+        if (props.onRegenerateSelected) {
+            props.onRegenerateSelected(validIndex);
+        } else if (props.onRegenerate) {
+            props.onRegenerate();
+        }
     };
 
     return (
         <UnifiedImageViewer
             isOpen={isOpen}
             onClose={onClose}
-            items={[viewerItem]}
-            currentIndex={0}
-            onNavigate={() => {}}
+            items={viewerItems}
+            currentIndex={validIndex}
+            onNavigate={(newIndex) => {
+                if (onSelectIndex) {
+                    onSelectIndex(newIndex);
+                }
+            }}
+            onRegenerate={handleRegenerate}
+            isRegenerating={props.isRegeneratingSelected || props.isRegenerating}
             context="generator"
             showPanel={showPanel}
             renderCustomPanel={showPanel ? (item) => (
                 <GeneratorViewerPanel
                     item={item as GeneratorViewerItem}
-                    {...props}
+                    productName={productName}
+                    onRegenerate={handleRegenerate}
+                    {...panelProps}
                 />
             ) : undefined}
         />

@@ -629,9 +629,6 @@ export default function ManualGenerator({
             const data = await response.json();
             if (response.ok && data.success && data.visual_prompt) {
                 setScenePrompt(data.visual_prompt);
-                if (data.render_style) {
-                    setRenderStyle(normalizeRenderStyle(data.render_style));
-                }
                 setRecentSuggestions((prev) => [
                     data.visual_prompt,
                     ...prev.filter((p) => p !== data.visual_prompt).slice(0, 4),
@@ -1165,18 +1162,20 @@ export default function ManualGenerator({
                 {/* MAIN STUDIO WORKSPACE */}
                 <div
                     className={`min-w-0 flex-1 ${generationState === 'generating'
-                        ? 'flex h-full max-h-full flex-col items-center justify-center overflow-hidden p-2 sm:p-4'
+                        ? 'flex h-full max-h-full flex-col overflow-hidden p-2 sm:p-3 lg:p-4'
                         : 'space-y-3.5 p-3 sm:p-4 lg:p-5'
                         }`}
                 >
                     {/* Header */}
                     {generationState !== 'ready' && (
-                        <StudioHeader
-                            activeMode="manual"
-                            activeCampaign={campaign}
-                            campaigns={campaigns}
-                            generationState={generationState}
-                        />
+                        <div className="shrink-0 w-full mb-2 sm:mb-3">
+                            <StudioHeader
+                                activeMode="manual"
+                                activeCampaign={campaign}
+                                campaigns={campaigns}
+                                generationState={generationState}
+                            />
+                        </div>
                     )}
 
                     {/* GENERATION STATE SWITCHING */}
@@ -1185,6 +1184,7 @@ export default function ManualGenerator({
                             business={business}
                             activeIndustry={business?.industry || 'Commercial'}
                             productName={effectiveProductName}
+                            productImageUrl={uniqueSelectedCatalogProducts[0]?.image_url}
                             renderStyle={renderStyle}
                             activeCampaign={campaign}
                             selectedEvent={selectedEvent}

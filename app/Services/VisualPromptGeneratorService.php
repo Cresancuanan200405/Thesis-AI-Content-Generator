@@ -262,7 +262,7 @@ class VisualPromptGeneratorService
                 'render_style' => [
                     'type' => 'string',
                     'enum' => MarketingDesignSystem::RENDER_STYLES,
-                    'description' => 'The recommended canonical commercial render style for this visual scene: Studio Product Still, Cinematic Marketing, Lifestyle Capture, or Minimalist Graphic.',
+                    'description' => 'The selected or complementary canonical commercial render style for this visual scene: Studio Product Still, Cinematic Marketing, Lifestyle Capture, or Minimalist Graphic.',
                 ],
             ];
             $requiredFields = ['creative_concept', 'visual_strategy', 'visual_prompt', 'render_style'];
@@ -361,7 +361,8 @@ class VisualPromptGeneratorService
         $sceneFamily = $this->designSystem->validateSceneFamily($result['scene_family'] ?? null);
         $environmentFamily = $this->designSystem->validateEnvironmentFamily($result['environment_family'] ?? null);
         $propProfile = $this->designSystem->validatePropProfile($result['prop_profile'] ?? null);
-        $renderStyle = $this->designSystem->validateRenderStyle($result['render_style'] ?? ($options['render_style'] ?? null));
+        $selectedRenderStyle = ! empty($options['render_style']) ? $this->designSystem->validateRenderStyle($options['render_style']) : null;
+        $renderStyle = $selectedRenderStyle ?? $this->designSystem->validateRenderStyle($result['render_style'] ?? null);
         $visualWorldArchetype = $this->designSystem->validateVisualArchetype($result['visual_world_archetype'] ?? null);
         $backgroundStyle = $this->designSystem->validateBackgroundStyle($result['background_style'] ?? null);
         $productArrangement = $this->designSystem->validateProductArrangement($result['product_arrangement'] ?? null);
@@ -947,7 +948,7 @@ CORE RULES:
 • Product Image Fidelity & Anti-Hallucination: The actual product image is the primary visual reference; the product name is semantic/contextual information. You may analyze the supplied product image to understand its visible visual identity, but you must NEVER invent physical product characteristics that are not supported by the image or factual product data. Do NOT invent containers, cups, bottles, packaging, steam, ingredients, materials, shapes, props, or product accessories unless they are clearly visible in the supplied product image or explicitly requested by the user.
 • Creative Direction: If the user supplied a creative direction, preserve their core idea faithfully. Do not replace it and do not expand it into technical art direction.
 • Composition: Do NOT generate exact layout instructions, text zones, pricing zones, headline areas, negative-space instructions, left/right/top/bottom coordinates, exact product positioning, split backgrounds, camera angles, lenses, apertures, photography recipes, or typography systems.
-• Render Style: Do NOT duplicate or redefine Render Style. Render Style is supplied separately to the image generator.
+• Render Style Compatibility: The visual concept must naturally complement the user's selected Render Style rather than working against it. If "Minimalist Graphic", formulate a visual concept suited for graphic design, clean modern surfaces, high-contrast focal points, and uncluttered aesthetics rather than photographic clutter. If "Studio Product Still", focus on clean studio staging, product hero isolation, refined commercial lighting, and elegant surfaces. If "Cinematic Marketing", evoke dramatic narrative lighting, rich depth, and cinematic atmosphere. If "Lifestyle Capture", describe an authentic real-world setting, natural environment, and relatable lifestyle mood. Preserve creative freedom without prescribing rigid layouts, camera focal lengths, or typography arrangements.
 • Marketing Copy: Do NOT invent marketing claims, promotional slogans, feature badges, icons, or additional copy.
 • Output Size: Approximately 40–90 words.
 INSTRUCTIONS;
@@ -1074,7 +1075,7 @@ INSTRUCTIONS;
 
         // 5. Render Style
         $renderStyle = $options['render_style'] ?? 'Studio Product Still';
-        $sections[] = "RENDER STYLE:\n- {$renderStyle}";
+        $sections[] = "SELECTED RENDER STYLE:\n- {$renderStyle}\n• Style Guidance: Formulate a visual concept that naturally complements \"{$renderStyle}\" without prescribing camera specifications or rigid graphic layouts.";
 
         // 6. User Creative Direction
         $userInstruction = trim((string) ($options['user_instruction'] ?? ''));

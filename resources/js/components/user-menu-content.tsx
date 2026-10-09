@@ -30,7 +30,7 @@ export function UserMenuContent({ user }: Props) {
     return (
         <>
             <DropdownMenuLabel className="p-0 font-normal">
-                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                <div className="flex items-center gap-2 px-2 py-1.5 text-left text-sm">
                     <UserInfo user={user} showEmail={true} />
                 </div>
             </DropdownMenuLabel>
@@ -38,24 +38,24 @@ export function UserMenuContent({ user }: Props) {
             <DropdownMenuGroup>
                 <DropdownMenuItem asChild>
                     <Link
-                        className="block w-full cursor-pointer"
+                        className="flex w-full cursor-pointer items-center gap-2"
                         href="/profile"
                         prefetch
                         onClick={cleanup}
                     >
-                        <User className="mr-2 h-4 w-4" />
-                        My Profile
+                        <User className="h-4 w-4 shrink-0" />
+                        <span>My Profile</span>
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                     <Link
-                        className="block w-full cursor-pointer"
+                        className="flex w-full cursor-pointer items-center gap-2"
                         href="/settings/profile"
                         prefetch
                         onClick={cleanup}
                     >
-                        <Settings className="mr-2 h-4 w-4" />
-                        Account Settings
+                        <Settings className="h-4 w-4 shrink-0" />
+                        <span>Account Settings</span>
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
@@ -65,10 +65,10 @@ export function UserMenuContent({ user }: Props) {
                         prefetch
                         onClick={cleanup}
                     >
-                        <span className="flex items-center">
-                            <Bell className="mr-2 h-4 w-4" />
-                            Notifications
-                        </span>
+                        <div className="flex items-center gap-2">
+                            <Bell className="h-4 w-4 shrink-0" />
+                            <span>Notifications</span>
+                        </div>
                         {unreadCount > 0 && (
                             <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
                                 {unreadCount > 99 ? '99+' : unreadCount}
@@ -78,27 +78,27 @@ export function UserMenuContent({ user }: Props) {
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                     <Link
-                        className="block w-full cursor-pointer"
+                        className="flex w-full cursor-pointer items-center gap-2"
                         href="/subscriptions"
                         prefetch
                         onClick={cleanup}
                     >
-                        <CreditCard className="mr-2 h-4 w-4" />
-                        Subscriptions
+                        <CreditCard className="h-4 w-4 shrink-0" />
+                        <span>Subscriptions</span>
                     </Link>
                 </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
                 <Link
-                    className="block w-full cursor-pointer"
+                    className="flex w-full cursor-pointer items-center gap-2 text-left"
                     href={logout()}
                     as="button"
                     onClick={handleLogout}
                     data-test="logout-button"
                 >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
+                    <LogOut className="h-4 w-4 shrink-0" />
+                    <span>Sign Out</span>
                 </Link>
             </DropdownMenuItem>
         </>

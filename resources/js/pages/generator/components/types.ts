@@ -308,6 +308,21 @@ export const renderStyleOptions: RenderStyleOption[] = [
     },
 ];
 
+export function resolveRenderStyleFromDraft(draft: any): string {
+    if (!draft) return 'Studio Product Still';
+    const meta = draft.generation_metadata || draft.generation_meta || {};
+    const rawStyle = meta.render_style || draft.render_style;
+    if (typeof rawStyle === 'string' && rawStyle.trim().length > 0) {
+        const matched = renderStyleOptions.find(
+            (opt) => opt.value.toLowerCase() === rawStyle.trim().toLowerCase(),
+        );
+        if (matched) {
+            return matched.value;
+        }
+    }
+    return 'Studio Product Still';
+}
+
 export function calculateGenerationCost(
     modelValue: string = 'gpt-image-2',
     qualityValue: ImageQuality = 'medium',

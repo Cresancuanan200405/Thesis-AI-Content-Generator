@@ -41,6 +41,11 @@ export interface CreativeCanvasProps {
     onViewGeneratedCreative?: () => void;
     onEditParameters: () => void;
     onRegenerate: () => void;
+    onRegenerateSelected?: (index?: number) => void;
+    onRegenerateAll?: () => void;
+    isRegeneratingSelected?: boolean;
+    isRegeneratingAll?: boolean;
+    isRegenerating?: boolean;
     designId?: string | number | null;
     origin?: string | null;
     campaignId?: string | number | null;
@@ -68,6 +73,11 @@ export interface CreativeCanvasProps {
     includeBusinessName?: boolean;
     businessName?: string;
     includeTagline?: boolean;
+
+    // Multiple generation outputs
+    generatedDesigns?: GeneratedDesign[];
+    selectedDesignIndex?: number;
+    onSelectDesignIndex?: (index: number) => void;
 }
 
 export function CreativeCanvas({
@@ -89,6 +99,11 @@ export function CreativeCanvas({
     onViewGeneratedCreative,
     onEditParameters,
     onRegenerate,
+    onRegenerateSelected,
+    onRegenerateAll,
+    isRegeneratingSelected = false,
+    isRegeneratingAll = false,
+    isRegenerating = false,
     campaignId,
     campaignName,
     mode = 'manual',
@@ -110,6 +125,9 @@ export function CreativeCanvas({
     includeBusinessName = true,
     businessName,
     includeTagline = true,
+    generatedDesigns = [],
+    selectedDesignIndex = 0,
+    onSelectDesignIndex,
 }: CreativeCanvasProps) {
     const [isTechDetailsExpanded, setIsTechDetailsExpanded] = useState(false);
 
@@ -175,58 +193,171 @@ export function CreativeCanvas({
 
     const formattedTheme = Array.isArray(visualTheme) ? visualTheme.join(', ') : visualTheme;
     const formattedTone = Array.isArray(brandTone) ? brandTone.join(', ') : brandTone;
+    const hasMultipleOutputs = Boolean(generatedDesigns && generatedDesigns.length > 1);
 
     return (
-        <Card className="mx-auto max-w-3xl overflow-hidden rounded-card border-border bg-card shadow-sm">
+        <Card className={`mx-auto w-full overflow-hidden rounded-card border-border bg-card shadow-sm transition-all duration-300 ${hasMultipleOutputs ? 'max-w-5xl' : 'max-w-3xl'}`}>
             <CardHeader className="border-b p-5 md:p-6 pb-4">
                 <div className="flex flex-col gap-1">
-                    <h2 className="text-xl font-bold tracking-tight text-foreground">
-                        Visual Creative Ready
-                    </h2>
+                    <div className="flex items-center justify-between gap-3">
+                        <h2 className="text-xl font-bold tracking-tight text-foreground">
+                            {hasMultipleOutputs ? 'Generated Creative Gallery' : 'Visual Creative Ready'}
+                        </h2>
+                        {hasMultipleOutputs && (
+                            <span className="text-xs font-medium text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-full">
+                                {generatedDesigns.length} visual variations
+                            </span>
+                        )}
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                        High-resolution commercial creative generated for {productName}
+                        {hasMultipleOutputs
+                            ? `Commercial creatives generated for ${productName}. Click any visual to inspect in the unified viewer.`
+                            : `High-resolution commercial creative generated for ${productName}`}
                     </p>
                 </div>
             </CardHeader>
 
             <CardContent className="space-y-5 p-5 md:p-6">
                 <div className="animate-in space-y-5 duration-300 fade-in">
-                    {/* PRIMARY GENERATED VISUAL (CLICKABLE IMAGE-LED HERO) */}
-                    <div
-                        onClick={handleViewCreative}
-                        className="group relative cursor-zoom-in overflow-hidden rounded-card border border-border bg-muted/15 p-3 sm:p-5 transition-all hover:border-primary/50 hover:shadow-md"
-                        title="Click to view full image canvas in pure viewer"
-                    >
-                        {savedDesign?.image_url ? (
-                            <div className="relative flex max-h-[540px] w-full items-center justify-center overflow-hidden rounded-lg bg-background/50">
-                                <img
-                                    src={savedDesign.image_url}
-                                    alt={productName}
-                                    className="max-h-[520px] w-auto max-w-full rounded-md object-contain transition-transform duration-300 group-hover:scale-[1.01]"
-                                />
-                                <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/50 via-transparent to-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100">
-                                    <span className="flex items-center gap-1.5 rounded-md bg-black/80 px-3 py-1.5 text-xs font-medium text-white shadow-md backdrop-blur-md">
-                                        <Eye className="h-3.5 w-3.5 text-primary" />
-                                        Click to zoom & pan canvas
+                    {/* MULTI-OUTPUT GALLERY OR SINGLE-OUTPUT HERO */}
+                    {hasMultipleOutputs ? (
+                        <div className="space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+                                <span className="text-xs font-semibold text-foreground">
+                                    Generated Visuals ({generatedDesigns.length} outputs)
+                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground hidden md:inline">
+                                        Click any visual to inspect in viewer
                                     </span>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={onRegenerateAll || onRegenerate}
+                                        disabled={isRegenerating || isRegeneratingAll || isRegeneratingSelected}
+                                        className="h-7 gap-1.5 px-2.5 text-xs font-semibold text-primary border-primary/30 hover:bg-primary/10 transition-all cursor-pointer disabled:opacity-50"
+                                        title="Regenerate all outputs in this batch"
+                                    >
+                                        {isRegeneratingAll ? (
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                                        ) : (
+                                            <RefreshCcw className="h-3.5 w-3.5 text-primary" />
+                                        )}
+                                        <span>Regenerate All</span>
+                                    </Button>
                                 </div>
                             </div>
-                        ) : (
-                            <div className="w-full max-w-md space-y-3 rounded-lg border border-border bg-card p-6 text-center text-card-foreground">
-                                <h3 className="text-xl font-bold">{productName}</h3>
-                                {tagline && (
-                                    <p className="text-xs font-medium text-muted-foreground">
-                                        "{tagline}"
-                                    </p>
-                                )}
-                                {price && (
-                                    <p className="text-base font-bold text-primary">
-                                        {formatPrice(price)}
-                                    </p>
-                                )}
+
+                            <div
+                                className={`grid gap-4 sm:gap-5 ${
+                                    generatedDesigns.length === 2
+                                        ? 'grid-cols-1 sm:grid-cols-2'
+                                        : generatedDesigns.length === 3
+                                          ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+                                          : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                                }`}
+                                role="region"
+                                aria-label="Generated image gallery"
+                            >
+                                {generatedDesigns.map((design, idx) => {
+                                    const isSelected = selectedDesignIndex === idx;
+                                    return (
+                                        <button
+                                            key={design.id || `gallery-output-${idx}`}
+                                            type="button"
+                                            onClick={() => {
+                                                onSelectDesignIndex?.(idx);
+                                                handleViewCreative();
+                                            }}
+                                            aria-label={`Open generated visual Output ${idx + 1} in image viewer`}
+                                            className={`group relative flex flex-col overflow-hidden rounded-xl border bg-muted/15 text-left transition-all duration-200 cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                                                isSelected
+                                                    ? 'border-primary ring-2 ring-primary/30 shadow-md bg-muted/25'
+                                                    : 'border-border/80 hover:border-primary/50 hover:shadow-md hover:bg-muted/30'
+                                            }`}
+                                        >
+                                            {/* Minimal ordinal badge */}
+                                            <div className="absolute top-2.5 left-2.5 z-10">
+                                                <span
+                                                    className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold backdrop-blur-md shadow-xs border transition-colors ${
+                                                        isSelected
+                                                            ? 'bg-primary text-primary-foreground border-primary'
+                                                            : 'bg-background/85 text-foreground/80 border-border/60'
+                                                    }`}
+                                                >
+                                                    Output {idx + 1}
+                                                </span>
+                                            </div>
+
+                                            {/* Preview image area with object-contain */}
+                                            <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden bg-background/50 p-3 sm:p-4">
+                                                {design.image_url ? (
+                                                    <img
+                                                        src={design.image_url}
+                                                        alt={design.product_name || `${productName} Output ${idx + 1}`}
+                                                        className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.02]"
+                                                        loading="lazy"
+                                                    />
+                                                ) : (
+                                                    <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+                                                        No visual available
+                                                    </div>
+                                                )}
+
+                                                {/* Hover inspection overlay */}
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 backdrop-blur-[1px] transition-opacity duration-200 group-hover:opacity-100">
+                                                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-black/80 px-3 py-1.5 text-xs font-medium text-white shadow-md backdrop-blur-md">
+                                                        <Eye className="h-3.5 w-3.5 text-primary" />
+                                                        Inspect
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    ) : (
+                        /* PRIMARY GENERATED VISUAL (CLICKABLE IMAGE-LED HERO FOR SINGLE OUTPUT) */
+                        <button
+                            type="button"
+                            onClick={handleViewCreative}
+                            aria-label="View generated marketing visual in full viewer"
+                            className="group relative w-full cursor-zoom-in overflow-hidden rounded-card border border-border bg-muted/15 p-3 sm:p-5 text-left transition-all hover:border-primary/50 hover:shadow-md focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                            title="Click to view full image canvas in pure viewer"
+                        >
+                            {savedDesign?.image_url ? (
+                                <div className="relative flex max-h-[540px] w-full items-center justify-center overflow-hidden rounded-lg bg-background/50">
+                                    <img
+                                        src={savedDesign.image_url}
+                                        alt={productName}
+                                        className="max-h-[520px] w-auto max-w-full rounded-md object-contain transition-transform duration-300 group-hover:scale-[1.01]"
+                                    />
+                                    <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/50 via-transparent to-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100">
+                                        <span className="flex items-center gap-1.5 rounded-md bg-black/80 px-3 py-1.5 text-xs font-medium text-white shadow-md backdrop-blur-md">
+                                            <Eye className="h-3.5 w-3.5 text-primary" />
+                                            Click to zoom & pan canvas
+                                        </span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="w-full max-w-md space-y-3 rounded-lg border border-border bg-card p-6 text-center text-card-foreground mx-auto">
+                                    <h3 className="text-xl font-bold">{productName}</h3>
+                                    {tagline && (
+                                        <p className="text-xs font-medium text-muted-foreground">
+                                            "{tagline}"
+                                        </p>
+                                    )}
+                                    {price && (
+                                        <p className="text-base font-bold text-primary">
+                                            {formatPrice(price)}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+                        </button>
+                    )}
 
                     {/* STATUS ALERT (IF SAVED) */}
                     {isSavedToDesigns && (
@@ -330,7 +461,7 @@ export function CreativeCanvas({
                         </div>
 
                         {/* SUB ACTIONS (EDIT & REGENERATE) */}
-                        <div className="flex items-center justify-between border-t border-border/60 pt-2.5">
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-2.5">
                             <button
                                 type="button"
                                 onClick={onEditParameters}
@@ -340,14 +471,38 @@ export function CreativeCanvas({
                                 Edit Parameters
                             </button>
 
-                            <button
-                                type="button"
-                                onClick={onRegenerate}
-                                className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline transition-colors cursor-pointer"
-                            >
-                                <RefreshCcw className="h-3.5 w-3.5" />
-                                Regenerate Variation
-                            </button>
+                            <div className="flex items-center gap-3">
+                                {hasMultipleOutputs && (
+                                    <button
+                                        type="button"
+                                        onClick={() => onRegenerateSelected?.(selectedDesignIndex)}
+                                        disabled={isRegenerating || isRegeneratingSelected || isRegeneratingAll}
+                                        className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer disabled:opacity-50"
+                                        title={`Regenerate Output ${selectedDesignIndex + 1} only`}
+                                    >
+                                        {isRegeneratingSelected ? (
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                                        ) : (
+                                            <RefreshCcw className="h-3.5 w-3.5" />
+                                        )}
+                                        Regenerate Output {selectedDesignIndex + 1}
+                                    </button>
+                                )}
+
+                                <button
+                                    type="button"
+                                    onClick={hasMultipleOutputs ? (onRegenerateAll || onRegenerate) : onRegenerate}
+                                    disabled={isRegenerating || isRegeneratingSelected || isRegeneratingAll}
+                                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline transition-colors cursor-pointer disabled:opacity-50"
+                                >
+                                    {(hasMultipleOutputs ? isRegeneratingAll : isRegenerating) ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                        <RefreshCcw className="h-3.5 w-3.5" />
+                                    )}
+                                    {hasMultipleOutputs ? 'Regenerate All' : 'Regenerate Variation'}
+                                </button>
+                            </div>
                         </div>
                     </div>
 

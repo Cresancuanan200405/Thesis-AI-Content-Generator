@@ -1297,6 +1297,44 @@ class ModularPromptOrchestrator
     }
 
     /**
+     * Resolve concise copy emphasis priority instruction based on canonical value and visibility state.
+     *
+     * @param  array{
+     *     include_product_name?: bool,
+     *     include_prices?: bool,
+     *     include_tagline?: bool,
+     *     has_tagline?: bool,
+     * }  $visibility
+     */
+    public function resolveCopyEmphasisInstruction(string $copyEmphasis, array $visibility = []): string
+    {
+        $normalizedKey = strtolower(str_replace(['-', ' '], '_', trim($copyEmphasis)));
+        $canonical = MarketingDesignSystem::CANONICAL_COPY_EMPHASIS_MAP[$normalizedKey]
+            ?? $this->designSystem->validateCopyEmphasis($copyEmphasis);
+
+        $includeProductName = $visibility['include_product_name'] ?? true;
+        $includePrices = $visibility['include_prices'] ?? true;
+        $includeTagline = $visibility['include_tagline'] ?? true;
+        $hasTagline = $visibility['has_tagline'] ?? true;
+
+        return match ($canonical) {
+            'Product' => $includeProductName
+                ? 'Keep the exact product name as the dominant advertising headline (prominent, editorial, legible, and visually connected to the actual product; do not repeat the full product name across multiple advertising text areas). Keep its corresponding price associated with that product when price visibility is enabled. Treat campaign numerals (such as "10.10") and oversized background lettering as supporting visual elements, not competing headlines. Keep the supplied tagline visually coherent and readable, with its complete wording preserved. Keep the event title visible as secondary campaign information. Allow creative typography, layering, and composition, but avoid giving multiple text elements equal headline prominence.'
+                : 'Product name is hidden; create a cohesive hierarchy among the remaining permitted copy elements. Avoid letting one text element dominate unnecessarily.',
+
+            'Price' => $includePrices
+                ? 'Make the exact permitted product price the primary promotional emphasis, clearly associated with the product and shown once in the layout without inventing discounts or promotional claims. Treat product name, tagline, and event title as supporting copy. Background typography must remain subordinate.'
+                : 'Product price is hidden; create a cohesive hierarchy among the remaining permitted copy elements. Avoid letting one text element dominate unnecessarily.',
+
+            'Tagline' => ($includeTagline && $hasTagline)
+                ? 'Make the supplied tagline the primary advertising text. Preserve its exact wording and meaning; creative line breaks and typographic styling are allowed, but keep the phrase visually coherent and readable rather than looking like unrelated fragments. Treat product name, price, and event title as supporting copy. Background typography must remain subordinate.'
+                : 'Tagline is hidden or unavailable; create a cohesive hierarchy among the remaining permitted copy elements. Avoid letting one text element dominate unnecessarily.',
+
+            default => 'Create a cohesive, balanced typographic hierarchy among the permitted copy elements (product name, price, tagline, and event title) so no single text element dominates inappropriately. Keep all copy legible and harmonious.',
+        };
+    }
+
+    /**
      * Build a concise, compact Manual Campaign Brief (Small Manual Brief) for Manual Studio generation.
      * Generates an authoritative ~4,500–6,000 character brief providing OpenAI with actual product images,
      * factual business/product data, and user creative direction without redundant 20-section expansions.
@@ -1478,7 +1516,7 @@ class ModularPromptOrchestrator
                 ? filter_var($options['show_event_text'], FILTER_VALIDATE_BOOLEAN) : true;
             $lines[] = "Event: {$eventName}";
             if ($showEventText) {
-                $lines[] = "Event visibility: Allowed (Event name \"{$eventName}\" may appear in typography. Do not invent event slogans).";
+                $lines[] = "Event visibility: Allowed (Keep exact event title \"{$eventName}\" visible as supporting campaign information, subordinate to the selected copy emphasis; preserve exact wording and do not invent event slogans or allow event typography to overpower the hero product).";
             } else {
                 $lines[] = "Event visibility: Hidden (FORBIDDEN EVENT TEXT: Do not render event name \"{$eventName}\" or event slogans as visible text).";
             }
@@ -1494,7 +1532,7 @@ class ModularPromptOrchestrator
             $pName = $item['name'];
             $pPrice = $item['price'];
             $fmtPrice = null;
-            if ($pPrice !== null && $pPrice !== '') {
+            if ($includePrices && $pPrice !== null && $pPrice !== '') {
                 $rawPStr = trim((string) $pPrice);
                 $fmtPrice = is_numeric($rawPStr) ? '₱'.number_format((float) $rawPStr, 2) : (str_starts_with($rawPStr, '₱') ? $rawPStr : '₱'.ltrim($rawPStr));
             }
@@ -1528,8 +1566,18 @@ class ModularPromptOrchestrator
         $ctrlLines = [];
         $ctrlLines[] = "Render style: {$renderStyle}";
 
-        $copyEmphasis = $this->designSystem->validateCopyEmphasis($options['copy_emphasis'] ?? null);
-        $ctrlLines[] = "Copy emphasis: {$copyEmphasis}";
+        $rawCopyEmphasis = $options['copy_emphasis'] ?? 'Balanced';
+        $validatedCopyEmphasis = $this->designSystem->validateCopyEmphasis($rawCopyEmphasis);
+        $canonicalCopyEmphasis = MarketingDesignSystem::CANONICAL_COPY_EMPHASIS_MAP[strtolower(str_replace(['-', ' '], '_', (string) $rawCopyEmphasis))]
+            ?? (MarketingDesignSystem::CANONICAL_COPY_EMPHASIS_MAP[strtolower(str_replace(['-', ' '], '_', $validatedCopyEmphasis))] ?? $validatedCopyEmphasis);
+
+        $copyEmphasisInstruction = $this->resolveCopyEmphasisInstruction($canonicalCopyEmphasis, [
+            'include_product_name' => $includeProductName,
+            'include_prices' => $includePrices,
+            'include_tagline' => $includeTagline,
+            'has_tagline' => ! empty($normalizedTagline),
+        ]);
+        $ctrlLines[] = "Copy emphasis: {$validatedCopyEmphasis} — {$copyEmphasisInstruction}";
 
         if ($includeProductName) {
             if (count($allProducts) > 1) {
@@ -1547,7 +1595,7 @@ class ModularPromptOrchestrator
         $tagline = $options['tagline'] ?? null;
         $normalizedTagline = $tagline ? TaglineNormalizationService::normalize($tagline) : null;
         if ($includeTagline && $normalizedTagline) {
-            $ctrlLines[] = "Tagline: \"{$normalizedTagline}\"";
+            $ctrlLines[] = "Tagline: \"{$normalizedTagline}\" (Preserve exact wording and meaning; creative line breaks and typographic styling are allowed, but keep the phrase visually coherent and readable rather than looking like unrelated fragments)";
         } elseif (! $includeTagline) {
             $ctrlLines[] = 'Tagline: Disabled';
         }
@@ -1560,8 +1608,12 @@ class ModularPromptOrchestrator
         $rules = [
             'RULES:',
             '• Use the provided product image(s) as the authoritative visual reference. Preserve the actual products and exact product-name/price pairings.',
-            '• Follow the user\'s creative direction, keeping the product as the hero while adapting naturally to the campaign, event, render style, and aspect ratio.',
-            '• Respect event visibility. If allowed, integrate the event naturally as supporting campaign text; if hidden, do not display the event name.',
+            '• Creative Freedom & Direction: Follow the user\'s creative direction while letting the model choose typography, placement, scale, and composition without imposing fixed coordinates, mandatory fonts, or rigid poster templates. Keep the product as the hero.',
+            '• Render Style Synergy: The visual creative direction and selected render style ("'.$renderStyle.'") work together as complementary inputs. Render style determines the overall visual treatment and medium, while creative direction provides the subject, scene concept, and atmospheric storytelling. Adapt the concept naturally to the selected render style without compromising the hero product.',
+            '• Editorial Typography & Background Typography: Respect the active copy emphasis priority (here: '.$validatedCopyEmphasis.'). When Product is emphasized, keep the exact product name as the dominant advertising headline, visually connected to the actual product without repeating the full product name across multiple text areas. Treat campaign numerals (such as "10.10") and oversized background lettering as supporting visual elements, not competing headlines. Keep the supplied tagline visually coherent and readable with its complete wording preserved, and keep the event title visible as secondary campaign information. Allow creative typography, layering, and composition, but avoid giving multiple text elements equal headline prominence.',
+            '• Exact Copy Preservation: When rendering visible text, preserve the exact supplied wording and meaning for the product name, tagline, and event title. Creative line breaks and typographic styling are allowed, but keep the tagline phrase visually coherent and readable rather than looking like unrelated fragments. Do not invent marketing claims, promotional slogans, or unprovided discounts.',
+            '• Price Association & Packaging: Preserve the exact supplied price and its association with the product. Show the price once in the advertising layout without inventing discounts or promotional claims. Preserve packaging text naturally present in the reference image.',
+            '• Event Copy: Keep the exact event title visible as supporting campaign information, subordinate to the selected copy emphasis. If event visibility is hidden, do not display the event name.',
             '• Do not create logos, badges, or watermarks.',
         ];
 
@@ -1719,7 +1771,7 @@ class ModularPromptOrchestrator
             $pName = $item['name'];
             $pPrice = $item['price'];
             $fmtPrice = null;
-            if ($pPrice !== null && $pPrice !== '') {
+            if ($includePrices && $pPrice !== null && $pPrice !== '') {
                 $rawPStr = trim((string) $pPrice);
                 $fmtPrice = is_numeric($rawPStr) ? '₱'.number_format((float) $rawPStr, 2) : (str_starts_with($rawPStr, '₱') ? $rawPStr : '₱'.ltrim($rawPStr));
             }
@@ -1758,12 +1810,25 @@ class ModularPromptOrchestrator
         // 6. Creative Controls
         $ctrlLines = [];
         $ctrlLines[] = "Render style:\n{$renderStyle}";
-        $ctrlLines[] = "Copy emphasis:\n{$copyEmphasis}";
 
         $tagline = $options['tagline'] ?? null;
         $normalizedTagline = $tagline ? TaglineNormalizationService::normalize($tagline) : null;
+
+        $rawCopyEmphasis = $options['copy_emphasis'] ?? 'Balanced';
+        $validatedCopyEmphasis = $this->designSystem->validateCopyEmphasis($rawCopyEmphasis);
+        $canonicalCopyEmphasis = MarketingDesignSystem::CANONICAL_COPY_EMPHASIS_MAP[strtolower(str_replace(['-', ' '], '_', (string) $rawCopyEmphasis))]
+            ?? (MarketingDesignSystem::CANONICAL_COPY_EMPHASIS_MAP[strtolower(str_replace(['-', ' '], '_', $validatedCopyEmphasis))] ?? $validatedCopyEmphasis);
+
+        $copyEmphasisInstruction = $this->resolveCopyEmphasisInstruction($canonicalCopyEmphasis, [
+            'include_product_name' => $includeProductName,
+            'include_prices' => $includePrices,
+            'include_tagline' => $includeTagline,
+            'has_tagline' => ! empty($normalizedTagline),
+        ]);
+        $ctrlLines[] = "Copy emphasis:\n{$validatedCopyEmphasis} — {$copyEmphasisInstruction}";
+
         if ($includeTagline && $normalizedTagline) {
-            $ctrlLines[] = "Tagline:\n\"{$normalizedTagline}\"";
+            $ctrlLines[] = "Tagline:\n\"{$normalizedTagline}\" (Preserve exact wording and meaning; creative line breaks and typographic styling are allowed, but keep the phrase visually coherent and readable rather than looking like unrelated fragments)";
         } elseif (! $includeTagline) {
             $ctrlLines[] = "Tagline:\nDisabled";
         }
@@ -1784,8 +1849,12 @@ class ModularPromptOrchestrator
         // 8. Concise Hard Constraints
         $rules = [
             'Use the provided product image(s) as the authoritative visual reference.',
-            'Preserve the actual products and exact product-name/price pairings.',
-            'Follow the creative direction naturally.',
+            'Preserve actual products and exact product-name/price pairings.',
+            'Honor selected render style ("'.$renderStyle.'") with full creative freedom in typography, placement, scale, and composition without rigid templates.',
+            'Editorial Hierarchy: Respect active copy emphasis (here: '.$validatedCopyEmphasis.'). When Product is emphasized, product name is the dominant headline; campaign numerals (e.g. "10.10") and oversized lettering are supporting elements. Avoid equal headline prominence across multiple text elements, and do not repeat product name across multiple text areas.',
+            'Exact Copy Preservation: Preserve exact supplied wording for product name, tagline, and event title without inventing slogans or claims.',
+            'Pricing: Preserve exact price and product association. Render at most once without duplication or invented discounts.',
+            'Event Copy: Keep the exact event title visible as supporting campaign information, subordinate to the selected copy emphasis.',
             'Respect event visibility.',
             'Do not create logos, badges, or watermarks.',
         ];
