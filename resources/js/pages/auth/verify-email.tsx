@@ -1,6 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
-import { MailCheck, RefreshCw } from 'lucide-react';
-import { useRef } from 'react';
+import React, { useRef } from 'react';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -107,136 +106,113 @@ export default function VerifyEmail({ status }: { status?: string }) {
     };
 
     return (
-        <>
+        <div className="space-y-4">
             <Head title="Verify your email" />
 
-            <div className="space-y-4">
-                {/* Visual Header Banner */}
-                <div className="flex flex-col items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 p-3 text-center">
-                    <div className="mb-1.5 flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
-                        <MailCheck className="h-5 w-5" />
-                    </div>
-                    <h3 className="text-xs font-bold text-foreground">
-                        Verification Code Sent
-                    </h3>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">
-                        Please check your inbox and enter the 6-digit code
-                        below.
-                    </p>
+            {status === 'verification-link-sent' && (
+                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 py-2 text-center text-xs font-medium text-emerald-400">
+                    A new verification code has been sent to your email.
                 </div>
+            )}
 
-                {status === 'verification-link-sent' && (
-                    <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 py-2 text-center text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                        A new verification code has been sent to your email.
-                    </div>
-                )}
+            <Form
+                action="/email/verify-code"
+                method="post"
+                className="space-y-4 text-left"
+            >
+                {({ processing, errors }) => (
+                    <>
+                        <div className="space-y-2">
+                            <Label className="block text-center text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                                6-Digit Verification Code
+                            </Label>
 
-                <Form
-                    action="/email/verify-code"
-                    method="post"
-                    className="space-y-3.5 text-left"
-                >
-                    {({ processing, errors }) => (
-                        <>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-semibold">
-                                    6-Digit Verification Code
-                                </Label>
+                            {/* Hidden field submitted to Laravel */}
+                            <input
+                                type="hidden"
+                                name="code"
+                                id="verification-code"
+                                ref={codeInputRef}
+                            />
 
-                                {/* Hidden field submitted to Laravel */}
-                                <input
-                                    type="hidden"
-                                    name="code"
-                                    id="verification-code"
-                                    ref={codeInputRef}
-                                />
-
-                                <div
-                                    className="flex justify-center gap-2 py-1 sm:gap-2.5"
-                                    onPaste={handlePaste}
-                                >
-                                    {Array.from({ length: 6 }, (_, index) => (
-                                        <Input
-                                            key={index}
-                                            ref={(element) => {
-                                                inputRefs.current[index] =
-                                                    element;
-                                            }}
-                                            type="text"
-                                            inputMode="numeric"
-                                            autoComplete={
-                                                index === 0
-                                                    ? 'one-time-code'
-                                                    : 'off'
-                                            }
-                                            maxLength={1}
-                                            aria-label={`Verification digit ${index + 1}`}
-                                            onInput={(event) =>
-                                                handleCodeInput(
-                                                    index,
-                                                    event.currentTarget.value,
-                                                )
-                                            }
-                                            onKeyDown={(event) =>
-                                                handleKeyDown(index, event)
-                                            }
-                                            className="h-11 w-10 rounded-xl border-border bg-background text-center text-base font-bold shadow-xs focus-visible:border-primary focus-visible:ring-primary/20 sm:h-12 sm:w-11 sm:text-lg"
-                                        />
-                                    ))}
-                                </div>
-
-                                {errors?.code && (
-                                    <p className="mt-1 text-center text-xs font-medium text-destructive">
-                                        {String(errors.code)}
-                                    </p>
-                                )}
+                            <div
+                                className="flex justify-center gap-1.5 sm:gap-2 py-1"
+                                onPaste={handlePaste}
+                            >
+                                {Array.from({ length: 6 }, (_, index) => (
+                                    <Input
+                                        key={index}
+                                        ref={(element) => {
+                                            inputRefs.current[index] = element;
+                                        }}
+                                        type="text"
+                                        inputMode="numeric"
+                                        autoComplete={
+                                            index === 0
+                                                ? 'one-time-code'
+                                                : 'off'
+                                        }
+                                        maxLength={1}
+                                        aria-label={`Verification digit ${index + 1}`}
+                                        onInput={(event) =>
+                                            handleCodeInput(
+                                                index,
+                                                event.currentTarget.value,
+                                            )
+                                        }
+                                        onKeyDown={(event) =>
+                                            handleKeyDown(index, event)
+                                        }
+                                        className="h-11 w-10 sm:h-12 sm:w-11 rounded-xl border-zinc-200 bg-white text-center font-mono text-lg font-bold text-zinc-900 shadow-xs focus-visible:border-zinc-900 focus-visible:ring-1 focus-visible:ring-zinc-900/10 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-white dark:focus-visible:border-zinc-500 dark:focus-visible:ring-zinc-500/20"
+                                    />
+                                ))}
                             </div>
 
-                            <Button
-                                disabled={processing}
-                                className="h-10 w-full cursor-pointer rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:scale-[1.01] hover:bg-primary/90 hover:shadow-primary/35 active:scale-[0.98]"
-                            >
-                                {processing && <Spinner />}
-                                Verify email &rarr;
-                            </Button>
-                        </>
+                            {errors?.code && (
+                                <p className="mt-1 text-center text-xs font-medium text-red-500 dark:text-red-400">
+                                    {String(errors.code)}
+                                </p>
+                            )}
+                        </div>
+
+                        <Button
+                            type="submit"
+                            disabled={processing}
+                            className="h-11 sm:h-12 w-full cursor-pointer rounded-xl bg-zinc-950 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 active:scale-[0.99] disabled:opacity-50 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+                        >
+                            {processing ? <Spinner /> : 'Verify email'}
+                        </Button>
+                    </>
+                )}
+            </Form>
+
+            <div className="space-y-2.5 pt-2 text-center">
+                <Form {...send.form()} className="inline-block">
+                    {({ processing }) => (
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className="cursor-pointer text-xs font-medium text-zinc-500 transition-colors hover:text-zinc-900 disabled:opacity-50 dark:text-zinc-400 dark:hover:text-white"
+                        >
+                            {processing ? 'Sending...' : 'Resend verification code'}
+                        </button>
                     )}
                 </Form>
 
-                <div className="space-y-2 border-t border-border/60 pt-1 text-center">
-                    <Form {...send.form()} className="inline-block">
-                        {({ processing }) => (
-                            <Button
-                                type="submit"
-                                disabled={processing}
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-                            >
-                                {processing ? (
-                                    <Spinner />
-                                ) : (
-                                    <RefreshCw className="h-3 w-3" />
-                                )}
-                                Resend verification code
-                            </Button>
-                        )}
-                    </Form>
-
+                <div>
                     <TextLink
                         href={logout()}
-                        className="mx-auto block text-xs text-muted-foreground hover:text-foreground"
+                        className="inline-block text-xs text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
                     >
                         Log out
                     </TextLink>
                 </div>
             </div>
-        </>
+        </div>
     );
 }
 
 VerifyEmail.layout = {
     title: 'Verify your email',
-    description:
-        'Please confirm your email address to complete setup and unlock your workspace.',
+    description: 'Enter the 6-digit verification code sent to your email.',
 };

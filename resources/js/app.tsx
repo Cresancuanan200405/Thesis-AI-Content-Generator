@@ -17,12 +17,16 @@ createInertiaApp({
         const page: any = pages[`./pages/${name}.tsx`];
 
         if (page?.default) {
-            const rawLayout = page.default.layout;
+            const rawLayout = page.default._rawLayout ?? page.default.layout;
             const isPlainObject =
                 rawLayout &&
                 typeof rawLayout === 'object' &&
                 !Array.isArray(rawLayout) &&
                 !('$$typeof' in rawLayout);
+
+            if (isPlainObject && !page.default._rawLayout) {
+                page.default._rawLayout = rawLayout;
+            }
 
             const breadcrumbs = isPlainObject
                 ? rawLayout.breadcrumbs || []
@@ -30,6 +34,9 @@ createInertiaApp({
             const title = isPlainObject ? rawLayout.title || '' : '';
             const description = isPlainObject
                 ? rawLayout.description || ''
+                : '';
+            const logoClassName = isPlainObject
+                ? rawLayout.logoClassName || ''
                 : '';
 
             if (
@@ -40,9 +47,15 @@ createInertiaApp({
                 name === 'generator/inspiration'
             ) {
                 page.default.layout = null;
+            } else if (typeof rawLayout === 'function') {
+                page.default.layout = rawLayout;
             } else if (name.startsWith('auth/')) {
                 page.default.layout = (children: React.ReactNode) => (
-                    <AuthLayout title={title} description={description}>
+                    <AuthLayout
+                        title={title}
+                        description={description}
+                        logoClassName={logoClassName}
+                    >
                         {children}
                     </AuthLayout>
                 );

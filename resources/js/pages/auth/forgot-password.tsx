@@ -1,5 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
-import { ArrowRight, CheckCircle2, Mail } from 'lucide-react';
+import React from 'react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
@@ -9,92 +9,71 @@ import { Spinner } from '@/components/ui/spinner';
 import { login } from '@/routes';
 import { email } from '@/routes/password';
 
-const fieldGlow =
-    'group relative rounded-xl transition-all duration-300 focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.18)] hover:shadow-[0_0_0_3px_rgba(59,130,246,0.08)]';
-
 export default function ForgotPassword({ status }: { status?: string }) {
     return (
-        <>
-            <Head title="Reset password" />
+        <div className="space-y-4">
+            <Head title="Forgot password" />
 
-            <div className="animate-in space-y-4 duration-300 fade-in slide-in-from-bottom-2">
-                {/* Success Status */}
-                {status && (
-                    <div className="flex items-center justify-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-3.5 py-2 text-center text-xs font-medium text-blue-600 dark:text-blue-400">
-                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                        {status}
-                    </div>
-                )}
-
-                <Form
-                    {...email.form()}
-                    resetOnSuccess={['email']}
-                    className="flex flex-col gap-3.5"
-                >
-                    {({ processing, errors }) => (
-                        <>
-                            {/* Email Address */}
-                            <div className="grid gap-1">
-                                <Label
-                                    htmlFor="email"
-                                    className="text-xs font-semibold text-foreground"
-                                >
-                                    Email address
-                                </Label>
-
-                                <div className={fieldGlow}>
-                                    <Mail className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground transition-colors duration-300 group-focus-within:text-[#2563EB]" />
-
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        name="email"
-                                        autoComplete="email"
-                                        autoFocus
-                                        required
-                                        placeholder="email@example.com"
-                                        className="h-9.5 rounded-xl border-border bg-background pl-9 text-xs text-foreground placeholder:text-muted-foreground/60 focus-visible:border-[#2563EB] focus-visible:ring-[#2563EB]/30"
-                                    />
-                                </div>
-
-                                <InputError message={errors.email} />
-                            </div>
-
-                            <Button
-                                type="submit"
-                                className="group h-10 w-full cursor-pointer rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:scale-[1.01] hover:bg-primary/90 hover:shadow-primary/35 active:scale-[0.98] disabled:opacity-70"
-                                disabled={processing}
-                                data-test="email-password-reset-link-button"
-                            >
-                                {processing ? (
-                                    <Spinner />
-                                ) : (
-                                    <>
-                                        <span>Send password reset link</span>
-                                        <ArrowRight className="ml-1.5 h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
-                                    </>
-                                )}
-                            </Button>
-                        </>
-                    )}
-                </Form>
-
-                <div className="pt-1 text-center text-xs text-muted-foreground">
-                    Remember your password?{' '}
-                    <TextLink
-                        href={login()}
-                        className="font-bold text-primary transition-colors duration-300 hover:text-primary/80"
-                    >
-                        Log in &rarr;
-                    </TextLink>
+            {/* Status Message */}
+            {status && (
+                <div className="rounded-lg border border-blue-500/20 bg-blue-500/10 px-3.5 py-2 text-center text-xs font-medium text-blue-400">
+                    {status}
                 </div>
+            )}
+
+            <Form
+                {...email.form()}
+                resetOnSuccess={['email']}
+                className="space-y-4"
+            >
+                {({ processing, errors }) => (
+                    <>
+                        <div className="space-y-1.5">
+                            <Label
+                                htmlFor="email"
+                                className="text-xs font-medium text-zinc-700 dark:text-zinc-300"
+                            >
+                                Email
+                            </Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                name="email"
+                                autoComplete="email"
+                                autoFocus
+                                required
+                                placeholder="name@example.com"
+                                className="h-11 sm:h-12 rounded-xl border-zinc-200 bg-white px-4 text-sm text-zinc-900 placeholder:text-zinc-400 focus-visible:border-zinc-900 focus-visible:ring-1 focus-visible:ring-zinc-900/10 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus-visible:border-zinc-500 dark:focus-visible:ring-zinc-500/20"
+                            />
+                            <InputError message={errors.email} />
+                        </div>
+
+                        <Button
+                            type="submit"
+                            disabled={processing}
+                            className="h-11 sm:h-12 w-full cursor-pointer rounded-xl bg-zinc-950 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 active:scale-[0.99] disabled:opacity-50 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+                            data-test="email-password-reset-link-button"
+                        >
+                            {processing ? <Spinner /> : 'Send reset link'}
+                        </Button>
+                    </>
+                )}
+            </Form>
+
+            <div className="pt-2 text-center text-xs text-zinc-500 dark:text-zinc-400">
+                Remember your password?{' '}
+                <TextLink
+                    href={login()}
+                    className="font-medium text-zinc-950 underline-offset-4 transition-colors hover:underline dark:text-white"
+                >
+                    Log in
+                </TextLink>
             </div>
-        </>
+        </div>
     );
 }
 
 ForgotPassword.layout = {
     title: 'Forgot password',
-    description:
-        'Enter your email address to receive a secure password reset link.',
+    description: 'Enter your email to receive a password reset link.',
 };

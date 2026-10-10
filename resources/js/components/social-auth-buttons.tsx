@@ -49,7 +49,7 @@ export function FacebookIcon({
 }
 
 export function SocialAuthButtons({
-    dividerText = 'Or continue with',
+    dividerText = 'OR',
     showDivider = true,
 }: {
     dividerText?: string;
@@ -60,24 +60,24 @@ export function SocialAuthButtons({
     };
 
     return (
-        <div className="space-y-2.5">
+        <div className="space-y-3.5 pt-1">
             {showDivider && (
-                <div className="relative flex items-center justify-center">
-                    <div className="w-full border-t border-border" />
-                    <span className="absolute bg-card px-2.5 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                <div className="relative my-4 flex items-center justify-center">
+                    <div className="w-full border-t border-zinc-200 dark:border-zinc-800" />
+                    <span className="absolute bg-zinc-50 px-2.5 text-xs font-medium tracking-wider text-zinc-500 uppercase dark:bg-[#09090b] dark:text-zinc-400">
                         {dividerText}
                     </span>
                 </div>
             )}
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3">
                 <Button
                     type="button"
                     variant="outline"
                     onClick={() => handleSocialLogin('google')}
-                    className="card-elevated h-9.5 w-full gap-2 rounded-xl border-border bg-card text-xs font-medium text-foreground shadow-xs transition-all duration-200 hover:bg-muted/60 active:scale-[0.98]"
+                    className="h-11 sm:h-12 w-full gap-2.5 rounded-xl border-zinc-200 bg-white text-sm font-medium text-zinc-700 shadow-2xs hover:bg-zinc-100 hover:text-zinc-950 transition-colors cursor-pointer dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-200 dark:hover:bg-zinc-800/80 dark:hover:text-white"
                 >
-                    <GoogleIcon className="h-3.5 w-3.5 shrink-0" />
+                    <GoogleIcon className="h-4 w-4 shrink-0" />
                     <span>Google</span>
                 </Button>
 
@@ -85,9 +85,9 @@ export function SocialAuthButtons({
                     type="button"
                     variant="outline"
                     onClick={() => handleSocialLogin('facebook')}
-                    className="card-elevated h-9.5 w-full gap-2 rounded-xl border-border bg-card text-xs font-medium text-foreground shadow-xs transition-all duration-200 hover:bg-muted/60 active:scale-[0.98]"
+                    className="h-11 sm:h-12 w-full gap-2.5 rounded-xl border-zinc-200 bg-white text-sm font-medium text-zinc-700 shadow-2xs hover:bg-zinc-100 hover:text-zinc-950 transition-colors cursor-pointer dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-200 dark:hover:bg-zinc-800/80 dark:hover:text-white"
                 >
-                    <FacebookIcon className="h-3.5 w-3.5 shrink-0" />
+                    <FacebookIcon className="h-4 w-4 shrink-0" />
                     <span>Facebook</span>
                 </Button>
             </div>

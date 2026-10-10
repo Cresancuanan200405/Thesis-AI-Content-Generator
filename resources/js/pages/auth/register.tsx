@@ -1,9 +1,10 @@
 import { Form, Head } from '@inertiajs/react';
-import { ArrowRight, Mail, User } from 'lucide-react';
+import React from 'react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import { SocialAuthButtons } from '@/components/social-auth-buttons';
 import TextLink from '@/components/text-link';
+import AuthLayout from '@/layouts/auth-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,169 +16,116 @@ type Props = {
     passwordRules: string;
 };
 
-const fieldGlow =
-    'group relative rounded-xl transition-all duration-300 focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.18)] hover:shadow-[0_0_0_3px_rgba(59,130,246,0.08)]';
-
 export default function Register({ passwordRules }: Props) {
     return (
-        <div className="space-y-3.5">
-            <Head title="Create account" />
+        <div className="space-y-5">
+            <Head title="Create an account" />
 
             <Form
                 {...store.form()}
                 resetOnSuccess={['password', 'password_confirmation']}
                 disableWhileProcessing
-                className="flex animate-in flex-col gap-3.5 duration-300 fade-in slide-in-from-bottom-2"
+                className="space-y-4"
             >
                 {({ processing, errors }) => (
                     <>
-                        <div className="grid gap-3">
-                            {/* Row 1: Username & Email side-by-side */}
-                            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                                {/* Username */}
-                                <div className="grid gap-1">
-                                    <Label
-                                        htmlFor="username"
-                                        className="text-xs font-semibold text-foreground"
-                                    >
-                                        Username
-                                    </Label>
-
-                                    <div className={fieldGlow}>
-                                        <User className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground transition-colors duration-300 group-focus-within:text-[#2563EB]" />
-
-                                        <Input
-                                            id="username"
-                                            type="text"
-                                            name="username"
-                                            required
-                                            autoFocus
-                                            tabIndex={1}
-                                            autoComplete="username"
-                                            placeholder="username"
-                                            className="h-9.5 rounded-xl border-border bg-background pl-9 text-xs text-foreground placeholder:text-muted-foreground/60 focus-visible:border-[#2563EB] focus-visible:ring-[#2563EB]/30"
-                                        />
-                                    </div>
-
-                                    <InputError message={errors.username} />
-                                </div>
-
-                                {/* Email */}
-                                <div className="grid gap-1">
-                                    <Label
-                                        htmlFor="email"
-                                        className="text-xs font-semibold text-foreground"
-                                    >
-                                        Email address
-                                    </Label>
-
-                                    <div className={fieldGlow}>
-                                        <Mail className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground transition-colors duration-300 group-focus-within:text-[#2563EB]" />
-
-                                        <Input
-                                            id="email"
-                                            type="email"
-                                            name="email"
-                                            required
-                                            tabIndex={2}
-                                            autoComplete="email"
-                                            placeholder="email@example.com"
-                                            className="h-9.5 rounded-xl border-border bg-background pl-9 text-xs text-foreground placeholder:text-muted-foreground/60 focus-visible:border-[#2563EB] focus-visible:ring-[#2563EB]/30"
-                                        />
-                                    </div>
-
-                                    <InputError message={errors.email} />
-                                </div>
-                            </div>
-
-                            {/* Row 2: Password & Confirm Password side-by-side */}
-                            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                                {/* Password */}
-                                <div className="grid gap-1">
-                                    <Label
-                                        htmlFor="password"
-                                        className="text-xs font-semibold text-foreground"
-                                    >
-                                        Password
-                                    </Label>
-
-                                    <div className={fieldGlow}>
-                                        <PasswordInput
-                                            id="password"
-                                            required
-                                            tabIndex={3}
-                                            autoComplete="new-password"
-                                            name="password"
-                                            placeholder="Password"
-                                            passwordrules={passwordRules}
-                                            className="h-9.5 rounded-xl border-border bg-background text-xs text-foreground placeholder:text-muted-foreground/60"
-                                        />
-                                    </div>
-
-                                    <InputError message={errors.password} />
-                                </div>
-
-                                {/* Password Confirmation */}
-                                <div className="grid gap-1">
-                                    <Label
-                                        htmlFor="password_confirmation"
-                                        className="text-xs font-semibold text-foreground"
-                                    >
-                                        Confirm password
-                                    </Label>
-
-                                    <div className={fieldGlow}>
-                                        <PasswordInput
-                                            id="password_confirmation"
-                                            required
-                                            tabIndex={4}
-                                            autoComplete="new-password"
-                                            name="password_confirmation"
-                                            placeholder="Confirm password"
-                                            passwordrules={passwordRules}
-                                            className="h-9.5 rounded-xl border-border bg-background text-xs text-foreground placeholder:text-muted-foreground/60"
-                                        />
-                                    </div>
-
-                                    <InputError
-                                        message={errors.password_confirmation}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Social Auth Platforms */}
-                            <SocialAuthButtons dividerText="Or continue with" />
-
-                            {/* Create Account Button */}
-                            <Button
-                                type="submit"
-                                className="group mt-1.5 h-10 w-full cursor-pointer rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:scale-[1.01] hover:bg-primary/90 hover:shadow-primary/35 active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100"
-                                tabIndex={5}
-                                disabled={processing}
-                                data-test="register-user-button"
+                        <div className="space-y-2">
+                            <Label
+                                htmlFor="username"
+                                className="text-sm font-medium text-zinc-700 dark:text-zinc-200"
                             >
-                                {processing ? (
-                                    <Spinner />
-                                ) : (
-                                    <>
-                                        <span>Create account</span>
-                                        <ArrowRight className="ml-1.5 h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
-                                    </>
-                                )}
-                            </Button>
+                                Username
+                            </Label>
+                            <Input
+                                id="username"
+                                type="text"
+                                name="username"
+                                required
+                                autoFocus
+                                autoComplete="username"
+                                placeholder="username"
+                                className="h-12 rounded-xl border-zinc-200 bg-white px-4 text-base sm:text-sm text-zinc-900 placeholder:text-zinc-400 focus-visible:border-zinc-900 focus-visible:ring-1 focus-visible:ring-zinc-900/10 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus-visible:border-zinc-500 dark:focus-visible:ring-zinc-500/20"
+                            />
+                            <InputError message={errors.username} />
                         </div>
 
-                        {/* Login Link */}
-                        <div className="pt-1 text-center text-xs text-muted-foreground">
+                        <div className="space-y-2">
+                            <Label
+                                htmlFor="email"
+                                className="text-sm font-medium text-zinc-700 dark:text-zinc-200"
+                            >
+                                Email
+                            </Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                name="email"
+                                required
+                                autoComplete="email"
+                                placeholder="name@example.com"
+                                className="h-12 rounded-xl border-zinc-200 bg-white px-4 text-base sm:text-sm text-zinc-900 placeholder:text-zinc-400 focus-visible:border-zinc-900 focus-visible:ring-1 focus-visible:ring-zinc-900/10 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus-visible:border-zinc-500 dark:focus-visible:ring-zinc-500/20"
+                            />
+                            <InputError message={errors.email} />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label
+                                htmlFor="password"
+                                className="text-sm font-medium text-zinc-700 dark:text-zinc-200"
+                            >
+                                Password
+                            </Label>
+                            <PasswordInput
+                                id="password"
+                                name="password"
+                                required
+                                autoComplete="new-password"
+                                placeholder="Create a password"
+                                passwordrules={passwordRules}
+                                className="h-12 rounded-xl border-zinc-200 bg-white px-4 text-base sm:text-sm text-zinc-900 placeholder:text-zinc-400 focus-visible:border-zinc-900 focus-visible:ring-1 focus-visible:ring-zinc-900/10 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus-visible:border-zinc-500 dark:focus-visible:ring-zinc-500/20"
+                            />
+                            <InputError message={errors.password} />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label
+                                htmlFor="password_confirmation"
+                                className="text-sm font-medium text-zinc-700 dark:text-zinc-200"
+                            >
+                                Confirm password
+                            </Label>
+                            <PasswordInput
+                                id="password_confirmation"
+                                name="password_confirmation"
+                                required
+                                autoComplete="new-password"
+                                placeholder="Confirm your password"
+                                className="h-12 rounded-xl border-zinc-200 bg-white px-4 text-base sm:text-sm text-zinc-900 placeholder:text-zinc-400 focus-visible:border-zinc-900 focus-visible:ring-1 focus-visible:ring-zinc-900/10 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus-visible:border-zinc-500 dark:focus-visible:ring-zinc-500/20"
+                            />
+                            <InputError message={errors.password_confirmation} />
+                        </div>
+
+                        <Button
+                            type="submit"
+                            disabled={processing}
+                            className="mt-2 h-12 w-full cursor-pointer rounded-xl bg-zinc-950 text-base font-semibold text-white shadow-sm transition-colors hover:bg-zinc-800 active:scale-[0.99] disabled:opacity-50 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+                            data-test="register-user-button"
+                        >
+                            {processing ? <Spinner /> : 'Create account'}
+                        </Button>
+
+                        <SocialAuthButtons dividerText="OR" />
+
+                        {/* Login link below social selector */}
+                        <p className="pt-2.5 text-center text-sm text-zinc-500 dark:text-zinc-400">
                             Already have an account?{' '}
                             <TextLink
                                 href={login()}
-                                tabIndex={6}
-                                className="font-bold text-primary transition-colors duration-300 hover:text-primary/80"
+                                className="font-semibold text-zinc-950 underline-offset-4 transition-colors hover:underline dark:text-white"
                             >
-                                Log in &rarr;
+                                Log in
                             </TextLink>
-                        </div>
+                        </p>
                     </>
                 )}
             </Form>
@@ -185,7 +133,8 @@ export default function Register({ passwordRules }: Props) {
     );
 }
 
-Register.layout = {
-    title: 'Create your account',
-    description: 'Sign up to start automating your visual marketing campaigns.',
-};
+Register.layout = (page: React.ReactNode) => (
+    <AuthLayout title="Create an account">
+        {page}
+    </AuthLayout>
+);

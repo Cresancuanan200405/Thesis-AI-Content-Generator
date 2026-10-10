@@ -9,7 +9,15 @@
         <script>
             (function() {
                 try {
-                    const stored = localStorage.getItem('appearance') || '{{ $appearance ?? "system" }}';
+                    const pathname = window.location.pathname;
+                    const isPublicOrAuth = pathname === '/' ||
+                        pathname.startsWith('/login') ||
+                        pathname.startsWith('/register') ||
+                        pathname.startsWith('/forgot-password') ||
+                        pathname.startsWith('/reset-password') ||
+                        pathname.startsWith('/verify-email') ||
+                        pathname.startsWith('/two-factor-challenge');
+                    const stored = isPublicOrAuth ? 'system' : (localStorage.getItem('appearance') || '{{ $appearance ?? "system" }}');
                     const isDark = stored === 'dark' || (stored === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
                     if (isDark) {
                         document.documentElement.classList.add('dark');
@@ -34,8 +42,7 @@
         </style>
 
         <link rel="icon" type="image/png" href="/MarketPilot.png">
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+        <link rel="shortcut icon" type="image/png" href="/MarketPilot.png">
         <link rel="apple-touch-icon" href="/MarketPilot.png">
 
         @fonts

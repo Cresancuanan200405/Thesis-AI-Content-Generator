@@ -1,9 +1,10 @@
 import { Form, Head } from '@inertiajs/react';
-import { ArrowRight, CheckCircle2, Mail } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import { SocialAuthButtons } from '@/components/social-auth-buttons';
 import TextLink from '@/components/text-link';
+import AuthLayout from '@/layouts/auth-layout';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -18,153 +19,210 @@ type Props = {
     canResetPassword: boolean;
 };
 
-const fieldGlow =
-    'group relative rounded-xl transition-all duration-300 focus-within:shadow-[0_0_0_3px_rgba(59,130,246,0.18)] hover:shadow-[0_0_0_3px_rgba(59,130,246,0.08)]';
-
 export default function Login({ status, canResetPassword }: Props) {
+    const [step, setStep] = useState<'email' | 'password'>('email');
+    const [email, setEmail] = useState<string>('');
+    const [emailError, setEmailError] = useState<string | null>(null);
+    const passwordInputRef = useRef<HTMLInputElement>(null);
+
+    const handleContinue = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        const trimmed = email.trim();
+        if (!trimmed) {
+            setEmailError('Please enter your email or username.');
+            return;
+        }
+        setEmailError(null);
+        setStep('password');
+    };
+
+    useEffect(() => {
+        if (step === 'password') {
+            passwordInputRef.current?.focus();
+        }
+    }, [step]);
+
     return (
-        <div className="space-y-3.5">
-            <Head title="Welcome back" />
+        <div className="space-y-5">
+            <Head title="Hello there!" />
+
+            {/* Status Message */}
+            {status && (
+                <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-2.5 text-center text-sm font-medium text-blue-400">
+                    {status}
+                </div>
+            )}
 
             <Form
                 {...store.form()}
                 resetOnSuccess={['password']}
-                className="flex animate-in flex-col gap-3.5 duration-300 fade-in slide-in-from-bottom-2"
+                className="space-y-5"
             >
-                {({ processing, errors }) => (
-                    <>
-                        <div className="grid gap-3">
-                            {/* Username or Email */}
-                            <div className="grid gap-1">
-                                <Label
-                                    htmlFor="email"
-                                    className="text-xs font-semibold text-foreground"
-                                >
-                                    Username or Email
-                                </Label>
+                {({ processing, errors }) => {
+                    const activeEmailError = emailError || errors.email;
 
-                                <div className={fieldGlow}>
-                                    <Mail className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground transition-colors duration-300 group-focus-within:text-[#2563EB]" />
-
-                                    <Input
-                                        id="email"
-                                        type="text"
-                                        name="email"
-                                        required
-                                        autoFocus
-                                        tabIndex={1}
-                                        autoComplete="username"
-                                        placeholder="username or email"
-                                        className="h-9.5 rounded-xl border-border bg-background pl-9 text-xs text-foreground placeholder:text-muted-foreground/60 focus-visible:border-[#2563EB] focus-visible:ring-[#2563EB]/30"
-                                    />
-                                </div>
-
-                                <InputError message={errors.email} />
-                            </div>
-
-                            {/* Password */}
-                            <div className="grid gap-1">
-                                <Label
-                                    htmlFor="password"
-                                    className="text-xs font-semibold text-foreground"
-                                >
-                                    Password
-                                </Label>
-
-                                <div className={fieldGlow}>
-                                    <PasswordInput
-                                        id="password"
-                                        name="password"
-                                        required
-                                        tabIndex={2}
-                                        autoComplete="current-password"
-                                        placeholder="Enter your password"
-                                        className="h-9.5 rounded-xl border-border bg-background text-xs text-foreground placeholder:text-muted-foreground/60"
-                                    />
-                                </div>
-
-                                <div className="flex items-center justify-between">
-                                    <InputError message={errors.password} />
-
-                                    {canResetPassword && (
-                                        <TextLink
-                                            href={request()}
-                                            className="ml-auto text-[11px] font-semibold text-primary transition-colors duration-300 hover:text-primary/80"
-                                            tabIndex={5}
+                    return (
+                        <>
+                            {step === 'email' ? (
+                                <div className="space-y-5">
+                                    <div className="space-y-2">
+                                        <Label
+                                            htmlFor="email"
+                                            className="text-sm font-medium text-zinc-700 dark:text-zinc-200"
                                         >
-                                            Forgot password?
+                                            Email
+                                        </Label>
+                                        <Input
+                                            id="email"
+                                            type="text"
+                                            name="email"
+                                            value={email}
+                                            onChange={(e) => {
+                                                setEmail(e.target.value);
+                                                if (emailError) setEmailError(null);
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleContinue();
+                                                }
+                                            }}
+                                            required
+                                            autoFocus
+                                            autoComplete="username"
+                                            placeholder="name@example.com"
+                                            className="h-12 rounded-xl border-zinc-200 bg-white px-4 text-base sm:text-sm text-zinc-900 placeholder:text-zinc-400 focus-visible:border-zinc-900 focus-visible:ring-1 focus-visible:ring-zinc-900/10 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus-visible:border-zinc-500 dark:focus-visible:ring-zinc-500/20"
+                                        />
+                                        <InputError message={activeEmailError} />
+                                    </div>
+
+                                    {/* Primary Continue Button */}
+                                    <Button
+                                        type="button"
+                                        onClick={() => handleContinue()}
+                                        className="h-12 w-full cursor-pointer rounded-xl bg-zinc-950 text-base font-semibold text-white shadow-sm transition-colors hover:bg-zinc-800 active:scale-[0.99] dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+                                        data-test="login-continue-button"
+                                    >
+                                        Continue
+                                    </Button>
+
+                                    {/* Social Auth Platforms */}
+                                    <SocialAuthButtons dividerText="OR" />
+
+                                    {/* Sign-up link below social selector */}
+                                    <p className="pt-2.5 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                                        Don't have an account?{' '}
+                                        <TextLink
+                                            href={register()}
+                                            className="font-semibold text-zinc-950 underline-offset-4 transition-colors hover:underline dark:text-white"
+                                        >
+                                            Sign up
                                         </TextLink>
-                                    )}
+                                    </p>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="space-y-5 animate-in fade-in duration-200">
+                                    {/* Selected Email display pill */}
+                                    <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-100/80 px-4 py-2.5 text-sm dark:border-zinc-800 dark:bg-zinc-900/40">
+                                        <span className="truncate font-medium text-zinc-700 dark:text-zinc-300">
+                                            {email}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setStep('email')}
+                                            className="ml-2 cursor-pointer text-xs font-semibold text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+                                        >
+                                            Change
+                                        </button>
+                                    </div>
 
-                            {/* Remember Me */}
-                            <label
-                                htmlFor="remember"
-                                className="flex cursor-pointer items-center space-x-2.5 rounded-lg py-0.5 transition-colors duration-300"
-                            >
-                                <Checkbox
-                                    id="remember"
-                                    name="remember"
-                                    tabIndex={3}
-                                    className="rounded-md border-border transition-colors duration-300 focus-visible:ring-primary/40 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                                />
+                                    {/* Hidden Email input for standard Fortify POST */}
+                                    <input type="hidden" name="email" value={email} />
 
-                                <span className="cursor-pointer text-xs font-medium text-muted-foreground">
-                                    Remember me
-                                </span>
-                            </label>
+                                    {/* Password field */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <Label
+                                                htmlFor="password"
+                                                className="text-sm font-medium text-zinc-700 dark:text-zinc-200"
+                                            >
+                                                Password
+                                            </Label>
+                                            {canResetPassword && (
+                                                <TextLink
+                                                    href={request()}
+                                                    className="text-sm text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+                                                    tabIndex={5}
+                                                >
+                                                    Forgot password?
+                                                </TextLink>
+                                            )}
+                                        </div>
 
-                            {/* Social Auth Platforms */}
-                            <SocialAuthButtons dividerText="Or continue with" />
+                                        <PasswordInput
+                                            id="password"
+                                            name="password"
+                                            required
+                                            autoFocus
+                                            ref={passwordInputRef}
+                                            autoComplete="current-password"
+                                            placeholder="Enter your password"
+                                            className="h-12 rounded-xl border-zinc-200 bg-white px-4 text-base sm:text-sm text-zinc-900 placeholder:text-zinc-400 focus-visible:border-zinc-900 focus-visible:ring-1 focus-visible:ring-zinc-900/10 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus-visible:border-zinc-500 dark:focus-visible:ring-zinc-500/20"
+                                        />
 
-                            {/* Login Button */}
-                            <Button
-                                type="submit"
-                                className="group mt-1.5 h-10 w-full cursor-pointer rounded-xl bg-primary text-xs font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-300 hover:scale-[1.01] hover:bg-primary/90 hover:shadow-primary/35 active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100"
-                                tabIndex={4}
-                                disabled={processing}
-                                data-test="login-button"
-                            >
-                                {processing ? (
-                                    <Spinner />
-                                ) : (
-                                    <>
-                                        <span>Log in</span>
-                                        <ArrowRight className="ml-1.5 h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
-                                    </>
-                                )}
-                            </Button>
-                        </div>
+                                        <InputError message={errors.password || errors.email} />
+                                    </div>
 
-                        {/* Sign Up */}
-                        <div className="pt-1 text-center text-xs text-muted-foreground">
-                            Don't have an account?{' '}
-                            <TextLink
-                                href={register()}
-                                tabIndex={6}
-                                className="font-bold text-primary transition-colors duration-300 hover:text-primary/80"
-                            >
-                                Sign up &rarr;
-                            </TextLink>
-                        </div>
-                    </>
-                )}
+                                    {/* Remember Me */}
+                                    <label
+                                        htmlFor="remember"
+                                        className="flex cursor-pointer items-center space-x-2.5 py-0.5"
+                                    >
+                                        <Checkbox
+                                            id="remember"
+                                            name="remember"
+                                            className="h-4.5 w-4.5 rounded border-zinc-300 bg-white data-[state=checked]:bg-zinc-950 data-[state=checked]:text-white dark:border-zinc-700 dark:bg-zinc-900/60 dark:data-[state=checked]:bg-white dark:data-[state=checked]:text-black"
+                                        />
+                                        <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                                            Remember me
+                                        </span>
+                                    </label>
+
+                                    {/* Submit Button */}
+                                    <Button
+                                        type="submit"
+                                        disabled={processing}
+                                        className="h-12 w-full cursor-pointer rounded-xl bg-zinc-950 text-base font-semibold text-white shadow-sm transition-colors hover:bg-zinc-800 active:scale-[0.99] disabled:opacity-50 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
+                                        data-test="login-button"
+                                    >
+                                        {processing ? <Spinner /> : 'Log in'}
+                                    </Button>
+
+                                    {/* Sign-up link below password form */}
+                                    <p className="pt-2.5 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                                        Don't have an account?{' '}
+                                        <TextLink
+                                            href={register()}
+                                            className="font-semibold text-zinc-950 underline-offset-4 transition-colors hover:underline dark:text-white"
+                                        >
+                                            Sign up
+                                        </TextLink>
+                                    </p>
+                                </div>
+                            )}
+                        </>
+                    );
+                }}
             </Form>
-
-            {/* Status Message */}
-            {status && (
-                <div className="flex items-center justify-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-3.5 py-2 text-center text-xs font-medium text-blue-700 dark:text-blue-400">
-                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                    {status}
-                </div>
-            )}
         </div>
     );
 }
 
-Login.layout = {
-    title: 'Welcome back',
-    description:
-        'Sign in to keep your campaigns, brand guidance, and content calendar moving.',
-};
+Login.layout = (page: React.ReactNode) => (
+    <AuthLayout
+        title="Hello there!"
+        titleClassName="text-5xl sm:text-[54px] md:text-6xl font-black tracking-tight leading-[1.05]"
+    >
+        {page}
+    </AuthLayout>
+);

@@ -20,6 +20,8 @@ export type AuthLayoutProps = {
     name?: string;
     title?: string;
     description?: string;
+    logoClassName?: string;
+    titleClassName?: string;
 };
 
 export type OpenAIUsageTelemetry = {
