@@ -3,6 +3,7 @@ import OnboardingController from './OnboardingController'
 import UserProfileController from './UserProfileController'
 import AutomaticGeneratorController from './AutomaticGeneratorController'
 import ManualGeneratorController from './ManualGeneratorController'
+import VisualInspirationController from './VisualInspirationController'
 import GeneratorController from './GeneratorController'
 import DesignController from './DesignController'
 import EventController from './EventController'
@@ -17,6 +18,7 @@ OnboardingController: Object.assign(OnboardingController, OnboardingController),
 UserProfileController: Object.assign(UserProfileController, UserProfileController),
 AutomaticGeneratorController: Object.assign(AutomaticGeneratorController, AutomaticGeneratorController),
 ManualGeneratorController: Object.assign(ManualGeneratorController, ManualGeneratorController),
+VisualInspirationController: Object.assign(VisualInspirationController, VisualInspirationController),
 GeneratorController: Object.assign(GeneratorController, GeneratorController),
 DesignController: Object.assign(DesignController, DesignController),
 EventController: Object.assign(EventController, EventController),

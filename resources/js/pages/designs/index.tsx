@@ -61,6 +61,7 @@ import {
 } from '@/components/ui/select';
 import { useSidebar } from '@/components/ui/sidebar';
 import { downloadVisualAsFormat } from '@/lib/download';
+import { cn } from '@/lib/utils';
 import { getAspectRatioClass } from '@/pages/campaigns/components/show/CampaignDesignCard';
 
 const regenerationStatusPhrases = [
@@ -762,7 +763,12 @@ export default function DesignsPage({
         <>
             <Head title="My Designs" />
 
-            <div className="min-h-screen bg-background pb-24 text-foreground">
+            <div
+                className={cn(
+                    'min-h-screen bg-background text-foreground transition-all duration-300',
+                    selectedIds.length > 0 ? 'pb-36' : 'pb-24',
+                )}
+            >
                 <div className="space-y-6 p-4 md:p-6 lg:p-8">
                     {/* =====================================================
                         PAGE HEADER & CREATE ACTION
@@ -1872,7 +1878,11 @@ export default function DesignsPage({
                                     currentPage={currentPage}
                                     lastPage={lastPage}
                                     buildHref={(page) => buildPageUrl(page)}
-                                    className="mt-8"
+                                    className={cn(
+                                        'mt-8 transition-all duration-300',
+                                        selectedIds.length > 0 &&
+                                            '!bottom-20 sm:!bottom-22 z-40',
+                                    )}
                                 />
                             )}
                         </>
@@ -1885,13 +1895,20 @@ export default function DesignsPage({
             ============================================================= */}
 
             {selectedIds.length > 0 && !isRegenerating && (
-                <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 animate-in duration-300 slide-in-from-bottom-5 fade-in">
-                    <div className="card-elevated flex items-center gap-3 rounded-card border border-border/80 bg-card/95 px-4 py-2.5 shadow-2xl backdrop-blur-xl">
-                        <div className="flex items-center gap-2 border-r border-border/80 pr-3">
-                            <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-primary px-2 text-xs font-bold text-primary-foreground shadow-sm">
+                <div
+                    className={cn(
+                        'fixed bottom-4 sm:bottom-5 z-50 flex justify-center pointer-events-none transition-[left,right,bottom] duration-200 ease-linear animate-in duration-300 slide-in-from-bottom-3 fade-in',
+                        sidebarState === 'expanded'
+                            ? 'left-0 right-0 md:left-64'
+                            : 'left-0 right-0 md:left-12',
+                    )}
+                >
+                    <div className="card-elevated pointer-events-auto flex items-center gap-2 rounded-full border border-border/80 bg-card/95 px-3 py-1.5 shadow-xl backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10">
+                        <div className="flex items-center gap-1.5 border-r border-border/80 pr-2.5">
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground shadow-xs">
                                 {selectedIds.length}
                             </span>
-                            <span className="text-xs font-medium text-foreground">
+                            <span className="text-[11px] font-medium text-foreground">
                                 Selected
                             </span>
                         </div>
@@ -1901,7 +1918,7 @@ export default function DesignsPage({
                             variant="ghost"
                             size="sm"
                             onClick={toggleSelectAll}
-                            className="h-8 text-xs font-medium"
+                            className="h-7 px-2 text-[11px] font-medium"
                         >
                             {isAllSelected ? 'Deselect all' : 'Select all'}
                         </Button>
@@ -1911,9 +1928,9 @@ export default function DesignsPage({
                             variant="outline"
                             size="sm"
                             onClick={handleBulkDownload}
-                            className="h-8 gap-1.5 text-xs font-medium shadow-none"
+                            className="h-7 gap-1 px-2.5 text-[11px] font-medium shadow-none"
                         >
-                            <Download className="h-3.5 w-3.5 text-primary" />
+                            <Download className="h-3 w-3 text-primary" />
                             Download ({selectedIds.length})
                         </Button>
 
@@ -1922,19 +1939,19 @@ export default function DesignsPage({
                             variant="destructive"
                             size="sm"
                             onClick={() => setShowBulkDeleteModal(true)}
-                            className="h-8 gap-1.5 text-xs font-medium"
+                            className="h-7 gap-1 px-2.5 text-[11px] font-medium"
                         >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash2 className="h-3 w-3" />
                             Delete ({selectedIds.length})
                         </Button>
 
                         <button
                             type="button"
                             onClick={() => setSelectedIds([])}
-                            className="ml-1 flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            className="ml-0.5 flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                             aria-label="Clear selection"
                         >
-                            <X className="h-4 w-4" />
+                            <X className="h-3.5 w-3.5" />
                         </button>
                     </div>
                 </div>

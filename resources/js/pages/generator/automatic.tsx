@@ -3,6 +3,7 @@ import {
     AlertTriangle,
     Loader2,
     ImageIcon,
+    Package,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -10,6 +11,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import { downloadVisualAsFormat } from '@/lib/download';
 import { useSetBreadcrumbs } from '@/context/breadcrumb-context';
 
@@ -1085,23 +1087,21 @@ export default function AutomaticGenerator({
             <Head title="Automatic Generation — AI Marketing Studio" />
 
             <div
-                className={`flex w-full min-w-0 max-w-full bg-background text-foreground ${generationState === 'ready'
-                        ? 'min-h-[calc(100vh-2.75rem)] sm:min-h-[calc(100vh-3rem)]'
-                        : 'h-[calc(100vh-2.75rem)] overflow-hidden sm:h-[calc(100vh-3rem)]'
+                className={`flex w-full min-w-0 max-w-full bg-background text-foreground ${generationState === 'generating'
+                    ? 'h-[calc(100vh-2.75rem)] overflow-hidden sm:h-[calc(100vh-3rem)]'
+                    : 'min-h-[calc(100vh-2.75rem)] sm:min-h-[calc(100vh-3rem)]'
                     }`}
             >
                 {/* MAIN STUDIO WORKSPACE */}
                 <div
                     className={`min-w-0 flex-1 ${generationState === 'generating'
-                            ? 'flex h-full max-h-full flex-col overflow-hidden p-2 sm:p-3 lg:p-4'
-                            : generationState === 'ready'
-                            ? 'space-y-3.5 p-3 sm:p-4 lg:p-5'
-                            : 'flex h-full max-h-full flex-col overflow-hidden p-3 sm:p-4 lg:p-4'
+                        ? 'flex h-full max-h-full flex-col overflow-hidden p-0'
+                        : 'space-y-3.5 p-3 sm:p-4 lg:p-5'
                         }`}
                 >
                     {/* Header */}
-                    {generationState !== 'ready' && (
-                        <div className="shrink-0 w-full mb-2 sm:mb-3">
+                    {generationState !== 'ready' && generationState !== 'generating' && (
+                        <div className="shrink-0 w-full mb-1 sm:mb-1.5">
                             <StudioHeader
                                 activeMode="automatic"
                                 activeCampaign={campaign}
@@ -1193,10 +1193,10 @@ export default function AutomaticGenerator({
                         />
                     ) : (
                         /* AUTONOMOUS CREATIVE STUDIO FORM */
-                        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                        <div className="space-y-3">
                             {/* Quota Banner */}
                             {isQuotaExceeded && (
-                                <div className="shrink-0 mb-3 flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive shadow-xs">
+                                <div className="mb-3 flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive shadow-xs">
                                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
                                     <div className="flex-1 space-y-1">
                                         <div className="flex items-center justify-between gap-2">
@@ -1218,8 +1218,8 @@ export default function AutomaticGenerator({
                             )}
 
                             {/* Main Autonomous Studio Card */}
-                            <Card className="flex-1 min-h-0 flex flex-col overflow-hidden rounded-card border-border bg-card shadow-sm gap-0 py-0">
-                                <CardHeader className="shrink-0 border-b bg-muted/10 px-4 py-3 sm:px-5">
+                            <Card className="overflow-hidden rounded-card border-border bg-card shadow-sm gap-0 py-0">
+                                <CardHeader className="border-b bg-muted/10 px-4 py-2.5 sm:px-5">
                                     <div>
                                         <h2 className="text-sm font-bold tracking-tight text-foreground">
                                             Autonomous Creative Studio
@@ -1230,9 +1230,16 @@ export default function AutomaticGenerator({
                                     </div>
                                 </CardHeader>
 
-                                <CardContent className="flex-1 min-h-0 flex flex-col overflow-hidden p-3 sm:p-4 gap-0">
+                                <CardContent className="p-3 sm:p-4">
                                     {/* Product Selection Section */}
-                                    <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between pb-1">
+                                            <div className="flex items-center gap-1.5">
+                                                <Package className="h-4 w-4 text-primary" />
+                                                <Label className="text-xs font-bold text-foreground">Featured Products & Offerings</Label>
+                                            </div>
+                                        </div>
+
                                         <ProductSelector
                                             products={products}
                                             selectedCatalogProducts={uniqueSelectedCatalogProducts}
@@ -1251,13 +1258,13 @@ export default function AutomaticGenerator({
                                     </div>
 
                                     {/* Action Bar */}
-                                    <div className="shrink-0 flex items-center justify-end border-t border-border/70 pt-3 mt-3">
+                                    <div className="mt-4 flex items-center justify-end border-t border-border/70 pt-3">
                                         <Button
                                             type="button"
                                             size="lg"
                                             onClick={() => setIsSettingsModalOpen(true)}
                                             disabled={!canGenerateAutomatic || isAutoGenerating}
-                                            className={`min-w-[240px] gap-2 text-xs font-bold shadow-md cursor-pointer rounded-xl h-10 ${
+                                            className={`min-w-[240px] gap-2 text-xs font-bold shadow-md cursor-pointer ${
                                                 isQuotaExceeded
                                                     ? 'border border-destructive/30 bg-destructive/15 text-destructive hover:bg-destructive/20'
                                                     : 'bg-primary text-primary-foreground hover:bg-primary/90'

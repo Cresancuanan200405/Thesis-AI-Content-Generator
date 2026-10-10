@@ -1,7 +1,6 @@
 import { router } from '@inertiajs/react';
 import { ArrowRight } from 'lucide-react';
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -40,7 +39,7 @@ export function CreateDesignSelectionModal({
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent
-                className="w-full max-w-[calc(100%-2rem)] gap-5 p-6 sm:max-w-[760px] sm:p-7 md:max-w-[800px]"
+                className="w-[95vw] sm:max-w-[760px] md:max-w-[800px] overflow-hidden rounded-[12px] p-6 sm:p-7 shadow-2xl border border-border"
                 aria-describedby="create-design-modal-description"
             >
                 <DialogHeader className="space-y-1 text-left sm:text-left">
@@ -130,19 +129,6 @@ export function CreateDesignSelectionModal({
                             </div>
                         </div>
                     </button>
-                </div>
-
-                {/* Modal Footer / Cancel Action */}
-                <div className="flex items-center justify-center pt-1">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={onClose}
-                        className="h-8 cursor-pointer rounded-lg px-4 text-xs font-medium text-muted-foreground hover:text-foreground"
-                    >
-                        Cancel
-                    </Button>
                 </div>
             </DialogContent>
         </Dialog>

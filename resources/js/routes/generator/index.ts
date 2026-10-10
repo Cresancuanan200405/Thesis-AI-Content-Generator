@@ -1,6 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 import manual8a44cf from './manual'
 import generate from './generate'
+import inspiration from './inspiration'
 /**
 * @see \App\Http\Controllers\AutomaticGeneratorController::automatic
  * @see app/Http/Controllers/AutomaticGeneratorController.php:50
@@ -358,6 +359,7 @@ const generator = {
     automatic: Object.assign(automatic, automatic),
 manual: Object.assign(manual, manual8a44cf),
 generate: Object.assign(generate, generate),
+inspiration: Object.assign(inspiration, inspiration),
 index: Object.assign(index, index),
 store: Object.assign(store, store),
 preview: Object.assign(preview, preview),

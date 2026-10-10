@@ -57,12 +57,12 @@ export function StudioHeader({
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    size="sm"
+                                    size="icon"
                                     onClick={() => setIsModeModalOpen(true)}
-                                    className="h-8 w-8 rounded-lg border-border/80 bg-background/80 p-0 text-muted-foreground shadow-2xs transition-colors hover:bg-accent/80 hover:text-foreground"
+                                    className="h-8.5 w-8.5 rounded-xl border-primary/30 bg-primary/5 text-primary transition-all duration-200 hover:border-primary hover:bg-primary/15 hover:text-primary active:scale-95 group cursor-pointer"
                                     aria-label="Switch generation mode"
                                 >
-                                    <ArrowLeftRight className="h-3.5 w-3.5" />
+                                    <ArrowLeftRight className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" align="end">

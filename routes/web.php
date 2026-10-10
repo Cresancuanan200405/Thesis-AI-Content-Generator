@@ -13,6 +13,7 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\UserProfileController;
+use App\Http\Controllers\VisualInspirationController;
 use App\Models\Design;
 use App\Models\Event;
 use App\Services\OpenAIUsageService;
@@ -328,6 +329,8 @@ Route::middleware(['auth', 'verified', 'onboarding.complete'])->group(function (
     Route::post('generator/manual', [ManualGeneratorController::class, 'generate'])->name('generator.manual');
     Route::post('generator/manual/generate', [ManualGeneratorController::class, 'generate'])->name('generator.generate.manual');
     Route::post('generator/manual/suggest-tagline', [ManualGeneratorController::class, 'suggestTagline'])->name('generator.manual.suggest-tagline');
+    Route::get('generator/inspiration', [VisualInspirationController::class, 'index'])->name('generator.inspiration.index');
+    Route::post('generator/inspiration/analyze', [VisualInspirationController::class, 'analyze'])->middleware('throttle:15,1')->name('generator.inspiration.analyze');
 
     Route::get('generator', [GeneratorController::class, 'index'])->name('generator.index');
     Route::post('generator', [GeneratorController::class, 'store'])->name('generator.store');

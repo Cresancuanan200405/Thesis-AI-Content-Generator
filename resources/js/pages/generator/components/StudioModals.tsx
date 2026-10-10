@@ -3,6 +3,7 @@ import {
     BadgePercent,
     Building2,
     CalendarDays,
+    Camera,
     Check,
     ChevronDown,
     ChevronUp,
@@ -15,6 +16,7 @@ import {
     Palette,
     Search,
     SlidersHorizontal,
+    Sparkles,
     Type,
     ZoomIn,
     ZoomOut,
@@ -39,7 +41,16 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AspectRatioSelector } from './AspectRatioSelector';
-import { EventItem, GeneratedDesign, ProductItem, renderStyleOptions } from './types';
+import { StepWizardNav, WizardStepItem } from './StepWizardNav';
+import {
+    ASPECT_RATIO_CONFIGS,
+    EventItem,
+    GeneratedDesign,
+    ProductItem,
+    renderStyleOptions,
+    RENDER_STYLE_ASSETS,
+    Step,
+} from './types';
 export { GeneratedCreativeModal } from './GeneratedCreativeModal';
 export type { GeneratedCreativeModalProps } from './GeneratedCreativeModal';
 
@@ -71,108 +82,155 @@ export function CatalogBrowserModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[85vh] overflow-hidden rounded-card p-0 sm:max-w-xl">
-                <DialogHeader className="border-b bg-muted/20 p-5 pb-4">
-                    <DialogTitle className="flex items-center gap-2 text-lg font-bold">
-                        <Package className="h-5 w-5 text-primary" />
-                        Select Catalog Products
-                    </DialogTitle>
-                    <DialogDescription className="text-xs">
-                        Select one or more catalog products to feature in your marketing design.
-                    </DialogDescription>
+            <DialogContent className="flex flex-col min-h-[460px] max-h-[80vh] h-[540px] w-[92vw] sm:max-w-[660px] md:max-w-[700px] overflow-hidden rounded-[12px] p-0 shadow-2xl border border-border">
+                {/* MODAL HEADER */}
+                <DialogHeader className="shrink-0 border-b border-border/80 bg-muted/20 px-4 sm:px-5 py-3.5">
+                    <div className="flex items-center gap-2.5">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-primary/10 text-primary border border-primary/20">
+                            <Package className="h-3.5 w-3.5" />
+                        </div>
+                        <div>
+                            <DialogTitle className="text-sm font-bold text-foreground tracking-tight sm:text-base">
+                                Select Catalog Products
+                            </DialogTitle>
+                            <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                                Select one or more catalog products to feature in your marketing design.
+                            </DialogDescription>
+                        </div>
+                    </div>
                 </DialogHeader>
 
-                <div className="border-b bg-muted/10 p-4">
-                    <div className="relative">
-                        <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search products..."
-                            className="h-9 pl-9 text-xs"
-                        />
+                {/* SEARCH & FILTER BAR */}
+                <div className="shrink-0 border-b border-border/60 bg-muted/10 px-4 sm:px-5 py-2.5">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="relative flex-1 max-w-md">
+                            <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search products by name or description..."
+                                className="h-9 pl-9 pr-8 text-xs rounded-[8px] bg-background border-border/80"
+                            />
+                            {searchQuery && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchQuery('')}
+                                    className="absolute top-1/2 right-2.5 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                                >
+                                    ×
+                                </button>
+                            )}
+                        </div>
+                        <span className="text-xs text-muted-foreground shrink-0 font-medium">
+                            {filtered.length} {filtered.length === 1 ? 'product' : 'products'} available
+                        </span>
                     </div>
                 </div>
 
-                <div className="max-h-[380px] min-h-[200px] overflow-y-auto p-4">
+                {/* PRODUCT CARD GRID (MATCHING MY PRODUCTS PAGE DESIGN) */}
+                <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
                     {filtered.length === 0 ? (
-                        <div className="py-12 text-center text-muted-foreground">
-                            <Package className="mx-auto h-8 w-8 opacity-40" />
-                            <p className="mt-2 text-xs font-medium">No products found</p>
+                        <div className="py-20 text-center text-muted-foreground">
+                            <Package className="mx-auto h-10 w-10 opacity-30" />
+                            <p className="mt-3 text-sm font-semibold text-foreground">No products found</p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                                {searchQuery
+                                    ? `No catalog items matched "${searchQuery}"`
+                                    : 'No products in your catalog yet'}
+                            </p>
                         </div>
                     ) : (
-                        <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 sm:gap-4">
                             {filtered.map((prod: ProductItem) => {
                                 const isSelected = selectedProducts.some(
                                     (p) => String(p.id) === String(prod.id),
                                 );
 
                                 return (
-                                    <button
+                                    <div
                                         key={prod.id}
-                                        type="button"
+                                        role="button"
+                                        tabIndex={0}
                                         onClick={() => onToggleProduct(prod)}
-                                        className={`group relative flex flex-col overflow-hidden rounded-card border text-left transition-all ${
-                                            isSelected
-                                                ? 'border-emerald-500 bg-emerald-500/5 shadow-xs ring-1 ring-emerald-500/30'
-                                                : 'border-border bg-card hover:border-emerald-500/40'
-                                        }`}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                onToggleProduct(prod);
+                                            }
+                                        }}
+                                        className="group flex flex-col text-left cursor-pointer select-none focus:outline-hidden"
                                     >
-                                        <div className="relative flex h-28 w-full items-center justify-center overflow-hidden border-b border-border/40 bg-muted/40">
+                                        {/* Product Image Stage (Full Image View, No Cropping - object-contain) */}
+                                        <div
+                                            className={`relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-[10px] sm:rounded-[12px] border transition-all duration-200 shadow-2xs ${
+                                                isSelected
+                                                    ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-500/[0.04] ring-2 ring-emerald-500/40 shadow-sm'
+                                                    : 'border-border/70 bg-muted/20 hover:border-primary/50 hover:bg-muted/30 hover:shadow-xs'
+                                            }`}
+                                        >
                                             {prod.image_url ? (
                                                 <img
                                                     src={prod.image_url}
                                                     alt={prod.name}
-                                                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                                    className="h-full w-full object-contain p-2.5 transition-transform duration-200 group-hover:scale-[1.02]"
+                                                    loading="lazy"
                                                 />
                                             ) : (
-                                                <Package className="h-8 w-8 opacity-40" />
+                                                <div className="flex h-full w-full items-center justify-center bg-muted/30 text-muted-foreground/40">
+                                                    <Package className="h-9 w-9 opacity-30" />
+                                                </div>
                                             )}
+
+                                            {/* Selection Check Badge */}
                                             {isSelected && (
-                                                <span className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-md bg-emerald-600 text-white shadow-xs">
-                                                    <Check className="h-3 w-3 stroke-[2.5]" />
-                                                </span>
+                                                <div className="absolute top-2.5 right-2.5 flex h-6 w-6 items-center justify-center rounded-[6px] bg-emerald-600 text-white shadow-md ring-2 ring-background">
+                                                    <Check className="h-3.5 w-3.5 stroke-[3]" />
+                                                </div>
                                             )}
                                         </div>
-                                        <div className="p-3">
-                                            <p
-                                                className="break-words text-xs font-bold leading-snug text-foreground"
-                                                title={prod.name}
-                                            >
-                                                {prod.name}
-                                            </p>
-                                            <div className="mt-1.5 flex items-center justify-between">
-                                                {prod.price ? (
-                                                    <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
+
+                                        {/* Product Details Header (Matching My Products Page) */}
+                                        <div className="mt-2.5 flex items-start justify-between gap-1.5 px-0.5">
+                                            <div className="min-w-0 flex-1">
+                                                <h3
+                                                    className={`truncate text-xs sm:text-sm font-semibold leading-tight transition-colors ${
+                                                        isSelected ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-foreground'
+                                                    }`}
+                                                    title={prod.name}
+                                                >
+                                                    {prod.name}
+                                                </h3>
+                                                {prod.price !== null && prod.price !== undefined && prod.price !== '' ? (
+                                                    <p className="mt-1 text-xs font-semibold tabular-nums text-emerald-600 dark:text-emerald-400 font-mono">
                                                         ₱{Number(prod.price).toLocaleString(undefined, {
                                                             minimumFractionDigits: 2,
                                                             maximumFractionDigits: 2,
                                                         })}
-                                                    </span>
+                                                    </p>
                                                 ) : (
-                                                    <span className="text-[11px] italic text-muted-foreground">
+                                                    <p className="mt-1 text-[11px] text-muted-foreground italic">
                                                         Price not set
-                                                    </span>
+                                                    </p>
                                                 )}
                                             </div>
                                         </div>
-                                    </button>
+                                    </div>
                                 );
                             })}
                         </div>
                     )}
                 </div>
 
-                <DialogFooter className="flex items-center justify-between border-t bg-muted/10 p-3 px-4 sm:justify-between">
+                {/* MODAL FOOTER */}
+                <DialogFooter className="shrink-0 border-t border-border/80 bg-muted/20 px-4 sm:px-5 py-3 flex items-center justify-between sm:justify-between">
                     <span className="text-xs font-medium text-muted-foreground">
                         {selectedProducts.length} catalog{' '}
                         {selectedProducts.length === 1 ? 'product' : 'products'} selected
                     </span>
                     <Button
                         type="button"
-                        size="sm"
                         onClick={() => onOpenChange(false)}
-                        className="h-8 text-xs font-semibold"
+                        className="h-8 px-5 rounded-[8px] text-xs font-bold cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
                     >
                         Done
                     </Button>
@@ -451,7 +509,7 @@ export function AutomaticSettingsModal({
     isGenerating = false,
     canGenerate = true,
 }: AutomaticSettingsModalProps) {
-    const [activeCard, setActiveCard] = useState<'style' | 'quantity' | 'ratio' | 'typography'>('style');
+    const [currentStep, setCurrentStep] = useState<Step>(1);
 
     const isStyleSelected = Boolean(renderStyle && renderStyle.trim().length > 0);
     const isGenerateDisabled = !isStyleSelected || isGenerating || !canGenerate;
@@ -464,6 +522,45 @@ export function AutomaticSettingsModal({
         includeBusinessName,
     ].filter(Boolean).length;
 
+    const currentRatioConfig =
+        ASPECT_RATIO_CONFIGS.find((c) => c.value === aspectRatio) ||
+        ASPECT_RATIO_CONFIGS[0];
+
+    const modalSteps: WizardStepItem[] = [
+        {
+            step: 1,
+            title: 'Render Style',
+            subtitle: renderStyle || 'Artistic Style',
+            icon: Palette,
+            isCompleted: isStyleSelected,
+            isAccessible: true,
+        },
+        {
+            step: 2,
+            title: 'Quantity',
+            subtitle: quantity === 1 ? '1 Image' : `${quantity} Images`,
+            icon: Layers,
+            isCompleted: true,
+            isAccessible: true,
+        },
+        {
+            step: 3,
+            title: 'Canvas Ratio',
+            subtitle: `${aspectRatio} (${currentRatioConfig.name})`,
+            icon: Maximize2,
+            isCompleted: Boolean(aspectRatio),
+            isAccessible: true,
+        },
+        {
+            step: 4,
+            title: 'Typography',
+            subtitle: `${activeElementsCount} Active Layers`,
+            icon: Type,
+            isCompleted: activeElementsCount > 0,
+            isAccessible: true,
+        },
+    ];
+
     const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!isGenerateDisabled) {
@@ -473,180 +570,121 @@ export function AutomaticSettingsModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="flex flex-col min-h-[540px] max-h-[88vh] h-[640px] w-[94vw] max-w-xl md:max-w-2xl lg:max-w-3xl overflow-hidden rounded-card p-0 shadow-2xl">
-                <DialogHeader className="shrink-0 border-b bg-muted/20 px-4 py-3.5 sm:px-5 sm:py-4">
-                    <div className="flex items-center gap-2">
-                        <SlidersHorizontal className="h-5 w-5 text-primary" />
-                        <DialogTitle className="text-base font-bold text-foreground">
-                            Automatic Studio Generation Settings
-                        </DialogTitle>
+            <DialogContent className="flex flex-col min-h-[520px] max-h-[85vh] w-[95vw] sm:max-w-[760px] md:max-w-[800px] overflow-hidden rounded-[12px] p-0 shadow-2xl border border-border">
+                {/* MODAL HEADER */}
+                <DialogHeader className="shrink-0 border-b border-border/80 bg-muted/20 px-5 py-4">
+                    <div className="flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-primary/10 text-primary border border-primary/20">
+                            <SlidersHorizontal className="h-4 w-4" />
+                        </div>
+                        <div>
+                            <DialogTitle className="text-base font-bold text-foreground tracking-tight">
+                                Automatic Generation Settings
+                            </DialogTitle>
+                            <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                                Configure creative render style, batch quantity, canvas proportions, and marketing typography.
+                            </DialogDescription>
+                        </div>
                     </div>
-                    <DialogDescription className="text-xs text-muted-foreground">
-                        Configure creative render style, batch quantity, proportions, and marketing typography.
-                    </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={handleFormSubmit} className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                    {/* 4 CARD SELECTOR BAR */}
-                    <div className="shrink-0 border-b border-border/70 bg-muted/10 p-3 sm:px-5">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-2.5">
-                            {/* Card 1: Render Style */}
-                            <button
-                                type="button"
-                                onClick={() => setActiveCard('style')}
-                                className={`group relative flex flex-col justify-between rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none ${
-                                    activeCard === 'style'
-                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40 text-foreground'
-                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30 text-muted-foreground'
-                                }`}
-                            >
-                                <div className="flex items-center justify-between mb-1">
-                                    <div className="flex items-center gap-1.5">
-                                        <Palette className={`h-3.5 w-3.5 ${activeCard === 'style' ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary'}`} />
-                                        <span className="text-xs font-bold text-foreground">Render Style</span>
-                                    </div>
-                                    <span className="text-[10px] font-mono font-bold px-1 rounded-sm bg-muted text-muted-foreground">
-                                        1
-                                    </span>
-                                </div>
-                                <p className="text-[11px] font-medium truncate text-muted-foreground">
-                                    {renderStyle || 'Select style'}
-                                </p>
-                            </button>
-
-                            {/* Card 2: Generation Quantity */}
-                            <button
-                                type="button"
-                                onClick={() => setActiveCard('quantity')}
-                                className={`group relative flex flex-col justify-between rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none ${
-                                    activeCard === 'quantity'
-                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40 text-foreground'
-                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30 text-muted-foreground'
-                                }`}
-                            >
-                                <div className="flex items-center justify-between mb-1">
-                                    <div className="flex items-center gap-1.5 min-w-0">
-                                        <Layers className={`h-3.5 w-3.5 shrink-0 ${activeCard === 'quantity' ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary'}`} />
-                                        <span className="text-xs font-bold text-foreground truncate">Generation Quantity</span>
-                                    </div>
-                                    <span className="text-[10px] font-mono font-bold px-1 rounded-sm bg-muted text-muted-foreground shrink-0">
-                                        2
-                                    </span>
-                                </div>
-                                <p className="text-[11px] font-medium truncate text-muted-foreground">
-                                    {quantity === 1 ? '1 Image' : `${quantity} Images (${styleVariation === 'different' ? 'Varied' : 'Same'})`}
-                                </p>
-                            </button>
-
-                            {/* Card 3: Canvas Proportions and Aspect Ratio */}
-                            <button
-                                type="button"
-                                onClick={() => setActiveCard('ratio')}
-                                className={`group relative flex flex-col justify-between rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none ${
-                                    activeCard === 'ratio'
-                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40 text-foreground'
-                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30 text-muted-foreground'
-                                }`}
-                            >
-                                <div className="flex items-center justify-between mb-1">
-                                    <div className="flex items-center gap-1.5 min-w-0">
-                                        <Maximize2 className={`h-3.5 w-3.5 shrink-0 ${activeCard === 'ratio' ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary'}`} />
-                                        <span className="text-xs font-bold text-foreground truncate">Canvas Proportions & Ratio</span>
-                                    </div>
-                                    <span className="text-[10px] font-mono font-bold px-1 rounded-sm bg-muted text-muted-foreground shrink-0">
-                                        3
-                                    </span>
-                                </div>
-                                <p className="text-[11px] font-medium truncate text-muted-foreground">
-                                    {aspectRatio || '1:1'} Ratio
-                                </p>
-                            </button>
-
-                            {/* Card 4: Marketing Typography & Elements */}
-                            <button
-                                type="button"
-                                onClick={() => setActiveCard('typography')}
-                                className={`group relative flex flex-col justify-between rounded-xl border p-2.5 text-left transition-all cursor-pointer select-none ${
-                                    activeCard === 'typography'
-                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40 text-foreground'
-                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30 text-muted-foreground'
-                                }`}
-                            >
-                                <div className="flex items-center justify-between mb-1">
-                                    <div className="flex items-center gap-1.5 min-w-0">
-                                        <Type className={`h-3.5 w-3.5 shrink-0 ${activeCard === 'typography' ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary'}`} />
-                                        <span className="text-xs font-bold text-foreground truncate">Typography & Elements</span>
-                                    </div>
-                                    <span className="text-[10px] font-mono font-bold px-1 rounded-sm bg-muted text-muted-foreground shrink-0">
-                                        4
-                                    </span>
-                                </div>
-                                <p className="text-[11px] font-medium truncate text-muted-foreground">
-                                    {activeElementsCount} Elements Active
-                                </p>
-                            </button>
-                        </div>
+                    {/* CHEVRON STEPPER BAR */}
+                    <div className="shrink-0 border-b border-border/60 bg-muted/10 px-4 sm:px-6 py-2.5">
+                        <StepWizardNav
+                            currentStep={currentStep}
+                            steps={modalSteps}
+                            onSelectStep={setCurrentStep}
+                        />
                     </div>
 
-                    {/* ACTIVE CARD OPTIONS CONTENT */}
-                    <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5">
-                        {/* OPTION 1: RENDER STYLE */}
-                        {activeCard === 'style' && (
+                    {/* TAB CONTENT AREA */}
+                    <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
+                        {/* TAB 1: RENDER STYLE */}
+                        {currentStep === 1 && (
                             <div className="space-y-4 animate-in fade-in-50 duration-150">
-                                <div className="flex items-center justify-between">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
                                     <div>
                                         <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                                             <Palette className="h-3.5 w-3.5 text-primary" />
-                                            1. Render Style <span className="text-destructive">*</span>
+                                            Render Style <span className="text-destructive">*</span>
                                         </Label>
                                         <p className="text-[11px] text-muted-foreground mt-0.5">
                                             Choose the visual artistic rendering style for image synthesis.
                                         </p>
                                     </div>
-                                    <span className={`text-[11px] font-medium ${isStyleSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400 font-semibold'}`}>
-                                        {isStyleSelected
-                                            ? (quantity > 1 && styleVariation === 'different' ? 'Starting style' : 'Selected')
-                                            : 'Required selection'}
-                                    </span>
+                                    <div className="flex items-center gap-3">
+                                        <a
+                                            href="/generator/inspiration"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors focus:outline-hidden"
+                                            title="Analyze an advertising reference image to extract visual inspiration and recommended settings in a new tab"
+                                        >
+                                            <Sparkles className="h-3 w-3" />
+                                            <span>Explore Design Inspiration</span>
+                                            <ExternalLink className="h-2.5 w-2.5" />
+                                        </a>
+                                        <span className={`text-[11px] font-medium ${isStyleSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400 font-semibold'}`}>
+                                            {isStyleSelected
+                                                ? (quantity > 1 && styleVariation === 'different' ? 'Starting style' : 'Selected')
+                                                : 'Selection required'}
+                                        </span>
+                                    </div>
                                 </div>
 
                                 {quantity > 1 && styleVariation === 'different' && (
-                                    <p className="text-[11px] text-muted-foreground bg-muted/30 border border-border/70 rounded-lg p-2.5 leading-relaxed">
-                                        <strong>Different render styles enabled:</strong> The first output will use this selected style, and remaining outputs will distribute across the other supported canonical styles.
+                                    <p className="text-[11px] text-muted-foreground bg-muted/30 border border-border/70 rounded-[8px] p-3 leading-relaxed">
+                                        <strong>Vary render styles enabled:</strong> The first output will use this selected style, and remaining outputs will distribute across the other supported canonical styles.
                                     </p>
                                 )}
 
-                                <div className="grid gap-2.5 sm:grid-cols-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                                     {renderStyleOptions.map((opt) => {
                                         const isSelected = renderStyle === opt.value;
+                                        const imageUrl = RENDER_STYLE_ASSETS[opt.value];
                                         return (
                                             <button
                                                 key={opt.value}
                                                 type="button"
                                                 onClick={() => onRenderStyleChange(opt.value)}
-                                                className={`group relative flex flex-col justify-between rounded-xl border p-3.5 text-left transition-all cursor-pointer select-none ${
+                                                className={`group relative flex flex-col rounded-[10px] border text-left transition-all duration-200 cursor-pointer select-none overflow-hidden ${
                                                     isSelected
-                                                        ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40'
-                                                        : 'border-border/80 bg-card hover:border-emerald-500/40 hover:bg-muted/30'
+                                                        ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-500/[0.03] dark:bg-emerald-500/[0.06] shadow-xs ring-1 ring-emerald-500/30'
+                                                        : 'border-border/80 bg-card hover:border-border hover:bg-muted/30 hover:shadow-xs'
                                                 }`}
                                             >
-                                                <div className="space-y-1.5">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-xs font-bold text-foreground">
-                                                            {opt.label}
-                                                        </span>
-                                                        <span
-                                                            className={`flex h-4 w-4 items-center justify-center rounded-full border transition-all ${
-                                                                isSelected
-                                                                    ? 'border-emerald-600 bg-emerald-600 text-white'
-                                                                    : 'border-muted-foreground/30 bg-transparent'
-                                                            }`}
-                                                        >
-                                                            {isSelected && <Check className="h-2.5 w-2.5 stroke-[3]" />}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                                                        {opt.tagline || opt.description}
+                                                <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted/40 border-b border-border/50">
+                                                    {imageUrl ? (
+                                                        <img
+                                                            src={imageUrl}
+                                                            alt={opt.label}
+                                                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                                            loading="lazy"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex h-full w-full items-center justify-center">
+                                                            <Camera className="h-6 w-6 text-muted-foreground/40" />
+                                                        </div>
+                                                    )}
+                                                    {isSelected && (
+                                                        <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-[6px] bg-emerald-600 text-white shadow-xs">
+                                                            <Check className="h-3 w-3 stroke-[3]" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col flex-1 p-3">
+                                                    <span
+                                                        className={`text-xs font-semibold tracking-tight ${
+                                                            isSelected
+                                                                ? 'text-emerald-700 dark:text-emerald-400 font-bold'
+                                                                : 'text-foreground'
+                                                        }`}
+                                                    >
+                                                        {opt.label}
+                                                    </span>
+                                                    <p className="mt-1 text-[10px] text-muted-foreground leading-relaxed">
+                                                        {opt.description}
                                                     </p>
                                                 </div>
                                             </button>
@@ -656,15 +694,15 @@ export function AutomaticSettingsModal({
                             </div>
                         )}
 
-                        {/* OPTION 2: GENERATION QUANTITY */}
-                        {activeCard === 'quantity' && (
+                        {/* TAB 2: QUANTITY & VARIATIONS */}
+                        {currentStep === 2 && (
                             <div className="space-y-5 animate-in fade-in-50 duration-150">
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                                                 <Layers className="h-3.5 w-3.5 text-primary" />
-                                                2. Generation Quantity
+                                                Generation Quantity
                                             </Label>
                                             <p className="text-[11px] text-muted-foreground mt-0.5">
                                                 Select how many marketing image variations to synthesize.
@@ -675,7 +713,7 @@ export function AutomaticSettingsModal({
                                         </span>
                                     </div>
 
-                                    <div className="grid grid-cols-4 gap-2.5 pt-1">
+                                    <div className="grid grid-cols-4 gap-3 pt-1">
                                         {[1, 2, 3, 4].map((q) => {
                                             const isSelected = quantity === q;
                                             return (
@@ -683,14 +721,14 @@ export function AutomaticSettingsModal({
                                                     key={q}
                                                     type="button"
                                                     onClick={() => onQuantityChange(q)}
-                                                    className={`flex flex-col items-center justify-center py-3 px-2 rounded-xl border text-center transition-all cursor-pointer ${
+                                                    className={`flex flex-col items-center justify-center py-3.5 px-3 rounded-[10px] border text-center transition-all cursor-pointer ${
                                                         isSelected
-                                                            ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-1 ring-emerald-500/40 text-foreground font-bold'
+                                                            ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-500/[0.04] shadow-xs ring-1 ring-emerald-500/30 text-foreground font-bold'
                                                             : 'border-border/80 bg-card text-muted-foreground hover:border-border hover:bg-muted/30'
                                                     }`}
                                                 >
-                                                    <span className="text-base font-bold">{q}</span>
-                                                    <span className="text-[10px] mt-0.5">{q === 1 ? 'Image' : 'Images'}</span>
+                                                    <span className="text-lg font-bold">{q}</span>
+                                                    <span className="text-[11px] text-muted-foreground mt-0.5">{q === 1 ? 'Image' : 'Images'}</span>
                                                 </button>
                                             );
                                         })}
@@ -699,48 +737,48 @@ export function AutomaticSettingsModal({
 
                                 {/* Variation Settings (Shown when quantity > 1) */}
                                 {quantity > 1 ? (
-                                    <div className="space-y-4 rounded-xl border border-border/80 bg-muted/15 p-4">
+                                    <div className="space-y-4 rounded-[10px] border border-border/80 bg-muted/15 p-4 sm:p-5">
                                         <div>
                                             <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                                Multiple Output Variation Settings
+                                                Multi-Output Variation Settings
                                             </h4>
                                             <p className="text-[11px] text-muted-foreground mt-0.5">
-                                                Configure how prompts, headlines, and styles vary across the {quantity} outputs.
+                                                Configure how creative scene direction, taglines, and styles vary across the {quantity} outputs.
                                             </p>
                                         </div>
 
-                                        {/* Prompt Variation */}
+                                        {/* Prompt Direction Variation */}
                                         <div className="space-y-1.5">
                                             <Label className="text-xs font-semibold text-foreground">
-                                                Prompt Variation
+                                                Creative Scene Direction
                                             </Label>
-                                            <div className="grid gap-2 sm:grid-cols-2">
+                                            <div className="grid gap-2.5 sm:grid-cols-2">
                                                 <button
                                                     type="button"
                                                     onClick={() => onPromptVariationChange('different')}
-                                                    className={`rounded-lg border p-2.5 text-left text-xs transition-all cursor-pointer ${
+                                                    className={`rounded-[8px] border p-3 text-left text-xs transition-all cursor-pointer ${
                                                         promptVariation === 'different'
-                                                            ? 'border-emerald-500 bg-emerald-500/10 font-medium'
+                                                            ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-500/[0.04] ring-1 ring-emerald-500/30 font-medium'
                                                             : 'border-border/70 bg-card hover:bg-muted/30 text-muted-foreground'
                                                     }`}
                                                 >
-                                                    <div className="font-semibold text-foreground">Different prompt for each image</div>
-                                                    <div className="text-[10px] text-muted-foreground mt-0.5">
-                                                        Plans distinct visual directions while preserving shared campaign goals.
+                                                    <div className="font-semibold text-foreground">Distinct direction for each image</div>
+                                                    <div className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
+                                                        Plans different visual scene compositions while preserving core campaign goals.
                                                     </div>
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => onPromptVariationChange('same')}
-                                                    className={`rounded-lg border p-2.5 text-left text-xs transition-all cursor-pointer ${
+                                                    className={`rounded-[8px] border p-3 text-left text-xs transition-all cursor-pointer ${
                                                         promptVariation === 'same'
-                                                            ? 'border-emerald-500 bg-emerald-500/10 font-medium'
+                                                            ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-500/[0.04] ring-1 ring-emerald-500/30 font-medium'
                                                             : 'border-border/70 bg-card hover:bg-muted/30 text-muted-foreground'
                                                     }`}
                                                 >
-                                                    <div className="font-semibold text-foreground">Same core prompt for all images</div>
-                                                    <div className="text-[10px] text-muted-foreground mt-0.5">
-                                                        Reuses identical creative scene direction across all outputs.
+                                                    <div className="font-semibold text-foreground">Unified direction for all images</div>
+                                                    <div className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
+                                                        Applies identical creative scene composition across all outputs.
                                                     </div>
                                                 </button>
                                             </div>
@@ -751,32 +789,32 @@ export function AutomaticSettingsModal({
                                             <Label className="text-xs font-semibold text-foreground">
                                                 Tagline Behavior
                                             </Label>
-                                            <div className="grid gap-2 sm:grid-cols-2">
+                                            <div className="grid gap-2.5 sm:grid-cols-2">
                                                 <button
                                                     type="button"
                                                     onClick={() => onTaglineVariationChange('same')}
-                                                    className={`rounded-lg border p-2.5 text-left text-xs transition-all cursor-pointer ${
+                                                    className={`rounded-[8px] border p-3 text-left text-xs transition-all cursor-pointer ${
                                                         taglineVariation === 'same'
-                                                            ? 'border-emerald-500 bg-emerald-500/10 font-medium'
+                                                            ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-500/[0.04] ring-1 ring-emerald-500/30 font-medium'
                                                             : 'border-border/70 bg-card hover:bg-muted/30 text-muted-foreground'
                                                     }`}
                                                 >
-                                                    <div className="font-semibold text-foreground">Same tagline across all images</div>
-                                                    <div className="text-[10px] text-muted-foreground mt-0.5">
-                                                        Uses one unified headline for consistent brand messaging.
+                                                    <div className="font-semibold text-foreground">Consistent tagline across all images</div>
+                                                    <div className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
+                                                        Maintains a unified headline for cohesive campaign messaging.
                                                     </div>
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => onTaglineVariationChange('different')}
-                                                    className={`rounded-lg border p-2.5 text-left text-xs transition-all cursor-pointer ${
+                                                    className={`rounded-[8px] border p-3 text-left text-xs transition-all cursor-pointer ${
                                                         taglineVariation === 'different'
-                                                            ? 'border-emerald-500 bg-emerald-500/10 font-medium'
+                                                            ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-500/[0.04] ring-1 ring-emerald-500/30 font-medium'
                                                             : 'border-border/70 bg-card hover:bg-muted/30 text-muted-foreground'
                                                     }`}
                                                 >
-                                                    <div className="font-semibold text-foreground">Different generated tagline for each image</div>
-                                                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                                                    <div className="font-semibold text-foreground">Unique tagline for each image</div>
+                                                    <div className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
                                                         Generates fresh alternative copy angles for each output.
                                                     </div>
                                                 </button>
@@ -791,34 +829,34 @@ export function AutomaticSettingsModal({
                                         {/* Render-Style Behavior */}
                                         <div className="space-y-1.5">
                                             <Label className="text-xs font-semibold text-foreground">
-                                                Render-Style Behavior
+                                                Render Style Variation
                                             </Label>
-                                            <div className="grid gap-2 sm:grid-cols-2">
+                                            <div className="grid gap-2.5 sm:grid-cols-2">
                                                 <button
                                                     type="button"
                                                     onClick={() => onStyleVariationChange('same')}
-                                                    className={`rounded-lg border p-2.5 text-left text-xs transition-all cursor-pointer ${
+                                                    className={`rounded-[8px] border p-3 text-left text-xs transition-all cursor-pointer ${
                                                         styleVariation === 'same'
-                                                            ? 'border-emerald-500 bg-emerald-500/10 font-medium'
+                                                            ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-500/[0.04] ring-1 ring-emerald-500/30 font-medium'
                                                             : 'border-border/70 bg-card hover:bg-muted/30 text-muted-foreground'
                                                     }`}
                                                 >
                                                     <div className="font-semibold text-foreground">Same render style for all images</div>
-                                                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                                                    <div className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
                                                         Applies {renderStyle || 'the selected style'} to every output.
                                                     </div>
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => onStyleVariationChange('different')}
-                                                    className={`rounded-lg border p-2.5 text-left text-xs transition-all cursor-pointer ${
+                                                    className={`rounded-[8px] border p-3 text-left text-xs transition-all cursor-pointer ${
                                                         styleVariation === 'different'
-                                                            ? 'border-emerald-500 bg-emerald-500/10 font-medium'
+                                                            ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-500/[0.04] ring-1 ring-emerald-500/30 font-medium'
                                                             : 'border-border/70 bg-card hover:bg-muted/30 text-muted-foreground'
                                                     }`}
                                                 >
-                                                    <div className="font-semibold text-foreground">Different render styles across images</div>
-                                                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                                                    <div className="font-semibold text-foreground">Vary render styles across images</div>
+                                                    <div className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
                                                         Distributes supported canonical styles across the requested outputs.
                                                     </div>
                                                 </button>
@@ -826,52 +864,105 @@ export function AutomaticSettingsModal({
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="rounded-xl border border-border/70 bg-muted/20 p-3.5 text-xs text-muted-foreground">
-                                        Single visual generation active. Selecting 2 to 4 images enables prompt, tagline, and render style variation options.
+                                    <div className="rounded-[8px] border border-border/70 bg-muted/20 p-3.5 text-xs text-muted-foreground leading-relaxed">
+                                        Single visual generation active. Selecting 2 to 4 images unlocks multi-output variation options.
                                     </div>
                                 )}
                             </div>
                         )}
 
-                        {/* OPTION 3: CANVAS PROPORTIONS */}
-                        {activeCard === 'ratio' && (
+                        {/* TAB 3: CANVAS PROPORTIONS */}
+                        {currentStep === 3 && (
                             <div className="space-y-4 animate-in fade-in-50 duration-150">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                                             <Maximize2 className="h-3.5 w-3.5 text-primary" />
-                                            3. Canvas Proportions & Aspect Ratio
+                                            Canvas Aspect Ratio
                                         </Label>
                                         <p className="text-[11px] text-muted-foreground mt-0.5">
                                             Select standard social or marketing dimensions for your canvas.
                                         </p>
                                     </div>
-                                    <span className="text-[10px] font-mono font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                                        {aspectRatio}
+                                    <span className="rounded-[6px] font-mono text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 border border-emerald-500/20">
+                                        {aspectRatio} · {currentRatioConfig.name}
                                     </span>
                                 </div>
-                                <AspectRatioSelector
-                                    value={aspectRatio}
-                                    onChange={onAspectRatioChange}
-                                    defaultOpen={true}
-                                />
+
+                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-1">
+                                    {ASPECT_RATIO_CONFIGS.map((opt) => {
+                                        const isSelected = aspectRatio === opt.value;
+                                        return (
+                                            <button
+                                                key={opt.value}
+                                                type="button"
+                                                onClick={() => onAspectRatioChange(opt.value)}
+                                                className={`group relative flex flex-col rounded-[10px] border text-left transition-all duration-200 cursor-pointer select-none overflow-hidden ${
+                                                    isSelected
+                                                        ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-500/[0.03] dark:bg-emerald-500/[0.06] shadow-xs ring-1 ring-emerald-500/30'
+                                                        : 'border-border/80 bg-card hover:border-border hover:bg-muted/30 hover:shadow-xs'
+                                                }`}
+                                            >
+                                                {/* Proportional Canvas Shape Preview */}
+                                                <div className="relative h-24 w-full overflow-hidden bg-muted/30 dark:bg-muted/10 p-2 flex items-center justify-center border-b border-border/50 select-none">
+                                                    <div
+                                                        className={`rounded-[4px] border-2 transition-all ${
+                                                            isSelected
+                                                                ? 'border-emerald-600 bg-emerald-500/20 shadow-xs dark:border-emerald-400'
+                                                                : 'border-muted-foreground/40 bg-muted/40 group-hover:border-foreground/40'
+                                                        } ${opt.modalPreviewClass}`}
+                                                    />
+                                                    {isSelected && (
+                                                        <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-[6px] bg-emerald-600 text-white shadow-xs">
+                                                            <Check className="h-3 w-3 stroke-[3]" />
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Option Details */}
+                                                <div className="flex flex-col flex-1 p-3">
+                                                    <div className="flex items-center justify-between gap-1">
+                                                        <span
+                                                            className={`font-mono text-xs font-bold tracking-tight ${
+                                                                isSelected
+                                                                    ? 'text-emerald-700 dark:text-emerald-400'
+                                                                    : 'text-foreground'
+                                                            }`}
+                                                        >
+                                                            {opt.value}
+                                                        </span>
+                                                        <span className="text-[10px] font-semibold text-muted-foreground">
+                                                            {opt.name}
+                                                        </span>
+                                                    </div>
+                                                    <p className="mt-1 text-[10px] text-muted-foreground line-clamp-1 leading-relaxed">
+                                                        {opt.description}
+                                                    </p>
+                                                    <span className="mt-1.5 font-mono text-[9px] text-muted-foreground/80">
+                                                        {opt.dimensions}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
 
-                        {/* OPTION 4: MARKETING TYPOGRAPHY & ELEMENTS */}
-                        {activeCard === 'typography' && (
+                        {/* TAB 4: MARKETING TYPOGRAPHY & ELEMENTS */}
+                        {currentStep === 4 && (
                             <div className="space-y-4 animate-in fade-in-50 duration-150">
                                 <div>
                                     <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                                         <Type className="h-3.5 w-3.5 text-primary" />
-                                        4. Marketing Typography & Elements
+                                        Marketing Typography & Branding Layers
                                     </Label>
                                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                                        Specify which commercial branding and typography layers to render in the artwork.
+                                        Specify which commercial branding and copy layers to render in the creative.
                                     </p>
                                 </div>
 
-                                <div className="grid gap-2.5 sm:grid-cols-2">
+                                <div className="grid gap-3 sm:grid-cols-2">
                                     {/* Show Event/Holiday Text */}
                                     {selectedEvent && (
                                         <div
@@ -881,10 +972,10 @@ export function AutomaticSettingsModal({
                                             onKeyDown={(e) => {
                                                 if (e.key === ' ' || e.key === 'Enter') onToggleEventText(!showEventText);
                                             }}
-                                            className={`group relative flex flex-col justify-between rounded-xl border p-3 transition-all cursor-pointer select-none sm:col-span-2 ${
+                                            className={`group relative flex flex-col justify-between rounded-[10px] border p-3.5 transition-all cursor-pointer select-none sm:col-span-2 ${
                                                 showEventText
-                                                    ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-2xs'
-                                                    : 'border-border/80 bg-background/60 hover:bg-muted/30'
+                                                    ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-500/[0.04] ring-1 ring-emerald-500/30'
+                                                    : 'border-border/80 bg-card hover:bg-muted/30'
                                             }`}
                                         >
                                             <div className="space-y-1">
@@ -892,23 +983,20 @@ export function AutomaticSettingsModal({
                                                     <div className="flex items-center gap-2">
                                                         <CalendarDays className="h-4 w-4 text-primary" />
                                                         <span className="text-xs font-bold text-foreground">
-                                                            Show Event/Holiday Text
+                                                            Event / Holiday Copy
                                                         </span>
-                                                        <Badge
-                                                            variant="outline"
-                                                            className="text-[10px] font-semibold border-border bg-muted/50 text-foreground"
-                                                        >
+                                                        <span className="inline-flex items-center rounded-[6px] border border-border bg-muted/60 px-2 py-0.5 text-[10px] font-semibold text-foreground">
                                                             {selectedEvent.name}
-                                                        </Badge>
+                                                        </span>
                                                     </div>
                                                     <Checkbox
                                                         checked={showEventText}
                                                         onCheckedChange={(c) => onToggleEventText(Boolean(c))}
-                                                        className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
+                                                        className="h-4 w-4 pointer-events-none rounded-[4px] data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
                                                     />
                                                 </div>
-                                                <p className="line-clamp-2 text-[10px] text-muted-foreground">
-                                                    Allow the Event/Holiday name to appear as typography in the final design.
+                                                <p className="text-[11px] text-muted-foreground mt-1">
+                                                    Display promotional event or holiday title as supporting copy.
                                                 </p>
                                             </div>
                                         </div>
@@ -922,10 +1010,10 @@ export function AutomaticSettingsModal({
                                         onKeyDown={(e) => {
                                             if (e.key === ' ' || e.key === 'Enter') onToggleProductName && onToggleProductName(!includeProductName);
                                         }}
-                                        className={`group relative flex flex-col justify-between rounded-xl border p-3 transition-all cursor-pointer select-none ${
+                                        className={`group relative flex flex-col justify-between rounded-[10px] border p-3.5 transition-all cursor-pointer select-none ${
                                             includeProductName
-                                                ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-2xs'
-                                                : 'border-border/80 bg-background/60 hover:bg-muted/30'
+                                                ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-500/[0.04] ring-1 ring-emerald-500/30'
+                                                : 'border-border/80 bg-card hover:bg-muted/30'
                                         }`}
                                     >
                                         <div className="space-y-1">
@@ -937,11 +1025,11 @@ export function AutomaticSettingsModal({
                                                 <Checkbox
                                                     checked={includeProductName}
                                                     onCheckedChange={(c) => onToggleProductName && onToggleProductName(Boolean(c))}
-                                                    className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
+                                                    className="h-4 w-4 pointer-events-none rounded-[4px] data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
                                                 />
                                             </div>
-                                            <p className="line-clamp-2 text-[10px] text-muted-foreground">
-                                                Render product name typography overlay.
+                                            <p className="text-[11px] text-muted-foreground mt-1">
+                                                Render primary product name as dominant advertising headline.
                                             </p>
                                         </div>
                                     </div>
@@ -954,10 +1042,10 @@ export function AutomaticSettingsModal({
                                         onKeyDown={(e) => {
                                             if (e.key === ' ' || e.key === 'Enter') onTogglePrices(!includePrices);
                                         }}
-                                        className={`group relative flex flex-col justify-between rounded-xl border p-3 transition-all cursor-pointer select-none ${
+                                        className={`group relative flex flex-col justify-between rounded-[10px] border p-3.5 transition-all cursor-pointer select-none ${
                                             includePrices
-                                                ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-2xs'
-                                                : 'border-border/80 bg-background/60 hover:bg-muted/30'
+                                                ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-500/[0.04] ring-1 ring-emerald-500/30'
+                                                : 'border-border/80 bg-card hover:bg-muted/30'
                                         }`}
                                     >
                                         <div className="space-y-1">
@@ -969,11 +1057,11 @@ export function AutomaticSettingsModal({
                                                 <Checkbox
                                                     checked={includePrices}
                                                     onCheckedChange={(c) => onTogglePrices(Boolean(c))}
-                                                    className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
+                                                    className="h-4 w-4 pointer-events-none rounded-[4px] data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
                                                 />
                                             </div>
-                                            <p className="line-clamp-2 text-[10px] text-muted-foreground">
-                                                Render authoritative product pricing badge.
+                                            <p className="text-[11px] text-muted-foreground mt-1">
+                                                Render authoritative product pricing tag on the creative.
                                             </p>
                                         </div>
                                     </div>
@@ -986,10 +1074,10 @@ export function AutomaticSettingsModal({
                                         onKeyDown={(e) => {
                                             if (e.key === ' ' || e.key === 'Enter') onToggleTagline(!includeTagline);
                                         }}
-                                        className={`group relative flex flex-col justify-between rounded-xl border p-3 transition-all cursor-pointer select-none ${
+                                        className={`group relative flex flex-col justify-between rounded-[10px] border p-3.5 transition-all cursor-pointer select-none ${
                                             includeTagline
-                                                ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-2xs'
-                                                : 'border-border/80 bg-background/60 hover:bg-muted/30'
+                                                ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-500/[0.04] ring-1 ring-emerald-500/30'
+                                                : 'border-border/80 bg-card hover:bg-muted/30'
                                         }`}
                                     >
                                         <div className="space-y-1">
@@ -1001,11 +1089,11 @@ export function AutomaticSettingsModal({
                                                 <Checkbox
                                                     checked={includeTagline}
                                                     onCheckedChange={(c) => onToggleTagline(Boolean(c))}
-                                                    className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
+                                                    className="h-4 w-4 pointer-events-none rounded-[4px] data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
                                                 />
                                             </div>
-                                            <p className="line-clamp-2 text-[10px] text-muted-foreground">
-                                                AI generates an original commercial headline tagline.
+                                            <p className="text-[11px] text-muted-foreground mt-1">
+                                                Render promotional headline and tagline copy on the creative.
                                             </p>
                                         </div>
                                     </div>
@@ -1018,10 +1106,10 @@ export function AutomaticSettingsModal({
                                         onKeyDown={(e) => {
                                             if (e.key === ' ' || e.key === 'Enter') onToggleBusinessName(!includeBusinessName);
                                         }}
-                                        className={`group relative flex flex-col justify-between rounded-xl border p-3 transition-all cursor-pointer select-none ${
+                                        className={`group relative flex flex-col justify-between rounded-[10px] border p-3.5 transition-all cursor-pointer select-none ${
                                             includeBusinessName
-                                                ? 'border-emerald-500 bg-emerald-500/[0.04] shadow-2xs'
-                                                : 'border-border/80 bg-background/60 hover:bg-muted/30'
+                                                ? 'border-emerald-600 dark:border-emerald-500 bg-emerald-500/[0.04] ring-1 ring-emerald-500/30'
+                                                : 'border-border/80 bg-card hover:bg-muted/30'
                                         }`}
                                     >
                                         <div className="space-y-1">
@@ -1030,22 +1118,19 @@ export function AutomaticSettingsModal({
                                                     <Building2 className="h-4 w-4 text-primary" />
                                                     <p className="text-xs font-bold text-foreground">Include Business Name</p>
                                                     {businessName && (
-                                                        <Badge
-                                                            variant="outline"
-                                                            className="text-[10px] font-semibold border-border bg-muted/50 text-foreground"
-                                                        >
+                                                        <span className="inline-flex items-center rounded-[6px] border border-border bg-muted/60 px-2 py-0.5 text-[10px] font-semibold text-foreground">
                                                             {businessName}
-                                                        </Badge>
+                                                        </span>
                                                     )}
                                                 </div>
                                                 <Checkbox
                                                     checked={includeBusinessName}
                                                     onCheckedChange={(c) => onToggleBusinessName(Boolean(c))}
-                                                    className="h-4 w-4 pointer-events-none rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
+                                                    className="h-4 w-4 pointer-events-none rounded-[4px] data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 data-[state=checked]:text-white dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600"
                                                 />
                                             </div>
-                                            <p className="line-clamp-2 text-[10px] text-muted-foreground">
-                                                Incorporate registered business identity into the creative.
+                                            <p className="text-[11px] text-muted-foreground mt-1">
+                                                Incorporate registered business identity into the creative layout.
                                             </p>
                                         </div>
                                     </div>
@@ -1055,11 +1140,11 @@ export function AutomaticSettingsModal({
                     </div>
 
                     {/* MODAL FOOTER */}
-                    <DialogFooter className="shrink-0 border-t bg-muted/15 px-4 py-3 sm:px-5 flex items-center justify-end">
+                    <DialogFooter className="shrink-0 border-t border-border/80 bg-muted/20 px-4 sm:px-6 py-3.5 flex items-center justify-end">
                         <Button
                             type="submit"
                             disabled={isGenerateDisabled}
-                            className="w-full sm:w-auto text-xs font-bold px-6 rounded-xl cursor-pointer h-10 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-md"
+                            className="w-full sm:w-auto text-xs font-bold px-6 rounded-[8px] cursor-pointer h-9 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm"
                         >
                             {isGenerating ? (
                                 <>

@@ -59,4 +59,10 @@ return [
         'redirect' => env('FACEBOOK_REDIRECT_URI', env('APP_URL', 'http://127.0.0.1:8000').'/auth/facebook/callback'),
     ],
 
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-3.1-pro-preview'),
+        'fallback_model' => env('GEMINI_FALLBACK_MODEL', 'gemini-3.6-flash'),
+    ],
+
 ];

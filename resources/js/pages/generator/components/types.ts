@@ -308,6 +308,13 @@ export const renderStyleOptions: RenderStyleOption[] = [
     },
 ];
 
+export const RENDER_STYLE_ASSETS: Record<string, string> = {
+    'Studio Product Still': '/images/render-styles/studioproductstill.jpg',
+    'Cinematic Marketing': '/images/render-styles/cinematicmarketing.jpg',
+    'Lifestyle Capture': '/images/render-styles/lifestylecapture.jpg',
+    'Minimalist Graphic': '/images/render-styles/minimalistgraphic.jpg',
+};
+
 export function resolveRenderStyleFromDraft(draft: any): string {
     if (!draft) return 'Studio Product Still';
     const meta = draft.generation_metadata || draft.generation_meta || {};
@@ -373,6 +380,64 @@ export const aspectRatioOptions: AspectRatioOption[] = [
         label: '4:3 Standard',
         description: 'Display Ads & Content (Framed)',
         badge: '1792 × 1024 (4:3)',
+    },
+];
+
+export interface AspectRatioConfig {
+    value: string;
+    name: string;
+    label: string;
+    description: string;
+    dimensions: string;
+    previewClass: string;
+    modalPreviewClass: string;
+}
+
+export const ASPECT_RATIO_CONFIGS: AspectRatioConfig[] = [
+    {
+        value: '1:1',
+        name: 'Square',
+        label: '1:1 · Square',
+        description: 'Instagram & Facebook Feed',
+        dimensions: '1024 × 1024',
+        previewClass: 'h-6 w-6',
+        modalPreviewClass: 'h-11 w-11',
+    },
+    {
+        value: '16:9',
+        name: 'Landscape',
+        label: '16:9 · Landscape',
+        description: 'Facebook Cover & Banners',
+        dimensions: '1792 × 1024',
+        previewClass: 'h-3.5 w-7',
+        modalPreviewClass: 'h-8 w-14',
+    },
+    {
+        value: '9:16',
+        name: 'Story / Reel',
+        label: '9:16 · Story / Reel',
+        description: 'Stories, Reels & TikTok',
+        dimensions: '1024 × 1792',
+        previewClass: 'h-7 w-3.5',
+        modalPreviewClass: 'h-14 w-8',
+    },
+    {
+        value: '4:5',
+        name: 'Portrait',
+        label: '4:5 · Portrait',
+        description: 'Instagram Feed Portrait',
+        dimensions: '1024 × 1792 (4:5)',
+        previewClass: 'h-6.5 w-5',
+        modalPreviewClass: 'h-13 w-10.5',
+    },
+    {
+        value: '4:3',
+        name: 'Standard',
+        label: '4:3 · Standard',
+        description: 'Display Ads & Editorial',
+        dimensions: '1792 × 1024 (4:3)',
+        previewClass: 'h-5.5 w-7',
+        modalPreviewClass: 'h-10.5 w-14',
     },
 ];
 

@@ -20,6 +20,8 @@ import {
     SlidersHorizontal,
     Type,
     Calendar,
+    ExternalLink,
+    Sparkles,
     X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -100,62 +102,9 @@ import {
     TaglineMode,
     toneOptions,
     DesignSystemExport,
+    RENDER_STYLE_ASSETS,
+    ASPECT_RATIO_CONFIGS,
 } from './components/types';
-
-const RENDER_STYLE_ASSETS: Record<string, string> = {
-    'Studio Product Still': '/images/render-styles/studioproductstill.jpg',
-    'Cinematic Marketing': '/images/render-styles/cinematicmarketing.jpg',
-    'Lifestyle Capture': '/images/render-styles/lifestylecapture.jpg',
-    'Minimalist Graphic': '/images/render-styles/minimalistgraphic.jpg',
-};
-
-const ASPECT_RATIO_CONFIGS = [
-    {
-        value: '1:1',
-        name: 'Square',
-        label: '1:1 · Square',
-        description: 'Instagram & Facebook Feed',
-        dimensions: '1024 × 1024',
-        previewClass: 'h-6 w-6',
-        modalPreviewClass: 'h-11 w-11',
-    },
-    {
-        value: '16:9',
-        name: 'Landscape',
-        label: '16:9 · Landscape',
-        description: 'Facebook Cover & Banners',
-        dimensions: '1792 × 1024',
-        previewClass: 'h-3.5 w-7',
-        modalPreviewClass: 'h-8 w-14',
-    },
-    {
-        value: '9:16',
-        name: 'Story / Reel',
-        label: '9:16 · Story / Reel',
-        description: 'Stories, Reels & TikTok',
-        dimensions: '1024 × 1792',
-        previewClass: 'h-7 w-3.5',
-        modalPreviewClass: 'h-14 w-8',
-    },
-    {
-        value: '4:5',
-        name: 'Portrait',
-        label: '4:5 · Portrait',
-        description: 'Instagram Feed Portrait',
-        dimensions: '1024 × 1792 (4:5)',
-        previewClass: 'h-6.5 w-5',
-        modalPreviewClass: 'h-13 w-10.5',
-    },
-    {
-        value: '4:3',
-        name: 'Standard',
-        label: '4:3 · Standard',
-        description: 'Display Ads & Editorial',
-        dimensions: '1792 × 1024 (4:3)',
-        previewClass: 'h-5.5 w-7',
-        modalPreviewClass: 'h-10.5 w-14',
-    },
-];
 
 interface ManualGeneratorProps {
     campaign?: CampaignItem | null;
@@ -1162,13 +1111,13 @@ export default function ManualGenerator({
                 {/* MAIN STUDIO WORKSPACE */}
                 <div
                     className={`min-w-0 flex-1 ${generationState === 'generating'
-                        ? 'flex h-full max-h-full flex-col overflow-hidden p-2 sm:p-3 lg:p-4'
+                        ? 'flex h-full max-h-full flex-col overflow-hidden p-0'
                         : 'space-y-3.5 p-3 sm:p-4 lg:p-5'
                         }`}
                 >
                     {/* Header */}
-                    {generationState !== 'ready' && (
-                        <div className="shrink-0 w-full mb-2 sm:mb-3">
+                    {generationState !== 'ready' && generationState !== 'generating' && (
+                        <div className="shrink-0 w-full mb-1 sm:mb-1.5">
                             <StudioHeader
                                 activeMode="manual"
                                 activeCampaign={campaign}
@@ -1394,7 +1343,7 @@ export default function ManualGenerator({
 
                                             {/* 1. Render Style — Visual Image Grid (Directly visible on main page) */}
                                             <div className="space-y-3 rounded-xl border border-border/80 bg-card/60 p-4 sm:p-5 shadow-xs">
-                                                <div className="flex items-center justify-between">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
                                                     <div className="flex items-center gap-2">
                                                         <Camera className="h-4 w-4 text-primary" />
                                                         <div>
@@ -1406,9 +1355,22 @@ export default function ManualGenerator({
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    <span className="font-mono text-[10px] font-medium text-muted-foreground">
-                                                        {renderStyle}
-                                                    </span>
+                                                    <div className="flex items-center gap-3">
+                                                        <a
+                                                            href="/generator/inspiration"
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors focus:outline-hidden"
+                                                            title="Analyze an advertising reference image to extract visual inspiration and recommended settings in a new tab"
+                                                        >
+                                                            <Sparkles className="h-3 w-3" />
+                                                            <span>Explore Design Inspiration</span>
+                                                            <ExternalLink className="h-2.5 w-2.5" />
+                                                        </a>
+                                                        <span className="font-mono text-[10px] font-medium text-muted-foreground">
+                                                            {renderStyle}
+                                                        </span>
+                                                    </div>
                                                 </div>
 
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
@@ -1450,7 +1412,7 @@ export default function ManualGenerator({
                                                                     >
                                                                         {opt.label}
                                                                     </span>
-                                                                    <p className="mt-1 text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+                                                                    <p className="mt-1 text-[10px] text-muted-foreground leading-relaxed">
                                                                         {opt.description}
                                                                     </p>
                                                                 </div>
@@ -2016,21 +1978,6 @@ export default function ManualGenerator({
                                                     )}
                                                 </div>
                                             </div>
-
-                                            {/* Linked Campaign / Event Note if applicable */}
-                                            {selectedEvent && (
-                                                <div className="flex items-center gap-2.5 rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-foreground">
-                                                    <Calendar className="h-4 w-4 text-primary shrink-0" />
-                                                    <div className="flex-1">
-                                                        <p className="font-bold text-[11px]">
-                                                            Linked Event: {selectedEvent.name}
-                                                        </p>
-                                                        <p className="text-[10px] text-muted-foreground">
-                                                            Atmospheric event lighting and seasonal styling will be naturally integrated into the background.
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            )}
                                         </div>
                                     )}
 

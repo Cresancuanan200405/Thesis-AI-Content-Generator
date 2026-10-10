@@ -33,9 +33,11 @@ createInertiaApp({
                 : '';
 
             if (
+                rawLayout === null ||
                 name === 'welcome' ||
                 name === 'onboarding' ||
-                name.startsWith('onboarding/')
+                name.startsWith('onboarding/') ||
+                name === 'generator/inspiration'
             ) {
                 page.default.layout = null;
             } else if (name.startsWith('auth/')) {

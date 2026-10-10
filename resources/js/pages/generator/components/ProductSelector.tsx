@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import { createPortal } from 'react-dom';
 import {
     Check,
     Edit3,
@@ -7,9 +8,14 @@ import {
     Search,
     X,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { CustomProductItem, ProductItem } from './types';
 
 interface ProductSelectorProps {
@@ -76,16 +82,6 @@ export function ProductSelector({
                     >
                         <Package className={`h-4 w-4 transition-colors ${productTab === 'catalog' ? 'text-primary' : 'text-muted-foreground'}`} />
                         <span>Product Catalog</span>
-                        <Badge
-                            variant="secondary"
-                            className={`px-2 py-0.5 font-mono text-[10px] transition-colors ${
-                                productTab === 'catalog'
-                                    ? 'bg-primary/15 text-primary font-bold'
-                                    : 'bg-muted/80 text-muted-foreground'
-                            }`}
-                        >
-                            {products.length}
-                        </Badge>
                     </button>
 
                     <button
@@ -99,16 +95,6 @@ export function ProductSelector({
                     >
                         <Edit3 className={`h-4 w-4 transition-colors ${productTab === 'custom' ? 'text-primary' : 'text-muted-foreground'}`} />
                         <span>Custom Items</span>
-                        <Badge
-                            variant="secondary"
-                            className={`px-2 py-0.5 font-mono text-[10px] transition-colors ${
-                                customProducts.length > 0
-                                    ? 'bg-primary/15 text-primary font-bold'
-                                    : 'bg-muted/80 text-muted-foreground'
-                            }`}
-                        >
-                            {customProducts.length}
-                        </Badge>
                     </button>
                 </div>
             </div>
@@ -137,38 +123,25 @@ export function ProductSelector({
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
-                            {totalSelectedCount > 0 && (
-                                <>
-                                    <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                                        <Check className="h-3.5 w-3.5" />
-                                        {totalSelectedCount}{' '}
-                                        {totalSelectedCount === 1 ? 'item' : 'items'}{' '}
-                                        selected
-                                    </span>
-                                    {onClearAllSelections && (
-                                        <button
+                            <TooltipProvider delayDuration={150}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
                                             type="button"
-                                            onClick={onClearAllSelections}
-                                            className="inline-flex items-center gap-1 rounded-xl border border-border/70 bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive cursor-pointer"
-                                            title="Clear all selected items"
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={onOpenBrowseModal}
+                                            className="h-8.5 w-8.5 rounded-xl border-primary/30 bg-primary/5 text-primary transition-all duration-200 hover:border-primary hover:bg-primary/15 hover:text-primary active:scale-95 group cursor-pointer"
+                                            aria-label="Browse All Catalog Products"
                                         >
-                                            <X className="h-3 w-3" />
-                                            <span>Clear All</span>
-                                        </button>
-                                    )}
-                                </>
-                            )}
-
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={onOpenBrowseModal}
-                                className="h-8.5 gap-1.5 rounded-xl border-primary/30 bg-primary/5 px-3 text-xs font-semibold text-primary hover:border-primary hover:bg-primary/10 transition-colors"
-                            >
-                                <Package className="h-3.5 w-3.5" />
-                                <span>Browse All ({products.length})</span>
-                            </Button>
+                                            <Package className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="text-xs font-medium">
+                                        <p>Browse All Products</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                         </div>
                     </div>
 
@@ -295,27 +268,6 @@ export function ProductSelector({
                                 Enter custom items, packages, or services to feature in this marketing visual.
                             </p>
                         </div>
-                        {totalSelectedCount > 0 && (
-                            <div className="flex items-center gap-2 shrink-0">
-                                <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                                    <Check className="h-3.5 w-3.5" />
-                                    {totalSelectedCount}{' '}
-                                    {totalSelectedCount === 1 ? 'item' : 'items'}{' '}
-                                    selected
-                                </span>
-                                {onClearAllSelections && (
-                                    <button
-                                        type="button"
-                                        onClick={onClearAllSelections}
-                                        className="inline-flex items-center gap-1 rounded-xl border border-border/70 bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive cursor-pointer"
-                                        title="Clear all selected items"
-                                    >
-                                        <X className="h-3 w-3" />
-                                        <span>Clear All</span>
-                                    </button>
-                                )}
-                            </div>
-                        )}
                     </div>
 
                     {/* Custom Items List */}
@@ -420,6 +372,40 @@ export function ProductSelector({
                     )}
                 </div>
             )}
+
+            {/* =============================================================
+                FLOATING MULTI-SELECT ACTION BAR (PORTALLED DIRECTLY TO BODY FOR VIEWPORT FIXATION)
+            ============================================================= */}
+            {totalSelectedCount > 0 && typeof document !== 'undefined' &&
+                createPortal(
+                    <div className="fixed bottom-4 sm:bottom-5 left-1/2 z-50 -translate-x-1/2 pointer-events-auto">
+                        <div className="flex items-center gap-2 rounded-full border border-border/80 bg-card/95 px-3 py-1.5 shadow-xl backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 animate-in duration-200 slide-in-from-bottom-2 fade-in">
+                            <div className="flex items-center gap-1.5 border-r border-border/80 pr-2.5">
+                                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground shadow-xs">
+                                    {totalSelectedCount}
+                                </span>
+                                <span className="text-[11px] font-medium text-foreground">
+                                    {totalSelectedCount === 1 ? 'Selected item' : 'Selected items'}
+                                </span>
+                            </div>
+
+                            {onClearAllSelections && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={onClearAllSelections}
+                                    className="h-7 gap-1 px-2 text-[11px] font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive cursor-pointer"
+                                >
+                                    <X className="h-3 w-3" />
+                                    <span>Clear all</span>
+                                </Button>
+                            )}
+                        </div>
+                    </div>,
+                    document.body
+                )
+            }
         </div>
     );
 }
